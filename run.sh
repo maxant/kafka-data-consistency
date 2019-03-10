@@ -110,7 +110,20 @@ echo COMPLETED. Kafka boostrap servers: $kafkahosts
 #
 # TODO
 #
-# mvn clean install && java -Ddefault.property=asdf -jar web/target/web-microbundle.jar
-#   => put build part into build, and leave run part here
-# wget http://127.0.0.1:8080/web/rest/test
+# put build part into build, and leave run part here
+# mvn clean install
+# java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -jar web/target/web-microbundle.jar
+# browser: http://localhost:8080/web/
+#
+# TODO add ports to kafka brokers list
+#
+# java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8788 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar claims/target/claims-microbundle.jar --port 8081
+#
+# view topics: ./kafka-console-consumer.sh  --topic claim-create --from-beginning --bootstrap-server 172.17.0.3:9092
+#              ./kafka-console-consumer.sh  --topic task-create  --from-beginning --bootstrap-server 172.17.0.3:9092
+#
+#
+# create a claim:
+#
+# curl -X POST   http://localhost:8081/claims/rest/create   -H 'Content-Type: application/json'   -H 'cache-control: no-cache'   -d '{"description" :"asdf", "customerId": "C12345678"}'
 #
