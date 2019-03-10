@@ -1,14 +1,9 @@
-package ch.maxant.kdc.claims;
+package ch.maxant.kdc.tasks;
 
 public class Task {
 
     private String foreignReference;
     private String description;
-
-    public Task(String foreignReference, String description) {
-        this.foreignReference = foreignReference;
-        this.description = description;
-    }
 
     public String getForeignReference() {
         return foreignReference;

@@ -127,3 +127,4 @@ echo COMPLETED. Kafka boostrap servers: $kafkahosts
 #
 # curl -X POST   http://localhost:8081/claims/rest/create   -H 'Content-Type: application/json'   -H 'cache-control: no-cache'   -d '{"description" :"asdf", "customerId": "C12345678"}'
 #
+# java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar tasks/target/tasks-microbundle.jar --port 8082

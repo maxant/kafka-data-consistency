@@ -3,6 +3,7 @@ package ch.maxant.kdc.claims;
 import java.util.UUID;
 
 public class Claim {
+
     private String id = UUID.randomUUID().toString();
     private String description;
     private String customerId;

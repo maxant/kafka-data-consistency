@@ -56,3 +56,7 @@ the script continues.
   - payment => decoupled from rest, ie no one says "take payment"? hmm perhaps not so good? its ok, we wait for a payment
   - order
   - dispatch
+
+# TODO Blog
+
+- need lock when using transactional kafka, but not otherwise since producer is thread safe

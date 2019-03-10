@@ -12,6 +12,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import static ch.maxant.kdc.claims.KafkaAdapter.CLAIM_CREATE_COMMAND_TOPIC;
+import static ch.maxant.kdc.claims.KafkaAdapter.TASK_CREATE_COMMAND_TOPIC;
 import static java.util.Arrays.asList;
 
 @Path("create")
@@ -28,8 +30,8 @@ public class ClaimResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response create(Claim claim) throws JsonProcessingException {
 
-        ProducerRecord<String, String> claimRecord = new ProducerRecord<>("claim-create", null, null, om.writeValueAsString(claim));
-        ProducerRecord<String, String> createTaskCommand = new ProducerRecord<>("task-create", null, null, om.writeValueAsString(new Task(claim.getId(), "call customer " + claim.getCustomerId())));
+        ProducerRecord<String, String> claimRecord = new ProducerRecord<>(CLAIM_CREATE_COMMAND_TOPIC, null, null, om.writeValueAsString(claim));
+        ProducerRecord<String, String> createTaskCommand = new ProducerRecord<>(TASK_CREATE_COMMAND_TOPIC, null, null, om.writeValueAsString(new Task(claim.getId(), "call customer " + claim.getCustomerId())));
         kafka.sendInOneTransaction(asList(claimRecord, createTaskCommand));
 
         return Response.accepted().build();
