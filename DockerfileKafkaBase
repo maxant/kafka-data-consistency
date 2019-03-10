@@ -1,0 +1,11 @@
+#########################################################
+# builds a base image with java and kafka installed
+#########################################################
+# docker build -f DockerfileKafkaBase -t maxant/kafkabase .
+
+FROM openjdk:11.0.2-jre-slim-stretch
+
+COPY kafka_2.11-2.1.1 /kafka
+
+WORKDIR /kafka
+

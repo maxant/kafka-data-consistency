@@ -1,0 +1,8 @@
+# docker build -f DockerfileZookeeper -t maxant/zookeeper .
+# docker run --name zookeeper maxant/zookeeper &
+
+FROM maxant/kafkabase:latest
+
+EXPOSE 2181
+
+CMD ./bin/zookeeper-server-start.sh config/zookeeper.properties

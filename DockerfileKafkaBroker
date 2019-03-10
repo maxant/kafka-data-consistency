@@ -1,0 +1,12 @@
+#########################################################
+# docker build -f DockerfileKafkaBroker -t maxant/kafka .
+# docker run --name kafka_$id -e "ID=$id" -e "DOCKER_HOST=$(ip -4 addr show docker0 | grep -Po 'inet \K[\d.]+')" -e "ZOOKEEPER_HOST=$(docker inspect zookeeper | grep -Po 'IPAddress": "\K[\d.]+' | head -n1)" maxant/kafka &
+#########################################################
+
+FROM maxant/kafkabase:latest
+
+COPY start-kafka.sh /
+
+EXPOSE 9092
+
+CMD ../start-kafka.sh
