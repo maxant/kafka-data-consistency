@@ -80,6 +80,7 @@ public class KafkaAdapter implements Runnable {
                 // TODO handle failure better
             }
         }
+        consumer.commitSync();
         executorService.submit(this);
     }
 }

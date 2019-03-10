@@ -108,6 +108,7 @@ public class KafkaAdapter implements Runnable {
                 e.printStackTrace(); // TODO handle better => this causes data loss. rolling back all is also a problem. need to filter this out to a place which admin can investigate
             }
         }
+        consumer.commitSync();
         executorService.submit(this);
     }
 }
