@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Start Page</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script src="./code.js"></script>
+</head>
+<body>
+check the console
+
+<script>
+    setInterval(function(){
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == XMLHttpRequest.DONE) {
+                console.log("sent to ws");
+            }
+        }
+        xhr.open('GET', './rest/test', true);
+        xhr.send(null);
+    }, 1000);
+</script>
+
+</body>
+</html>

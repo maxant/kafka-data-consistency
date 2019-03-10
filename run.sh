@@ -106,3 +106,11 @@ kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper localhost:2181 --repli
 echo topic created
 echo ""
 echo COMPLETED. Kafka boostrap servers: $kafkahosts
+
+#
+# TODO
+#
+# mvn clean install && java -Ddefault.property=asdf -jar web/target/web-microbundle.jar
+#   => put build part into build, and leave run part here
+# wget http://127.0.0.1:8080/web/rest/test
+#

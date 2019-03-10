@@ -31,3 +31,28 @@ examples of waiting for Zookeeper / Kafka logs to contain certain logs before
 the script continues.
 
 
+## Debug Web Component
+
+    java -Ddefault.property=asdf -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -jar web/target/web-microbundle.jar
+
+
+# Links
+
+- Microprofile Specs: https://github.com/eclipse/microprofile-health/releases/tag/1.0
+- Microprofile POMs, etc.: https://github.com/eclipse/microprofile
+- Payara Docs: https://docs.payara.fish/documentation/microprofile/
+- Payara Examples: https://github.com/payara/Payara-Examples/tree/master/microprofile
+
+# TODO
+
+- dev with other stuff in docker, but container can run locally?
+- orientdb docker image => https://hub.docker.com/_/orientdb
+- define payara config with yml
+- override payara config with system props & environment
+- add https://docs.payara.fish/documentation/microprofile/healthcheck.html and use it in start script?
+- add jpa when consuming in backend service
+- add websocket to web app
+- add backends:
+  - payment => decoupled from rest, ie no one says "take payment"? hmm perhaps not so good? its ok, we wait for a payment
+  - order
+  - dispatch
