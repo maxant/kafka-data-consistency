@@ -48,3 +48,5 @@ setInterval(function() {
         socket.send(JSON.stringify("heartbeat"));
     }
 }, 1000);
+
+console.log("STARTEDd");

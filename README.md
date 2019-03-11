@@ -50,12 +50,7 @@ the script continues.
 - define payara config with yml
 - override payara config with system props & environment
 - add https://docs.payara.fish/documentation/microprofile/healthcheck.html and use it in start script?
-- add jpa when consuming in backend service
-- add websocket to web app
-- add backends:
-  - payment => decoupled from rest, ie no one says "take payment"? hmm perhaps not so good? its ok, we wait for a payment
-  - order
-  - dispatch
+- https://blog.payara.fish/using-hotswapagent-to-speed-up-development => [hotswapagent.md](hotswapagent.md)
 
 # TODO Blog
 

@@ -103,7 +103,11 @@ done
 
 echo creating topic
 kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 2 --partitions 4 --topic my-topic
-echo topic created
+kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 2 --partitions 4 --topic claim-create-command
+kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 2 --partitions 4 --topic task-create-command
+kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 2 --partitions 4 --topic claim-created-event
+kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 2 --partitions 4 --topic task-created-event
+echo topics created
 echo ""
 echo COMPLETED. Kafka boostrap servers: $kafkahosts
 
@@ -112,7 +116,7 @@ echo COMPLETED. Kafka boostrap servers: $kafkahosts
 #
 # put build part into build, and leave run part here
 # mvn clean install
-# java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -jar web/target/web-microbundle.jar
+    # java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar web/target/web-microbundle.jar
 # browser: http://localhost:8080/web/
 #
 # TODO add ports to kafka brokers list

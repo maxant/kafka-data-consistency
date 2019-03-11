@@ -6,7 +6,6 @@ import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
 import javax.annotation.PostConstruct;
@@ -54,9 +53,10 @@ public class KafkaAdapter implements Runnable {
         props.put("group.id", "web-" + UUID.randomUUID()); // use UUID, so that every instance gets data, otherwise clients will not necessarily get their data
         props.put("enable.auto.commit", "true");
         props.put("auto.commit.interval.ms", "1000");
+        System.out.println("asdf");
         consumer = new KafkaConsumer<>(props, new StringDeserializer(), new StringDeserializer());
         consumer.subscribe(asList(TASK_CREATED_EVENT_TOPIC, CLAIM_CREATED_EVENT_TOPIC));
-        consumer.seekToEnd(asList(new TopicPartition(TASK_CREATED_EVENT_TOPIC, -1), new TopicPartition(CLAIM_CREATED_EVENT_TOPIC, -1)));
+//TODO fixme consumer.seekToEnd(asList(new TopicPartition(TASK_CREATED_EVENT_TOPIC, 0), new TopicPartition(CLAIM_CREATED_EVENT_TOPIC, 0)));
 
         executorService.submit(this);
     }
