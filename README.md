@@ -62,13 +62,16 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 
 # TODO
 
+- finish build and run scripts
+- add context of "partner" to filter on websocket server side
+- add partner to URL after hash
+- fixme consumer.seekToEnd(asList(new TopicPartition(TASK_CREATED_EVENT_TOPIC, 0), new TopicPartition(CLAIM_CREATED_EVENT_TOPIC, 0)));
+
 - Tests with running server: https://groups.google.com/forum/#!topic/payara-forum/ZSRGdPkGKpE
   - starting server: https://blog.payara.fish/using-the-payara-micro-maven-plugin
 - add extra jars to uberjar: https://blog.payara.fish/using-the-payara-micro-maven-plugin
-- dev with other stuff in docker, but container can run locally?
 - orientdb docker image => https://hub.docker.com/_/orientdb
 - define payara config with yml
-- override payara config with system props & environment
 - add https://docs.payara.fish/documentation/microprofile/healthcheck.html and use it in start script?
 - https://blog.payara.fish/using-hotswapagent-to-speed-up-development => [hotswapagent.md](hotswapagent.md)
 

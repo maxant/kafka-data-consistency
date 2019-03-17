@@ -18,4 +18,8 @@ public class ClaimRepository {
         claims.add(claim);
         System.out.println("TODO WRITE THE CLAIM TO ORIENTDB: " + claim.getId());
     }
+
+    public void delete() {
+        claims.clear();
+    }
 }

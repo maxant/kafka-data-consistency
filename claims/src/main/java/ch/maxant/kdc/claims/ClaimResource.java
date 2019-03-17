@@ -10,8 +10,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import static ch.maxant.kdc.claims.KafkaAdapter.CLAIM_CREATE_COMMAND_TOPIC;
-import static ch.maxant.kdc.claims.KafkaAdapter.TASK_CREATE_COMMAND_TOPIC;
+import static ch.maxant.kdc.claims.KafkaAdapter.*;
 import static java.util.Arrays.asList;
 
 @Path("claims")
@@ -27,23 +26,29 @@ public class ClaimResource {
     @Inject
     ClaimRepository claimRepository;
 
-    @POST // using post because of CORS+json
-    @Path("read")
+    @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response get() {
         return Response.ok(claimRepository.getClaims()).build();
     }
 
     @POST
-    @Path("create")
     @Produces(MediaType.APPLICATION_JSON)
     public Response create(Claim claim) throws JsonProcessingException {
+
         ProducerRecord<String, String> claimRecord = new ProducerRecord<>(CLAIM_CREATE_COMMAND_TOPIC, null, null, om.writeValueAsString(claim));
         ProducerRecord<String, String> createTaskCommand = new ProducerRecord<>(TASK_CREATE_COMMAND_TOPIC, null, null, om.writeValueAsString(new Task(claim.getId(), "call customer " + claim.getCustomerId())));
         kafka.sendInOneTransaction(asList(claimRecord, createTaskCommand));
 
-        System.out.println("Created ");
-        return Response.accepted().header("Access-Control-Allow-Origin", "*").build();
+        return Response.accepted().build();
+    }
+
+    /** THIS METHOD IS JUST FOR DEMO PURPOSES - DELETE FOR PRODUCTION */
+    @DELETE
+    public Response delete() {
+        claimRepository.delete();
+        kafka.sendInOneTransaction(asList(new ProducerRecord<>(CLAIM_CREATED_EVENT_TOPIC, null, null, "deleted-all")));
+        return Response.ok().build();
     }
 
 }

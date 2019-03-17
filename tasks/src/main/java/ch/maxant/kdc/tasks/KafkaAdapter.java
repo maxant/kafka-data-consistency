@@ -86,7 +86,7 @@ public class KafkaAdapter implements Runnable {
                 model.getTasks().computeIfAbsent(task.getForeignReference(), k -> new Vector<>()).add(task.getDescription());
 
                 // inform UI
-                producer.send(new ProducerRecord<>(TASK_CREATED_EVENT_TOPIC, task.getForeignReference()));
+                publishEvent(task.getForeignReference());
             } catch (IOException e) {
                 e.printStackTrace(); // TODO handle better => this causes data loss. rolling back all is also a problem. need to filter this out to a place which admin can investigate
             }
@@ -94,5 +94,9 @@ public class KafkaAdapter implements Runnable {
         // TODO is it important to wait for the send futures to complete?
         consumer.commitSync();
         executorService.submit(this); // instead of blocking a thread with a while loop
+    }
+
+    public void publishEvent(String reference) {
+        producer.send(new ProducerRecord<>(TASK_CREATED_EVENT_TOPIC, reference));
     }
 }

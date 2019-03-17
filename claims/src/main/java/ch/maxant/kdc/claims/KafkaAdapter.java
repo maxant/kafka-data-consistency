@@ -25,6 +25,7 @@ import java.util.Properties;
 import java.util.UUID;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static javax.ejb.ConcurrencyManagementType.CONTAINER;
 
 @ConcurrencyManagement(CONTAINER)
@@ -42,6 +43,9 @@ public class KafkaAdapter implements Runnable {
     Producer<String, String> producer;
 
     Consumer<String, String> consumer;
+
+    @Resource
+    SessionContext ctx;
 
     @Resource
     ManagedExecutorService executorService;
@@ -81,12 +85,20 @@ public class KafkaAdapter implements Runnable {
         consumer.close();
     }
 
-    @Lock(LockType.WRITE) // synchronous access because otherwise two threads could interfere with each others transactions
+    // synchronous access because otherwise two threads could interfere with each others transactions.
+    // see: https://kafka.apache.org/21/javadoc/index.html?org/apache/kafka/clients/producer/KafkaProducer.html
+    // "As is hinted at in the example, there can be only one open transaction per producer."
+    // "All messages sent between the beginTransaction() and commitTransaction() calls will be part of a single transaction."
+    @Lock(LockType.WRITE)
     public void sendInOneTransaction(List<ProducerRecord<String, String>> records) {
         try {
             producer.beginTransaction();
             records.forEach(r -> producer.send(r));
-            // i assume we don't have to wait for all futures to complete before committing, because the commit is also sent to kafka
+            // we don't have to wait for all futures to complete. see javadocs:
+            // "The transactional producer uses exceptions to communicate error states."
+            // "In particular, it is not required to specify callbacks for producer.send() "
+            // "or to call .get() on the returned Future: a KafkaException would be thrown "
+            // "if any of the producer.send() or transactional calls hit an irrecoverable error during a transaction."
             producer.commitTransaction();
         } catch (KafkaException e) {
             System.err.println("Problem with Kafka");
@@ -104,13 +116,18 @@ public class KafkaAdapter implements Runnable {
                 // create in our DB
                 claimRepository.createClaim(claim);
 
-                // inform UI
-                producer.send(new ProducerRecord<>(CLAIM_CREATED_EVENT_TOPIC, claim.getId()));
+                // inform UI. note having to use a transaction and the lock to publish. alternatively, use a difference producer instance.
+                self().sendInOneTransaction(singletonList(new ProducerRecord<>(CLAIM_CREATED_EVENT_TOPIC, claim.getId())));
             } catch (IOException e) {
                 e.printStackTrace(); // TODO handle better => this causes data loss. rolling back all is also a problem. need to filter this out to a place which admin can investigate
             }
         }
         consumer.commitSync();
         executorService.submit(this); // instead of blocking a thread with a while loop
+    }
+
+    /** get a reference to the EJB instance, so that interceptors work, e.g. the lock */
+    private KafkaAdapter self() {
+        return ctx.getBusinessObject(this.getClass());
     }
 }

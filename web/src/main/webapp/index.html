@@ -4,69 +4,135 @@
     <title>Start Page</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <script src="./code.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.core.min.js"></script>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
     <style>
+    h2 {
+        margin: 1px;
+    }
+
+    .tile-group {
+        border: none;
+        padding: 3px;
+        width: 100%;
+    }
+
+    .tile-group table {
+        width: 100%;
+    }
+
+    .tile {
+        min-height: 50px;
+        border: 1px solid light-grey;
+    }
+
+    .tile-title {
+        font-weight: bold;
+    }
+
+    .tile-body {
+        font-style: italic;
+    }
     </style>
 </head>
 <body>
 <table width="100%" height="100%">
     <tr>
+        <td colspan="2" align="center">
+            <h2><img height="50px" src="k.jpg" style="vertical-align: text-bottom;">AYS Insurance Ltd.</h2>
+        </td>
+        <td align="right" valign="top">
+            <small><a href="#" onclick="clearData();">clear test data</a></small>
+        </td>
+    </tr>
+    <tr><td colspan="3">
+        <hr>
+    </td></tr>
+    <tr>
         <td width="20%" valign="top">
-            <div id="menu">menu</div>
+            <div id="menu"><i class="fas fa-ellipsis-v"></i>&nbsp;Menu</div>
         </td>
         <td width="60%" valign="top">
-            <div id="partner">partner</div>
-            <div id="contracts">contracts</div>
-            <div id="claims">claims</div>
+            <div id="partner" class="tile-group">
+                <table>
+                    <tr><td class='tile'>
+                        <div class='tile-title'><i class="fas fa-user"></i>&nbsp;<b>Ant Kutschera</b></div>
+                        <div class='tile-body'>
+                            C-4837-4536<br>
+                            Ch. des chiens 69<br>
+                            1000 Marbach<br>
+                            +41 77 888 99 00<br>
+                        </div>
+                        <td></tr>
+                </table>
+            </div>
+            <hr>
+            <div id="contracts" class="tile-group">
+                <table>
+                    <tr><td class='tile'>
+                        <div class='tile-title'><i class="fas fa-file-contract"></i>&nbsp;<b>V-9087-4321</b></div>
+                        <div class='tile-body'>
+                            House contents insurance<br>
+                            incl. fire and theft
+                        </div>
+                    <td></tr>
+                </table>
+            </div>
+            <hr>
+            <div id="claims" class="tile-group">claims</div>
             <br>
-            <button onclick="createCase();">create new case</button>
+            <button onclick="createClaim();">Create new claim...</button>
         </td>
         <td width="20%" valign="top">
-            <div id="documents">documents</div>
-            <div id="tasks">tasks</div>
+            <div id="tasks" class="tile-group">tasks</div>
+            <hr>
+            <div id="documents" class="tile-group">
+                <table>
+                    <tr><td class='tile'>
+                        <div class='tile-title'><i class="far fa-file-alt"></i>&nbsp;<b>D-5843-79684</b></div>
+                        <div class='tile-body'>
+                            Contract Document<br>
+                            2018-08-01
+                        </div>
+                    <td></tr>
+                </table>
+            </div>
         </td>
     </tr>
 </table>
-
-TEST
-
 <script>
-function loadCases() {
-    document.getElementById("claims").innerHTML = "reading...";
+function loadClaims() {
+    document.getElementById("claims").innerHTML = "loading...";
     var xhr = new XMLHttpRequest();
-    xhr.open('POST', 'http://localhost:8081/claims/rest/claims/read', true);
-    xhr.setRequestHeader("Content-type", "application/json");
+    xhr.open('GET', 'http://localhost:8081/claims/rest/claims', true);
     xhr.onreadystatechange = function() {
         if (xhr.readyState == XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
-                console.log(xhr.responseText);
+                var claims = JSON.parse(xhr.responseText);
+                var html = "<table>";
+                if(claims.length === 0) {
+                    html = "<i>No claims</i>";
+                } else {
+                    _.forEach(claims, function(c){
+                        html += "<tr><td class='tile'>" +
+                                    "<div class='tile-title'><i class='fas fa-exclamation-circle'></i>&nbsp;Claim</div>" +
+                                    "<div class='tile-body'><i>" + c.id + "</i><br>" + c.description + "</div>" +
+                                    "<td></tr>";
+                    });
+                    html += "<table>";
+                }
+                document.getElementById("claims").innerHTML = html;
             } else {
                 alert("failed to get claims: " + xhr.status + "::" + xhr.responseText);
             }
         }
     }
-    xhr.send(null);
+    xhr.send();
 }
 
-function loadTasks() {
-    document.getElementById("tasks").innerHTML = "reading...";
+function createClaim() {
     var xhr = new XMLHttpRequest();
-    xhr.open('POST', 'http://localhost:8082/tasks/rest/tasks/read', true);
-    xhr.setRequestHeader("Content-type", "application/json");
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState == XMLHttpRequest.DONE) {
-            if (xhr.status === 200) {
-                console.log(xhr.responseText);
-            } else {
-                alert("failed to get tasks: " + xhr.status + "::" + xhr.responseText);
-            }
-        }
-    }
-    xhr.send(null);
-}
-
-function createCase() {
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', 'http://localhost:8081/claims/rest/claims/create', true);
+    xhr.open('POST', 'http://localhost:8081/claims/rest/claims', true);
     xhr.setRequestHeader("Content-type", "application/json");
     xhr.onreadystatechange = function() {
         if (xhr.readyState == XMLHttpRequest.DONE) {
@@ -77,7 +143,46 @@ function createCase() {
             }
         }
     }
-    xhr.send(JSON.stringify({"description" :"asdf", "customerId": "C12345678"}));
+    xhr.send(JSON.stringify({"description" :"Nunc dictum tristique ex eu eleifend. Ut non massa ut libero imperdiet sollicitudin.", "customerId": "C-4837-4536"}));
+}
+
+function clearData() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', 'http://localhost:8081/claims/rest/claims', true);
+    xhr.send();
+
+    xhr = new XMLHttpRequest();
+    xhr.open('DELETE', 'http://localhost:8082/tasks/rest/tasks', true);
+    xhr.send();
+}
+
+function loadTasks() {
+    document.getElementById("tasks").innerHTML = "loading...";
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'http://localhost:8082/tasks/rest/tasks', true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+                var tasks = JSON.parse(xhr.responseText);
+                var html = "<table>";
+                if(tasks.length === 0) {
+                    html = "<i>No tasks</i>";
+                } else {
+                    _.forEach(tasks, function(t){
+                        html += "<tr><td class='tile'>" +
+                                    "<div class='tile-title'><i class='fas fa-tasks'></i>&nbsp;Task</div>" +
+                                    "<div class='tile-body'>" + t + "</div>" +
+                                    "<td></tr>";
+                    });
+                    html += "<table>";
+                }
+                document.getElementById("tasks").innerHTML = html;
+            } else {
+                alert("failed to load tasks: " + xhr.status + "::" + xhr.responseText);
+            }
+        }
+    }
+    xhr.send();
 }
 
 window.onWSMessage = function(data) {
@@ -90,7 +195,7 @@ window.onWSMessage = function(data) {
     }
 }
 
-loadCases();
+loadClaims();
 loadTasks();
 </script>
 
