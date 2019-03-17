@@ -56,3 +56,4 @@ Using the DCEVM JVM caused problems with finding jax-b classes - don't bother:
 
     /usr/lib/jvm/dcevm-11.0.1+8/bin/java -javaagent:/home/ant/Downloads/hotswap-agent-1.3.1-SNAPSHOT.jar -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -jar web/target/web-microbundle.jar
 
+UPDATE: the jax-b problems were down to java 11, not DCEVM. TODO continue investigating this...

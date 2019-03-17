@@ -12,6 +12,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import javax.ejb.ConcurrencyManagement;
+import javax.ejb.LocalBean;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
 import javax.enterprise.concurrent.ManagedExecutorService;
@@ -25,6 +26,7 @@ import static javax.ejb.ConcurrencyManagementType.CONTAINER;
 
 @ConcurrencyManagement(CONTAINER)
 @Singleton
+@LocalBean
 @Startup
 public class KafkaAdapter implements Runnable {
 

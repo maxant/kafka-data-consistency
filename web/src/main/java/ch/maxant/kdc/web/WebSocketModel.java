@@ -22,6 +22,7 @@ public class WebSocketModel {
                 remove(s.getId());
             }
         });
+        System.out.println("sent to all: " + msg);
     }
 
     public void put(String id, Session session) {

@@ -35,6 +35,23 @@ the script continues.
 
     java -Ddefault.property=asdf -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -jar web/target/web-microbundle.jar
 
+## Hot deploy with Payara
+
+Instead of deploying the built WAR file, Payara allows you to start with an exploded folder. Maven happens to build one
+during the package phase. You can redeploy by touching the `.reload` file.
+So, deploy like this, e.g. the web component:
+
+    java ... -jar <path to payara-micro-5.184.jar> --deploy web/target/web
+
+Or in full:
+
+    java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar /home/ant/.m2/repository/fish/payara/extras/payara-micro/5.184/payara-micro-5.184.jar --deploy web/target/web
+
+Then you can build and redeploy as follows, e.g. the web component:
+
+    mvn -pl web package && touch web/target/web/.reload
+
+More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-cmd-line.html
 
 # Links
 
@@ -45,6 +62,9 @@ the script continues.
 
 # TODO
 
+- Tests with running server: https://groups.google.com/forum/#!topic/payara-forum/ZSRGdPkGKpE
+  - starting server: https://blog.payara.fish/using-the-payara-micro-maven-plugin
+- add extra jars to uberjar: https://blog.payara.fish/using-the-payara-micro-maven-plugin
 - dev with other stuff in docker, but container can run locally?
 - orientdb docker image => https://hub.docker.com/_/orientdb
 - define payara config with yml

@@ -22,7 +22,7 @@ function onOpen() {
 }
 
 function onMessage(event) {
-    console.log(event);
+    window.onWSMessage(JSON.parse(event.data));
 }
 
 function onClose(){
@@ -45,8 +45,8 @@ init();
 
 setInterval(function() {
     if(socket) {
-        socket.send(JSON.stringify("heartbeat"));
+        socket.send("heartbeat");
     }
-}, 1000);
+}, 10000);
 
-console.log("STARTEDd");
+console.log("started");

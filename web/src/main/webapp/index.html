@@ -4,21 +4,94 @@
     <title>Start Page</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <script src="./code.js"></script>
+    <style>
+    </style>
 </head>
 <body>
-check the console
+<table width="100%" height="100%">
+    <tr>
+        <td width="20%" valign="top">
+            <div id="menu">menu</div>
+        </td>
+        <td width="60%" valign="top">
+            <div id="partner">partner</div>
+            <div id="contracts">contracts</div>
+            <div id="claims">claims</div>
+            <br>
+            <button onclick="createCase();">create new case</button>
+        </td>
+        <td width="20%" valign="top">
+            <div id="documents">documents</div>
+            <div id="tasks">tasks</div>
+        </td>
+    </tr>
+</table>
+
+TEST
 
 <script>
-    setInterval(function(){
-        var xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState == XMLHttpRequest.DONE) {
-                console.log("sent to ws");
+function loadCases() {
+    document.getElementById("claims").innerHTML = "reading...";
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'http://localhost:8081/claims/rest/claims/read', true);
+    xhr.setRequestHeader("Content-type", "application/json");
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+                console.log(xhr.responseText);
+            } else {
+                alert("failed to get claims: " + xhr.status + "::" + xhr.responseText);
             }
         }
-        xhr.open('GET', './rest/test', true);
-        xhr.send(null);
-    }, 1000);
+    }
+    xhr.send(null);
+}
+
+function loadTasks() {
+    document.getElementById("tasks").innerHTML = "reading...";
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'http://localhost:8082/tasks/rest/tasks/read', true);
+    xhr.setRequestHeader("Content-type", "application/json");
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+                console.log(xhr.responseText);
+            } else {
+                alert("failed to get tasks: " + xhr.status + "::" + xhr.responseText);
+            }
+        }
+    }
+    xhr.send(null);
+}
+
+function createCase() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'http://localhost:8081/claims/rest/claims/create', true);
+    xhr.setRequestHeader("Content-type", "application/json");
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == XMLHttpRequest.DONE) {
+            if (xhr.status === 202) {
+                console.log("claim creation request accepted");
+            } else {
+                alert("failed to create claim: " + xhr.status + "::" + xhr.responseText);
+            }
+        }
+    }
+    xhr.send(JSON.stringify({"description" :"asdf", "customerId": "C12345678"}));
+}
+
+window.onWSMessage = function(data) {
+    if(data.topic === "task-created-event") {
+        loadTasks();
+    } else if(data.topic === "claim-created-event") {
+        loadClaims();
+    } else {
+        console.error("unknown event received: " + JSON.stringify(data));
+    }
+}
+
+loadCases();
+loadTasks();
 </script>
 
 </body>

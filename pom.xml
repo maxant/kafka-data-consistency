@@ -48,6 +48,7 @@
                 <scope>import</scope>
             </dependency>
 
+            <!-- kakfa -->
             <dependency>
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-clients</artifactId>
@@ -76,6 +77,7 @@
                 <version>${version.jackson}</version>
             </dependency>
 
+            <!-- testing -->
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-api</artifactId>
@@ -95,6 +97,7 @@
                 <scope>test</scope>
             </dependency>
 
+            <!-- lib -->
             <dependency>
                 <groupId>ch.maxant.kafkadataconsistency</groupId>
                 <artifactId>library</artifactId>
@@ -125,7 +128,6 @@
             <artifactId>slf4j-simple</artifactId>
         </dependency>
 
-        <!-- added to serialise java.time.LocalDate as an ISO 8601 String -->
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-parameter-names</artifactId>

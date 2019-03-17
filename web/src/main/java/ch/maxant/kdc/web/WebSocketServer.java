@@ -27,7 +27,11 @@ public class WebSocketServer {
     }
 
     @OnMessage public void handleMessage(String message, Session session) {
-        System.out.println("message on session " + session.getId() + ": " + message);
+        if(message.equals("heartbeat")) {
+            System.out.println("\u2665 " + session.getId());
+        } else {
+            System.out.println("message on session " + session.getId() + ": " + message);
+        }
     }
 
 }

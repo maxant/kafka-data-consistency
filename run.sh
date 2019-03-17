@@ -111,17 +111,20 @@ echo topics created
 echo ""
 echo COMPLETED. Kafka boostrap servers: $kafkahosts
 
+# mvn clean install
+#
+# TODO add ports to kafka brokers list
 #
 # TODO
 #
 # put build part into build, and leave run part here
 # mvn clean install
-    # java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar web/target/web-microbundle.jar
+# java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar web/target/web-microbundle.jar
 # browser: http://localhost:8080/web/
 #
-# TODO add ports to kafka brokers list
-#
 # java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8788 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar claims/target/claims-microbundle.jar --port 8081
+#
+# java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar tasks/target/tasks-microbundle.jar --port 8082
 #
 # view topics: ./kafka-console-consumer.sh  --topic claim-create --from-beginning --bootstrap-server 172.17.0.3:9092
 #              ./kafka-console-consumer.sh  --topic task-create  --from-beginning --bootstrap-server 172.17.0.3:9092
@@ -129,6 +132,4 @@ echo COMPLETED. Kafka boostrap servers: $kafkahosts
 #
 # create a claim:
 #
-# curl -X POST   http://localhost:8081/claims/rest/create   -H 'Content-Type: application/json'   -H 'cache-control: no-cache'   -d '{"description" :"asdf", "customerId": "C12345678"}'
-#
-# java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar tasks/target/tasks-microbundle.jar --port 8082
+# curl -X POST   http://localhost:8081/claims/rest/claims/create   -H 'Content-Type: application/json'   -H 'cache-control: no-cache'   -d '{"description" :"asdf", "customerId": "C12345678"}'

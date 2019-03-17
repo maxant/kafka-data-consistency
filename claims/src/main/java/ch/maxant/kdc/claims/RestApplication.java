@@ -1,4 +1,4 @@
-package ch.maxant.kdc.web;
+package ch.maxant.kdc.claims;
 
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;

@@ -19,7 +19,6 @@ import javax.enterprise.concurrent.ManagedExecutorService;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.List;
 import java.util.Properties;
 import java.util.Vector;
 
@@ -28,6 +27,7 @@ import static javax.ejb.ConcurrencyManagementType.CONTAINER;
 
 @ConcurrencyManagement(CONTAINER)
 @Singleton
+@LocalBean
 @Startup
 @Lock(LockType.READ)
 public class KafkaAdapter implements Runnable {
@@ -76,10 +76,6 @@ public class KafkaAdapter implements Runnable {
         consumer.close();
     }
 
-    public void send(List<ProducerRecord<String, String>> records) {
-        records.forEach(r -> producer.send(r));
-    }
-
     public void run() {
         ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
         for(ConsumerRecord<String, String> r : records) {
@@ -95,7 +91,8 @@ public class KafkaAdapter implements Runnable {
                 e.printStackTrace(); // TODO handle better => this causes data loss. rolling back all is also a problem. need to filter this out to a place which admin can investigate
             }
         }
+        // TODO is it important to wait for the send futures to complete?
         consumer.commitSync();
-        executorService.submit(this);
+        executorService.submit(this); // instead of blocking a thread with a while loop
     }
 }

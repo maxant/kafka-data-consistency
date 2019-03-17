@@ -29,6 +29,7 @@ import static javax.ejb.ConcurrencyManagementType.CONTAINER;
 
 @ConcurrencyManagement(CONTAINER)
 @Singleton
+@LocalBean
 @Startup
 public class KafkaAdapter implements Runnable {
 
@@ -49,7 +50,7 @@ public class KafkaAdapter implements Runnable {
     ch.maxant.kdc.library.Properties properties;
 
     @Inject
-    CreateClaimHandler createClaimHandler;
+    ClaimRepository claimRepository;
 
     @Inject
     ObjectMapper objectMapper;
@@ -85,9 +86,10 @@ public class KafkaAdapter implements Runnable {
         try {
             producer.beginTransaction();
             records.forEach(r -> producer.send(r));
+            // i assume we don't have to wait for all futures to complete before committing, because the commit is also sent to kafka
             producer.commitTransaction();
         } catch (KafkaException e) {
-            System.err.println("kafka had a problem");
+            System.err.println("Problem with Kafka");
             e.printStackTrace();
             producer.abortTransaction();
         }
@@ -100,7 +102,7 @@ public class KafkaAdapter implements Runnable {
                 Claim claim = objectMapper.readValue(r.value(), Claim.class);
 
                 // create in our DB
-                createClaimHandler.createClaim(claim);
+                claimRepository.createClaim(claim);
 
                 // inform UI
                 producer.send(new ProducerRecord<>(CLAIM_CREATED_EVENT_TOPIC, claim.getId()));
@@ -109,6 +111,6 @@ public class KafkaAdapter implements Runnable {
             }
         }
         consumer.commitSync();
-        executorService.submit(this);
+        executorService.submit(this); // instead of blocking a thread with a while loop
     }
 }
