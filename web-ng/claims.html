@@ -1,0 +1,16 @@
+<div id="claims" class="tile-group">
+<div id="contracts" class="tile-group">
+    <div *ngIf="claims.length < 1">
+        <i>No claims</i>
+    </div>
+    <table *ngIf="claims.length >= 1">
+        <tr>
+            <td *ngFor="let claim of claims" class='tile'>
+                <div class='tile-title'><i class='fas fa-exclamation-circle'></i>&nbsp;Claim</div>
+                <div class='tile-body'><i>{{ claim.id }}</i><br>
+                    {{ claim.description }}
+                </div>
+            <td>
+        </tr>
+    </table>
+</div>

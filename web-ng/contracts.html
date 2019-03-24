@@ -1,0 +1,13 @@
+<div id="contracts" class="tile-group">
+    <table>
+        <tr>
+            <td *ngFor="let contract of contracts" class='tile'>
+                <div class='tile-title'><i class="fas fa-file-contract"></i>&nbsp;<b>{{ contract.id }}</b></div>
+                <div class='tile-body'>
+                    {{ contract.description1 }}<br>
+                    {{ contract.description2 }}
+                </div>
+            <td>
+        </tr>
+    </table>
+</div>

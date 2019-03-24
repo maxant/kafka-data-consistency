@@ -1,0 +1,26 @@
+h2 {
+    margin: 1px;
+}
+
+.tile-group {
+    border: none;
+    padding: 3px;
+    width: 100%;
+}
+
+.tile-group table {
+    width: 100%;
+}
+
+.tile {
+    min-height: 50px;
+    border: 1px solid light-grey;
+}
+
+.tile-title {
+    font-weight: bold;
+}
+
+.tile-body {
+    font-style: italic;
+}

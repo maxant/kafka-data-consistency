@@ -69,6 +69,7 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 
 - Tests with running server: https://groups.google.com/forum/#!topic/payara-forum/ZSRGdPkGKpE
   - starting server: https://blog.payara.fish/using-the-payara-micro-maven-plugin
+  - https://docs.payara.fish/documentation/ecosystem/maven-plugin.html
 - add extra jars to uberjar: https://blog.payara.fish/using-the-payara-micro-maven-plugin
 - orientdb docker image => https://hub.docker.com/_/orientdb
 - define payara config with yml
