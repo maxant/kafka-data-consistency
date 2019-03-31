@@ -1,13 +1,46 @@
-var exports = {}; // this allows us to add "export" to components, so they can be more easily transferred to real Angular apps later
-
 const { Component, NgModule, OnInit } = ng.core;
 const { BrowserModule } = ng.platformBrowser;
+const { Injectable } = ng.core;
+//doesnt work: import { Component } from 'ng.core';
+
+window.exports = window.exports || {}; // this allows us to add "export" to components, so they can be more easily transferred to real Angular apps later
+var exports = window.exports;
+
+console.log("exports: " + JSON.stringify(exports));
+
+const myService = exports.MyService;
+console.log("MyService : " + MyService);
+console.log("MessageService : " + exports.MessageService);
+//myService.add("asdf");
+//console.log("messages: " + myService.getMessages());
+
+@Injectable()
+export class Message2Service {
+  messages: string[] = [];
+
+  add(message: string) {
+    this.messages.push(message);
+  }
+
+  clear() {
+    this.messages = [];
+  }
+
+  getMessages(): string[] {
+      return this.messages;
+  }
+}
 
 @Component({
     selector: 'home',
     templateUrl: 'home.html',
 })
 export class HomeComponent implements OnInit {
+
+    constructor(private message2Service: Message2Service) {
+        console.log("constructor: " + message2Service);
+    }
+
     counter = 0;
 
     increment() {

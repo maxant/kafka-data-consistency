@@ -2,51 +2,103 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.core.min.js"></script>
-    <script src="https://unpkg.com/react@15/dist/react.min.js"></script>
-    <script src="https://unpkg.com/react-dom@15/dist/react-dom.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.24/browser.min.js"></script>
-    <style>
+    <script src="https://unpkg.com/lodash@4.17.11/lodash.min.js"></script>
 
+    <!--
+    <script src="https://unpkg.com/react@16.8.5/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@16.8.5/umd/react-dom.production.min.js" crossorigin></script>
+    -->
+    <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js"></script>
+    <style>
+    h2 {
+        margin: 1px;
+    }
+
+    .tile-group {
+        border: none;
+        padding: 3px;
+        width: 100%;
+    }
+
+    .tile-group table {
+        width: 100%;
+    }
+
+    .tile {
+        min-height: 50px;
+        border: 1px solid light-grey;
+    }
+
+    .tile-title {
+        font-weight: bold;
+    }
+
+    .tile-body {
+        font-style: italic;
+    }
     </style>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
     <script type="text/babel">
-/*
-      const ExampleApplication = React.createClass({
-        render: function() {
-          const elapsed = Math.round(this.props.elapsed  / 100);
-          const seconds = elapsed / 10 + (elapsed % 10 ? '' : '.0' );
-          const message = 'React has been successfully running for ' + seconds + ' seconds.';
-          return <p>{message}</p>;
-        }
-      });
-      const start = new Date().getTime();
-      setInterval(function() {
-        ReactDOM.render(
-          <ExampleApplication elapsed={new Date().getTime() - start} />,
-          document.getElementById('container')
-        );
-      }, 50);
-*/
-function formatName(user) {
-  return user.firstName + ' ' + user.lastName;
+ReactDOM.render(
+  e(LikeButton),
+  document.querySelector('#like_button_container')
+);
+
+
+function ActionLink(props) {
+  function handleClick(e) {
+    e.preventDefault();
+    console.log('The link was clicked.');
+  }
+
+  return (
+    <a href="#" onClick={handleClick}>
+      Click me
+    </a>
+  );
+}
+const action = document.querySelector('#action')
+ReactDOM.render(
+  <ActionLink/>,
+  action
+);
+
+function Contract(props) {
+    return (
+
+    );
 }
 
-const user = {
-  firstName: 'Harper',
-  lastName: 'Perez'
-};
 
-const element = (
-  <h1>
-    Hello, {formatName(user)}!
-  </h1>
-);
+class Root extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      partner: {name: 'Ant Kutschera'},
+      contracts: [{id: 1}, {id: 2}],
+      claims: []
+    };
+  }
+
+  render() {
+    return (
+
+
+    );
+  }
+}
 
 ReactDOM.render(
-  element,
-  document.getElementById('root')
+    <Root model={model} />
+    document.getElementById('root');
 );
+
     </script>
+
+    <!-- Load our React component. -->
+    <script src="like_button.js"></script>
 </head>
 <body>
 <div id="root"></div>

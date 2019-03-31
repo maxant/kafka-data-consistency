@@ -55,8 +55,19 @@
                 var filename;
                 for (num = 0; num < scripts.data.length; num++) {
                     filename = scripts.name[num] = scripts.name[num].slice(scripts.name[num].lastIndexOf('/') + 1);
+
+                    var compilerOptions = {
+                        inlineSourceMap: true,
+                        target: "ES5"
+                    };
+
                     var src = scripts.data[num];
-                    source += ts.transpile(src);
+                    //source += ts.transpile(src);
+                    source += ts.transpile(src, //https://github.com/Microsoft/TypeScript/wiki/Using-the-Compiler-API
+                        compilerOptions, //https://github.com/Microsoft/TypeScript-Handbook/blob/master/pages/Compiler%20Options.md
+                      /*fileName*/ undefined,
+                      /*diagnostics*/ undefined,
+                      /*moduleName*/ undefined);
                 }
             })();
         }
