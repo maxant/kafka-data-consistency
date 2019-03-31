@@ -117,13 +117,15 @@ echo COMPLETED. Kafka boostrap servers: $kafkahosts
 # TODO
 #
 # put build part into build, and leave run part here
-# mvn clean install
+# mvn -pl web clean install
 # java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar web/target/web-microbundle.jar
 # browser: http://localhost:8080/web/
 #
+# mvn -pl claims clean install
 # java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8788 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar claims/target/claims-microbundle.jar --port 8081
 #
-# java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar tasks/target/tasks-microbundle.jar --port 8082
+# mvn -pl tasks clean install
+    # java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar tasks/target/tasks-microbundle.jar --port 8082
 #
 # view topics: ./kafka-console-consumer.sh  --topic claim-create --from-beginning --bootstrap-server 172.17.0.3:9092
 #              ./kafka-console-consumer.sh  --topic task-create  --from-beginning --bootstrap-server 172.17.0.3:9092

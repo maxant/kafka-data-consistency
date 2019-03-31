@@ -1,14 +1,24 @@
+///////////////////////////////////////////////
+// setups and maintains a websocket.
+// sends incoming JSON messages to a function
+// named onWSMessage on the window object
+///////////////////////////////////////////////
+
 var socket;
 
 function init() {
     var loc = window.location, newUri;
-    if (loc.protocol === "https:") {
-        newUri = "wss:";
+    if(loc.protocol === "file:") {
+        newUri = "ws://localhost:8080/web/ws";
     } else {
-        newUri = "ws:";
+        if (loc.protocol === "https:") {
+            newUri = "wss:";
+        } else {
+            newUri = "ws:";
+        }
+        newUri += "//" + loc.host;
+        newUri += loc.pathname + "ws";
     }
-    newUri += "//" + loc.host;
-    newUri += loc.pathname + "ws";
 
     socket = new WebSocket(newUri);
     socket.onmessage = onMessage;
@@ -48,5 +58,3 @@ setInterval(function() {
         socket.send("heartbeat");
     }
 }, 10000);
-
-console.log("started");

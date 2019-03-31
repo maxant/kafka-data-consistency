@@ -24,3 +24,9 @@ h2 {
 .tile-body {
     font-style: italic;
 }
+
+.error {
+    font-style: italic;
+    font-weight: bold;
+    color: red;
+}
