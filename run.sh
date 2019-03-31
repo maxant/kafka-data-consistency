@@ -132,7 +132,7 @@ echo COMPLETED. Kafka boostrap servers: $kafkahosts
 #
 # cd ui
 # npm install
-# node node_modules/http-server/bin/http-server
+# node node_modules/http-server/bin/http-server -p 8083
 #
 #
 # create a claim:
