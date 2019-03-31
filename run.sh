@@ -125,10 +125,14 @@ echo COMPLETED. Kafka boostrap servers: $kafkahosts
 # java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8788 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar claims/target/claims-microbundle.jar --port 8081
 #
 # mvn -pl tasks clean install
-    # java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar tasks/target/tasks-microbundle.jar --port 8082
+# java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar tasks/target/tasks-microbundle.jar --port 8082
 #
 # view topics: ./kafka-console-consumer.sh  --topic claim-create --from-beginning --bootstrap-server 172.17.0.3:9092
 #              ./kafka-console-consumer.sh  --topic task-create  --from-beginning --bootstrap-server 172.17.0.3:9092
+#
+# cd ui
+# npm install
+# node node_modules/http-server/bin/http-server
 #
 #
 # create a claim:

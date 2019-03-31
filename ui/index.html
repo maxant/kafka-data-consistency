@@ -7,19 +7,24 @@
     <link rel="stylesheet" href="styles.css">
     <script src="./websocket.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.core.min.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue-router"></script>
+    <script src="./partnerView.js"></script>
     <script src="./partner.js"></script>
     <script src="./contracts.js"></script>
     <script src="./claims.js"></script>
     <script src="./tasks.js"></script>
     <script src="./documents.js"></script>
+    <script src="./navigations.js"></script>
 <script>
 
 // TODO .vue files?
-// TODO resolver
-// TODO axios
+// TODO use axios
+// TODO add search screen based on ES
 
 var model = {
+    loading: false,
     partner: {
         id: 'C-4837-4536',
         name: 'Ant Kutschera',
@@ -41,27 +46,34 @@ var model = {
         subtitle: 'incl. garden'
     }],
     claims: [],
-    tasks: []
+    tasks: [],
+    navigations: [{title: 'search', to: '/search'}]
 };
 
 function onload() {
     loadClaims();
     loadTasks();
 
+    Vue.use(VueRouter);
+
+    const HomeView = { template: '<router-link to="/partner/C-4837-4536">view partner</router-link>' };
+
+    const SearchView = { template: '<div>TODO</div>' };
+
+    const router = new VueRouter({
+        routes: [
+            { path: '/',            component: HomeView     },
+            { path: '/search',      component: SearchView   },
+            { path: '/partner/:id', component: PartnerView  },
+            { path: '*',            redirect: '/' }
+        ]
+    });
+
     var app = new Vue({
+        router,
         el: '#app',
         data: model
     });
-}
-
-function clearData() {
-    var xhr = new XMLHttpRequest();
-    xhr.open('DELETE', 'http://localhost:8081/claims/rest/claims', true);
-    xhr.send();
-
-    xhr = new XMLHttpRequest();
-    xhr.open('DELETE', 'http://localhost:8082/tasks/rest/tasks', true);
-    xhr.send();
 }
 
 function loadClaims() {
@@ -113,36 +125,7 @@ window.onWSMessage = function(data) {
 </head>
 <body onload="onload();">
     <div id="app">
-        <table width="100%" height="100%">
-            <tr>
-                <td colspan="2" align="center">
-                    <h2><img height="50px" src="k.jpg" style="vertical-align: text-bottom;">AYS Insurance Ltd.</h2>
-                </td>
-                <td align="right" valign="top">
-                    <small><a href="#" onclick="clearData();">clear test data</a></small>
-                </td>
-            </tr>
-            <tr><td colspan="3">
-                <hr>
-            </td></tr>
-            <tr>
-                <td width="20%" valign="top">
-                    <div id="menu"><i class="fas fa-ellipsis-v"></i>&nbsp;Menu</div>
-                </td>
-                <td width="60%" valign="top">
-                    <partner v-bind:partner="partner"></partner>
-                    <hr>
-                    <contracts v-bind:contracts="contracts"></contracts>
-                    <hr>
-                    <claims v-bind:claims="claims"></claims>
-                </td>
-                <td width="20%" valign="top">
-                    <tasks v-bind:tasks="tasks"></tasks>
-                    <hr>
-                    <documents></documents>
-                </td>
-            </tr>
-        </table>
+        <router-view></router-view>
     </div>
 </body>
 </html>

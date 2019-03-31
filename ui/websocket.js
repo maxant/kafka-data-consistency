@@ -7,20 +7,7 @@
 var socket;
 
 function init() {
-    var loc = window.location, newUri;
-    if(loc.protocol === "file:") {
-        newUri = "ws://localhost:8080/web/ws";
-    } else {
-        if (loc.protocol === "https:") {
-            newUri = "wss:";
-        } else {
-            newUri = "ws:";
-        }
-        newUri += "//" + loc.host;
-        newUri += loc.pathname + "ws";
-    }
-
-    socket = new WebSocket(newUri);
+    socket = new WebSocket("ws://localhost:8080/web/ws");
     socket.onmessage = onMessage;
     socket.onclose = onClose;
     socket.onerror = onError;
