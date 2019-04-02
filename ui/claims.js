@@ -4,10 +4,11 @@ Vue.component('claims', {
         <div id="claims" class="tile-group">
             <button @click="createClaim();">Create new claim...</button>
             <br>
-            <div v-if="typeof claims === 'string'" class="error">{{claims}}</div>
-            <div v-else-if="claims.length === 0"><i>No claims</i></div>
+            <div v-if="claims.error" class="error">{{claims.error}}</div>
+            <div v-else-if="claims.loading"><i>loading...</i></div>
+            <div v-else-if="claims.entities.length === 0"><i>No claims</i></div>
             <table v-else>
-                <tr v-for="claim in claims">
+                <tr v-for="claim in claims.entities">
                     <td class='tile'>
                         <div class='tile-title'><i class='fas fa-exclamation-circle'></i>&nbsp;Claim</div>
                         <div class='tile-body'><i>{{claim.id}}</i><br>{{claim.description}}</div>

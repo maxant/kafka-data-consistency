@@ -62,17 +62,23 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 
 # TODO
 
-- see TODOs inside UI component
-- finish build and run scripts
 - add context of "partner" to filter on websocket server side
-- add partner and contract systems for loading that data
+- finish build and run scripts
+- UI
+  - get import/export working with .mjs file
+  - see TODOs inside UI component
+  - .vue files?
+  - use axios
+  - add search screen based on ES
+  - filters: https://vuejs.org/v2/guide/filters.html
+  - Vue.compile, component, directive, extend, mixin, use, util
+- add partner and contract components for loading that data
 - fixme consumer.seekToEnd(asList(new TopicPartition(TASK_CREATED_EVENT_TOPIC, 0), new TopicPartition(CLAIM_CREATED_EVENT_TOPIC, 0)));
 - add ES for search
 - add kibana??
 - add claim page to view details of a claim
 - add aggregate for related claims, so we can show prototype of aggregated data
 - add a vuejs form to learn about two way databinding
-- add own flux model - redux wont work since it is immutable and so incompatible with vue. vuex is just too boilerplate and misses the point.
 - Tests with running server: https://groups.google.com/forum/#!topic/payara-forum/ZSRGdPkGKpE
   - starting server: https://blog.payara.fish/using-the-payara-micro-maven-plugin
   - https://docs.payara.fish/documentation/ecosystem/maven-plugin.html

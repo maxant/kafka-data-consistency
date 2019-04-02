@@ -34,3 +34,7 @@ h2 {
 .navigation {
     list-style: none;
 }
+
+.hidden {
+    display: none;
+}

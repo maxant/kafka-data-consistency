@@ -3,7 +3,7 @@ Vue.component('navigations', {
     template: `
         <ul class="navigation">
             <li v-for="navigation in navigations">
-                <router-link v-bind:to="navigation.to">{{navigation.title}}</router-link>
+                <router-link :to="{ name: navigation.name, params: navigation.params }">{{navigation.title}}</router-link>
             </li>
         </ul>
     `,

@@ -17,54 +17,22 @@
     <script src="./tasks.js"></script>
     <script src="./documents.js"></script>
     <script src="./navigations.js"></script>
+    <script src="./store.mjs"></script>
 <script>
 
-// TODO .vue files?
-// TODO use axios
-// TODO add search screen based on ES
-
-var model = {
-    loading: false,
-    partner: {
-        id: 'C-4837-4536',
-        name: 'Ant Kutschera',
-        address: {
-            street: 'Ch. des chiens',
-            number: '69',
-            zip: '1000',
-            city: 'Marbach',
-        },
-        phone: '+41 77 888 99 00'
-    },
-    contracts: [{
-        id: 'V-9087-4321',
-        title: 'House contents insurance',
-        subtitle: 'incl. fire and theft'
-    },{
-        id: 'V-8046-2304',
-        title: 'Main property building insurance',
-        subtitle: 'incl. garden'
-    }],
-    claims: [],
-    tasks: [],
-    navigations: [{title: 'search', to: '/search'}]
-};
-
 function onload() {
-    loadClaims();
-    loadTasks();
 
     Vue.use(VueRouter);
 
-    const HomeView = { template: '<router-link to="/partner/C-4837-4536">view partner</router-link>' };
+    const HomeView = { template: `<router-link :to="{ name: 'partner', params: { id: 'C-4837-4536' }}">view partner</router-link>` };
 
     const SearchView = { template: '<div>TODO</div>' };
 
     const router = new VueRouter({
         routes: [
-            { path: '/',            component: HomeView     },
-            { path: '/search',      component: SearchView   },
-            { path: '/partner/:id', component: PartnerView  },
+            { path: '/',            name: 'home',    component: HomeView     },
+            { path: '/search',      name: 'search',  component: SearchView   },
+            { path: '/partner/:id', name: 'partner', component: PartnerView  },
             { path: '*',            redirect: '/' }
         ]
     });
@@ -72,21 +40,21 @@ function onload() {
     var app = new Vue({
         router,
         el: '#app',
-        data: model
+        data: store
     });
 }
 
 function loadClaims() {
-    model.claims = "loading...";
+    store.startLoadingClaims();
     var xhr = new XMLHttpRequest();
     xhr.open('GET', 'http://localhost:8081/claims/rest/claims', true);
     xhr.onreadystatechange = function() {
         if (xhr.readyState == XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
                 var claims = JSON.parse(xhr.responseText);
-                model.claims = claims;
+                store.loadedClaims(claims);
             } else {
-                model.claims = "failed to get claims: " + xhr.status + "::" + xhr.responseText;
+                store.unableToLoadClaims("failed to get claims: " + xhr.status + "::" + xhr.responseText);
             }
         }
     }
@@ -94,16 +62,16 @@ function loadClaims() {
 }
 
 function loadTasks() {
-    model.tasks = "loading...";
+    store.startLoadingTasks();
     var xhr = new XMLHttpRequest();
     xhr.open('GET', 'http://localhost:8082/tasks/rest/tasks', true);
     xhr.onreadystatechange = function() {
         if (xhr.readyState == XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
                 var tasks = JSON.parse(xhr.responseText);
-                model.tasks = tasks;
+                store.loadedTasks(tasks);
             } else {
-                model.tasks = "failed to load tasks: " + xhr.status + "::" + xhr.responseText;
+                store.unableToLoadTasks("failed to load tasks: " + xhr.status + "::" + xhr.responseText);
             }
         }
     }
