@@ -72,6 +72,7 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
   - add search screen based on ES
   - filters: https://vuejs.org/v2/guide/filters.html
   - Vue.compile, component, directive, extend, mixin, use, util
+  - component tests
 - add partner and contract components for loading that data
 - fixme consumer.seekToEnd(asList(new TopicPartition(TASK_CREATED_EVENT_TOPIC, 0), new TopicPartition(CLAIM_CREATED_EVENT_TOPIC, 0)));
 - add ES for search

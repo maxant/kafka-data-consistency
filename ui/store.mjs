@@ -6,6 +6,19 @@
 // technical. i want a store which has business methods on it.
 // this is it. see bottom of file for store history and time
 // travel.
+//
+// NOTE: compare this to MVC - the model and controller are
+//       a single object here, and the model does not emit
+//       change events. here, controller methods (business
+//       methods) are placed on the root of the model, and
+//       should be used as the only way to modify the model.
+//       they ensure a) the model is updated and b) the state
+//       is stored into the history. vue then reacts to the
+//       observables and re-renders the view.  you could of
+//       course split the "controller" and "model", and probaby
+//       that makes sense because the stuff in the lower half
+//       of this file belongs in a library. TODO refactor it
+//       into a library!
 // ///////////////////////////////////////////////////////////
 
 // ///////////////////////////////////////////////////////////
@@ -99,16 +112,24 @@ const store = (function(){
     };
 
     // ///////////////////////////////////////////////////////////
+    // navigations / menu methods
+    // ///////////////////////////////////////////////////////////
+    store.setMenu = function(navigations) {
+        this.navigations = navigations;
+        updateHistory(this, storeHistory, "set menu");
+    };
+
+    // ///////////////////////////////////////////////////////////
     // loader modification methods
     // ///////////////////////////////////////////////////////////
     store.startLoading = function() {
         this.loading = true;
-        updateHistory(this, storeHistory);
+        updateHistory(this, storeHistory, 'loading');
     };
 
-    store.resetLoading = function() {
+    store.completedLoading = function() {
         this.loading = false;
-        updateHistory(this, storeHistory);
+        updateHistory(this, storeHistory, 'complete loading');
     };
 
     updateHistory(store, storeHistory, "initial state saved in store history");
@@ -131,14 +152,18 @@ const store = (function(){
     // https://github.com/flitbit/diff
     // time travel works by calling the `store.timeTravel(index)`
     // method, or `store.timeTravelBack()` and
-    // `store.timeTravelForward()`.
+    // `store.timeTravelForward()`. Get the state of where time
+    // time travel is currently pointing to, using
+    // `store.getCurrent()`.
     // ///////////////////////////////////////////////////////////
 
     function updateHistory(store, storeHistory, message) {
-        // poor mans deep clone BUT has the advantage that only data is copied
         if(message) console.log(message);
         try {
-            var copy = JSON.parse(JSON.stringify(store));
+            // poor mans deep clone BUT has the advantage that only data is copied
+            var copy = {};
+            _.forEach(store, function(v,k) { if(!k.startsWith('$') && !k.startsWith('_') && (typeof store[k] !== 'function')) copy[k] = v});
+            copy = JSON.parse(JSON.stringify(copy));
             storeHistory.unshift({data: copy, message: message, timestamp: new Date()});
             storeHistory.length = Math.min(storeHistory.length, 100);
         } catch(error) {
@@ -151,6 +176,10 @@ const store = (function(){
         return storeHistory;
     };
 
+    store.getCurrent = function() {
+        return storeHistory[storeHistory.timeTravelIndex];
+    };
+
     store.timeTravel = function(index) {
         Object.assign(this, storeHistory[index].data);
         console.log("time  travelled to " + storeHistory[index].timestamp);
@@ -159,8 +188,8 @@ const store = (function(){
     store.timeTravelBack = function() {
         if(storeHistory.timeTravelIndex < storeHistory.length - 1) {
             storeHistory.timeTravelIndex++;
-            Object.assign(this, storeHistory[storeHistory.timeTravelIndex].data);
-            console.log("time travelled to " + storeHistory[storeHistory.timeTravelIndex].timestamp + " and at index " + storeHistory.timeTravelIndex + "/" + (storeHistory.length - 1));
+            Object.assign(this, this.getCurrent().data);
+            console.log("time travelled to " + this.getCurrent().timestamp + " and at index " + storeHistory.timeTravelIndex + "/" + (storeHistory.length - 1));
         } else {
             console.log("no more time travel history available")
         }
@@ -169,8 +198,8 @@ const store = (function(){
     store.timeTravelForward = function() {
         if(storeHistory.timeTravelIndex > 0) {
             storeHistory.timeTravelIndex--;
-            Object.assign(this, storeHistory[storeHistory.timeTravelIndex].data);
-            console.log("time travelled to " + storeHistory[storeHistory.timeTravelIndex].timestamp + " and at index " + storeHistory.timeTravelIndex + "/" + (storeHistory.length - 1));
+            Object.assign(this, this.getCurrent().data);
+            console.log("time travelled to " + this.getCurrent().timestamp + " and at index " + storeHistory.timeTravelIndex + "/" + (storeHistory.length - 1));
         } else {
             console.log("no more time travel history available")
         }

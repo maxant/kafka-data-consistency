@@ -32,9 +32,8 @@ const PartnerView = (function() {
 // TODO also handle errors
                 return new Promise(function (resolve, reject) {
                     setTimeout(function() {
-                        self.resetLoading();
-                        self.navigations = buildNavigations();
-                        console.log("partner was fetched!");
+                        self.completedLoading();
+                        self.setMenu(buildNavigations());
                         resolve();
                     }, 1000);
                 });
@@ -57,9 +56,9 @@ const PartnerView = (function() {
                                     time travel
                                     <a href='#' @click.prevent="timeTravelForward();">&gt;&gt;</a>
                                     <br>
-                                    {{getHistory()[getHistory().timeTravelIndex].timestamp.toISOString()}}
+                                    {{getCurrent().timestamp.toISOString()}}
                                     <br>
-                                    Index {{getHistory().timeTravelIndex}} of {{getHistory().length - 1}}
+                                    Index {{getHistory().timeTravelIndex}} of {{getHistory().length - 1}}: {{getCurrent().message}}
                                 </small>
                             </div>
                         </td>
