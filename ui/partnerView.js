@@ -22,7 +22,7 @@ const PartnerView = (function() {
                 console.log("data is being cleared");
             },
             loadStore() {
-                this.startLoading();
+                this.$q.loading.show();
                 var id = this.$route.params.id;
                 console.log("loading partner " + id + "...");
                 loadClaims();
@@ -32,7 +32,7 @@ const PartnerView = (function() {
 // TODO also handle errors
                 return new Promise(function (resolve, reject) {
                     setTimeout(function() {
-                        self.completedLoading();
+                        self.$q.loading.hide();
                         self.setMenu(buildNavigations());
                         resolve();
                     }, 1000);
@@ -41,11 +41,10 @@ const PartnerView = (function() {
         },
         template: `
             <div>
-                <div :class="[loading ? '' : 'hidden']" style="position: fixed; width: 90%; height: 100%; top: 0; left: 0; right: 100px; bottom: 0; background-color: rgba(0,0,0,0.1); z-index: 2;">loading...</div>
                 <table width="100%" height="100%">
                     <tr>
                         <td colspan="2" align="center">
-                            <h2><img height="50px" src="k.jpg" style="vertical-align: text-bottom;">AYS Insurance Ltd.</h2>
+                            <h2><img height="50px" src="skynet.svg" style="vertical-align: text-bottom;">&nbsp;KAYS Insurance Ltd.</h2>
                         </td>
                         <td align="right" valign="top">
                             <div style="z-index=1;">

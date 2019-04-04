@@ -2,10 +2,15 @@ Vue.component('claims', {
     props: ['claims'],
     template: `
         <div id="claims" class="tile-group">
-            <button @click="createClaim();">Create new claim...</button>
-            <br>
-            <div v-if="claims.error" class="error">{{claims.error}}</div>
-            <div v-else-if="claims.loading"><i>loading...</i></div>
+            <div>
+                <q-btn label="create new claim..." color="primary" icon="create" @click="createClaim()" />
+            </div>
+            <div v-if="claims.error" class="error">
+                <q-alert :type="warning" class="q-mb-sm" icon="priority_high">
+                    {{claims.error}}
+                </q-alert>
+            </div>
+            <div v-else-if="claims.loading"><q-spinner-hourglass size="32px"/></div>
             <div v-else-if="claims.entities.length === 0"><i>No claims</i></div>
             <table v-else>
                 <tr v-for="claim in claims.entities">

@@ -11,7 +11,8 @@ Vue.component('partner', {
                         {{partner.entity.address.zip}} {{partner.entity.address.city}}<br>
                         {{partner.entity.phone}}
                     </div>
-                    </td></tr>
+                    </td>
+                </tr>
             </table>
        </div>
     `

@@ -1,5 +1,10 @@
+body {
+  margin: 5px 50px;
+  background-image: url("./striped.png") !important;
+}
 h2 {
     margin: 1px;
+    font-size: 28px !important;
 }
 
 .tile-group {

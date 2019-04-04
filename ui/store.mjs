@@ -119,19 +119,6 @@ const store = (function(){
         updateHistory(this, storeHistory, "set menu");
     };
 
-    // ///////////////////////////////////////////////////////////
-    // loader modification methods
-    // ///////////////////////////////////////////////////////////
-    store.startLoading = function() {
-        this.loading = true;
-        updateHistory(this, storeHistory, 'loading');
-    };
-
-    store.completedLoading = function() {
-        this.loading = false;
-        updateHistory(this, storeHistory, 'complete loading');
-    };
-
     updateHistory(store, storeHistory, "initial state saved in store history");
 
     // ///////////////////////////////////////////////////////////
