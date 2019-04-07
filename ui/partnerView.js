@@ -60,10 +60,10 @@ export const PartnerView = {
     //   md:
     //      menu - claim - tasks
     //   sm:
-    //      menu
+    //      menu-as-a-button
     //      claim - tasks
     //   xs:
-    //      menu
+    //      menu-as-a-button
     //      claim
     //      task
     template:
