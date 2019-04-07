@@ -77,23 +77,29 @@ public class KafkaAdapter implements Runnable {
     }
 
     public void run() {
-        ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
-        for(ConsumerRecord<String, String> r : records) {
-            try {
-                Task task = objectMapper.readValue(r.value(), Task.class);
+        try {
+            ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
+            for(ConsumerRecord<String, String> r : records) {
+                try {
+                    Task task = objectMapper.readValue(r.value(), Task.class);
 
-                // create in our DB
-                model.getTasks().computeIfAbsent(task.getForeignReference(), k -> new Vector<>()).add(task.getDescription());
+                    // create in our DB
+                    model.getTasks().computeIfAbsent(task.getForeignReference(), k -> new Vector<>()).add(task.getDescription());
 
-                // inform UI
-                publishEvent(task.getForeignReference());
-            } catch (IOException e) {
-                e.printStackTrace(); // TODO handle better => this causes data loss. rolling back all is also a problem. need to filter this out to a place which admin can investigate
+                    // inform UI
+                    publishEvent(task.getForeignReference());
+                } catch (IOException e) {
+                    e.printStackTrace(); // TODO handle better => this causes data loss. rolling back all is also a problem. need to filter this out to a place which admin can investigate
+                }
             }
+            // TODO is it important to wait for the send futures to complete?
+            consumer.commitSync();
+        } catch (Exception e) {
+            System.err.println("unable to poll: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            executorService.submit(this); // instead of blocking a thread with a while loop
         }
-        // TODO is it important to wait for the send futures to complete?
-        consumer.commitSync();
-        executorService.submit(this); // instead of blocking a thread with a while loop
     }
 
     public void publishEvent(String reference) {

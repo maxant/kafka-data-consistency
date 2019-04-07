@@ -69,20 +69,26 @@ public class KafkaAdapter implements Runnable {
     }
 
     public void run() {
-        ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
-        for(ConsumerRecord<String, String> record : records) {
-            // TODO filter => only send data which the client cares about
-            Change change = new Change();
-            change.setTopic(record.topic());
-            change.setId(record.value());
-            try {
-                clients.sendToAll(objectMapper.writeValueAsString(change));
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-                // TODO handle failure better
+        try {
+            ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
+            for(ConsumerRecord<String, String> record : records) {
+                // TODO filter => only send data which the client cares about
+                Change change = new Change();
+                change.setTopic(record.topic());
+                change.setId(record.value());
+                try {
+                    clients.sendToAll(objectMapper.writeValueAsString(change));
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                    // TODO handle failure better
+                }
             }
+            consumer.commitSync();
+        } catch (Exception e) {
+            System.err.println("unable to poll: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            executorService.submit(this); // instead of blocking a thread with a while loop
         }
-        consumer.commitSync();
-        executorService.submit(this);
     }
 }

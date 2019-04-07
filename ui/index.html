@@ -17,88 +17,15 @@
     <link href="https://cdn.jsdelivr.net/npm/animate.css@^3.5.2/animate.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/quasar-framework@0.17.8/dist/umd/quasar.mat.min.css" rel="stylesheet" type="text/css">
 
-    <script src="./partnerView.js"></script>
     <script src="./partner.js"></script>
     <script src="./contracts.js"></script>
     <script src="./claims.js"></script>
     <script src="./tasks.js"></script>
     <script src="./documents.js"></script>
     <script src="./navigations.js"></script>
-    <script src="./store.mjs"></script>
-<script>
-
-function onload() {
-
-    Vue.use(VueRouter);
-
-    const HomeView = { template: `<router-link :to="{ name: 'partner', params: { id: 'C-4837-4536' }}">view partner</router-link>` };
-
-    const SearchView = { template: '<div>TODO</div>' };
-
-    const router = new VueRouter({
-        routes: [
-            { path: '/',            name: 'home',    component: HomeView     },
-            { path: '/search',      name: 'search',  component: SearchView   },
-            { path: '/partner/:id', name: 'partner', component: PartnerView  },
-            { path: '*',            redirect: '/' }
-        ]
-    });
-
-    var app = new Vue({
-        router,
-        el: '#app',
-        data: store
-    });
-}
-
-function loadClaims() {
-    store.startLoadingClaims();
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'http://localhost:8081/claims/rest/claims', true);
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState == XMLHttpRequest.DONE) {
-            if (xhr.status === 200) {
-                var claims = JSON.parse(xhr.responseText);
-                store.loadedClaims(claims);
-            } else {
-                store.unableToLoadClaims("failed to get claims: " + xhr.status + "::" + xhr.responseText);
-            }
-        }
-    }
-    xhr.send();
-}
-
-function loadTasks() {
-    store.startLoadingTasks();
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'http://localhost:8082/tasks/rest/tasks', true);
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState == XMLHttpRequest.DONE) {
-            if (xhr.status === 200) {
-                var tasks = JSON.parse(xhr.responseText);
-                store.loadedTasks(tasks);
-            } else {
-                store.unableToLoadTasks("failed to load tasks: " + xhr.status + "::" + xhr.responseText);
-            }
-        }
-    }
-    xhr.send();
-}
-
-window.onWSMessage = function(data) {
-    if(data.topic === "task-created-event") {
-        loadTasks();
-    } else if(data.topic === "claim-created-event") {
-        loadClaims();
-    } else {
-        console.error("unknown event received: " + JSON.stringify(data));
-    }
-}
-
-</script>
-
+    <script type="module" src="./boot.js"></script>
 </head>
-<body onload="onload();">
+<body>
 
     <!--
     <script src="https://cdn.jsdelivr.net/npm/quasar-framework@0.17.8/dist/umd/quasar.ie.polyfills.umd.min.js"></script>
@@ -108,5 +35,6 @@ window.onWSMessage = function(data) {
     <div id="app">
         <router-view></router-view>
     </div>
+
 </body>
 </html>

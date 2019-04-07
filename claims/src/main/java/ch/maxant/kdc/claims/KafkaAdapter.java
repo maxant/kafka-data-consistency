@@ -108,22 +108,28 @@ public class KafkaAdapter implements Runnable {
     }
 
     public void run() {
-        ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
-        for(ConsumerRecord<String, String> r : records) {
-            try {
-                Claim claim = objectMapper.readValue(r.value(), Claim.class);
+        try{
+            ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
+            for(ConsumerRecord<String, String> r : records) {
+                try {
+                    Claim claim = objectMapper.readValue(r.value(), Claim.class);
 
-                // create in our DB
-                claimRepository.createClaim(claim);
+                    // create in our DB
+                    claimRepository.createClaim(claim);
 
-                // inform UI. note having to use a transaction and the lock to publish. alternatively, use a difference producer instance.
-                self().sendInOneTransaction(singletonList(new ProducerRecord<>(CLAIM_CREATED_EVENT_TOPIC, claim.getId())));
-            } catch (IOException e) {
-                e.printStackTrace(); // TODO handle better => this causes data loss. rolling back all is also a problem. need to filter this out to a place which admin can investigate
+                    // inform UI. note having to use a transaction and the lock to publish. alternatively, use a difference producer instance.
+                    self().sendInOneTransaction(singletonList(new ProducerRecord<>(CLAIM_CREATED_EVENT_TOPIC, claim.getId())));
+                } catch (IOException e) {
+                    e.printStackTrace(); // TODO handle better => this causes data loss. rolling back all is also a problem. need to filter this out to a place which admin can investigate
+                }
             }
+            consumer.commitSync();
+        } catch (Exception e) {
+            System.err.println("unable to poll: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            executorService.submit(this); // instead of blocking a thread with a while loop
         }
-        consumer.commitSync();
-        executorService.submit(this); // instead of blocking a thread with a while loop
     }
 
     /** get a reference to the EJB instance, so that interceptors work, e.g. the lock */

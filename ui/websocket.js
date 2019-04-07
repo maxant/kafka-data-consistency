@@ -29,7 +29,7 @@ function onClose(){
 };
 
 function onError(e){
-    console.log("ws error: " + e);
+    console.log("ws error: " + JSON.stringify(e));
     if(socket) {
         socket.close();
     } else {

@@ -65,7 +65,9 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 - add context of "partner" to filter on websocket server side
 - finish build and run scripts
 - UI
-  - get import/export working with .mjs file
+  - v-model and form and updating model using store
+  - responsive with 5 columns
+  - javascript Class for LoadableData (see model)
   - see TODOs inside UI component
   - .vue files?
   - use axios
@@ -74,7 +76,10 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
   - Vue.compile, component, directive, extend, mixin, use, util
   - component tests
   - https://www.codeinwp.com/blog/vue-ui-component-libraries/ => quasar
-  - responsive with 5 columns
+  - javascript dependency injection
+  - use resolver to avoid async code => except eg using an observable for updating server auto complete
+      - example with addresses from post.ch
+- example of error messages and e.g. security exceptions via error messages
 - add partner and contract components for loading that data
 - fixme consumer.seekToEnd(asList(new TopicPartition(TASK_CREATED_EVENT_TOPIC, 0), new TopicPartition(CLAIM_CREATED_EVENT_TOPIC, 0)));
 - add ES for search
@@ -94,3 +99,25 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 # TODO Blog
 
 - need lock when using transactional kafka, but not otherwise since producer is thread safe
+
+- vuex says "Vuex uses a single state tree - that is, this single object contains all your application level state and serves as the "single source of truth". This also means usually you will have only one store for each application." (https://vuex.vuejs.org/guide/state.html)
+- it also says "So why don't we extract the shared state out of the components, and manage it in a global singleton? With this, our component tree becomes a big "view", and any component can access the state or trigger actions, no matter where they are in the tree!" (https://vuex.vuejs.org/)
+- thats a conflict :-)
+- compare http://blog.maxant.co.uk/pebble/2008/01/02/1199309880000.html and http://blog.maxant.co.uk/pebble/images/ants_mvc.jpg with https://github.com/facebook/flux/tree/master/examples/flux-concepts and https://github.com/facebook/flux/blob/master/examples/flux-concepts/flux-simple-f8-diagram-with-client-action-1300w.png
+- vuex also doesn't match what flux says: "There should be many stores in each application." (https://github.com/facebook/flux/tree/master/examples/flux-concepts)
+- see video here: https://facebook.github.io/flux/ at 11:03 (screen shot at ./ui/mvc-incorrect-as-far-as-ant-thinks.png) (https://www.youtube.com/watch?list=PLb0IAmt7-GS188xDYE-u1ShQmFFGbrk0v&time_continue=659&v=nYkdrAPrdcw)
+- i believe that the arrows going from view back to model are a result of the "separable model architecture" well known in java swing.
+- "So we collapsed these two entities (view and controller) into a single UI object" (https://www.oracle.com/technetwork/java/architecture-142923.html) => that leads to arrows as shown where the view directly updates the model. it is also the problem with two way binding (https://stackoverflow.com/questions/38626156/difference-between-one-way-binding-and-two-way-binding-in-angularjs)
+- don't two-way-bind WITH THE STORE. instead, get forms to fill their own model, and pass that to the CONTROLLER to merge the changes into the main model
+- to ensure that you only write to the model inside the controller
+- this can be inforced by only importing the model in the main components which
+  create their controllers, e.g. the `PartnerView`:
+
+    import {model} from './model.js';
+    import {Store} from './store.js';
+    import {Controller} from './controller.js';
+
+    const store = new Store(model);
+    const controller = new Controller(store, model);
+
+- 
