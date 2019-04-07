@@ -9,6 +9,7 @@ import {} from './ruler.js';
 import {PartnerView} from './partnerView.js';
 
 Vue.use(VueRouter);
+Vue.use(vuelidate.default);
 
 const HomeView = { template: `<router-link :to="{ name: 'partner', params: { id: 'C-4837-4536' }}">view partner</router-link>` };
 

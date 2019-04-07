@@ -1,3 +1,21 @@
+function createClaim(description, customerId) {
+    return new Promise(function (resolve, reject) {
+        setTimeout(function(){ // so that demo shows "in progress" message
+            const claim = {"description": description, "customerId": customerId};
+            axios.post('http://localhost:8081/claims/rest/claims', claim)
+            .then(function(response) {
+                if(response.status === 202) {
+                    console.log("claim creation request accepted");
+                    resolve();
+                } else reject("Unexpected response code " + response.status);
+            }).catch(function(call) {
+                console.error("Failed to create claim: " + JSON.stringify(call));
+                reject("Failed to create claim. See console for details. (" + call.response.status + ")");
+            });
+        }, 1000);
+    });
+}
+
 function loadClaims() {
     return new Promise(function (resolve, reject) {
         var xhr = new XMLHttpRequest();
@@ -35,6 +53,7 @@ function loadTasks() {
 }
 
 export const service = {
+    createClaim: createClaim,
     loadClaims: loadClaims,
     loadTasks: loadTasks
 };

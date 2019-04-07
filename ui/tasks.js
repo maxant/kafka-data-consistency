@@ -4,7 +4,7 @@ Vue.component('tasks', {
         <div id="tasks" class="tile-group">
             Tasks<br>
             <div v-if="tasks.error" class="error row">
-                <q-alert :type="warning" class="q-mb-sm" icon="priority_high">
+                <q-alert class="q-mb-sm" icon="priority_high">
                     {{tasks.error}}
                 </q-alert>
             </div>

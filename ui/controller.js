@@ -73,4 +73,22 @@ export class Controller {
             store.updateHistory("error loading claims: " + error);
         }
     }
+
+    async createClaim(description) {
+        const store = this[_store];
+        const model = this[_model];
+        model.claims.entities.push({
+            description: description,
+            temp: true
+        });
+        store.updateHistory("creating claim...");
+
+        try {
+            await service.createClaim(description, model.partner.entity.id);
+        } catch (error) {
+            model.claims.error = error;
+            store.updateHistory("error creating claim: " + error);
+        }
+    }
+
 }

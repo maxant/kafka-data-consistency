@@ -1,10 +1,15 @@
 Vue.component('navigations', {
     props: ['navigations'],
+    methods: {
+        goto(navigation) {
+            this.$router.push({ name: navigation.name, params: navigation.params })
+        }
+    },
     template: `
-        <ul class="navigation">
-            <li v-for="navigation in navigations">
-                <router-link :to="{ name: navigation.name, params: navigation.params }">{{navigation.title}}</router-link>
-            </li>
-        </ul>
+        <div>
+            <div v-for="navigation in navigations" class="navigation" @click="goto(navigation)">
+                {{navigation.title}}
+            </div>
+        </div>
     `,
 });

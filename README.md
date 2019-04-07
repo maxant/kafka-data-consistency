@@ -65,10 +65,8 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 - add context of "partner" to filter on websocket server side
 - finish build and run scripts
 - UI
-  - v-model and form and updating model using store => how will it access the controller?
   - see TODOs inside UI component
   - .vue files?
-  - use axios
   - add search screen based on ES
   - filters: https://vuejs.org/v2/guide/filters.html
   - Vue.compile, component, directive, extend, mixin, use, util
@@ -78,6 +76,7 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
   - use resolver to avoid async code => except eg using an observable for updating server auto complete
       - example with addresses from post.ch
   - useful link for flex: https://css-tricks.com/snippets/css/a-guide-to-flexbox/
+  - useful link for validation: https://vuelidate.netlify.com/
   - https://forum.quasar-framework.org/topic/3391/how-can-i-hide-a-column
 - example of error messages and e.g. security exceptions via error messages
 - add partner and contract components for loading that data

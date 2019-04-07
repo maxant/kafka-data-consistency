@@ -3,7 +3,7 @@ import {Store} from './store.js';
 import {Controller} from './controller.js';
 
 const store = new Store(model);
-const controller = new Controller(store, model);
+export const controller = new Controller(store, model);
 
 function buildNavigations() {
     return [
@@ -27,13 +27,8 @@ export const PartnerView = {
     methods: {
         showMenu() { return !this.$q.screen.xs && !this.$q.screen.sm; },
         clearData() {
-            var xhr = new XMLHttpRequest();
-            xhr.open('DELETE', 'http://localhost:8081/claims/rest/claims', true);
-            xhr.send();
-
-            xhr = new XMLHttpRequest();
-            xhr.open('DELETE', 'http://localhost:8082/tasks/rest/tasks', true);
-            xhr.send();
+            axios.delete('http://localhost:8081/claims/rest/claims');
+            axios.delete('http://localhost:8082/tasks/rest/tasks');
             console.log("data is being cleared");
         },
         init() {
@@ -42,8 +37,8 @@ export const PartnerView = {
             console.log("loading partner " + id + "...");
             controller.loadClaims();
             controller.loadTasks();
-// TODO replace with call to backend services to load model
-// TODO also handle errors
+
+            // simulate call to load partner data so user can see loading button
             const self = this;
             return new Promise(function (resolve, reject) {
                 setTimeout(function() {
@@ -101,7 +96,9 @@ export const PartnerView = {
                 <q-btn round color="secondary">
                     <q-icon name="menu" />
                     <q-popover>
-                        <navigations :navigations="model.navigations"></navigations>
+                        <div class="navigation-popup">
+                            <navigations :navigations="model.navigations"></navigations>
+                        </div>
                     </q-popover>
                 </q-btn>
             </div>
