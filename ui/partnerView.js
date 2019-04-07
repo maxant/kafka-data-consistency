@@ -25,6 +25,7 @@ export const PartnerView = {
         this.init();
     },
     methods: {
+        showMenu() { return !this.$q.screen.xs && !this.$q.screen.sm; },
         clearData() {
             var xhr = new XMLHttpRequest();
             xhr.open('DELETE', 'http://localhost:8081/claims/rest/claims', true);
@@ -53,50 +54,72 @@ export const PartnerView = {
             });
         }
     },
-    template: `
-        <div>
-            <table width="100%" height="100%">
-                <tr>
-                    <td colspan="2" align="center">
-                        <h2><img height="50px" src="skynet.svg" style="vertical-align: text-bottom;">&nbsp;KAYS Insurance Ltd.</h2>
-                    </td>
-                    <td align="right" valign="top">
-                        <div style="z-index=1;">
-                            <small>
-                                <a href='#' @click.prevent="clearData();">clear test data</a>
-                                <br>
-                                <a href='#' @click.prevent="store.timeTravelBack();">&lt;&lt;</a>
-                                time travel
-                                <a href='#' @click.prevent="store.timeTravelForward();">&gt;&gt;</a>
-                                <br>
-                                {{store.getCurrent().timestamp.toISOString()}}
-                                <br>
-                                Index {{store.getHistory().timeTravelIndex}} of {{store.getHistory().length - 1}}: {{store.getCurrent().message}}
-                            </small>
-                        </div>
-                    </td>
-                </tr>
-                <tr><td colspan="3">
-                    <hr>
-                </td></tr>
-                <tr>
-                    <td width="20%" valign="top">
-                        <navigations :navigations="model.navigations"></navigations>
-                    </td>
-                    <td width="60%" valign="top">
-                        <partner :partner="model.partner"></partner>
-                        <hr>
-                        <contracts :contracts="model.contracts"></contracts>
-                        <hr>
-                        <claims :claims="model.claims"></claims>
-                    </td>
-                    <td width="20%" valign="top">
-                        <tasks :tasks="model.tasks"></tasks>
-                        <hr>
-                        <documents></documents>
-                    </td>
-                </tr>
-            </table>
+    // responsive design:
+    //   lg:
+    //      menu - claim - claim - tasks
+    //   md:
+    //      menu - claim - tasks
+    //   sm:
+    //      menu
+    //      claim - tasks
+    //   xs:
+    //      menu
+    //      claim
+    //      task
+    template:
+    `
+    <div>
+        <!-- a ruler for checking responsiveness -->
+        <div class="row">
+            <ruler/>
         </div>
+        <div class="row">
+            <div class="col-10" style="padding-top: 20px; text-align: center;">
+                <h2><img height="50px" src="skynet.svg" style="vertical-align: middle;">&nbsp;KAYS Insurance Ltd.</h2>
+            </div>
+            <div class="col-2" style="align: center; z-index=1; padding-top: 20px;">
+                <small>
+                    <a href='#' @click.prevent="clearData();">clear test data</a>
+                    <br>
+                    <a href='#' @click.prevent="store.timeTravelBack();">&lt;&lt;</a>
+                    time travel
+                    <a href='#' @click.prevent="store.timeTravelForward();">&gt;&gt;</a>
+                    <br>
+                    {{store.getCurrent().timestamp.toISOString()}}
+                    <br>
+                    Index {{store.getHistory().timeTravelIndex}} of {{store.getHistory().length - 1}}: {{store.getCurrent().message}}
+                </small>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <hr>
+            </div>
+        </div>
+        <div v-if="!showMenu()" class="row">
+            <div class="col-2" style="">
+                <q-btn round color="secondary">
+                    <q-icon name="menu" />
+                    <q-popover>
+                        <navigations :navigations="model.navigations"></navigations>
+                    </q-popover>
+                </q-btn>
+            </div>
+        </div>
+        <div class="row">
+            <div v-if="showMenu()" class="col-3">
+                <navigations :navigations="model.navigations"></navigations>
+            </div>
+            <div class="col-xs-12 col-sm-9 col-md-6">
+                <partner :partner="model.partner"></partner>
+                <contracts :contracts="model.contracts"></contracts>
+                <claims :claims="model.claims"></claims>
+            </div>
+            <div class="col-xs-12 col-sm-3 col-md-3">
+                <tasks :tasks="model.tasks"></tasks>
+                <documents></documents>
+            </div>
+        </div>
+    </div>
     `
 };

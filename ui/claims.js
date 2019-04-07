@@ -2,24 +2,25 @@ Vue.component('claims', {
     props: ['claims'],
     template: `
         <div id="claims" class="tile-group">
-            <div>
-                <q-btn label="create new claim..." color="primary" icon="create" @click="createClaim()" />
+            Claims<br>
+            <div class="row">
+                <q-btn label="create new claim..." color="primary" icon="create" @click="createClaim()"/>
             </div>
-            <div v-if="claims.error" class="error">
+            <div v-if="claims.error" class="error row">
                 <q-alert :type="warning" class="q-mb-sm" icon="priority_high">
                     {{claims.error}}
                 </q-alert>
             </div>
-            <div v-else-if="claims.loading"><q-spinner-hourglass size="32px"/></div>
-            <div v-else-if="claims.entities.length === 0"><i>No claims</i></div>
-            <table v-else>
-                <tr v-for="claim in claims.entities">
-                    <td class='tile'>
+            <div v-else-if="claims.loading" class="row"><q-spinner-hourglass size="32px"/></div>
+            <div v-else-if="claims.entities.length === 0" class="row"><i>No claims</i></div>
+            <div v-else class="row">
+                <div v-for="claim in claims.entities" class="col-xs-12 col-sm-12 col-md-12 col-lg-6">
+                    <div class="tile">
                         <div class='tile-title'><i class='fas fa-exclamation-circle'></i>&nbsp;Claim</div>
                         <div class='tile-body'><i>{{claim.id}}</i><br>{{claim.description}}</div>
-                    </td>
-                </tr>
-            </table>
+                    </div>
+                </div>
+            </div>
         </div>
     `,
     methods: {

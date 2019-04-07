@@ -65,9 +65,7 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 - add context of "partner" to filter on websocket server side
 - finish build and run scripts
 - UI
-  - v-model and form and updating model using store
-  - responsive with 5 columns
-  - javascript Class for LoadableData (see model)
+  - v-model and form and updating model using store => how will it access the controller?
   - see TODOs inside UI component
   - .vue files?
   - use axios
@@ -79,6 +77,8 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
   - javascript dependency injection
   - use resolver to avoid async code => except eg using an observable for updating server auto complete
       - example with addresses from post.ch
+  - useful link for flex: https://css-tricks.com/snippets/css/a-guide-to-flexbox/
+  - https://forum.quasar-framework.org/topic/3391/how-can-i-hide-a-column
 - example of error messages and e.g. security exceptions via error messages
 - add partner and contract components for loading that data
 - fixme consumer.seekToEnd(asList(new TopicPartition(TASK_CREATED_EVENT_TOPIC, 0), new TopicPartition(CLAIM_CREATED_EVENT_TOPIC, 0)));
@@ -120,4 +120,4 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
     const store = new Store(model);
     const controller = new Controller(store, model);
 
-- 
+-

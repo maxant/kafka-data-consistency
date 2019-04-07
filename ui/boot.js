@@ -1,3 +1,11 @@
+import {} from './partner.js';
+import {} from './contracts.js';
+import {} from './claims.js';
+import {} from './tasks.js';
+import {} from './documents.js';
+import {} from './navigations.js';
+import {} from './ruler.js';
+
 import {PartnerView} from './partnerView.js';
 
 Vue.use(VueRouter);
