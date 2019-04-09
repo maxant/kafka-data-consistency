@@ -31,4 +31,6 @@ echo "log4j.rootLogger=DEBUG, stdout, kafkaAppender" >> /kafka/config/log4j.prop
 
 cat /kafka/config/server.properties
 
+export KAFKA_HEAP_OPTS="-Xmx256M -Xms256M"
+
 ./bin/kafka-server-start.sh $file

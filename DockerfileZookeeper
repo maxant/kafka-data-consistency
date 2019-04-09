@@ -5,4 +5,6 @@ FROM maxant/kafkabase:latest
 
 EXPOSE 2181
 
+ENV KAFKA_HEAP_OPTS="-Xmx64M -Xms64M"
+
 CMD ./bin/zookeeper-server-start.sh config/zookeeper.properties

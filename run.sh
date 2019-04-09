@@ -110,9 +110,17 @@ echo topics created
 echo ""
 echo COMPLETED. Kafka boostrap servers: $kafkahosts
 
-java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar web/target/web-microbundle.jar --port 8080 &
-java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8788 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar claims/target/claims-microbundle.jar --port 8081 &
-java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar tasks/target/tasks-microbundle.jar --port 8082 &
+ps ax | grep web-microbundle | grep -v grep | awk '{print $1}' | xargs kill
+ps ax | grep tasks-microbundle | grep -v grep | awk '{print $1}' | xargs kill
+ps ax | grep claims-microbundle | grep -v grep | awk '{print $1}' | xargs kill
+
+java -Xmx64M -Xms64M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar web/target/web-microbundle.jar --port 8080 &
+java -Xmx64M -Xms64M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8788 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar claims/target/claims-microbundle.jar --port 8081 &
+java -Xmx64M -Xms64M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar tasks/target/tasks-microbundle.jar --port 8082 &
+
+ps -Af | grep micro
+
+ps ax | grep "http-server.*8083" | grep -v grep | awk '{print $1}' | xargs kill
 
 cd ui
 node node_modules/http-server/bin/http-server -p 8083 &

@@ -65,27 +65,30 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 - add context of "partner" to filter on websocket server side
 - finish build and run scripts
 - UI
-  - see TODOs inside UI component
-  - .vue files?
-  - add search screen based on ES
-  - filters: https://vuejs.org/v2/guide/filters.html
-  - Vue.compile, component, directive, extend, mixin, use, util
-  - component tests
-  - https://www.codeinwp.com/blog/vue-ui-component-libraries/ => quasar
-  - javascript dependency injection
+
+START DOCKER AND OTHER PROCESSES WITH MUCH LESS MEMORY!!
+
+  - observables
+    - https://github.com/vuejs/vue-rx
+  - component tests + dependency mocking?
   - use resolver to avoid async code => except eg using an observable for updating server auto complete
       - example with addresses from post.ch
+  - add claim page to view details of a claim
+  - validation up front with http. if not available, then temp tile looks different => validation error should
+    then be given to user as a task for them to fix
+  - add aggregate for related claims, so we can show prototype of aggregated data
+  - add search screen based on ES
+  - see TODOs inside UI component
+  - what are Vue.compile, extend, mixin, util?
+  - https://www.codeinwp.com/blog/vue-ui-component-libraries/ => quasar
+  - useful link for filters: https://vuejs.org/v2/guide/filters.html
   - useful link for flex: https://css-tricks.com/snippets/css/a-guide-to-flexbox/
   - useful link for validation: https://vuelidate.netlify.com/
   - https://forum.quasar-framework.org/topic/3391/how-can-i-hide-a-column
 - example of error messages and e.g. security exceptions via error messages
-- add partner and contract components for loading that data
 - fixme consumer.seekToEnd(asList(new TopicPartition(TASK_CREATED_EVENT_TOPIC, 0), new TopicPartition(CLAIM_CREATED_EVENT_TOPIC, 0)));
 - add ES for search
-- add kibana??
-- add claim page to view details of a claim
-- add aggregate for related claims, so we can show prototype of aggregated data
-- add a vuejs form to learn about two way databinding
+- add kibana on top of ES?
 - Tests with running server: https://groups.google.com/forum/#!topic/payara-forum/ZSRGdPkGKpE
   - starting server: https://blog.payara.fish/using-the-payara-micro-maven-plugin
   - https://docs.payara.fish/documentation/ecosystem/maven-plugin.html
@@ -118,5 +121,7 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 
     const store = new Store(model);
     const controller = new Controller(store, model);
+
+- why doesnt vue have dependency injection? not really needed. or maybe when we go to test? defo then!
 
 -
