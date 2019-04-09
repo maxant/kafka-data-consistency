@@ -65,10 +65,10 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 - add context of "partner" to filter on websocket server side
 - finish build and run scripts
 - UI
-
-START DOCKER AND OTHER PROCESSES WITH MUCH LESS MEMORY!!
-
   - component tests + dependency mocking?
+    - https://vue-test-utils.vuejs.org/guides/#getting-started
+    - combine with JEST!
+    - can we test it in the browser?
   - use resolver to avoid async code => except eg using an observable for updating server auto complete
       - example with addresses from post.ch
   - add claim page to view details of a claim
@@ -124,4 +124,8 @@ START DOCKER AND OTHER PROCESSES WITH MUCH LESS MEMORY!!
 
 - why doesnt vue have dependency injection? not really needed. or maybe when we go to test? defo then!
 
--
+- observables => show example of the subscription to claims inside claims.js and
+  how the template treats it as an object. v-for works as expected, but the thing
+  is actually an observable. then show how we add to it by calling getValue in
+  controller, using a BehaviourSubject. and we pass values from axios promise
+  to a service obserable but manually put them into the subject by calling next. can we improve that?
