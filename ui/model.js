@@ -2,7 +2,6 @@ class LoadableData {
     constructor() {
         this.loading = false;
         this.error = null;
-        this.entities = [];
     }
 }
 
@@ -44,3 +43,8 @@ model.contracts.entities = [{
        subtitle: 'incl. garden'
     }];
 
+model.tasks.entities = [];
+
+// add an rx observable to demonstrate how it can be used in a template
+// use BehaviourSubject, so that we can call getValue - see createClaim
+model.claims.entities$ = new rxjs.BehaviorSubject();

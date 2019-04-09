@@ -64,6 +64,11 @@ export class Store {
             _.forEach(this[_model], function(v, k, o) {
                 if(!k.startsWith('$') && !k.startsWith('_') && (typeof o[k] !== 'function')) copy[k] = v
             });
+
+            //TODO fix this - we need to rewrite the clone and do it deeply
+            //handleAllObservables(null, null, copy);
+            copy = {};
+
             copy = JSON.parse(JSON.stringify(copy));
             history.unshift({data: copy, message: message, timestamp: new Date()});
             history.length = Math.min(history.length, 100);
@@ -71,5 +76,32 @@ export class Store {
             console.error("unable to update history: " + error);
         }
         history.timeTravelIndex = 0;
+    }
+}
+
+function handleAllObservables(parent, key, child) {
+    //special treatement of rx observables. currently we only support BehaviourSubject
+
+    if(parent && child && typeof child === 'object' &&
+       typeof child.closed !== "undefined" &&
+       typeof child.hasError !== "undefined" &&
+       typeof child.isStopped !== "undefined" &&
+       typeof child.observers !== "undefined" &&
+       typeof child.getValue === "function") {
+
+        // seems to be a BehaviourSubject
+        parent[key] = child.getValue();
+        if(!parent[key]) {
+            parent[key] = [];
+        }
+        parent[key].__WAS__BEHAVIOUR_SUBJECT = true; //so that we can send value into original
+    }
+
+    if(typeof child === "object") {
+        for (var key in child) {
+            if (child.hasOwnProperty(key)) {
+                handleAllObservables(child, key, child[key]);
+            }
+        }
     }
 }

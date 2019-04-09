@@ -2,6 +2,9 @@ import {model} from './model.js';
 import {Store} from './store.js';
 import {Controller} from './controller.js';
 
+const map = rxjs.operators.map;
+const fromEvent = rxjs.fromEvent;
+
 const store = new Store(model);
 export const controller = new Controller(store, model);
 
@@ -23,6 +26,17 @@ export const PartnerView = {
             controller.loadClaims();
         });
         this.init();
+    },
+    subscriptions: function(){ // used by vue-rxjs
+        const el = document.body;
+        const time = new rxjs.Subject();
+        setInterval(function(){time.next(new Date().toISOString())}, 1000);
+
+        return {
+            mouseMoves: fromEvent(el, 'mousemove')
+                            .pipe(map(evt => `Coords: ${evt.clientX} X ${evt.clientY}`)),
+            time: time
+        };
     },
     methods: {
         showMenu() { return !this.$q.screen.xs && !this.$q.screen.sm; },
@@ -64,6 +78,8 @@ export const PartnerView = {
     template:
     `
     <div>
+        <div>MOUSE: {{mouseMoves}}</div>
+        <div>TIME: {{time}}</div>
         <!-- a ruler for checking responsiveness -->
         <div class="row">
             <ruler/>

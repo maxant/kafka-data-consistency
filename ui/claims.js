@@ -2,6 +2,11 @@ import {controller} from './partnerView.js';
 
 Vue.component('claims', {
     props: ['claims'],
+    subscriptions: function() {
+        return {
+            entities: this.claims.entities$
+        }
+    },
     template: `
         <div id="claims" class="tile-group">
             Claims<br>
@@ -12,9 +17,9 @@ Vue.component('claims', {
                 </q-alert>
             </div>
             <div v-else-if="claims.loading" class="row"><q-spinner-hourglass size="32px"/></div>
-            <div v-else-if="claims.entities.length === 0" class="row"><i>No claims</i></div>
+            <div v-else-if="entities.length === 0" class="row"><i>No claims</i></div>
             <div v-else class="row">
-                <div v-for="claim in claims.entities" class="col-xs-12 col-sm-12 col-md-12 col-lg-6">
+                <div v-for="claim in entities" class="col-xs-12 col-sm-12 col-md-12 col-lg-6">
                     <div class="tile">
                         <div class='tile-title'><i class='fas fa-exclamation-circle'></i>&nbsp;Claim</div>
                         <div v-if="claim.temp" class='tile-body'><i>in progress...</i><br>{{claim.description}}</div>

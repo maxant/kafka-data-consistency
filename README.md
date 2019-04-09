@@ -68,8 +68,6 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 
 START DOCKER AND OTHER PROCESSES WITH MUCH LESS MEMORY!!
 
-  - observables
-    - https://github.com/vuejs/vue-rx
   - component tests + dependency mocking?
   - use resolver to avoid async code => except eg using an observable for updating server auto complete
       - example with addresses from post.ch
@@ -84,7 +82,9 @@ START DOCKER AND OTHER PROCESSES WITH MUCH LESS MEMORY!!
   - useful link for filters: https://vuejs.org/v2/guide/filters.html
   - useful link for flex: https://css-tricks.com/snippets/css/a-guide-to-flexbox/
   - useful link for validation: https://vuelidate.netlify.com/
-  - https://forum.quasar-framework.org/topic/3391/how-can-i-hide-a-column
+  - useful link for vue-rxjs: https://github.com/vuejs/vue-rx
+  - useful link for rxjs: https://www.learnrxjs.io/operators/creation/from.html
+  - my question: https://forum.quasar-framework.org/topic/3391/how-can-i-hide-a-column
 - example of error messages and e.g. security exceptions via error messages
 - fixme consumer.seekToEnd(asList(new TopicPartition(TASK_CREATED_EVENT_TOPIC, 0), new TopicPartition(CLAIM_CREATED_EVENT_TOPIC, 0)));
 - add ES for search

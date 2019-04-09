@@ -51,36 +51,44 @@ export class Controller {
         });
     }
 
-    // example implemented with async awat
-    async loadClaims() {
+    // example implemented with rxjs
+    loadClaims() {
         const store = this[_store];
         const model = this[_model];
         model.claims.loading = true;
         model.claims.error = null;
-        // leave as is: store.claims.entities
+        // leave as is: store.claims.entities$
         store.updateHistory("loading claims...");
 
-        try {
-            const newClaims = await service.loadClaims();
-            model.claims.loading = false;
-            model.claims.error = null;
-            model.claims.entities = newClaims;
-            store.updateHistory("loaded claims");
-        } catch (error) {
-            model.claims.error = error;
-            model.claims.loading = false;
-            model.claims.entities = [];
-            store.updateHistory("error loading claims: " + error);
-        }
+        service.loadClaims().subscribe(
+            response => {
+                model.claims.loading = false;
+                model.claims.error = null;
+                model.claims.entities$.next(response.data);
+                store.updateHistory("loaded claims");
+            },
+            error => {
+                model.claims.error = error.toLocaleString();
+                model.claims.loading = false;
+                model.claims.entities$.next([]);
+                store.updateHistory("error loading claims");
+            }
+        );
     }
 
+    // example implemented with async await
     async createClaim(description) {
         const store = this[_store];
         const model = this[_model];
-        model.claims.entities.push({
+
+        // get the current list, add a temporary entry and then put that array into the observable to update the view
+        const claims = model.claims.entities$.getValue();
+        claims.push({
             description: description,
             temp: true
         });
+        model.claims.entities$.next(claims);
+
         store.updateHistory("creating claim...");
 
         try {

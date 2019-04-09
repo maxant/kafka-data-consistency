@@ -1,3 +1,6 @@
+const from = rxjs.from;
+const map = rxjs.operators.map;
+
 function createClaim(description, customerId) {
     return new Promise(function (resolve, reject) {
         setTimeout(function(){ // so that demo shows "in progress" message
@@ -17,21 +20,7 @@ function createClaim(description, customerId) {
 }
 
 function loadClaims() {
-    return new Promise(function (resolve, reject) {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'http://localhost:8081/claims/rest/claims', true);
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState == XMLHttpRequest.DONE) {
-                if (xhr.status === 200) {
-                    var claims = JSON.parse(xhr.responseText);
-                    resolve(claims);
-                } else {
-                    reject("failed to get claims: " + xhr.status + "::" + xhr.responseText);
-                }
-            }
-        }
-        xhr.send();
-    });
+    return from(axios.get('http://localhost:8081/claims/rest/claims'));
 }
 
 function loadTasks() {
