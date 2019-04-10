@@ -1,6 +1,6 @@
 import {controller} from './partnerView.js';
 
-Vue.component('claims', {
+export const claimsComponentObject = {
     props: ['claims'],
     subscriptions: function() {
         return {
@@ -29,9 +29,11 @@ Vue.component('claims', {
             </div>
         </div>
     `
-});
+};
 
-Vue.component('claim-form', {
+Vue.component('claims', claimsComponentObject);
+
+export const claimsFormComponentObject = {
     data: () => {
         return  {
             form: {
@@ -64,11 +66,12 @@ Vue.component('claim-form', {
     },
     template: `
             <div class="row" style="margin: 10px;">
-                <q-btn v-if="!showingNewclaims" label="create new claim..." color="primary" icon="create" @click="showingNewclaims = true"/>
+                <q-btn v-if="!showingNewclaims" id="show-claims-form" label="create new claim..." color="primary" icon="create" @click="showingNewclaims = true"/>
                 <q-card v-else style="width: 100%;">
                     <q-card-main>
                         <div class="row">
                             <q-input
+                                id="claims-form-description"
                                 class="col-8"
                                 v-model="form.description"
                                 type="textarea"
@@ -82,11 +85,13 @@ Vue.component('claim-form', {
                             <div class="col-4 error" v-else-if="$v.form.description.$dirty && !$v.form.description.maxLength">Description must have at most {{$v.form.description.$params.maxLength.max}} letters</div>
                         </div>
                         <div class="row">
-                            <q-btn label="create" color="primary" @click="createClaim()" style="margin: 10px;"/>
-                            <q-btn label="cancel" color="secondary" @click="showingNewclaims = false" style="margin: 10px;"/>
+                            <q-btn label="create" id="claims-form-create" color="primary" @click="createClaim()" style="margin: 10px;"/>
+                            <q-btn label="cancel" id="claims-form-cancel" color="secondary" @click="showingNewclaims = false" style="margin: 10px;"/>
                         </div>
                     </q-card-main>
                 </q-card>
             </div>
     `
-});
+};
+
+Vue.component('claim-form', claimsFormComponentObject);

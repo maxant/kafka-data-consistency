@@ -1,4 +1,5 @@
-Vue.component('navigations', {
+export const componentObject =
+{
     props: ['navigations'],
     methods: {
         goto(navigation) {
@@ -7,9 +8,16 @@ Vue.component('navigations', {
     },
     template: `
         <div>
-            <div v-for="navigation in navigations" class="navigation" @click="goto(navigation)">
+            <div v-for="navigation in navigations"
+                 class="navigation"
+                 @click="goto(navigation)"
+                 :id="'navigation-' + navigation.name">
+
                 {{navigation.title}}
+
             </div>
         </div>
     `,
-});
+};
+
+Vue.component('navigations', componentObject);

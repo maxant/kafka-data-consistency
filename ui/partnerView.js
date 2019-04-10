@@ -90,7 +90,8 @@ export const PartnerView = {
             </div>
             <div class="col-2" style="align: center; z-index=1; padding-top: 20px;">
                 <small>
-                    <a href='#' @click.prevent="clearData();">clear test data</a>
+                    <a href='#' @click.prevent="clearData();">clear test data</a> |
+                    <a href='./tests.html' target="_blank">run tests</a>
                     <br>
                     <a href='#' @click.prevent="store.timeTravelBack();">&lt;&lt;</a>
                     time travel
