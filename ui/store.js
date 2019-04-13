@@ -35,7 +35,9 @@ export class Store {
         const history = this.getHistory();
         if(history.timeTravelIndex < history.length - 1) {
             history.timeTravelIndex++;
-            Object.assign(this[_model], this.getCurrent().data);
+            var current = this.getCurrent().data;
+            resetBehaviourSubjects(current);
+            Object.assign(this[_model], current);
             console.log("time travelled to " + this.getCurrent().timestamp + " and at index " + history.timeTravelIndex + "/" + (history.length - 1));
         } else {
             console.log("no more time travel history available")
@@ -47,7 +49,9 @@ export class Store {
         const history = this.getHistory();
         if(history.timeTravelIndex > 0) {
             history.timeTravelIndex--;
-            Object.assign(this[_model], this.getCurrent().data);
+            var current = this.getCurrent().data;
+            resetBehaviourSubjects(current);
+            Object.assign(this[_model], current);
             console.log("time travelled to " + this.getCurrent().timestamp + " and at index " + history.timeTravelIndex + "/" + (history.length - 1));
         } else {
             console.log("no more time travel history available")
@@ -59,19 +63,9 @@ export class Store {
         const history = this.getHistory();
         if(message) console.log(message);
         try {
-            // poor mans deep clone BUT has the advantage that only data is copied
-            var copy = {};
-            _.forEach(this[_model], function(v, k, o) {
-                if(!k.startsWith('$') && !k.startsWith('_') && (typeof o[k] !== 'function')) copy[k] = v
-            });
-
-            //TODO fix this - we need to rewrite the clone and do it deeply
-            //handleAllObservables(null, null, copy);
-            copy = {};
-
-            copy = JSON.parse(JSON.stringify(copy));
+            var copy = deepClone(this[_model]);
             history.unshift({data: copy, message: message, timestamp: new Date()});
-            history.length = Math.min(history.length, 100);
+            history.length = Math.min(history.length, Vue.config.productionTip ? 100 : 1); // turned off in prod
         } catch(error) {
             console.error("unable to update history: " + error);
         }
@@ -79,29 +73,62 @@ export class Store {
     }
 }
 
-function handleAllObservables(parent, key, child) {
-    //special treatement of rx observables. currently we only support BehaviourSubject
-
-    if(parent && child && typeof child === 'object' &&
-       typeof child.closed !== "undefined" &&
-       typeof child.hasError !== "undefined" &&
-       typeof child.isStopped !== "undefined" &&
-       typeof child.observers !== "undefined" &&
-       typeof child.getValue === "function") {
-
-        // seems to be a BehaviourSubject
-        parent[key] = child.getValue();
-        if(!parent[key]) {
-            parent[key] = [];
-        }
-        parent[key].__WAS__BEHAVIOUR_SUBJECT = true; //so that we can send value into original
-    }
-
-    if(typeof child === "object") {
-        for (var key in child) {
-            if (child.hasOwnProperty(key)) {
-                handleAllObservables(child, key, child[key]);
+function resetBehaviourSubjects(o) {
+    if(o && (_.isArray(o) || _.isObject(o))) {
+        for(var k in o) {
+            var v = o[k];
+            if(v){
+                var data = o["__observable_data_of_" + k];
+                if(data) {
+                    v.next(data);
+                } else if(v.__original_observable) {
+                    o[k] = v.__original_observable;
+                    o[k].next(v);
+                    o["__observable_data_of_" + k] = v; // so that when we go in the other direction, it still works
+                    delete o[k].__original_observable;
+                } else {
+                    resetBehaviourSubjects(v);
+                }
             }
         }
     }
+}
+
+function deepClone(source) {
+    var target = _.isArray(source) ? [] : {};
+    _.forEach(source, function(v, k, o) {
+        if((typeof k === 'string' && (k.startsWith('$') || k.startsWith('_'))) || (typeof v === 'function')) {
+            //skip
+        } else if(typeof v === 'object') {
+            target[k] = handleObservable(v);
+            if(target[k] && !target[k].__original_observable) {
+                target[k] = deepClone(v);
+            }
+        } else {
+            target[k] = v;
+        }
+    });
+    return target;
+}
+
+function handleObservable(object) {
+    //special treatement of rx observables. currently we only support BehaviourSubject
+
+    if(object && typeof object === 'object' &&
+       typeof object.closed !== "undefined" &&
+       typeof object.hasError !== "undefined" &&
+       typeof object.isStopped !== "undefined" &&
+       typeof object.observers !== "undefined" &&
+       typeof object.getValue === "function") {
+
+        // seems to be a BehaviourSubject
+        var value = object.getValue();
+        if(!value) {
+            value = [];
+        }
+        value.__original_observable = object; //so that we can fix when we time travel
+        object = value;
+    }
+
+    return object;
 }

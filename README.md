@@ -65,10 +65,8 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 - add context of "partner" to filter on websocket server side
 - finish build and run scripts
 - UI
-  - component tests + dependency mocking?
-    - https://vue-test-utils.vuejs.org/guides/#getting-started
-    - combine with JEST!
-    - can we test it in the browser?
+  - finish component test #2 and try out mocking stuff. describe why no need to have dependency injection, coz
+    we simply use import everywhere
   - use resolver to avoid async code => except eg using an observable for updating server auto complete
       - example with addresses from post.ch
   - add claim page to view details of a claim
@@ -102,6 +100,11 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 
 - need lock when using transactional kafka, but not otherwise since producer is thread safe
 
+
+- objective: use a light weight UI technology that does not require us to have a build system
+  - assume http/2 so that multiple fetches don't worry us
+  - need lazy loading => see example in boot.js
+
 - vuex says "Vuex uses a single state tree - that is, this single object contains all your application level state and serves as the "single source of truth". This also means usually you will have only one store for each application." (https://vuex.vuejs.org/guide/state.html)
 - it also says "So why don't we extract the shared state out of the components, and manage it in a global singleton? With this, our component tree becomes a big "view", and any component can access the state or trigger actions, no matter where they are in the tree!" (https://vuex.vuejs.org/)
 - thats a conflict :-)
@@ -122,10 +125,13 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
     const store = new Store(model);
     const controller = new Controller(store, model);
 
-- why doesnt vue have dependency injection? not really needed. or maybe when we go to test? defo then!
+- why doesnt vue have dependency injection? not really needed. or maybe when we go to test? defo then! or maybe not,
+  see example with "mocks"
 
 - observables => show example of the subscription to claims inside claims.js and
   how the template treats it as an object. v-for works as expected, but the thing
   is actually an observable. then show how we add to it by calling getValue in
   controller, using a BehaviourSubject. and we pass values from axios promise
   to a service obserable but manually put them into the subject by calling next. can we improve that?
+
+- async route loading via custom loader since vue supports creating routes with promises

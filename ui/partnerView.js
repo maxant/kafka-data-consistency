@@ -12,6 +12,7 @@ function buildNavigations() {
     return [
         { title: 'home',   name: 'home',   params: {} },
         { title: 'search', name: 'search', params: {} },
+        { title: 'lazy',   name: 'lazy',   params: {} },
     ];
 };
 
@@ -30,7 +31,7 @@ export const PartnerView = {
     subscriptions: function(){ // used by vue-rxjs
         const el = document.body;
         const time = new rxjs.Subject();
-        setInterval(function(){time.next(new Date().toISOString())}, 1000);
+        setInterval(function(){time.next(new Date().toTimeString().substr(0,8))}, 1000);
 
         return {
             mouseMoves: fromEvent(el, 'mousemove')
@@ -78,8 +79,8 @@ export const PartnerView = {
     template:
     `
     <div>
-        <div>MOUSE: {{mouseMoves}}</div>
-        <div>TIME: {{time}}</div>
+        <div>Mouse {{mouseMoves}}</div>
+        <div>Time: {{time}}</div>
         <!-- a ruler for checking responsiveness -->
         <div class="row">
             <ruler/>
