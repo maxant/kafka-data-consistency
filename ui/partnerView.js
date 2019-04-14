@@ -17,9 +17,9 @@ function buildNavigations() {
 };
 
 export const PartnerView = {
-    data: function(){ return {model: model, store: store} },
+    data(){ return {model: model, store: store} },
     watch: { '$route': 'init' }, // if e.g. user changes it, reload
-    created: function() { // this is an example of data fetching aka an angular resolver
+    created() { // this is an example of data fetching aka an angular resolver
         this.$parent.$on("task-created-event", function() {
             controller.loadTasks();
         });
@@ -28,7 +28,7 @@ export const PartnerView = {
         });
         this.init();
     },
-    subscriptions: function(){ // used by vue-rxjs
+    subscriptions(){ // used by vue-rxjs
         const el = document.body;
         const time = new rxjs.Subject();
         setInterval(function(){time.next(new Date().toTimeString().substr(0,8))}, 1000);

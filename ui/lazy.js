@@ -1,5 +1,5 @@
 {
-    data: function(){
+    data(){
         return { name: "lazy" }
     },
     template: `

@@ -2,7 +2,7 @@ import {controller} from './partnerView.js';
 
 export const claimsComponentObject = {
     props: ['claims'],
-    subscriptions: function() {
+    subscriptions() {
         return {
             entities: this.claims.entities$
         }
@@ -34,7 +34,7 @@ export const claimsComponentObject = {
 Vue.component('claims', claimsComponentObject);
 
 export const claimsFormComponentObject = {
-    data: () => {
+    data() {
         return  {
             form: {
                 description: ""
@@ -52,7 +52,13 @@ export const claimsFormComponentObject = {
         }
     },
     methods: {
-        createClaim: function() {
+        blurDescription() {
+            this.$v.form.description.$touch()
+        },
+        showForm() {
+            this.showingNewclaims = true;
+        },
+        createClaim() {
             this.$v.form.$touch();
             if (this.$v.form.$error) {
                 this.$q.notify("Please review fields again");
@@ -66,7 +72,7 @@ export const claimsFormComponentObject = {
     },
     template: `
             <div class="row" style="margin: 10px;">
-                <q-btn v-if="!showingNewclaims" id="show-claims-form" label="create new claim..." color="primary" icon="create" @click="showingNewclaims = true"/>
+                <q-btn v-if="!showingNewclaims" id="show-claims-form" label="create new claim..." color="primary" icon="create" @click="showForm()"/>
                 <q-card v-else style="width: 100%;">
                     <q-card-main>
                         <div class="row">
@@ -77,7 +83,7 @@ export const claimsFormComponentObject = {
                                 type="textarea"
                                 float-label="Description"
                                 rows="4"
-                                @blur="$v.form.description.$touch"
+                                @blur="blurDescription"
                                 :error="$v.form.description.$error"
                             />
                             <div class="col-4 error" v-if="$v.form.description.$dirty && !$v.form.description.required">Description is required</div>
