@@ -37,7 +37,8 @@ export const claimsFormComponentObject = {
     data() {
         return  {
             form: {
-                description: ""
+                description: "",
+                other: ""
             },
             showingNewclaims: false
         }
@@ -71,18 +72,19 @@ export const claimsFormComponentObject = {
         }
     },
     template: `
-            <div class="row" style="margin: 10px;">
                 <q-btn v-if="!showingNewclaims" id="show-claims-form" label="create new claim..." color="primary" icon="create" @click="showForm()"/>
                 <q-card v-else style="width: 100%;">
-                    <q-card-main>
+                    <q-card-section>
                         <div class="row">
                             <q-input
                                 id="claims-form-description"
                                 class="col-8"
+                                required
                                 v-model="form.description"
                                 type="textarea"
-                                float-label="Description"
+                                label="Description"
                                 rows="4"
+                                ref="description"
                                 @blur="blurDescription"
                                 :error="$v.form.description.$error"
                             />
@@ -91,10 +93,26 @@ export const claimsFormComponentObject = {
                             <div class="col-4 error" v-else-if="$v.form.description.$dirty && !$v.form.description.maxLength">Description must have at most {{$v.form.description.$params.maxLength.max}} letters</div>
                         </div>
                         <div class="row">
+                            <q-input
+                                id="claims-form-other"
+                                class="col-12"
+                                v-model="form.other"
+                                :rules="[ val => !!val || '* Required',
+                                          val => val.length < 2 || 'Please use maximum 1 character',
+                                        ]"
+                                lazy-rules
+                                hint="Validation starts after first blur"
+                                label="Other data"
+                                counter
+                                rows="2"
+                                ref="other"
+                            />
+                        </div>
+                        <div class="row">
                             <q-btn label="create" id="claims-form-create" color="primary" @click="createClaim()" style="margin: 10px;"/>
                             <q-btn label="cancel" id="claims-form-cancel" color="secondary" @click="showingNewclaims = false" style="margin: 10px;"/>
                         </div>
-                    </q-card-main>
+                    </q-card-section>
                 </q-card>
             </div>
     `

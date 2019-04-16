@@ -24,10 +24,11 @@ QUnit.test( "test claims form", function( assert ) {
     assert.ok(!wrapper.vm.$v.form.$error, "form error is not shown")
     assert.ok(wrapper.vm.$v.form.description.$invalid, "description is invalid")
     assert.ok(!wrapper.vm.$v.form.description.$error, "description error is not shown")
-    assert.equals("", wrapper.find("#claims-form-description.q-input-area").element.value, "description is empty")
+    assert.equal("", wrapper.find("#claims-form-description.q-input-area").element.value, "description is empty")
     wrapper.find("#claims-form-description.q-input-area").element.value = "asdf"
 
-wrapper.find("#claims-form-description.q-input-area").trigger("blur")
+wrapper.find("#claims-form-description").vnode.componentInstance.$refs.input.click()
+    assert.ok(!wrapper.vm.$v.form.$invalid, "form is invalid")
 
     // TODO assert things on $v
     // TODO close form

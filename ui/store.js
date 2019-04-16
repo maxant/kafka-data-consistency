@@ -111,17 +111,12 @@ function deepClone(source) {
     return target;
 }
 
+//special treatement of rx observables. currently we only support BehaviourSubject
 function handleObservable(object) {
-    //special treatement of rx observables. currently we only support BehaviourSubject
 
-    if(object && typeof object === 'object' &&
-       typeof object.closed !== "undefined" &&
-       typeof object.hasError !== "undefined" &&
-       typeof object.isStopped !== "undefined" &&
-       typeof object.observers !== "undefined" &&
-       typeof object.getValue === "function") {
+    if(object && rxjs.isObservable(object) && typeof object.getValue === "function") {
 
-        // seems to be a BehaviourSubject
+        // seems to be a BehaviourSubject, so we can use it to get the current data
         var value = object.getValue();
         if(!value) {
             value = [];

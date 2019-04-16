@@ -98,7 +98,7 @@ export const PartnerView = {
                     time travel
                     <a href='#' @click.prevent="store.timeTravelForward();">&gt;&gt;</a>
                     <br>
-                    {{store.getCurrent().timestamp.toISOString()}}
+                    {{store.getCurrent().timestamp.toTimeString().substr(0,8) + "." + store.getCurrent().timestamp.getMilliseconds()}}
                     <br>
                     Index {{store.getHistory().timeTravelIndex}} of {{store.getHistory().length - 1}}: {{store.getCurrent().message}}
                 </small>
@@ -113,11 +113,11 @@ export const PartnerView = {
             <div class="col-2" style="">
                 <q-btn round color="secondary">
                     <q-icon name="menu" />
-                    <q-popover>
+                    <q-menu>
                         <div class="navigation-popup">
                             <navigations :navigations="model.navigations"></navigations>
                         </div>
-                    </q-popover>
+                    </q-menu>
                 </q-btn>
             </div>
         </div>
