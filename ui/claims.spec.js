@@ -80,6 +80,8 @@ Vue.use(vuelidate.default);
     done();
 /*
 TODO convert to page object model pattern
+TODO test mock when clicking button at end
+TODO must keep debug window closed :-( otherwise focus doesnt work => pain in the ass for lazy validation
 */
 
 
