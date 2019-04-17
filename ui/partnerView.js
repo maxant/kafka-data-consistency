@@ -18,6 +18,9 @@ function buildNavigations() {
 
 export const PartnerView = {
     data(){ return {model: model, store: store} },
+    provide: {
+        controller
+    },
     watch: { '$route': 'init' }, // if e.g. user changes it, reload
     created() { // this is an example of data fetching aka an angular resolver
         this.$parent.$on("task-created-event", function() {

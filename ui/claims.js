@@ -1,5 +1,3 @@
-import {controller} from './partnerView.js';
-
 export const claimsComponentObject = {
     props: ['claims'],
     subscriptions() {
@@ -43,6 +41,7 @@ export const claimsFormComponentObject = {
             showingNewclaims: false
         }
     },
+    inject: ['controller'],
     validations: {
         form: {
             description: {
@@ -56,6 +55,9 @@ export const claimsFormComponentObject = {
         blurDescription() {
             this.$v.form.description.$touch()
         },
+        blurOther() {
+            console.log("blured other!")
+        },
         showForm() {
             this.showingNewclaims = true;
         },
@@ -64,9 +66,10 @@ export const claimsFormComponentObject = {
             if (this.$v.form.$error) {
                 this.$q.notify("Please review fields again");
             } else {
-                controller.createClaim(this.form.description);
+                this.controller.createClaim(this.form.description);
                 this.showingNewclaims = false;
                 this.form.description = "";
+                this.form.other = "";
                 this.$v.$reset();
             }
         }
@@ -104,8 +107,9 @@ export const claimsFormComponentObject = {
                                 hint="Validation starts after first blur"
                                 label="Other data"
                                 counter
-                                rows="2"
                                 ref="other"
+                                @blur="blurOther"
+                                autocomplete=false
                             />
                         </div>
                         <div class="row">

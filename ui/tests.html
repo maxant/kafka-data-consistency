@@ -3,7 +3,12 @@
 <head>
     <title>KAYS Insurance TESTS</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+    <link rel="stylesheet" href="styles.css">
+    <!--<script src="./websocket.js"></script>-->
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.core.min.js"></script>
+    <!--<script src="https://unpkg.com/axios/dist/axios.min.js"></script>-->
 
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue-router@3.0.4/dist/vue-router.min.js"></script>
@@ -15,12 +20,18 @@
     <script src="https://cdn.jsdelivr.net/npm/vue-template-compiler@2.6.10/browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue-test-utils@1.0.0-beta.11/dist/vue-test-utils.umd.js"></script>
 
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons" rel="stylesheet" type="text/css">
+    <link href="https://cdn.jsdelivr.net/npm/ionicons@^4.0.0/dist/css/ionicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@^2.0.0/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/animate.css@^3.5.2/animate.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/quasar@1.0.0-beta.17/dist/quasar.min.css" rel="stylesheet" type="text/css">
+
     <link rel="stylesheet" href="https://code.jquery.com/qunit/qunit-2.9.2.css">
 
 </head>
 <body>
 
-<script src="https://cdn.jsdelivr.net/npm/quasar-framework@0.17.8/dist/umd/quasar.mat.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/quasar@1.0.0-beta.17/dist/quasar.umd.min.js"></script>
 
 <div id="qunit"></div>
 <div id="qunit-fixture"></div>
@@ -28,6 +39,8 @@
 
 <script type="module" src="./navigations.spec.js"></script>
 <script type="module" src="./claims.spec.js"></script>
+
+<div id="component"></div>
 
 </body>
 </html>

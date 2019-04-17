@@ -82,6 +82,10 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
   - useful link for validation: https://vuelidate.netlify.com/
   - useful link for vue-rxjs: https://github.com/vuejs/vue-rx
   - useful link for rxjs: https://www.learnrxjs.io/operators/creation/from.html
+  - useful tip: console.dir(document.getElementById("id")) => shows an object rather than the rendered element
+  - useful tip: document.getElementById("claims-form-other").__vue__ => gets the vue component
+  - useful tip: document.getElementById("claims-form-other").__vue__.$refs.input.focus() => set focus on it. not sure this is the correct way to do it tho!
+  - useful tip: document.getElementById("claims-form-other").__vue__.rules.map(function(f){return f(document.getElementById("claims-form-other").__vue__.$refs.input.value)}) => execute all internal validation rules on the component
   - my question: https://forum.quasar-framework.org/topic/3391/how-can-i-hide-a-column
 - example of error messages and e.g. security exceptions via error messages
 - fixme consumer.seekToEnd(asList(new TopicPartition(TASK_CREATED_EVENT_TOPIC, 0), new TopicPartition(CLAIM_CREATED_EVENT_TOPIC, 0)));
