@@ -1,5 +1,5 @@
-const shallow = vueTestUtils.shallow;
-const createLocalVue = vueTestUtils.createLocalVue;
+const shallowMount = VueTestUtils.shallowMount;
+const createLocalVue = VueTestUtils.createLocalVue;
 
 import {componentObject} from './navigations.js'
 
@@ -22,7 +22,7 @@ QUnit.test( "test navigations", function( assert ) {
                             title: "t2", name: "n2"
                         }]
 
-    wrapper = shallow(componentObject, {
+    wrapper = shallowMount(componentObject, {
         localVue,
         router,
         propsData: { navigations }

@@ -36,7 +36,7 @@ export const claimsFormComponentObject = {
         return  {
             form: {
                 description: "",
-                other: ""
+                summary: ""
             },
             showingNewclaims: false
         }
@@ -52,24 +52,18 @@ export const claimsFormComponentObject = {
         }
     },
     methods: {
-        blurDescription() {
-            this.$v.form.description.$touch()
-        },
-        blurOther() {
-            console.log("blured other!")
-        },
         showForm() {
             this.showingNewclaims = true;
         },
         createClaim() {
             this.$v.form.$touch();
-            if (this.$v.form.$error) {
+            if (this.$v.form.$error || !this.$refs.summary.validate()) {
                 this.$q.notify("Please review fields again");
             } else {
                 this.controller.createClaim(this.form.description);
                 this.showingNewclaims = false;
                 this.form.description = "";
-                this.form.other = "";
+                this.form.summary = "";
                 this.$v.$reset();
             }
         }
@@ -80,6 +74,22 @@ export const claimsFormComponentObject = {
                     <q-card-section>
                         <div class="row">
                             <q-input
+                                id="claims-form-summary"
+                                class="col-12"
+                                v-model="form.summary"
+                                :rules="[ val => !!val || '* Required',
+                                          val => val.length <= 20 || 'Please use maximum 20 character',
+                                        ]"
+                                lazy-rules
+                                hint="Validation starts after first blur because it's lazy"
+                                label="Summary"
+                                counter
+                                ref="summary"
+                                autocomplete="off"
+                            />
+                        </div>
+                        <div class="row">
+                            <q-input
                                 id="claims-form-description"
                                 class="col-8"
                                 required
@@ -88,29 +98,12 @@ export const claimsFormComponentObject = {
                                 label="Description"
                                 rows="4"
                                 ref="description"
-                                @blur="blurDescription"
+                                @blur="this.$v.form.description.$touch"
                                 :error="$v.form.description.$error"
                             />
                             <div class="col-4 error" v-if="$v.form.description.$dirty && !$v.form.description.required">Description is required</div>
                             <div class="col-4 error" v-else-if="$v.form.description.$dirty && !$v.form.description.minLength">Description must have at least {{$v.form.description.$params.minLength.min}} letters</div>
                             <div class="col-4 error" v-else-if="$v.form.description.$dirty && !$v.form.description.maxLength">Description must have at most {{$v.form.description.$params.maxLength.max}} letters</div>
-                        </div>
-                        <div class="row">
-                            <q-input
-                                id="claims-form-other"
-                                class="col-12"
-                                v-model="form.other"
-                                :rules="[ val => !!val || '* Required',
-                                          val => val.length < 2 || 'Please use maximum 1 character',
-                                        ]"
-                                lazy-rules
-                                hint="Validation starts after first blur"
-                                label="Other data"
-                                counter
-                                ref="other"
-                                @blur="blurOther"
-                                autocomplete=false
-                            />
                         </div>
                         <div class="row">
                             <q-btn label="create" id="claims-form-create" color="primary" @click="createClaim()" style="margin: 10px;"/>

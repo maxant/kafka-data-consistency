@@ -18,7 +18,9 @@
     <script src="https://cdn.jsdelivr.net/npm/vue-rx@6.1.0/dist/vue-rx.min.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/vue-template-compiler@2.6.10/browser.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vue-test-utils@1.0.0-beta.11/dist/vue-test-utils.umd.js"></script>
+    <script src="https://unpkg.com/@vue/test-utils@1.0.0-beta.29/dist/vue-test-utils.umd.js"></script>
+
+    <script src="https://unpkg.com/sinon@7.3.2/pkg/sinon-no-sourcemaps.js"></script>
 
     <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons" rel="stylesheet" type="text/css">
     <link href="https://cdn.jsdelivr.net/npm/ionicons@^4.0.0/dist/css/ionicons.min.css" rel="stylesheet">
@@ -31,16 +33,17 @@
 </head>
 <body>
 
-<script src="https://cdn.jsdelivr.net/npm/quasar@1.0.0-beta.17/dist/quasar.umd.min.js"></script>
-
+<div id="component"></div>
+<hr>
 <div id="qunit"></div>
 <div id="qunit-fixture"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/quasar@1.0.0-beta.17/dist/quasar.umd.min.js"></script>
+
 <script src="https://code.jquery.com/qunit/qunit-2.9.2.js"></script>
 
 <script type="module" src="./navigations.spec.js"></script>
 <script type="module" src="./claims.spec.js"></script>
-
-<div id="component"></div>
 
 </body>
 </html>
