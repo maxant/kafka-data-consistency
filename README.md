@@ -65,8 +65,6 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 - add context of "partner" to filter on websocket server side
 - finish build and run scripts
 - UI
-  - finish component test #2 and try out mocking stuff. describe why no need to have dependency injection, coz
-    we simply use import everywhere
   - use resolver to avoid async code => except eg using an observable for updating server auto complete
       - example with addresses from post.ch
   - add claim page to view details of a claim
@@ -87,6 +85,8 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
   - useful tip: document.getElementById("claims-form-other").__vue__.$refs.input.focus() => set focus on it. not sure this is the correct way to do it tho!
   - useful tip: document.getElementById("claims-form-other").__vue__.rules.map(function(f){return f(document.getElementById("claims-form-other").__vue__.$refs.input.value)}) => execute all internal validation rules on the component
   - my question: https://forum.quasar-framework.org/topic/3391/how-can-i-hide-a-column
+  - my question: https://forum.quasar-framework.org/topic/3437/unit-testing-and-simulating-input
+  - my question: https://forum.quasar-framework.org/topic/3438/form-validation
 - example of error messages and e.g. security exceptions via error messages
 - fixme consumer.seekToEnd(asList(new TopicPartition(TASK_CREATED_EVENT_TOPIC, 0), new TopicPartition(CLAIM_CREATED_EVENT_TOPIC, 0)));
 - add ES for search
@@ -131,6 +131,7 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 
 - why doesnt vue have dependency injection? not really needed. or maybe when we go to test? defo then! or maybe not,
   see example with "mocks"
+  - WRONG - it does exist. see `provide` and `inject` in `claims.js` and `partnerView.js`. mocking works then, see `claims.spec.js`.
 
 - observables => show example of the subscription to claims inside claims.js and
   how the template treats it as an object. v-for works as expected, but the thing
