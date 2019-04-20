@@ -6,9 +6,31 @@ Experiement with using Kafka and idempotency to garantee data consistency by cre
 
     wget https://www-eu.apache.org/dist/kafka/2.1.1/kafka_2.11-2.1.1.tgz
     tar -xzf kafka_2.11-2.1.1.tgz
-    echo kafka_2.11-2.1.1 >> .gitignore
+    #echo kafka_2.11-2.1.1 >> .gitignore
     rm kafka_2.11-2.1.1.tgz
-    git init
+    #git init
+
+## Kubernetes
+
+If necessary use the minikube docker host:
+
+    eval $(minikube docker-env)
+
+
+Run `./build.sh` after getting Kafka (see above).
+
+Create a namespace:
+
+    kubectl create -f namespace.json
+
+Create the Zookeeper service:
+
+    kubectl -n kafka-data-consistency apply -f zookeeper.yaml
+
+Create the Kafka service:
+
+    kubectl -n kafka-data-consistency apply -f kafka-1.yaml
+    kubectl -n kafka-data-consistency apply -f kafka-2.yaml
 
 ## Starting Kafka with docker
 
