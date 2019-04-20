@@ -10,8 +10,8 @@ echo  "" >>                 $file
 echo  "" >>                 $file
 echo  "# MAXANT CONFIG:" >> $file
 
-echo $ZOOKEEPER_HOST zookeeper >> /etc/hosts
-echo zookeeper.connect=zookeeper:2181 >> $file
+#echo $ZOOKEEPER_HOST zookeeper >> /etc/hosts
+echo zookeeper.connect=$ZOOKEEPER_HOST_PORT >> $file
 echo broker.id=$ID >>                          $file
 echo listeners=PLAINTEXT://:9092 >>            $file
 

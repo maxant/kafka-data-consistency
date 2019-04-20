@@ -6,6 +6,7 @@
 FROM maxant/kafkabase:latest
 
 COPY start-kafka.sh /
+RUN chmod +x /start-kafka.sh
 
 EXPOSE 9092
 

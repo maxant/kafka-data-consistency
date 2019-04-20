@@ -1,0 +1,38 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: kafka-1
+spec:
+  selector:
+    app: kafka-1
+  ports:
+  - name: tcp
+    protocol: TCP
+    port: 9092
+    targetPort: 9092
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-1 
+spec:
+  selector:
+    matchLabels:
+      app: kafka-1
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: kafka-1
+    spec:
+      containers:
+      - name: kafka-1
+        image: maxant/kafka
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 9092
+        env:
+        - name: ID
+          value: "1"
+        - name: ZOOKEEPER_HOST_PORT
+          value: "zookeeper.kafka-data-consistency:2181"
