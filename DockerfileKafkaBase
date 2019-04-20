@@ -9,3 +9,5 @@ COPY kafka_2.11-2.1.1 /kafka
 
 WORKDIR /kafka
 
+USER root
+
