@@ -15,7 +15,7 @@ echo zookeeper.connect=$ZOOKEEPER_HOST_PORT >> $file
 echo broker.id=$ID >>                          $file
 echo listeners=PLAINTEXT://:9092 >>            $file
 
-#hat vo set advertised.listeners, otherwise it doesnt work when inside docker
+#have to set advertised.listeners, otherwise it doesnt work when inside docker
 ip=$(hostname -I)
 #need to trim space at end of ip :-(
 #ip=${ip::-1}
