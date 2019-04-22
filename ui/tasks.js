@@ -4,9 +4,9 @@ Vue.component('tasks', {
         <div id="tasks" class="tile-group">
             Tasks<br>
             <div v-if="tasks.error" class="row">
-                <q-alert type="warning" class="q-mb-sm" icon="priority_high">
+                <q-banner type="warning" class="q-mb-sm" icon="priority_high">
                     {{tasks.error}}
-                </q-alert>
+                </q-banner>
             </div>
             <div v-else-if="tasks.loading" class="row"><q-spinner-hourglass size="32px"/></div>
             <div v-else-if="tasks.entities.length === 0" class="row"><i>No tasks</i></div>

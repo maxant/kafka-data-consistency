@@ -13,7 +13,7 @@ function createClaim(description, customerId) {
                 } else reject("Unexpected response code " + response.status);
             }).catch(function(call) {
                 console.error("Failed to create claim: " + JSON.stringify(call));
-                reject("Failed to create claim. See console for details. (" + call.response.status + ")");
+                reject("Failed to create claim. See console for details. (" + (call.response?call.response.status:"-") + ")");
             });
         }, 1000);
     });

@@ -4,6 +4,8 @@ Experiement with using Kafka and idempotency to garantee data consistency by cre
 
 ## Installing Kafka
 
+Kafka needs to be present to build a suitable docker image.
+
     wget https://www-eu.apache.org/dist/kafka/2.1.1/kafka_2.11-2.1.1.tgz
     tar -xzf kafka_2.11-2.1.1.tgz
     #echo kafka_2.11-2.1.1 >> .gitignore
@@ -16,23 +18,83 @@ If necessary use the minikube docker host:
 
     eval $(minikube docker-env)
 
-
 Run `./build.sh` after getting Kafka (see above).
 
 Create a namespace:
 
     kubectl create -f namespace.json
 
-Create the Zookeeper service:
+Delete existing, if necessary:
+
+    kubectl -n kafka-data-consistency delete deployment zookeeper
+    kubectl -n kafka-data-consistency service deployment zookeeper
+    kubectl -n kafka-data-consistency delete deployment kafka-1
+    kubectl -n kafka-data-consistency service deployment kafka-1
+    kubectl -n kafka-data-consistency delete deployment kafka-2
+    kubectl -n kafka-data-consistency service deployment kafka-2
+
+Create the Zookeeper and Kafka deployments and services:
 
     kubectl -n kafka-data-consistency apply -f zookeeper.yaml
-
-Create the Kafka service:
-
     kubectl -n kafka-data-consistency apply -f kafka-1.yaml
     kubectl -n kafka-data-consistency apply -f kafka-2.yaml
 
+Create topics:
+
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic claim-create-command
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic task-create-command
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic claim-created-event
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic task-created-event
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --list --zookeeper $(minikube ip):30000
+
+Open ports and set up forwing like this:
+
+    firewall-cmd --zone=public --permanent --add-port=30000/tcp
+    firewall-cmd --zone=public --permanent --add-port=30001/tcp
+    firewall-cmd --zone=public --permanent --add-port=30002/tcp
+    firewall-cmd --reload
+    firewall-cmd --list-all
+
+    socat TCP-LISTEN:30000,fork TCP:$(minikube ip):30000 &
+    socat TCP-LISTEN:30001,fork TCP:$(minikube ip):30001 &
+    socat TCP-LISTEN:30002,fork TCP:$(minikube ip):30002 &
+
+
+    #firewall-cmd --zone=public --permanent --add-port=30000/tcp
+
+E.g. run task service locally, but connecting to kube:
+
+    java -Xmx64M -Xms64M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 -jar web/target/web-microbundle.jar --port 8080 &
+    java -Xmx64M -Xms64M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8788 -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 -jar claims/target/claims-microbundle.jar --port 8081 &
+    java -Xmx64M -Xms64M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 -jar tasks/target/tasks-microbundle.jar --port 8082 &
+
+Useful Kube stuff:
+
+    kubectl describe nodes
+
+    # restart kube entirely, deleting everything
+    minikube stop
+    rm -rf ~/.minikube
+    minikube delete
+    minikube config set vm-driver kvm2
+    minikube start --memory 8192 --cpus 4
+    git clone https://github.com/kubernetes-incubator/metrics-server.git
+    cd metrics-server/
+    kubectl create -f deploy/1.8+/
+    minikube addons enable metrics-server
+    minikube dashboard &
+
+    # connect to the vm. eg. top and stuff to see whats going on inside.
+    minikube ssh
+
+    # create a deployment
+    kubectl run hello-minikube --image=k8s.gcr.io/echoserver:1.10 --port=8080
+    # create a service from a deployment
+    kubectl expose deployment hello-minikube --type=NodePort
+
 ## Starting Kafka with docker
+
+WARNING: this section may be slightly out of date!
 
 The generated `maxant/kafka` image uses a shell script to append important properties to the
 `config/server.properties` file in the container, so that it works.
@@ -86,6 +148,14 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 
 - add context of "partner" to filter on websocket server side
 - finish build and run scripts
+- dockerize ui, tasks, claims, web
+- add image for neo4j, orientdb, ES, kibana?
+
+create => 1x createTask, 1xCreateRelationShips
+
+hmmm think transactions. need to think how not to lose call to websocket when writing to neo4j or orientdb.
+
+
 - UI
   - use resolver to avoid async code => except eg using an observable for updating server auto complete
       - example with addresses from post.ch

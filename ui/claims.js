@@ -10,9 +10,9 @@ export const claimsComponentObject = {
             Claims<br>
             <claim-form />
             <div v-if="claims.error" class="row">
-                <q-alert type="warning" class="q-mb-sm" icon="priority_high">
+                <q-banner type="warning" class="q-mb-sm" icon="priority_high">
                     {{claims.error}}
-                </q-alert>
+                </q-banner>
             </div>
             <div v-else-if="claims.loading" class="row"><q-spinner-hourglass size="32px"/></div>
             <div v-else-if="entities.length === 0" class="row"><i>No claims</i></div>
