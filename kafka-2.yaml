@@ -5,11 +5,13 @@ metadata:
 spec:
   selector:
     app: kafka-2
+  type: NodePort
   ports:
   - name: tcp
     protocol: TCP
     port: 9093
     targetPort: 9093
+    nodePort: 30002
 ---
 apiVersion: apps/v1
 kind: Deployment

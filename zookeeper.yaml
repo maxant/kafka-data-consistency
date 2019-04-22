@@ -5,11 +5,13 @@ metadata:
 spec:
   selector:
     app: zookeeper
+  type: NodePort
   ports:
   - name: tcp
     protocol: TCP
     port: 2181
     targetPort: 2181
+    nodePort: 30000
 ---
 apiVersion: apps/v1
 kind: Deployment
