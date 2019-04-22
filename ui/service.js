@@ -1,11 +1,11 @@
 const from = rxjs.from;
 const map = rxjs.operators.map;
 
-function createClaim(description, customerId) {
+function createClaim(claim, customerId) {
     return new Promise(function (resolve, reject) {
         setTimeout(function(){ // so that demo shows "in progress" message
-            const claim = {"description": description, "customerId": customerId};
-            axios.post('http://localhost:8081/claims/rest/claims', claim)
+            const claim = {"summary": claim.summary, "description": claim.description, "customerId": customerId, "reserve": claim.reserve, "date": claim.date};
+            axios.post(CLAIMS_BASE_URL + 'CLAIMS_BASE_URLCLAIMS_BASE_URLTASKS_BASE_URLclaims', claim)
             .then(function(response) {
                 if(response.status === 202) {
                     console.log("claim creation request accepted");
@@ -20,13 +20,13 @@ function createClaim(description, customerId) {
 }
 
 function loadClaims() {
-    return from(axios.get('http://localhost:8081/claims/rest/claims'));
+    return from(axios.get(CLAIMS_BASE_URL + 'claims'));
 }
 
 function loadTasks() {
     return new Promise(function (resolve, reject) {
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'http://localhost:8082/tasks/rest/tasks', true);
+        xhr.open('GET', TASKS_BASE_URL + 'tasks', true);
         xhr.onreadystatechange = function() {
             if (xhr.readyState == XMLHttpRequest.DONE) {
                 if (xhr.status === 200) {

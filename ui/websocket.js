@@ -7,7 +7,7 @@
 var socket;
 
 function init() {
-    socket = new WebSocket("ws://localhost:8080/web/ws");
+    socket = new WebSocket("ws://" + UI_HOST_PORT + "/web/ws");
     socket.onmessage = onMessage;
     socket.onclose = onClose;
     socket.onerror = onError;

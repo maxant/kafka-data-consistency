@@ -32,14 +32,35 @@ Delete existing, if necessary:
     kubectl -n kafka-data-consistency service deployment kafka-1
     kubectl -n kafka-data-consistency delete deployment kafka-2
     kubectl -n kafka-data-consistency service deployment kafka-2
+    kubectl -n kafka-data-consistency service deployment elasticsearch
 
-Create the Zookeeper and Kafka deployments and services:
+Create deployments and services:
 
     kubectl -n kafka-data-consistency apply -f zookeeper.yaml
     kubectl -n kafka-data-consistency apply -f kafka-1.yaml
     kubectl -n kafka-data-consistency apply -f kafka-2.yaml
+    kubectl -n kafka-data-consistency apply -f elasticsearch.yaml
 
-Create topics:
+Open ports and set up forwing like this:
+
+    firewall-cmd --zone=public --permanent --add-port=30000/tcp
+    firewall-cmd --zone=public --permanent --add-port=30001/tcp
+    firewall-cmd --zone=public --permanent --add-port=30002/tcp
+    firewall-cmd --zone=public --permanent --add-port=30050/tcp
+    firewall-cmd --zone=public --permanent --add-port=30051/tcp
+    firewall-cmd --reload
+    firewall-cmd --list-all
+
+    socat TCP-LISTEN:30000,fork TCP:$(minikube ip):30000 &
+    socat TCP-LISTEN:30001,fork TCP:$(minikube ip):30001 &
+    socat TCP-LISTEN:30002,fork TCP:$(minikube ip):30002 &
+    socat TCP-LISTEN:30050,fork TCP:$(minikube ip):30050 &
+    socat TCP-LISTEN:30051,fork TCP:$(minikube ip):30051 &
+
+
+    #firewall-cmd --zone=public --permanent --add-port=30000/tcp
+
+Create topics (on minikube host):
 
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic claim-create-command
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic task-create-command
@@ -47,20 +68,82 @@ Create topics:
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic task-created-event
     kafka_2.11-2.1.1/bin/kafka-topics.sh --list --zookeeper $(minikube ip):30000
 
-Open ports and set up forwing like this:
+Create Elasticsearch index:
 
-    firewall-cmd --zone=public --permanent --add-port=30000/tcp
-    firewall-cmd --zone=public --permanent --add-port=30001/tcp
-    firewall-cmd --zone=public --permanent --add-port=30002/tcp
-    firewall-cmd --reload
-    firewall-cmd --list-all
+    curl -X DELETE "maxant.ch:30050/claims"
 
-    socat TCP-LISTEN:30000,fork TCP:$(minikube ip):30000 &
-    socat TCP-LISTEN:30001,fork TCP:$(minikube ip):30001 &
-    socat TCP-LISTEN:30002,fork TCP:$(minikube ip):30002 &
-
-
-    #firewall-cmd --zone=public --permanent --add-port=30000/tcp
+    curl -X PUT "maxant.ch:30050/claims" -H 'Content-Type: application/json' -d'
+    {
+        "settings" : {
+            "index" : {
+                "number_of_shards" : 1,
+                "number_of_replicas" : 1
+            },
+            "analysis": {
+                "filter": {
+                    "english_stop": {
+                        "type":       "stop",
+                        "stopwords":  "_english_"
+                    },
+                    "english_stemmer": {
+                        "type":       "stemmer",
+                        "language":   "english"
+                    },
+                    "german_stop": {
+                        "type":       "stop",
+                        "stopwords":  "_german_"
+                    },
+                    "german_stemmer": {
+                        "type":       "stemmer",
+                        "language":   "light_german"
+                    },
+                    "french_elision": {
+                        "type":         "elision",
+                        "articles_case": true,
+                        "articles": [
+                          "l", "m", "t", "qu", "n", "s",
+                          "j", "d", "c", "jusqu", "quoiqu",
+                          "lorsqu", "puisqu"
+                        ]
+                    },
+                    "french_stop": {
+                        "type":       "stop",
+                        "stopwords":  "_french_"
+                    },
+                    "french_stemmer": {
+                        "type":       "stemmer",
+                        "language":   "light_french"
+                    }
+                },
+                "analyzer": {
+                    "ants_analyzer": {
+                        "tokenizer": "standard",
+                        "filter": [
+                            "lowercase",
+                            "english_stop",
+                            "english_stemmer",
+                            "german_stop",
+                            "german_normalization",
+                            "german_stemmer",
+                            "french_elision",
+                            "french_stop",
+                            "french_stemmer"
+                        ]
+                    }
+                }
+            }
+        },
+        "mappings" : {
+            "properties": {
+                "customerId": { "type": "keyword" },
+                "summary": { "type": "text", "analyzer": "ants_analyzer" },
+                "description": { "type": "text", "analyzer": "ants_analyzer" },
+                "reserve": { "type": "double" },
+                "date": { "type": "date", "format": "strict_date" }
+            }
+        }
+    }
+    '
 
 E.g. run task service locally, but connecting to kube:
 
@@ -106,8 +189,6 @@ Run `./build.sh` which builds images for Zookeeper and Kafka
 
 Run `./run.sh` which starts Zookeeper and two Kafka brokers with IDs 1 and 2,
 listening on ports 9091 and 9092 respectively.
-
-This script passes the Zookeeper
 
 This script also shows how to append the hosts file so that service names can
 be used by applications, but it requires the user to `sudo`. It also contains
@@ -155,7 +236,8 @@ create => 1x createTask, 1xCreateRelationShips
 
 hmmm think transactions. need to think how not to lose call to websocket when writing to neo4j or orientdb.
 
-
+- ES
+  - set index types in ES?
 - UI
   - use resolver to avoid async code => except eg using an observable for updating server auto complete
       - example with addresses from post.ch
@@ -232,3 +314,77 @@ hmmm think transactions. need to think how not to lose call to websocket when wr
   to a service obserable but manually put them into the subject by calling next. can we improve that?
 
 - async route loading via custom loader since vue supports creating routes with promises
+
+# Useful Elasticsearch stuff:
+
+- Info about indices
+
+    curl -X GET "maxant.ch:30050/_cat/indices?v"
+
+    health status index  uuid                   pri rep docs.count docs.deleted store.size pri.store.size
+    yellow open   claims 5SY5zm3bRxCgeTAac4wazQ   1   1          1            0      6.2kb          6.2kb
+
+- Create and index a document:
+
+    curl -X PUT "maxant.ch:30050/claims/_doc/b5565b5c-ab65-4e00-b562-046e0d5bef70?pretty" -H 'Content-Type: application/json' -d'
+    {
+        "id" : "b5565b5c-ab65-4e00-b562-046e0d5bef70",
+        "summary" : "the cat ate the frog",
+        "description" : "L\u0027avion volé à Paris mit 2 Hünde an bord, and arrived in two hours flat!",
+        "customerId" : "C-1234-5678",
+        "date" : "2018-08-01",
+        "reserve" : 9100.05
+    }
+    '
+
+- Pretty print a regexp query (note `?pretty`):
+
+    curl -X GET "maxant.ch:30050/claims/_search?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "regexp" : { "description" : ".*m\u0027avion.*" } } }'
+
+NOTE that a regexp query does not use analyzers!!
+
+- field types: https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html
+
+- analyse an analyzer:
+
+    curl -X POST "maxant.ch:30050/claims/_analyze?pretty" -H 'Content-Type: application/json' -d'
+    {
+      "analyzer": "ants_analyzer",
+      "text": "L\u0027avion volé à Paris mit 2 Hünde an bord, and arrived in two hours flat!"
+    }
+    '
+
+- Or to analyse how a field might match:
+
+    curl -X POST "maxant.ch:30050/claims/_analyze?pretty" -H 'Content-Type: application/json' -d'
+    {
+      "field": "description",
+      "text": "arrives"
+    }
+    '
+
+- Try these two matches queries:
+
+    curl -X GET "maxant.ch:30050/claims/_search?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "match" : { "description" : "*arrives*" } } }'
+    curl -X GET "maxant.ch:30050/claims/_search?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "match" : { "description" : "m\u0027avion" } } }'
+
+The first matches even though the record contains "arrived". The second matches `m'avion` rather than `L'avion` in the document.
+
+- keyword query:
+
+    curl -X GET "maxant.ch:30050/claims/_search?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "match" : { "customerId" : "C-1234-5678" } } }'
+
+- count:
+
+    curl -X GET "maxant.ch:30050/claims/_count?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "match" : { "customerId" : "C-1234-5678" } } }'
+
+- range query:
+
+    curl -X GET "maxant.ch:30050/claims/_search?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "range" : { "reserve" : {"gt": 9000 } } } }'
+
+## Links
+
+- ES 7.0 REST High Level Client Javadocs: https://artifacts.elastic.co/javadoc/org/elasticsearch/client/elasticsearch-rest-high-level-client/7.0.0/index-all.html
+- Generic Reference: https://www.elastic.co/guide/en/elasticsearch/reference/current/getting-started-query-document.html
+- Java Client: https://www.elastic.co/guide/en/elasticsearch/client/java-rest/current/java-rest-high-count.html
+

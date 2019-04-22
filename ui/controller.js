@@ -77,14 +77,14 @@ export class Controller {
     }
 
     // example implemented with async await
-    async createClaim(description) {
+    async createClaim(claim) {
         const store = this[_store];
         const model = this[_model];
 
         // get the current list, add a temporary entry and then put that array into the observable to update the view
         const claims = model.claims.entities$.getValue();
         claims.push({
-            description: description,
+            summary: claim.summary,
             temp: true
         });
         model.claims.entities$.next(claims);
@@ -92,7 +92,7 @@ export class Controller {
         store.updateHistory("creating claim...");
 
         try {
-            await service.createClaim(description, model.partner.entity.id);
+            await service.createClaim(claim, model.partner.entity.id);
         } catch (error) {
             model.claims.error = error;
             store.updateHistory("error creating claim: " + error);

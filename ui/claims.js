@@ -20,8 +20,8 @@ export const claimsComponentObject = {
                 <div v-for="claim in entities" class="col-xs-12 col-sm-12 col-md-12 col-lg-6">
                     <div class="tile">
                         <div class='tile-title'><i class='fas fa-exclamation-circle'></i>&nbsp;Claim</div>
-                        <div v-if="claim.temp" class='tile-body'><i>in progress...</i><br>{{claim.description}}</div>
-                        <div v-else class='tile-body'><i>{{claim.id}}</i><br>{{claim.description}}</div>
+                        <div v-if="claim.temp" class='tile-body'><i>in progress...</i><br>{{claim.summary}}</div>
+                        <div v-else class='tile-body'><i>{{claim.id}}</i><br>{{claim.summary}}<br>{{claim.description}}<br>{{claim.reserve}}<br>{{claim.date}}</div>
                     </div>
                 </div>
             </div>
@@ -29,15 +29,21 @@ export const claimsComponentObject = {
     `
 };
 
+function buildEmptyClaim(){
+    return {
+       description: "",
+       summary: ""
+       reserve: 1000.0,
+       date: new Date()
+    };
+}
+
 Vue.component('claims', claimsComponentObject);
 
 export const claimsFormComponentObject = {
     data() {
         return  {
-            form: {
-                description: "",
-                summary: ""
-            },
+            form: buildEmptyClaim(),
             showingNewclaims: false
         }
     },
@@ -60,10 +66,9 @@ export const claimsFormComponentObject = {
             if (this.$v.form.$error || !this.$refs.summary.validate()) {
                 this.$q.notify("Please review fields again");
             } else {
-                this.controller.createClaim(this.form.description);
+                this.controller.createClaim(this.form);
                 this.showingNewclaims = false;
-                this.form.description = "";
-                this.form.summary = "";
+                this.form = buildEmptyClaim();
                 this.$v.$reset();
             }
         }
@@ -87,6 +92,12 @@ export const claimsFormComponentObject = {
                                 ref="summary"
                                 autocomplete="off"
                             />
+                        </div>
+                        <div class="row">
+                        TODO set reserve
+                        </div>
+                        <div class="row">
+                        TODO date
                         </div>
                         <div class="row">
                             <q-input

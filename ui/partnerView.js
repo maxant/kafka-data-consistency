@@ -45,8 +45,8 @@ export const PartnerView = {
     methods: {
         showMenu() { return !this.$q.screen.xs && !this.$q.screen.sm; },
         clearData() {
-            axios.delete('http://localhost:8081/claims/rest/claims');
-            axios.delete('http://localhost:8082/tasks/rest/tasks');
+            axios.delete(CLAIMS_BASE_URL + 'claims');
+            axios.delete(TASKS_BASE_URL + 'tasks');
             console.log("data is being cleared");
         },
         init() {
