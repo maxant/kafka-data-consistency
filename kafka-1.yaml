@@ -38,3 +38,5 @@ spec:
           value: "1"
         - name: ZOOKEEPER_HOST_PORT
           value: "zookeeper.kafka-data-consistency:2181"
+        - name: ADVERTISED_LISTENER_HOST_PORT
+          value: "maxant.ch:30001"
