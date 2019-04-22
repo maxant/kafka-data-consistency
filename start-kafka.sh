@@ -13,14 +13,15 @@ echo  "# MAXANT CONFIG:" >> $file
 #echo $ZOOKEEPER_HOST zookeeper >> /etc/hosts
 echo zookeeper.connect=$ZOOKEEPER_HOST_PORT >> $file
 echo broker.id=$ID >>                          $file
-echo listeners=PLAINTEXT://:9092 >>            $file
 
-#have to set advertised.listeners, otherwise it doesnt work when inside docker
 ip=$(hostname -I)
 #need to trim space at end of ip :-(
-#ip=${ip::-1}
+#doesnt seem to be an issue when building on centos, which is weird! => ip=${ip::-1}
+echo listeners=PLAINTEXT://${ip%?}:9092 >>            $file
+
+#have to set advertised.listeners for hosts that are no in same network. but kafka seems to use this address when connecting brokers. 
 echo "own ip address: ::$ip::"
-echo advertised.listeners=PLAINTEXT://${ip%?}:9092 >> $file
+echo advertised.listeners=PLAINTEXT://$ADVERTISED_LISTENER_HOST_PORT >> $file
 
 echo "log4j.rootLogger=DEBUG, stdout, kafkaAppender" >> /kafka/config/log4j.properties
 

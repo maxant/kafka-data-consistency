@@ -9,8 +9,8 @@ spec:
   ports:
   - name: tcp
     protocol: TCP
-    port: 9093
-    targetPort: 9093
+    port: 9092
+    targetPort: 9092
     nodePort: 30002
 ---
 apiVersion: apps/v1
@@ -32,9 +32,12 @@ spec:
         image: maxant/kafka
         imagePullPolicy: Never
         ports:
-        - containerPort: 9093
+        - containerPort: 9092
         env:
         - name: ID
           value: "2"
         - name: ZOOKEEPER_HOST_PORT
           value: "zookeeper.kafka-data-consistency:2181"
+        - name: ADVERTISED_LISTENER_HOST_PORT
+          value: "maxant.ch:30002"
+
