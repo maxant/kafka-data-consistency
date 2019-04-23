@@ -34,7 +34,8 @@ import static javax.ejb.ConcurrencyManagementType.CONTAINER;
 @Startup
 public class KafkaAdapter implements Runnable {
 
-    public static final String CLAIM_CREATE_COMMAND_TOPIC = "claim-create-command";
+    public static final String CLAIM_CREATE_DB_COMMAND_TOPIC = "claim-create-db-command";
+    public static final String CLAIM_CREATE_SEARCH_COMMAND_TOPIC = "claim-create-search-command";
 
     public static final String TASK_CREATE_COMMAND_TOPIC = "task-create-command";
 
@@ -57,6 +58,9 @@ public class KafkaAdapter implements Runnable {
     ClaimRepository claimRepository;
 
     @Inject
+    ElasticSearchAdapter elasticSearchAdapter;
+
+    @Inject
     ObjectMapper objectMapper;
 
     @PostConstruct
@@ -74,7 +78,7 @@ public class KafkaAdapter implements Runnable {
         props.put("enable.auto.commit", "true");
         props.put("auto.commit.interval.ms", "1000");
         consumer = new KafkaConsumer<>(props, new StringDeserializer(), new StringDeserializer());
-        consumer.subscribe(asList(CLAIM_CREATE_COMMAND_TOPIC));
+        consumer.subscribe(asList(CLAIM_CREATE_DB_COMMAND_TOPIC, CLAIM_CREATE_SEARCH_COMMAND_TOPIC));
 
         executorService.submit(this);
     }
@@ -114,13 +118,23 @@ public class KafkaAdapter implements Runnable {
                 try {
                     Claim claim = objectMapper.readValue(r.value(), Claim.class);
 
-                    // create in our DB
-                    claimRepository.createClaim(claim);
+                    if(CLAIM_CREATE_DB_COMMAND_TOPIC.equals(r.topic())) {
+                        // create in our DB
+                        claimRepository.createClaim(claim);
 
-                    // inform UI. note having to use a transaction and the lock to publish. alternatively, use a difference producer instance.
-                    self().sendInOneTransaction(singletonList(new ProducerRecord<>(CLAIM_CREATED_EVENT_TOPIC, claim.getId())));
-                } catch (IOException e) {
-                    e.printStackTrace(); // TODO handle better => this causes data loss. rolling back all is also a problem. need to filter this out to a place which admin can investigate
+                        // inform UI. note having to use a transaction and the lock to publish. alternatively, use a difference producer instance.
+                        self().sendInOneTransaction(singletonList(new ProducerRecord<>(CLAIM_CREATED_EVENT_TOPIC, claim.getId())));
+                    } else if(CLAIM_CREATE_SEARCH_COMMAND_TOPIC.equals(r.topic())) {
+                        // create in Elastic. No need to send record to UI.
+                        elasticSearchAdapter.createClaim(claim);
+                    } else {
+                        System.err.println("received record from unexpected topic " + r.topic() + ": " + r.value());
+                    }
+                } catch (Exception e) {
+                    // TODO handle better => this causes data loss.
+                    //  rolling back all is also a problem, as successful ones will be replayed.
+                    //  need to filter this out to a place which admin can investigate
+                    e.printStackTrace();
                 }
             }
             consumer.commitSync();

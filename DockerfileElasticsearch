@@ -1,0 +1,7 @@
+# docker build -f DockerfileElasticsearch -t maxant/elasticsearch .
+# docker run --name elasticsearch maxant/elasticsearch &
+
+FROM elasticsearch:7.0.0
+
+RUN echo http.cors.enabled: true   > /usr/share/elasticsearch/config/elasticsearch.yml
+RUN echo http.cors.allow-origin: * > /usr/share/elasticsearch/config/elasticsearch.yml

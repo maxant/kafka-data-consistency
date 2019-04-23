@@ -41,28 +41,61 @@ Create deployments and services:
     kubectl -n kafka-data-consistency apply -f kafka-2.yaml
     kubectl -n kafka-data-consistency apply -f elasticsearch.yaml
 
-Open ports and set up forwing like this:
+Open ports like this:
 
+    # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092
     firewall-cmd --zone=public --permanent --add-port=30000/tcp
     firewall-cmd --zone=public --permanent --add-port=30001/tcp
     firewall-cmd --zone=public --permanent --add-port=30002/tcp
-    firewall-cmd --zone=public --permanent --add-port=30050/tcp
-    firewall-cmd --zone=public --permanent --add-port=30051/tcp
     firewall-cmd --reload
     firewall-cmd --list-all
 
+Setup forwarding like this:
+
+    # zookeeper, kafka_1, kafka_2, elasticsearch, elasticsearch
     socat TCP-LISTEN:30000,fork TCP:$(minikube ip):30000 &
     socat TCP-LISTEN:30001,fork TCP:$(minikube ip):30001 &
     socat TCP-LISTEN:30002,fork TCP:$(minikube ip):30002 &
     socat TCP-LISTEN:30050,fork TCP:$(minikube ip):30050 &
     socat TCP-LISTEN:30051,fork TCP:$(minikube ip):30051 &
 
+Update nginx with a file under vhosts like this:
 
-    #firewall-cmd --zone=public --permanent --add-port=30000/tcp
+    #
+    # created by ant, 20190423
+    #
+
+      # ############################################################
+      # kdc.elasticsearch.maxant.ch
+      # ############################################################
+
+      server {
+        listen 80;
+
+        server_name kdc.elasticsearch.maxant.ch;
+        location / {
+            proxy_pass http://localhost:30050/;
+        }
+      }
+
+      # ############################################################
+      # minikube.maxant.ch - dashboard
+      # ############################################################
+
+      server {
+        listen 80;
+
+        server_name minikube.maxant.ch;
+        location / {
+            # uses socat port, so that we dont need to mess around with nginx if we have to restart the dashboard
+            proxy_pass http://127.0.0.1:40000/api/v1/namespaces/kube-system/services/http:kubernetes-dashboard:/proxy/;
+        }
+      }
 
 Create topics (on minikube host):
 
-    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic claim-create-command
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic claim-create-db-command
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic claim-create-search-command
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic task-create-command
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic claim-created-event
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic task-created-event
@@ -70,9 +103,9 @@ Create topics (on minikube host):
 
 Create Elasticsearch index:
 
-    curl -X DELETE "maxant.ch:30050/claims"
+    curl -X DELETE "kdc.elasticsearch.maxant.ch/claims"
 
-    curl -X PUT "maxant.ch:30050/claims" -H 'Content-Type: application/json' -d'
+    curl -X PUT "kdc.elasticsearch.maxant.ch/claims" -H 'Content-Type: application/json' -d'
     {
         "settings" : {
             "index" : {
@@ -166,6 +199,8 @@ Useful Kube stuff:
     kubectl create -f deploy/1.8+/
     minikube addons enable metrics-server
     minikube dashboard &
+    # make sure you note the port, and then run this, replacing the XXXXX from the output of the dashboard:
+    socat TCP-LISTEN:40000,fork TCP:127.0.0.1:53885 &
 
     # connect to the vm. eg. top and stuff to see whats going on inside.
     minikube ssh
@@ -230,15 +265,11 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 - add context of "partner" to filter on websocket server side
 - finish build and run scripts
 - dockerize ui, tasks, claims, web
-- add image for neo4j, orientdb, ES, kibana?
-
-create => 1x createTask, 1xCreateRelationShips
-
-hmmm think transactions. need to think how not to lose call to websocket when writing to neo4j or orientdb.
-
-- ES
-  - set index types in ES?
+- add image for neo4j, orientdb, kibana?
+- set memory to be lower for ES inside kibana?
+- still need to think about transaction when writing to own DB and informing UI that a change took place. maybe use CDC?
 - UI
+  - fix tests. add date and reserve as float
   - use resolver to avoid async code => except eg using an observable for updating server auto complete
       - example with addresses from post.ch
   - add claim page to view details of a claim
@@ -319,14 +350,14 @@ hmmm think transactions. need to think how not to lose call to websocket when wr
 
 - Info about indices
 
-    curl -X GET "maxant.ch:30050/_cat/indices?v"
+    curl -X GET "kdc.elasticsearch.maxant.ch/_cat/indices?v"
 
     health status index  uuid                   pri rep docs.count docs.deleted store.size pri.store.size
     yellow open   claims 5SY5zm3bRxCgeTAac4wazQ   1   1          1            0      6.2kb          6.2kb
 
 - Create and index a document:
 
-    curl -X PUT "maxant.ch:30050/claims/_doc/b5565b5c-ab65-4e00-b562-046e0d5bef70?pretty" -H 'Content-Type: application/json' -d'
+    curl -X PUT "kdc.elasticsearch.maxant.ch/claims/_doc/b5565b5c-ab65-4e00-b562-046e0d5bef70?pretty" -H 'Content-Type: application/json' -d'
     {
         "id" : "b5565b5c-ab65-4e00-b562-046e0d5bef70",
         "summary" : "the cat ate the frog",
@@ -339,7 +370,7 @@ hmmm think transactions. need to think how not to lose call to websocket when wr
 
 - Pretty print a regexp query (note `?pretty`):
 
-    curl -X GET "maxant.ch:30050/claims/_search?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "regexp" : { "description" : ".*m\u0027avion.*" } } }'
+    curl -X GET "kdc.elasticsearch.maxant.ch/claims/_search?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "regexp" : { "description" : ".*m\u0027avion.*" } } }'
 
 NOTE that a regexp query does not use analyzers!!
 
@@ -347,7 +378,7 @@ NOTE that a regexp query does not use analyzers!!
 
 - analyse an analyzer:
 
-    curl -X POST "maxant.ch:30050/claims/_analyze?pretty" -H 'Content-Type: application/json' -d'
+    curl -X POST "kdc.elasticsearch.maxant.ch/claims/_analyze?pretty" -H 'Content-Type: application/json' -d'
     {
       "analyzer": "ants_analyzer",
       "text": "L\u0027avion volé à Paris mit 2 Hünde an bord, and arrived in two hours flat!"
@@ -356,7 +387,7 @@ NOTE that a regexp query does not use analyzers!!
 
 - Or to analyse how a field might match:
 
-    curl -X POST "maxant.ch:30050/claims/_analyze?pretty" -H 'Content-Type: application/json' -d'
+    curl -X POST "kdc.elasticsearch.maxant.ch/claims/_analyze?pretty" -H 'Content-Type: application/json' -d'
     {
       "field": "description",
       "text": "arrives"
@@ -365,22 +396,22 @@ NOTE that a regexp query does not use analyzers!!
 
 - Try these two matches queries:
 
-    curl -X GET "maxant.ch:30050/claims/_search?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "match" : { "description" : "*arrives*" } } }'
-    curl -X GET "maxant.ch:30050/claims/_search?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "match" : { "description" : "m\u0027avion" } } }'
+    curl -X GET "kdc.elasticsearch.maxant.ch/claims/_search?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "match" : { "description" : "*arrives*" } } }'
+    curl -X GET "kdc.elasticsearch.maxant.ch/claims/_search?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "match" : { "description" : "m\u0027avion" } } }'
 
 The first matches even though the record contains "arrived". The second matches `m'avion` rather than `L'avion` in the document.
 
 - keyword query:
 
-    curl -X GET "maxant.ch:30050/claims/_search?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "match" : { "customerId" : "C-1234-5678" } } }'
+    curl -X GET "kdc.elasticsearch.maxant.ch/claims/_search?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "match" : { "customerId" : "C-1234-5678" } } }'
 
 - count:
 
-    curl -X GET "maxant.ch:30050/claims/_count?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "match" : { "customerId" : "C-1234-5678" } } }'
+    curl -X GET "kdc.elasticsearch.maxant.ch/claims/_count?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "match" : { "customerId" : "C-1234-5678" } } }'
 
 - range query:
 
-    curl -X GET "maxant.ch:30050/claims/_search?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "range" : { "reserve" : {"gt": 9000 } } } }'
+    curl -X GET "kdc.elasticsearch.maxant.ch/claims/_search?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "range" : { "reserve" : {"gt": 9000 } } } }'
 
 ## Links
 

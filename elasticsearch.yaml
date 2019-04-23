@@ -34,7 +34,7 @@ spec:
     spec:
       containers:
       - name: elasticsearch
-        image: elasticsearch:7.0.0
+        image: maxant/elasticsearch
         ports:
         - containerPort: 9200
         - containerPort: 9300
