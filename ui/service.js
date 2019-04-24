@@ -1,11 +1,11 @@
 const from = rxjs.from;
 const map = rxjs.operators.map;
 
-function createClaim(claim, customerId) {
+function createClaim(form, customerId) {
     return new Promise(function (resolve, reject) {
         setTimeout(function(){ // so that demo shows "in progress" message
-            const claim = {"summary": claim.summary, "description": claim.description, "customerId": customerId, "reserve": claim.reserve, "date": claim.date};
-            axios.post(CLAIMS_BASE_URL + 'CLAIMS_BASE_URLCLAIMS_BASE_URLTASKS_BASE_URLclaims', claim)
+            const claim = {"summary": form.summary, "description": form.description, "customerId": customerId, "reserve": form.reserve, "date": form.date.toISOString().substr(0, 10)};
+            axios.post(CLAIMS_BASE_URL + 'claims', claim)
             .then(function(response) {
                 if(response.status === 202) {
                     console.log("claim creation request accepted");

@@ -10,7 +10,6 @@ export const controller = new Controller(store, model);
 
 function buildNavigations() {
     return [
-        { title: 'home',   name: 'home',   params: {} },
         { title: 'search', name: 'search', params: {} },
         { title: 'lazy',   name: 'lazy',   params: {} },
     ];
@@ -29,9 +28,9 @@ export const PartnerView = {
         this.$parent.$on("claim-created-event", function() {
             controller.loadClaims();
         });
-        this.init();
+        return this.init(); // TODO is return statement used? doesnt seem necessary...
     },
-    subscriptions(){ // used by vue-rxjs
+    subscriptions() { // used by vue-rxjs
         const el = document.body;
         const time = new rxjs.Subject();
         setInterval(function(){time.next(new Date().toTimeString().substr(0,8))}, 1000);

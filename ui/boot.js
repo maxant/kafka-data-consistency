@@ -7,24 +7,23 @@ import {} from './navigations.js';
 import {} from './ruler.js';
 
 import {PartnerView} from './partnerView.js';
+import {SearchView} from './searchView.js';
 
 Vue.use(VueRouter);
 Vue.use(vuelidate.default);
 Vue.use(VueRx);
 
-const HomeView = { template: `<router-link :to="{ name: 'partner', params: { id: 'C-4837-4536' }}">view partner</router-link>` };
-
-const SearchView = { template: '<div>TODO</div>' };
+const ClaimView = { template: `<div>TODO show screen for claim {{$route.params.id}}</div>` };
 
 const LazyView = () => lazyImport("./lazy.js")
 
 const router = new VueRouter({
     routes: [
-        { path: '/',            name: 'home',    component: HomeView     },
         { path: '/search',      name: 'search',  component: SearchView   },
         { path: '/partner/:id', name: 'partner', component: PartnerView  },
         { path: '/lazy',        name: 'lazy',    component: LazyView     },
-        { path: '*',            redirect: '/' }
+        { path: '/claim/:id',   name: 'claim',   component: ClaimView    },
+        { path: '*',            redirect: '/search' }
     ]
 });
 

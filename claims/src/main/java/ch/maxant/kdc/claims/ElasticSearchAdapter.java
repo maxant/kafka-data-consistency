@@ -40,16 +40,20 @@ public class ElasticSearchAdapter {
 
     @PostConstruct
     public void init() {
-        String host = properties.getProperty("elasticsearch.host");
-        String port = properties.getProperty("elasticsearch.port");
+        String baseurl = properties.getProperty("elasticsearch.baseUrl");
 
-        // for a proper test we'd add a list of hosts here, and use https rather than http
-        client = new RestHighLevelClient(RestClient.builder(new HttpHost(host, Integer.parseInt(port), "http")));
+        // for prod we'd add a list of hosts here, and use https rather than http
+        client = new RestHighLevelClient(RestClient.builder(HttpHost.create(baseurl)));
     }
 
     @PreDestroy
-    public void shutdown() throws IOException {
-        client.close();
+    public void shutdown() {
+        try {
+            client.close();
+        } catch (IOException e) {
+            System.err.println("error during closing of elasticsearch client");
+            e.printStackTrace(); // TODO error handling
+        }
     }
 
     public void createClaim(Claim claim) {

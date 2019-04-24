@@ -27,12 +27,13 @@ Create a namespace:
 Delete existing, if necessary:
 
     kubectl -n kafka-data-consistency delete deployment zookeeper
-    kubectl -n kafka-data-consistency service deployment zookeeper
+    kubectl -n kafka-data-consistency delete service zookeeper
     kubectl -n kafka-data-consistency delete deployment kafka-1
-    kubectl -n kafka-data-consistency service deployment kafka-1
+    kubectl -n kafka-data-consistency delete service kafka-1
     kubectl -n kafka-data-consistency delete deployment kafka-2
-    kubectl -n kafka-data-consistency service deployment kafka-2
-    kubectl -n kafka-data-consistency service deployment elasticsearch
+    kubectl -n kafka-data-consistency delete service kafka-2
+    kubectl -n kafka-data-consistency delete deployment elasticsearch
+    kubectl -n kafka-data-consistency delete service elasticsearch
 
 Create deployments and services:
 
@@ -180,9 +181,9 @@ Create Elasticsearch index:
 
 E.g. run task service locally, but connecting to kube:
 
-    java -Xmx64M -Xms64M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 -jar web/target/web-microbundle.jar --port 8080 &
-    java -Xmx64M -Xms64M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8788 -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 -jar claims/target/claims-microbundle.jar --port 8081 &
-    java -Xmx64M -Xms64M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 -jar tasks/target/tasks-microbundle.jar --port 8082 &
+    java -Xmx128M -Xms128M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 -jar web/target/web-microbundle.jar --port 8080 &
+    java -Xmx128M -Xms128M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8788 -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 -Delasticsearch.baseUrl=kdc.elasticsearch.maxant.ch -jar claims/target/claims-microbundle.jar --port 8081 &
+    java -Xmx128M -Xms128M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 -jar tasks/target/tasks-microbundle.jar --port 8082 &
 
 Useful Kube stuff:
 
@@ -269,6 +270,8 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 - set memory to be lower for ES inside kibana?
 - still need to think about transaction when writing to own DB and informing UI that a change took place. maybe use CDC?
 - UI
+  - turn actual claim widget into its own component, with optional param to display fields
+  - move claim form to own view
   - fix tests. add date and reserve as float
   - use resolver to avoid async code => except eg using an observable for updating server auto complete
       - example with addresses from post.ch
@@ -409,9 +412,9 @@ The first matches even though the record contains "arrived". The second matches 
 
     curl -X GET "kdc.elasticsearch.maxant.ch/claims/_count?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "match" : { "customerId" : "C-1234-5678" } } }'
 
-- range query:
+- range query, in ALL indexes:
 
-    curl -X GET "kdc.elasticsearch.maxant.ch/claims/_search?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "range" : { "reserve" : {"gt": 9000 } } } }'
+    curl -X GET "kdc.elasticsearch.maxant.ch/_all/_search?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "range" : { "reserve" : {"gt": 9000 } } } }'
 
 ## Links
 

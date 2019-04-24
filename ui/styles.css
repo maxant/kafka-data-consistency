@@ -51,3 +51,7 @@ h2 {
 .error {
     color: var(--q-color-negative);
 }
+
+.centred {
+    text-align: center;
+}

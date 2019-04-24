@@ -12,9 +12,9 @@ QUnit.test( "test navigations", function( assert ) {
     // setup
     const localVue = createLocalVue()
     localVue.use(VueRouter)
-    const router = new VueRouter({ routes: [{ name: "home", path: '/'   },
-                                            { name: 'n1',   path: '/n1' },
-                                            { name: 'n2',   path: '/n2' }]
+    const router = new VueRouter({ routes: [{ name: "search", path: '/'   },
+                                            { name: 'n1',     path: '/n1' },
+                                            { name: 'n2',     path: '/n2' }]
                                 })
     const navigations = [{
                             title: "t1", name: "n1"
@@ -34,8 +34,8 @@ QUnit.test( "test navigations", function( assert ) {
     assert.ok( wrapper.html().indexOf("t2") > -1, "t2 present")
 
     // check clicking
-    wrapper.vm.$router.push({name: "home"}) // initial setup
-    assert.equal(wrapper.vm.$router.currentRoute.name, "home", "router is home");
+    wrapper.vm.$router.push({name: "search"}) // initial setup
+    assert.equal(wrapper.vm.$router.currentRoute.name, "search", "router is search");
     click("n1")
     assert.ok(wrapper.vm.$router.currentRoute.name === "n1", "router is n1");
     click("n2")
