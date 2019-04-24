@@ -35,9 +35,11 @@ spec:
       containers:
       - name: elasticsearch
         image: maxant/elasticsearch
+        imagePullPolicy: Never
         ports:
         - containerPort: 9200
         - containerPort: 9300
         env:
         - name: discovery.type
           value: "single-node"
+
