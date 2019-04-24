@@ -6,7 +6,6 @@
 
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
     <link rel="stylesheet" href="styles.css">
-    <script src="./websocket.js"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.core.min.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
@@ -31,7 +30,9 @@
         const CLAIMS_BASE_URL = 'http://localhost:8081/claims/rest/';
         const TASKS_BASE_URL =  'http://localhost:8082/tasks/rest/';
         const UI_HOST_PORT = 'localhost:8080';
+        const ELASTIC_BASE_URL = 'http://kdc.elasticsearch.maxant.ch/';
     </script>
+    <script src="./websocket.js"></script>
 
     <script type="module" src="./boot.js"></script>
 </head>

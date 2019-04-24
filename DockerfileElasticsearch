@@ -3,11 +3,10 @@
 
 FROM elasticsearch:7.0.0
 
-RUN echo http.cors.enabled: true     >> /usr/share/elasticsearch/config/elasticsearch.yml
+RUN echo http.cors.enabled: true       >> /usr/share/elasticsearch/config/elasticsearch.yml
 RUN echo http.cors.allow-origin: \"*\" >> /usr/share/elasticsearch/config/elasticsearch.yml
 
 #https://www.elastic.co/guide/en/elasticsearch/reference/current/heap-size.html
 RUN echo -Xms256M >> /usr/share/elasticsearch/config/jvm.options
 RUN echo -Xmx256M >> /usr/share/elasticsearch/config/jvm.options
-
 

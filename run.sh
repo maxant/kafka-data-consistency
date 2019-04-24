@@ -116,9 +116,9 @@ ps ax | grep web-microbundle | grep -v grep | awk '{print $1}' | xargs kill
 ps ax | grep tasks-microbundle | grep -v grep | awk '{print $1}' | xargs kill
 ps ax | grep claims-microbundle | grep -v grep | awk '{print $1}' | xargs kill
 
-java -Xmx64M -Xms64M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar web/target/web-microbundle.jar --port 8080 &
-java -Xmx64M -Xms64M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8788 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar claims/target/claims-microbundle.jar --port 8081 &
-java -Xmx64M -Xms64M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar tasks/target/tasks-microbundle.jar --port 8082 &
+java -Xmx128M -Xms128M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar web/target/web-microbundle.jar --port 8080 &
+java -Xmx128M -Xms128M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8788 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -Delasticsearch.baseUrl=kdc.elasticsearch.maxant.ch -jar claims/target/claims-microbundle.jar --port 8081 &
+java -Xmx128M -Xms128M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar tasks/target/tasks-microbundle.jar --port 8082 &
 
 
 ps -Af | grep micro
