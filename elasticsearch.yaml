@@ -42,3 +42,4 @@ spec:
         env:
         - name: discovery.type
           value: "single-node"
+
