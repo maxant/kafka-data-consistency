@@ -6,8 +6,8 @@ import {claimsFormComponentObject} from './claims.js'
 QUnit.test( "test claims form", async function( assert ) {
 
     const controller = {
-        createClaim(summary, description) {
-            console.log("mock controller received " + summary, + ";" + description + " in method createClaim")
+        createClaim(claim) {
+            console.log("mock controller received " + JSON.stringify(claim) + " in method createClaim")
         }
     }
     controller.createClaim = sinon.spy(controller.createClaim)
@@ -86,10 +86,10 @@ QUnit.test( "test claims form", async function( assert ) {
 
     assert.equal(controller.createClaim.callCount, 1, "controller was called after click on create button")
 
-TODO fixme
-
-    assert.equal(controller.createClaim.args[0][0], "something happened and something broke", "controller was called with correct summary")
-    assert.equal(controller.createClaim.args[0][1], "something happened and something broke", "controller was called with correct description")
+    assert.equal(controller.createClaim.args[0][0].summary, "a short summary", "controller was called with correct summary")
+    assert.equal(controller.createClaim.args[0][0].description, "something happened and something broke", "controller was called with correct description")
+    assert.equal(controller.createClaim.args[0][0].reserve, 1000, "controller was called with correct reserve")
+    assert.equal(controller.createClaim.args[0][0].date, new Date().toISOString().substr(0,10).replace(/-/g, "/"), "controller was called with correct date")
     assert.ok(!wrapper.vm.showingNewclaims, "form is hidden after create button clicked")
 
     done();

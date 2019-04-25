@@ -4,7 +4,7 @@ const map = rxjs.operators.map;
 function createClaim(form, customerId) {
     return new Promise(function (resolve, reject) {
         setTimeout(function(){ // so that demo shows "in progress" message
-            const claim = {"summary": form.summary, "description": form.description, "customerId": customerId, "reserve": form.reserve, "date": form.date.toISOString().substr(0, 10)};
+            const claim = {"summary": form.summary, "description": form.description, "customerId": customerId, "reserve": form.reserve, "date": form.date.replace(/\//g, "-")};
             axios.post(CLAIMS_BASE_URL + 'claims', claim)
             .then(function(response) {
                 if(response.status === 202) {

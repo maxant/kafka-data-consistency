@@ -28,17 +28,17 @@ export const SearchView = {
     methods: {
         changed(term) {
             const self = this;
-            return axios.get(ELASTIC_BASE_URL + "_all/_search?q=" + term).then( response => {
+            return axios.get(ELASTIC_BASE_URL + "_all/_search?q=" + encodeURIComponent(term)).then( response => {
                 if(response.status === 200) {
                     return response.data;
                 } else {
-                    alert("error getting search results. please try again"); // TODO handle this better
+                    console.error("error getting search results. please try again"); // TODO handle this better
                     return {};
                 }
+            }).catch(error => {
+                console.error("error getting search results: " + error + ". please try again"); // TODO handle this better
+                return {};
             });
-        },
-        goto(name, id) {
-            this.$router.push({ name: name, params: {id: id } })
         }
     },
     template:
@@ -57,7 +57,10 @@ export const SearchView = {
         <div class="row">
             <div class="col-12 centred">
                 <input ref='search' style="width: 60%;" v-model="model.searchTerm" v-stream:keyup="searchRequest$" /><br>
-                <small>Use * for wildcard searches e.g. when searching for a customer ID</small>
+                <small>
+                    Use * for wildcard searches e.g. when searching for an ID, or <code>reserve:>999"</code> to search for entities with that field <br>
+                    greater than that value. You can even do crazy shit like this: <code>date:<2018-12-31 AND date:>2018-05-31</code>
+                </small>
             </div>
         </div>
         <div class="row">
@@ -73,18 +76,9 @@ export const SearchView = {
             </div>
         </div>
         <div class="row" v-if="!!model.searchResult.hits">
-            <div class="col-3 tile" v-for="hit in model.searchResult.hits.hits" >
-                <div v-if="hit._index === 'claims'" class='tile-title'><i class='fas fa-exclamation-circle'></i>&nbsp;
-                    <a href="#" @click.prevent="goto('claim', hit._source.id)">Claim</a>
-                </div>
-                <div v-if="hit._index === 'claims'" class='tile-body'>
-                    Summary: {{hit._source.summary}}<br>
-                    Description: {{hit._source.description}}<br>
-                    Reserve: {{hit._source.reserve}} CHF<br>
-                    Date: {{hit._source.date}}<br>
-                    Customer ID: <a href="#" @click.prevent="goto('partner', hit._source.customerId)">{{hit._source.customerId}}</a>
-                </div>
-                <div v-else class='tile-body'>{{hit._source}}</div>
+            <div class="col-3" v-for="hit in model.searchResult.hits.hits">
+                <claim v-if="hit._index === 'claims'" :claim="hit._source" :showLabels="true" />
+                <div v-else class='tile'><b>Unexpected type</b><br>{{hit._source}}</div>
             </div>
         </div>
 
