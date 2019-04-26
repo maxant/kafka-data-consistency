@@ -91,16 +91,14 @@ public class ElasticSearchAdapter {
         }
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         ElasticSearchAdapter adapter = new ElasticSearchAdapter();
         adapter.objectMapper = new ObjectMapper();
         adapter.properties = new Properties(){
             @Override
             public String getProperty(String name) {
-                if(name.equals("elasticsearch.host")) {
-                    return "maxant.ch";
-                } else if(name.equals("elasticsearch.port")) {
-                    return "30050";
+                if(name.equals("elasticsearch.baseUrl")) {
+                    return "http://kdc.elasticsearch.maxant.ch:30050";
                 }
                 throw new RuntimeException("unexpected name " + name);
             }

@@ -47,10 +47,11 @@ Create deployments and services:
 
 Open ports like this:
 
-    # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092
+    # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092, neo4j:30101:7687
     firewall-cmd --zone=public --permanent --add-port=30000/tcp
     firewall-cmd --zone=public --permanent --add-port=30001/tcp
     firewall-cmd --zone=public --permanent --add-port=30002/tcp
+    firewall-cmd --zone=public --permanent --add-port=30101/tcp
     firewall-cmd --reload
     firewall-cmd --list-all
 
@@ -63,7 +64,7 @@ Setup forwarding like this (some are accessed directly from outside, others are 
     socat TCP-LISTEN:30050,fork TCP:$(minikube ip):30050 &
     # only for inter node connections: socat TCP-LISTEN:30051,fork TCP:$(minikube ip):30051 &
     socat TCP-LISTEN:30100,fork TCP:$(minikube ip):30100 &
-    # only for bolt: socat TCP-LISTEN:30101,fork TCP:$(minikube ip):30101 &
+    socat TCP-LISTEN:30101,fork TCP:$(minikube ip):30101 &
 
 Update nginx with a file under vhosts like this:
 
@@ -439,4 +440,104 @@ The first matches even though the record contains "arrived". The second matches 
 - ES 7.0 REST High Level Client Javadocs: https://artifacts.elastic.co/javadoc/org/elasticsearch/client/elasticsearch-rest-high-level-client/7.0.0/index-all.html
 - Generic Reference: https://www.elastic.co/guide/en/elasticsearch/reference/current/getting-started-query-document.html
 - Java Client: https://www.elastic.co/guide/en/elasticsearch/client/java-rest/current/java-rest-high-count.html
+
+# Useful Neo4j stuff:
+
+- Go to http://kdc.neo4j.maxant.ch
+- Enter `bolt://kdc.neo4j.maxant.ch:30101` as the backend URL
+- Enter blank username & password, because of env variable in neo4j.yaml
+- Creating nodes and relationships at the same time:
+
+  `ee` is a variable; `Person` is a label (class?); properties are inside curlies
+  `[]` are relationships, `()` are nodes
+
+    CREATE (ee:Person { name: "Emil", from: "Sweden", klout: 99 }),
+           (js:Person { name: "Johan", from: "Sweden", learn: "surfing" }),
+           (ir:Person { name: "Ian", from: "England", title: "author" }),
+           (ee)-[:KNOWS {since: 2001}]->(js),
+           (ee)-[:KNOWS {rating: 5}]->(ir),
+           (js)-[:KNOWS]->(ir),
+           (ir)-[:KNOWS]->(js)
+
+- matching:
+
+    MATCH (js:Person)-[:KNOWS]-()-[:KNOWS]-(surfer)
+    WHERE js.name = "Johan" AND surfer.hobby = "surfing"
+    RETURN DISTINCT surfer
+
+- Creating master data:
+
+    CREATE (c1:Contract { id: "V-9087-4321" }),
+           (c2:Contract { id: "V-8046-2304" }),
+           (p:Partner {id: "C-4837-4536"}),
+           (p)-[:POLICY_HOLER]->(c1),
+           (p)-[:POLICY_HOLER]->(c2)
+
+- Creating a relationship to an existing node:
+
+  - A claim:
+
+    MATCH (p:Partner) WHERE p.id = "C-4837-4536"
+    CREATE (c:Claim { id: "b5565b5c-ab65-4e00-b562-046e0d5bef70", date: "2019-04-27" }),
+           (p)-[:CLAIMANT]->(c)
+
+  - Coverage:
+
+    MATCH (contract:Contract), (claim:Claim)
+    WHERE contract.id = "V-8046-2304" AND claim.id = "b5565b5c-ab65-4e00-b562-046e0d5bef70"
+    CREATE (claim)-[:COVERED_BY]->(contract)
+
+- Match everything from a partner (loads all relationships too; selects any nodes attached to a partner in any direction):
+
+    MATCH (n)--(p:Partner)
+    WHERE p.id="C-4837-4536"
+    RETURN p, n
+
+- Match everything:
+
+    MATCH (n)-[r]-() RETURN n, r
+
+- delete all nodes and relationships:
+
+    MATCH (n)
+    DETACH DELETE n
+
+- delete all relationshiops matching:
+
+    MATCH (n { name: 'Andy' })-[r:KNOWS]->()
+    DELETE r
+
+- find all labels (yep, its cypher):
+
+    call db.labels()
+
+- show schema (layout):
+
+    call db.schema()
+
+- fraud detection - find customers with > claims
+
+doesnt work:
+
+    MATCH (claim:Claim)<-[r:CLAIMANT]-(p:Partner)
+    WITH count(r) as cnt, p, r
+    WHERE cnt > 3 AND r.on > '2018-01-01'
+    RETURN cnt, p.id
+
+coz line 2 has to selec the relationship in order to be able to evaluate "on" but that means it aggregates them separately... stack overflow?
+
+OR just put "date" on claim and then you can do this:
+
+    MATCH (claim:Claim)<-[r:CLAIMANT]-(p:Partner)
+    WITH count(r) as cnt, p, claim
+    WHERE cnt > 3 AND claim.created > '2018-08-01'
+    RETURN cnt, p.id
+
+damn, might have the same problem coz we have to add claim to line 2??
+
+=> https://stackoverflow.com/questions/55875618/how-to-match-neo4j-node-or-relationship-count-when-filtering-on-node-or-relation
+
+- TODO
+  - explain
+  - profile
 
