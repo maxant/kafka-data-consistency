@@ -54,7 +54,7 @@ Open ports like this:
     firewall-cmd --reload
     firewall-cmd --list-all
 
-Setup forwarding like this:
+Setup forwarding like this (some are accessed directly from outside, others are accessed via nginx):
 
     # zookeeper, kafka_1, kafka_2, elasticsearch, elasticsearch, neo4j, neo4j
     socat TCP-LISTEN:30000,fork TCP:$(minikube ip):30000 &
