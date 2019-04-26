@@ -1,0 +1,45 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: neo4j
+spec:
+  selector:
+    app: neo4j
+  type: NodePort
+  ports:
+  - name: http
+    protocol: TCP
+    port: 7474
+    targetPort: 7474
+    nodePort: 30100
+  - name: bolt
+    protocol: TCP
+    port: 7687
+    targetPort: 7687
+    nodePort: 30101
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neo4j
+spec:
+  selector:
+    matchLabels:
+      app: neo4j
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: neo4j
+    spec:
+      containers:
+      - name: neo4j
+        image: maxant/neo4j
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 7474
+        - containerPort: 7687
+        env:
+        - name: NEO4J_AUTH
+          value: "none"
+

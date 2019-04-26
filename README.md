@@ -34,6 +34,8 @@ Delete existing, if necessary:
     kubectl -n kafka-data-consistency delete service kafka-2
     kubectl -n kafka-data-consistency delete deployment elasticsearch
     kubectl -n kafka-data-consistency delete service elasticsearch
+    kubectl -n kafka-data-consistency delete deployment neo4j
+    kubectl -n kafka-data-consistency delete service neo4j
 
 Create deployments and services:
 
@@ -41,6 +43,7 @@ Create deployments and services:
     kubectl -n kafka-data-consistency apply -f kafka-1.yaml
     kubectl -n kafka-data-consistency apply -f kafka-2.yaml
     kubectl -n kafka-data-consistency apply -f elasticsearch.yaml
+    kubectl -n kafka-data-consistency apply -f neo4j.yaml
 
 Open ports like this:
 
@@ -53,12 +56,14 @@ Open ports like this:
 
 Setup forwarding like this:
 
-    # zookeeper, kafka_1, kafka_2, elasticsearch, elasticsearch
+    # zookeeper, kafka_1, kafka_2, elasticsearch, elasticsearch, neo4j, neo4j
     socat TCP-LISTEN:30000,fork TCP:$(minikube ip):30000 &
     socat TCP-LISTEN:30001,fork TCP:$(minikube ip):30001 &
     socat TCP-LISTEN:30002,fork TCP:$(minikube ip):30002 &
     socat TCP-LISTEN:30050,fork TCP:$(minikube ip):30050 &
-    socat TCP-LISTEN:30051,fork TCP:$(minikube ip):30051 &
+    # only for inter node connections: socat TCP-LISTEN:30051,fork TCP:$(minikube ip):30051 &
+    socat TCP-LISTEN:30100,fork TCP:$(minikube ip):30100 &
+    # only for bolt: socat TCP-LISTEN:30101,fork TCP:$(minikube ip):30101 &
 
 Update nginx with a file under vhosts like this:
 
@@ -80,6 +85,19 @@ Update nginx with a file under vhosts like this:
       }
 
       # ############################################################
+      # kdc.neo4j.maxant.ch
+      # ############################################################
+
+      server {
+        listen 80;
+
+        server_name kdc.neo4j.maxant.ch;
+        location / {
+            proxy_pass http://localhost:30100/;
+        }
+      }
+
+      # ############################################################
       # minikube.maxant.ch - dashboard
       # ############################################################
 
@@ -92,6 +110,10 @@ Update nginx with a file under vhosts like this:
             proxy_pass http://127.0.0.1:40000/api/v1/namespaces/kube-system/services/http:kubernetes-dashboard:/proxy/;
         }
       }
+
+Restart nginx:
+
+    systemctl restart nginx
 
 Create topics (on minikube host):
 

@@ -7,12 +7,12 @@ spec:
     app: elasticsearch
   type: NodePort
   ports:
-  - name: tcp1
+  - name: http
     protocol: TCP
     port: 9200
     targetPort: 9200
     nodePort: 30050
-  - name: tcp2
+  - name: inter-node-comms
     protocol: TCP
     port: 9300
     targetPort: 9300
@@ -42,4 +42,3 @@ spec:
         env:
         - name: discovery.type
           value: "single-node"
-
