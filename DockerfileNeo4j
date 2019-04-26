@@ -1,0 +1,4 @@
+# docker build -f DockerfileNeo4j -t maxant/neo4j .
+# docker run --name neo4j maxant/neo4j &
+
+FROM neo4j:3.5.4

@@ -42,4 +42,9 @@ spec:
         env:
         - name: NEO4J_AUTH
           value: "none"
+        - NEO4J_dbms_memory_heap_initial__size
+          value: "256M"
+        - name: NEO4J_dbms_memory_heap_max__size
+          value: "256M"
 
+#  --volume=$HOME/neo4j/data:/data

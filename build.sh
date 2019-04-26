@@ -10,6 +10,8 @@ docker build -f DockerfileKafkaBroker -t maxant/kafka .
 
 docker build -f DockerfileElasticsearch -t maxant/elasticsearch .
 
+docker build -f DockerfileNeo4j -t maxant/neo4j .
+
 ps ax | grep web-microbundle | grep -v grep | awk '{print $1}' | xargs kill
 
 ps ax | grep tasks-microbundle | grep -v grep | awk '{print $1}' | xargs kill
