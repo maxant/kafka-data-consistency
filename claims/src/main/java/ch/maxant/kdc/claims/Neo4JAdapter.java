@@ -1,6 +1,7 @@
 package ch.maxant.kdc.claims;
 
 import ch.maxant.kdc.library.Properties;
+import org.neo4j.jdbc.bolt.BoltDriver;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -9,7 +10,7 @@ import javax.inject.Inject;
 import java.math.BigDecimal;
 import java.sql.*;
 
-@ApplicationScoped // TODO use JPA and native queries => maps to classes :-)
+@ApplicationScoped // TODO what scope? use JPA and native queries => maps to classes :-)
 public class Neo4JAdapter {
 
     @Inject
@@ -17,8 +18,11 @@ public class Neo4JAdapter {
 
     @PostConstruct
     public void init() {
-
-
+        try {
+            Class.forName(BoltDriver.class.getCanonicalName());
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @PreDestroy
@@ -28,10 +32,11 @@ public class Neo4JAdapter {
     public void createClaim(Claim claim) {
         //https://github.com/neo4j-contrib/neo4j-jdbc
 
+        // TODO use jpa, connection pool, etc.
+
         String url = properties.getProperty("neo4j.jdbc.url");
         String user = properties.getProperty("neo4j.jdbc.username");
         String pass = properties.getProperty("neo4j.jdbc.password");
-
         String query = "MATCH (p:Partner) WHERE p.id = ? " +
                        "CREATE (c:Claim { id: ?, date: ? }), " +
                        "       (p)-[:CLAIMANT]->(c)";

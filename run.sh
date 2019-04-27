@@ -105,6 +105,7 @@ echo creating topic
 
 kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 2 --partitions 4 --topic claim-create-db-command
 kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 2 --partitions 4 --topic claim-create-search-command
+kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 2 --partitions 4 --topic claim-create-relationship-command
 kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 2 --partitions 4 --topic task-create-command
 kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 2 --partitions 4 --topic claim-created-event
 kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 2 --partitions 4 --topic task-created-event
@@ -117,9 +118,8 @@ ps ax | grep tasks-microbundle | grep -v grep | awk '{print $1}' | xargs kill
 ps ax | grep claims-microbundle | grep -v grep | awk '{print $1}' | xargs kill
 
 java -Xmx128M -Xms128M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar web/target/web-microbundle.jar --port 8080 &
-java -Xmx128M -Xms128M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8788 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -Delasticsearch.baseUrl=kdc.elasticsearch.maxant.ch -jar claims/target/claims-microbundle.jar --port 8081 &
+java -Xmx128M -Xms128M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8788 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -Delasticsearch.baseUrl=kdc.elasticsearch.maxant.ch -Dneo4j.jdbc.url=jdbc:neo4j:bolt://kdc.neo4j.maxant.ch:30101 -Dneo4j.jdbc.username=a -Dneo4j.jdbc.password=a -jar claims/target/claims-microbundle.jar --port 8081 &
 java -Xmx128M -Xms128M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 -Dkafka.bootstrap.servers=172.17.0.4:9092,172.17.0.3:9092 -jar tasks/target/tasks-microbundle.jar --port 8082 &
-
 
 ps -Af | grep micro
 

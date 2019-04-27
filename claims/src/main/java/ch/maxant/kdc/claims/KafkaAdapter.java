@@ -18,7 +18,6 @@ import javax.annotation.Resource;
 import javax.ejb.*;
 import javax.enterprise.concurrent.ManagedExecutorService;
 import javax.inject.Inject;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
@@ -36,6 +35,7 @@ public class KafkaAdapter implements Runnable {
 
     public static final String CLAIM_CREATE_DB_COMMAND_TOPIC = "claim-create-db-command";
     public static final String CLAIM_CREATE_SEARCH_COMMAND_TOPIC = "claim-create-search-command";
+    public static final String CLAIM_CREATE_RELATIONSHIP_COMMAND_TOPIC = "claim-create-relationship-command";
 
     public static final String TASK_CREATE_COMMAND_TOPIC = "task-create-command";
 
@@ -61,6 +61,9 @@ public class KafkaAdapter implements Runnable {
     ElasticSearchAdapter elasticSearchAdapter;
 
     @Inject
+    Neo4JAdapter neo4JAdapter;
+
+    @Inject
     ObjectMapper objectMapper;
 
     @PostConstruct
@@ -78,7 +81,7 @@ public class KafkaAdapter implements Runnable {
         props.put("enable.auto.commit", "true");
         props.put("auto.commit.interval.ms", "1000");
         consumer = new KafkaConsumer<>(props, new StringDeserializer(), new StringDeserializer());
-        consumer.subscribe(asList(CLAIM_CREATE_DB_COMMAND_TOPIC, CLAIM_CREATE_SEARCH_COMMAND_TOPIC));
+        consumer.subscribe(asList(CLAIM_CREATE_DB_COMMAND_TOPIC, CLAIM_CREATE_SEARCH_COMMAND_TOPIC, CLAIM_CREATE_RELATIONSHIP_COMMAND_TOPIC));
 
         executorService.submit(this);
     }
@@ -127,6 +130,9 @@ public class KafkaAdapter implements Runnable {
                     } else if(CLAIM_CREATE_SEARCH_COMMAND_TOPIC.equals(r.topic())) {
                         // create in Elastic. No need to send record to UI.
                         elasticSearchAdapter.createClaim(claim);
+                    } else if(CLAIM_CREATE_RELATIONSHIP_COMMAND_TOPIC.equals(r.topic())) {
+                        // create in Neo4J. No need to send record to UI.
+                        neo4JAdapter.createClaim(claim);
                     } else {
                         System.err.println("received record from unexpected topic " + r.topic() + ": " + r.value());
                     }
