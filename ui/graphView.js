@@ -61,7 +61,6 @@ export const GraphView = {
                     model.time = new Date().getTime() - start;
                     session.close();
                     subject.complete();
-
                 },
                 onError: function (error) {
                     model.error = error;
@@ -75,6 +74,7 @@ export const GraphView = {
                 server_url: NEO4J_URL,
                 server_user: "",
                 server_password: "",
+/*
                 labels: {
                     "Claim": {
                         "caption": "date",
@@ -93,6 +93,7 @@ export const GraphView = {
                         "caption": false
                     }
                 },
+*/
                 initial_cypher: model.searchTerm
             };
 
@@ -133,7 +134,8 @@ export const GraphView = {
         </div>
         <div class="row">
             <div id="viz"></div>
-            <table border="1">
+            <div v-if="model.searchResult.length === 0">No results found.</div>
+            <table v-else border="1">
                 <tr v-for="row in model.searchResult">
                     <td>{{row.key}}</td>
                     <td>{{row.value}}</td>

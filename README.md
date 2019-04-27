@@ -467,14 +467,46 @@ The first matches even though the record contains "arrived". The second matches 
 
 - Creating master data:
 
+    MATCH (n)
+    DETACH DELETE n
+
+    MATCH (n)-[r]-(n2)
+    RETURN *
+
     CREATE (c1:Contract { id: "V-9087-4321" }),
            (c2:Contract { id: "V-8046-2304" }),
            (c3:Contract { id: "V-7843-4329" }),
+           (c4:Contract { id: "V-6533-9832" }),
            (p1:Partner {id: "C-4837-4536"}),
            (p2:Partner {id: "C-1234-5678"}),
+           (p3:Partner {id: "C-9873-0983"}),
            (p1)-[:POLICY_HOLDER]->(c1),
            (p1)-[:POLICY_HOLDER]->(c2),
-           (p2)-[:POLICY_HOLDER]->(c3)
+           (p2)-[:POLICY_HOLDER]->(c3),
+           (p3)-[:POLICY_HOLDER]->(c4),
+           (cl1:Claim { id: "b5565b5c-ab65-4e00-b562-046e0d5bef70", date: "2019-04-27" }),
+           (p1)-[:CLAIMANT]->(cl1),
+           (cl2:Claim { id: "c5565b5c-ab65-4e00-b562-046e0d5bef70", date: "2019-04-25" }),
+           (p1)-[:CLAIMANT]->(cl2),
+           (cl3:Claim { id: "d5565b5c-ab65-4e00-b562-046e0d5bef70", date: "2019-04-22" }),
+           (p2)-[:CLAIMANT]->(cl3),
+           (cl4:Claim { id: "e5565b5c-ab65-4e00-b562-046e0d5bef70", date: "2019-04-26" }),
+           (p3)-[:CLAIMANT]->(cl4),
+           (cl5:Claim { id: "f5565b5c-ab65-4e00-b562-046e0d5bef70", date: "2019-04-25" }),
+           (p3)-[:CLAIMANT]->(cl5),
+           (cl6:Claim { id: "05565b5c-ab65-4e00-b562-046e0d5bef70", date: "2019-04-24" }),
+           (p3)-[:CLAIMANT]->(cl6)
+
+    MATCH (n)-[r]-(n2)
+    RETURN *
+
+    CREATE CONSTRAINT ON (p:Partner) ASSERT p.id IS UNIQUE
+    CREATE CONSTRAINT ON (c:Contract) ASSERT c.id IS UNIQUE
+    CREATE CONSTRAINT ON (c:Claim) ASSERT c.id IS UNIQUE
+    CREATE INDEX ON :Claim(date)
+
+    MATCH (n)-[r]-(n2)
+    RETURN *
 
 - constraints: https://neo4j.com/docs/getting-started/current/cypher-intro/schema/#cypher-intro-schema-constraints
 
@@ -538,6 +570,14 @@ The first matches even though the record contains "arrived". The second matches 
 
     call db.schema()
 
+- number of claims per partner between given dates:
+
+    match (claim:Claim)<-[claimant:CLAIMANT]-(p:Partner)
+    where claim.date > '2019-04-24'
+      and claim.date < '2019-04-26'
+    with count(claimant) as numClaims, p
+    return numClaims, p
+
 - fraud detection - find customers with more than x claims since a given date
 
     MATCH (claim:Claim)<-[r:CLAIMANT]-(p:Partner)
@@ -548,6 +588,21 @@ The first matches even though the record contains "arrived". The second matches 
 
   ok, we can do this with a relational database. What is more interesting
   is when there are lots of relationships.
+
+- visualise the partners graph but just the relevant claims where the partner
+  has more than X claims in the given period:
+
+    match (claim:Claim)<-[claimant:CLAIMANT]-(p:Partner)
+    where claim.date >= '2019-04-24'
+      and claim.date <= '2019-04-26'
+    with count(claimant) as numClaims, p
+    where numClaims > 2
+    with p.id as id
+    match (cl:Claim)<-[claimant2:CLAIMANT]-(partner:Partner)-[ph:POLICY_HOLDER]->(contract:Contract)
+    where partner.id = id
+      and cl.date >= '2019-04-24'
+      and cl.date <= '2019-04-26'
+    return *
 
 - TODO
   - explain
