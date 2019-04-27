@@ -171,7 +171,7 @@ export const claimComponentObject = {
         <div class="tile">
             <div class='tile-title'>
                 <i class='fas fa-exclamation-circle'></i>
-                <a href="#" @click.prevent="goto('claim', claim.id)">Claim</a>
+                <a href="#" :title="claim.id" @click.prevent="goto('claim', claim.id)">Claim</a>
             </div>
             <div v-if="claim.temp" class='tile-body'>
                 <i>in progress...</i><br>
@@ -182,7 +182,7 @@ export const claimComponentObject = {
                 <span v-if="showLabels">Description:</span> <span>{{claim.description}}</span><br>
                 <span v-if="showLabels">Reserve:</span> <span>{{claim.reserve}} CHF,</span>
                     <span v-if="showLabels">Date:</span> <span>{{claim.date}}</span><br>
-                <span v-if="showLabels">Customer ID:</span> <span><a href="#" @click.prevent="goto('partner', claim.customerId)">{{claim.customerId}}</a></span>
+                <span v-if="showLabels"><i class="fas fa-user"></i></span> <span><a href="#" @click.prevent="goto('partner', claim.customerId)">{{claim.customerId}}</a></span>
             </div>
         </div>
     `
