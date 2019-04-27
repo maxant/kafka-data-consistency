@@ -7,7 +7,8 @@ const switchMap = rxjs.operators.switchMap;
 const driver = neo4j.v1.driver(NEO4J_URL, neo4j.v1.auth.basic("", ""));
 
 const model = {
-    searchResult: [],
+    searchResultColumns: {},
+    searchResultRows: [],
     error: "",
     time: -1,
     searchTerm:
@@ -31,9 +32,12 @@ export const GraphView = {
             distinctUntilChanged(),
             switchMap(this.changed)
         ).subscribe(record => {
+            let row = {};
             _.forEach(record.keys, key => {
-                model.searchResult.push({key: key, value: record.get(key)})
+                model.searchResultColumns[key] = key;
+                row[key] = record.get(key);
             });
+            model.searchResultRows.push(row);
             console.log(JSON.stringify(record));
         });
     },
@@ -44,7 +48,8 @@ export const GraphView = {
         changed(term) {
             const start = new Date().getTime();
             model.error = "";
-            model.searchResult = [];
+            model.searchResultColumns = {};
+            model.searchResultRows = [];
 
             this.draw(); // TODO at the moment we are doing two calls to neo4j => fix that!
 
@@ -121,8 +126,8 @@ export const GraphView = {
         </div>
         <div class="row">
             <div class="col-12 centred" v-if="model.time >= 0" style="color: darkblue;">
-                <small>Found {{model.searchResult.length}}
-                        result {{model.searchResult.length===1?'':'s'}} in
+                <small>Found {{model.searchResultRows.length}}
+                        result {{model.searchResultRows.length===1?'':'s'}} in
                         {{model.time}}ms
                 </small>
             </div>
@@ -134,13 +139,17 @@ export const GraphView = {
         </div>
         <div class="row">
             <div id="viz"></div>
-            <div v-if="model.searchResult.length === 0">No results found.</div>
-            <table v-else border="1">
-                <tr v-for="row in model.searchResult">
-                    <td>{{row.key}}</td>
-                    <td>{{row.value}}</td>
-                </tr>
-            </table>
+            <div v-if="model.searchResultRows.length === 0" class="col-12 centred" >No results found.</div>
+            <div v-else class="col-12 centred">
+                <table border="1" width="100%">
+                    <tr>
+                        <th v-for="col in model.searchResultColumns">{{col}}</th>
+                    </tr>
+                    <tr v-for="row in model.searchResultRows">
+                        <td v-for="col in model.searchResultColumns">{{row[col]}}</td>
+                    </tr>
+                </table>
+            </div>
         </div>
     </div>
     `
