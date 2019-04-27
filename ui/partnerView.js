@@ -12,6 +12,7 @@ function buildNavigations() {
     return [
         { title: 'search', name: 'search', params: {} },
         { title: 'lazy',   name: 'lazy',   params: {} },
+        { title: 'graph',  name: 'graph',  params: {} },
     ];
 };
 

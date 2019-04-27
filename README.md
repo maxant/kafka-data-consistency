@@ -469,9 +469,28 @@ The first matches even though the record contains "arrived". The second matches 
 
     CREATE (c1:Contract { id: "V-9087-4321" }),
            (c2:Contract { id: "V-8046-2304" }),
-           (p:Partner {id: "C-4837-4536"}),
-           (p)-[:POLICY_HOLER]->(c1),
-           (p)-[:POLICY_HOLER]->(c2)
+           (c3:Contract { id: "V-7843-4329" }),
+           (p1:Partner {id: "C-4837-4536"}),
+           (p2:Partner {id: "C-1234-5678"}),
+           (p1)-[:POLICY_HOLDER]->(c1),
+           (p1)-[:POLICY_HOLDER]->(c2),
+           (p2)-[:POLICY_HOLDER]->(c3)
+
+- constraints: https://neo4j.com/docs/getting-started/current/cypher-intro/schema/#cypher-intro-schema-constraints
+
+    CREATE CONSTRAINT ON (p:Partner) ASSERT p.id IS UNIQUE
+
+    CREATE CONSTRAINT ON (c:Contract) ASSERT c.id IS UNIQUE
+
+    CREATE CONSTRAINT ON (c:Claim) ASSERT c.id IS UNIQUE
+
+    call db.constraints()
+
+- indices: https://neo4j.com/docs/cypher-manual/current/schema/index/ - think about queries and add indexes accordingly
+
+    CREATE INDEX ON :Claim(date)
+
+    call db.indexes()
 
 - Creating a relationship to an existing node:
 
@@ -490,12 +509,16 @@ The first matches even though the record contains "arrived". The second matches 
 - Match everything from a partner (loads all relationships too; selects any nodes attached to a partner in any direction):
 
     MATCH (n)--(p:Partner)
-    WHERE p.id="C-4837-4536"
+    WHERE p.id = "C-4837-4536"
     RETURN p, n
 
 - Match everything:
 
     MATCH (n)-[r]-() RETURN n, r
+
+- Match claims:
+
+    MATCH (n)-[r:CLAIMANT]->(m) RETURN *
 
 - delete all nodes and relationships:
 
@@ -515,27 +538,16 @@ The first matches even though the record contains "arrived". The second matches 
 
     call db.schema()
 
-- fraud detection - find customers with > claims
-
-doesnt work:
+- fraud detection - find customers with more than x claims since a given date
 
     MATCH (claim:Claim)<-[r:CLAIMANT]-(p:Partner)
-    WITH count(r) as cnt, p, r
-    WHERE cnt > 3 AND r.on > '2018-01-01'
+    WHERE claim.date > '2018-08-01'
+    WITH count(r) as cnt, p
+    WHERE cnt > 1
     RETURN cnt, p.id
 
-coz line 2 has to selec the relationship in order to be able to evaluate "on" but that means it aggregates them separately... stack overflow?
-
-OR just put "date" on claim and then you can do this:
-
-    MATCH (claim:Claim)<-[r:CLAIMANT]-(p:Partner)
-    WITH count(r) as cnt, p, claim
-    WHERE cnt > 3 AND claim.created > '2018-08-01'
-    RETURN cnt, p.id
-
-damn, might have the same problem coz we have to add claim to line 2??
-
-=> https://stackoverflow.com/questions/55875618/how-to-match-neo4j-node-or-relationship-count-when-filtering-on-node-or-relation
+  ok, we can do this with a relational database. What is more interesting
+  is when there are lots of relationships.
 
 - TODO
   - explain

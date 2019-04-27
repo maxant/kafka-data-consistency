@@ -8,6 +8,7 @@ import {} from './ruler.js';
 
 import {PartnerView} from './partnerView.js';
 import {SearchView} from './searchView.js';
+import {GraphView} from './graphView.js';
 
 Vue.use(VueRouter);
 Vue.use(vuelidate.default);
@@ -20,6 +21,7 @@ const LazyView = () => lazyImport("./lazy.js")
 const router = new VueRouter({
     routes: [
         { path: '/search',      name: 'search',  component: SearchView   },
+        { path: '/graph',       name: 'graph',   component: GraphView    },
         { path: '/partner/:id', name: 'partner', component: PartnerView  },
         { path: '/lazy',        name: 'lazy',    component: LazyView     },
         { path: '/claim/:id',   name: 'claim',   component: ClaimView    },
