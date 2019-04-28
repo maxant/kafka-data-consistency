@@ -36,6 +36,8 @@ Delete existing, if necessary:
     kubectl -n kafka-data-consistency delete service elasticsearch
     kubectl -n kafka-data-consistency delete deployment neo4j
     kubectl -n kafka-data-consistency delete service neo4j
+    kubectl -n kafka-data-consistency delete deployment kibana
+    kubectl -n kafka-data-consistency delete service kibana
 
 Create deployments and services:
 
@@ -44,6 +46,7 @@ Create deployments and services:
     kubectl -n kafka-data-consistency apply -f kafka-2.yaml
     kubectl -n kafka-data-consistency apply -f elasticsearch.yaml
     kubectl -n kafka-data-consistency apply -f neo4j.yaml
+    kubectl -n kafka-data-consistency apply -f kibana.yaml
 
 Open ports like this:
 
@@ -57,14 +60,21 @@ Open ports like this:
 
 Setup forwarding like this (some are accessed directly from outside, others are accessed via nginx):
 
-    # zookeeper, kafka_1, kafka_2, elasticsearch, elasticsearch, neo4j, neo4j
+    # zookeeper, kafka_1, kafka_2, elasticsearch, elasticsearch, neo4j, neo4j, kibana
     socat TCP-LISTEN:30000,fork TCP:$(minikube ip):30000 &
     socat TCP-LISTEN:30001,fork TCP:$(minikube ip):30001 &
     socat TCP-LISTEN:30002,fork TCP:$(minikube ip):30002 &
+
     socat TCP-LISTEN:30050,fork TCP:$(minikube ip):30050 &
     # only for inter node connections: socat TCP-LISTEN:30051,fork TCP:$(minikube ip):30051 &
+
     socat TCP-LISTEN:30100,fork TCP:$(minikube ip):30100 &
     socat TCP-LISTEN:30101,fork TCP:$(minikube ip):30101 &
+
+    socat TCP-LISTEN:30150,fork TCP:$(minikube ip):30150 &
+
+    # minikube port, see kibana metricbeat for kube way down below
+    socat TCP-LISTEN:10250,fork TCP:$(minikube ip):10250 &
 
 Update nginx with a file under vhosts like this:
 
@@ -95,6 +105,19 @@ Update nginx with a file under vhosts like this:
         server_name kdc.neo4j.maxant.ch;
         location / {
             proxy_pass http://localhost:30100/;
+        }
+      }
+
+      # ############################################################
+      # kdc.kibana.maxant.ch
+      # ############################################################
+
+      server {
+        listen 80;
+
+        server_name kdc.kibana.maxant.ch;
+        location / {
+            proxy_pass http://localhost:30150/;
         }
       }
 
@@ -609,3 +632,86 @@ The first matches even though the record contains "arrived". The second matches 
   - explain
   - profile
 
+# Useful Kibana stuff:
+
+- Go to http://kdc.kibana.maxant.ch
+- manage indexes here: http://kdc.kibana.maxant.ch/app/kibana#/management/elasticsearch/index_management/indices?_g=()
+- create an index for `claims` using `date` as the time field
+- find all cliaims in a period:
+  - http://kdc.kibana.maxant.ch/app/kibana#/discover?_g=(refreshInterval:(pause:!t,value:0),time:(from:'2019-03-01T15:15:58.115Z',to:now))&_a=(columns:!(_source),index:eb741a10-69c1-11e9-9ebe-bf41a21a544a,interval:auto,query:(language:kuery,query:''),sort:!(date,desc))
+  - visualise sum of reserve per day: http://kdc.kibana.maxant.ch/app/kibana#/visualize/create?_g=(refreshInterval:(pause:!t,value:0),time:(from:'2019-03-01T15:15:58.115Z',to:now))&_a=(filters:!(),linked:!f,query:(language:kuery,query:''),uiState:(),vis:(aggs:!((enabled:!t,id:'2',params:(field:reserve),schema:metric,type:sum),(enabled:!t,id:'3',params:(customInterval:'2h',drop_partials:!f,extended_bounds:(),field:date,interval:d,min_doc_count:1,timeRange:(from:'2019-03-01T15:15:58.115Z',to:now),time_zone:Europe%2FZurich,useNormalizedEsInterval:!t),schema:segment,type:date_histogram)),params:(addLegend:!t,addTimeMarker:!f,addTooltip:!t,categoryAxes:!((id:CategoryAxis-1,labels:(show:!t,truncate:100),position:bottom,scale:(type:linear),show:!t,style:(),title:(),type:category)),grid:(categoryLines:!f),legendPosition:right,seriesParams:!((data:(id:'2',label:'Sum%20of%20reserve'),drawLinesBetweenPoints:!t,mode:stacked,show:!t,showCircles:!t,type:histogram,valueAxis:ValueAxis-1)),times:!(),type:histogram,valueAxes:!((id:ValueAxis-1,labels:(filter:!f,rotate:0,show:!t,truncate:100),name:LeftAxis-1,position:left,scale:(mode:normal,type:linear),show:!t,style:(),title:(text:'Sum%20of%20reserve'),type:value))),title:'',type:histogram))&indexPattern=eb741a10-69c1-11e9-9ebe-bf41a21a544a&type=histogram
+
+- Kube metric beat: http://kdc.kibana.maxant.ch/app/kibana#/home/tutorial/kubernetesMetrics?_g=()
+
+    curl -L -O https://artifacts.elastic.co/downloads/beats/metricbeat/metricbeat-7.0.0-linux-x86_64.tar.gz
+    tar xzvf metricbeat-7.0.0-linux-x86_64.tar.gz
+    cd metricbeat-7.0.0-linux-x86_64/
+
+    vi metricbeat.yml
+
+Edit:
+
+    output.elasticsearch:
+      hosts: ["localhost:30050"]
+
+    setup.kibana:
+      host: "localhost:30150"
+
+Then:
+
+    ./metricbeat modules enable kubernetes
+
+See `modules.d/kubernetes.yml`, but it only really needs access to `localhost:10250`, so using `socat` we've mapped it to minikube. see that way above where socat is started.
+comment out the following:
+
+    #  bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    #  ssl.certificate_authorities:
+    #    - /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+
+    ./metricbeat modules enable kafka
+
+    vi modules.d/kafka.yml
+
+Update:
+
+    hosts: ["localhost:30001", "localhost:30002"]
+
+Then:
+
+    ./metricbeat setup
+
+    ./metricbeat -e >/dev/null 2>&1 &
+
+Note: the "check data" button on the Kibana setup page doesn't seem to work. But, check dashboards and the data is there.
+Eg:
+
+- Dashboard => Metricbeat Kafka Overview ECS
+- Dashboard => Kubernetes => doesnt seem to work...
+
+Filebeats for Kube: https://www.elastic.co/guide/en/beats/filebeat/current/running-on-kubernetes.html
+
+Use the file checked in here, which is configured to use auto discover.
+
+    kubectl create -f filebeat-kubernetes.yaml
+
+Which outputs:
+
+    configmap/filebeat-config created
+    configmap/filebeat-inputs created
+    daemonset.extensions/filebeat created
+    clusterrolebinding.rbac.authorization.k8s.io/filebeat created
+    clusterrole.rbac.authorization.k8s.io/filebeat created
+    serviceaccount/filebeat created
+
+That can be reset with:
+
+    kubectl -n kube-system delete configmaps filebeat-config
+    kubectl -n kube-system delete configmaps filebeat-inputs
+    kubectl -n kube-system delete daemonsets filebeat
+    kubectl -n kube-system delete clusterrolebindings filebeat
+    kubectl -n kube-system delete clusterroles filebeat
+    kubectl -n kube-system delete serviceaccounts filebeat
+
+Create a filebeat index in kibana
+
+TODO create a second kibana and ES, specifically for techy stuff - or can we use several indexes in UI search?
