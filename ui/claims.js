@@ -182,7 +182,7 @@ export const claimComponentObject = {
                 <span v-if="showLabels">Description:</span> <span>{{claim.description}}</span><br>
                 <span v-if="showLabels">Reserve:</span> <span>{{claim.reserve}} CHF,</span>
                     <span v-if="showLabels">Date:</span> <span>{{claim.date}}</span><br>
-                <span v-if="showLabels"><i class="fas fa-user"></i></span> <span><a href="#" @click.prevent="goto('partner', claim.customerId)">{{claim.customerId}}</a></span>
+                <span v-if="showLabels"><i class="fas fa-user"></i></span> <span><a href="#" @click.prevent="goto('partner', claim.partnerId)">{{claim.customerId}}</a></span>
             </div>
         </div>
     `

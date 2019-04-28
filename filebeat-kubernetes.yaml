@@ -14,6 +14,7 @@ data:
           hints.enabled: true
 
     output.elasticsearch:
+      # need to use namespace here, as its not deployed to kube-system!
       hosts: ['elasticsearch.kafka-data-consistency:9200']
 ---
 apiVersion: v1

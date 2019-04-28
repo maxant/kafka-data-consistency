@@ -22,7 +22,7 @@ export const model = {
 // initialise data
 // ///////////////////////////////////////////////////////////
 model.partner.entity = {
-        id: 'C-4837-4536',
+        id: 'P-4837-4536',
         name: 'Ant Kutschera',
         address: {
             street: 'Ch. des chiens',

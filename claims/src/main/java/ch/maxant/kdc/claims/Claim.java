@@ -8,7 +8,7 @@ public class Claim {
     private String id = UUID.randomUUID().toString();
     private String summary;
     private String description;
-    private String customerId;
+    private String partnerId;
     private String date; // TODO convert to localdate - needs objectMapper to be compatible - see other github examples
     private BigDecimal reserve; // how much money to reservce for this claim; what is likely to still be claimed
     private Location location;
@@ -45,12 +45,12 @@ public class Claim {
         this.description = description;
     }
 
-    public String getCustomerId() {
-        return customerId;
+    public String getPartnerId() {
+        return partnerId;
     }
 
-    public void setCustomerId(String customerId) {
-        this.customerId = customerId;
+    public void setPartnerId(String partnerId) {
+        this.partnerId = partnerId;
     }
 
     public String getId() {

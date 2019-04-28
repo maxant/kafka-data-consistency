@@ -28,7 +28,7 @@ export const SearchView = {
     methods: {
         changed(term) {
             const self = this;
-            return axios.get(ELASTIC_BASE_URL + "_all/_search?q=" + encodeURIComponent(term)).then( response => {
+            return axios.get(ELASTIC_BASE_URL + "claims,partners/_search?q=" + encodeURIComponent(term)).then( response => {
                 if(response.status === 200) {
                     return response.data;
                 } else {

@@ -60,7 +60,7 @@ public class ElasticSearchAdapter {
         try {
             IndexRequest request = new IndexRequest("claims");
             request.id(claim.getId());
-            request.routing(claim.getCustomerId()); // so that all partner data lands on the same shard
+            request.routing(claim.getPartnerId()); // so that all partner data lands on the same shard
             request.source(objectMapper.writeValueAsString(claim), XContentType.JSON);
             request.opType(DocWriteRequest.OpType.CREATE); // causes ElasticsearchException if already exists
             IndexResponse indexResponse = client.index(request, RequestOptions.DEFAULT);
@@ -106,7 +106,7 @@ public class ElasticSearchAdapter {
         adapter.init();
 
         Claim claim = new Claim();
-        claim.setCustomerId("C-1234-5678");
+        claim.setPartnerId("P-1234-5678");
         claim.setSummary("Der Flieger flog zu schnell");
         claim.setDescription("A random act of nature caused a jolt leaving me with soup on my tie!");
         claim.setReserve(new BigDecimal("132.90"));

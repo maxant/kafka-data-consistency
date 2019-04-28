@@ -44,7 +44,7 @@ public class Neo4JAdapter {
         try (Connection con = DriverManager.getConnection(url, user, pass);
              PreparedStatement stmt = con.prepareStatement(query)
         ) {
-            stmt.setString(1, claim.getCustomerId());
+            stmt.setString(1, claim.getPartnerId());
             stmt.setString(2, claim.getId());
             stmt.setString(3, claim.getDate());
             long start = System.currentTimeMillis();
@@ -85,7 +85,7 @@ public class Neo4JAdapter {
         adapter.init();
 
         Claim claim = new Claim();
-        claim.setCustomerId("C-4837-4536");
+        claim.setPartnerId("P-4837-4536");
         claim.setSummary("Der Flieger flog zu schnell");
         claim.setDescription("A random act of nature caused a jolt leaving me with soup on my tie!");
         claim.setReserve(new BigDecimal("132.90"));

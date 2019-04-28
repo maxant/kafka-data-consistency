@@ -135,4 +135,4 @@ node node_modules/http-server/bin/http-server -p 8083 &
 #              ./kafka-console-consumer.sh  --topic task-create  --from-beginning --bootstrap-server 172.17.0.3:9092
 #
 # create a claim:
-# curl -X POST   http://localhost:8081/claims/rest/claims/create   -H 'Content-Type: application/json'   -H 'cache-control: no-cache'   -d '{"description" :"asdf", "customerId": "C12345678"}'
+# curl -X POST   http://localhost:8081/claims/rest/claims/create   -H 'Content-Type: application/json'   -H 'cache-control: no-cache'   -d '{"description" :"asdf", "partnerId": "C12345678"}'
