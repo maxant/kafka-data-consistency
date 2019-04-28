@@ -39,6 +39,8 @@ public class KafkaAdapter implements Runnable {
 
     public static final String TASK_CREATE_COMMAND_TOPIC = "task-create-command";
 
+    public static final String LOCATION_CREATE_COMMAND_TOPIC = "location-create-command";
+
     public static final String CLAIM_CREATED_EVENT_TOPIC = "claim-created-event";
 
     Producer<String, String> producer;

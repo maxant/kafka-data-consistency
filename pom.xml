@@ -273,6 +273,7 @@ https://docs.payara.fish/documentation/ecosystem/maven-plugin.html
         <module>web</module>
         <module>claims</module>
         <module>tasks</module>
+        <module>locations</module>
     </modules>
 
     <developers>

@@ -1,0 +1,47 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: kibana
+spec:
+  selector:
+    app: kibana
+  type: NodePort
+  ports:
+    - name: http
+      protocol: TCP
+      port: 5601
+      targetPort: 5601
+      nodePort: 30150
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+spec:
+  selector:
+    matchLabels:
+      app: kibana
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: kibana
+    spec:
+      containers:
+        - name: kibana
+          image: docker.elastic.co/kibana/kibana:7.0.0
+          #imagePullPolicy: Never
+          ports:
+            - containerPort: 5601
+            - containerPort: 5601
+          env:
+            # https://www.elastic.co/guide/en/kibana/current/settings.html
+            - name: ELASTICSEARCH_HOSTS
+              value: "http://kdc.elasticsearch.maxant.ch"
+            - name: XPACK_SECURITY_ENABLED
+              value: "false"
+
+#https://www.elastic.co/guide/en/kibana/current/docker.html
+
+#volumes:
+#  - ./kibana.yml:/usr/share/kibana/config/kibana.yml

@@ -19,6 +19,7 @@ public class Neo4JAdapter {
     @PostConstruct
     public void init() {
         try {
+            // TODO really required?
             Class.forName(BoltDriver.class.getCanonicalName());
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);

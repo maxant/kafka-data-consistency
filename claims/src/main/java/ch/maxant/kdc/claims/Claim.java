@@ -11,6 +11,7 @@ public class Claim {
     private String customerId;
     private String date; // TODO convert to localdate - needs objectMapper to be compatible - see other github examples
     private BigDecimal reserve; // how much money to reservce for this claim; what is likely to still be claimed
+    private Location location;
 
     public String getDate() {
         return date;
@@ -58,5 +59,13 @@ public class Claim {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public Location getLocation() {
+        return location;
+    }
+
+    public void setLocation(Location location) {
+        this.location = location;
     }
 }
