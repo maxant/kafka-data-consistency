@@ -1,0 +1,6 @@
+# docker build -f DockerfileKibana -t maxant/kibana .
+# docker run --name kibana maxant/kibana &
+
+FROM docker.elastic.co/kibana/kibana:7.0.0
+
+

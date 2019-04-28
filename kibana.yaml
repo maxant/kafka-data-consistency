@@ -29,8 +29,8 @@ spec:
     spec:
       containers:
         - name: kibana
-          image: docker.elastic.co/kibana/kibana:7.0.0
-          #imagePullPolicy: Never
+          image: maxant/kibana
+          imagePullPolicy: Never
           ports:
             - containerPort: 5601
             - containerPort: 5601
