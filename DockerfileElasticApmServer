@@ -4,7 +4,7 @@
 FROM docker.elastic.co/apm/apm-server:7.0.0
 
 # original was taken from here: https://raw.githubusercontent.com/elastic/apm-server/7.0/apm-server.docker.yml
-COPY elastic-apm-server-docker.yml /usr/share/apm-server/apm-server.yml
+COPY elastic-apm-server.docker.yml /usr/share/apm-server/apm-server.yml
 
 USER root
 
