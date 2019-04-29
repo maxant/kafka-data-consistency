@@ -14,6 +14,8 @@ docker build -f DockerfileNeo4j -t maxant/neo4j .
 
 docker build -f DockerfileKibana -t maxant/kibana .
 
+docker build -f DockerfileElasticApmServer -t maxant/elasticapmserver .
+
 ps ax | grep web-microbundle | grep -v grep | awk '{print $1}' | xargs kill
 
 ps ax | grep tasks-microbundle | grep -v grep | awk '{print $1}' | xargs kill

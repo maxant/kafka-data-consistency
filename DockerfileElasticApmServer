@@ -1,0 +1,14 @@
+# docker build -f DockerfileElasticApmServer -t maxant/elasticapmserver .
+# docker run --name kibana maxant/elasticapmserver &
+
+FROM docker.elastic.co/apm/apm-server:7.0.0
+
+# original was taken from here: https://raw.githubusercontent.com/elastic/apm-server/7.0/apm-server.docker.yml
+COPY elastic-apm-server.yml /usr/share/apm-server/apm-server.yml
+
+USER root
+
+RUN chown root:apm-server /usr/share/apm-server/apm-server.yml
+
+USER apm-server
+

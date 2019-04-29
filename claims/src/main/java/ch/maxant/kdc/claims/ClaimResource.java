@@ -1,6 +1,7 @@
 package ch.maxant.kdc.claims;
 
-import ch.maxant.kdc.library.TelemetryRecord;
+import ch.maxant.kdc.library.KafkaAdapter;
+import ch.maxant.kdc.library.telemetry.Measured;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -10,15 +11,14 @@ import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import static ch.maxant.kdc.claims.KafkaAdapter.*;
+import static ch.maxant.kdc.claims.ClaimsRecordHandler.*;
 import static java.util.Arrays.asList;
 
 @Path("claims")
 @ApplicationScoped
+@Measured
 public class ClaimResource {
 
     @Inject
@@ -51,19 +51,9 @@ public class ClaimResource {
 
         List<ProducerRecord<String, String>> records = asList(claimDbRecord, claimSearchRecord, claimRelationshipRecord, createTaskCommand, createLocationCommand);
 
-        addTelemetry(records);
-
         kafka.sendInOneTransaction(records);
 
         return Response.accepted().build();
-    }
-
-    private void addTelemetry(List<ProducerRecord<String, String>> records) {
-        records.forEach(r -> {
-            r.headers().add("from", RestApplication.COMPONENT_NAME.getBytes(StandardCharsets.UTF_8));
-            r.headers().add("to", "KAFKA".getBytes(StandardCharsets.UTF_8));
-            System.out.println("TELEMETRY::" + om.writeValueAsString(new TelemetryRecord()));
-        });
     }
 
     /** THIS METHOD IS JUST FOR DEMO PURPOSES - DELETE FOR PRODUCTION */

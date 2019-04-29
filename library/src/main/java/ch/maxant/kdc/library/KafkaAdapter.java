@@ -1,5 +1,7 @@
-package ch.maxant.kdc.claims;
+package ch.maxant.kdc.library;
 
+import ch.maxant.kdc.library.telemetry.ComponentName;
+import ch.maxant.kdc.library.telemetry.TelemetryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -33,16 +35,6 @@ import static javax.ejb.ConcurrencyManagementType.CONTAINER;
 @Startup
 public class KafkaAdapter implements Runnable {
 
-    public static final String CLAIM_CREATE_DB_COMMAND_TOPIC = "claim-create-db-command";
-    public static final String CLAIM_CREATE_SEARCH_COMMAND_TOPIC = "claim-create-search-command";
-    public static final String CLAIM_CREATE_RELATIONSHIP_COMMAND_TOPIC = "claim-create-relationship-command";
-
-    public static final String TASK_CREATE_COMMAND_TOPIC = "task-create-command";
-
-    public static final String LOCATION_CREATE_COMMAND_TOPIC = "location-create-command";
-
-    public static final String CLAIM_CREATED_EVENT_TOPIC = "claim-created-event";
-
     Producer<String, String> producer;
 
     Consumer<String, String> consumer;
@@ -54,36 +46,34 @@ public class KafkaAdapter implements Runnable {
     ManagedExecutorService executorService;
 
     @Inject
+    TelemetryService telemetryService;
+
+    @Inject
     ch.maxant.kdc.library.Properties properties;
 
     @Inject
-    ClaimRepository claimRepository;
+    RecordHandler recordHandler;
 
     @Inject
-    ElasticSearchAdapter elasticSearchAdapter;
-
-    @Inject
-    Neo4JAdapter neo4JAdapter;
-
-    @Inject
-    ObjectMapper objectMapper;
+    @ComponentName
+    String componentName;
 
     @PostConstruct
     public void init() {
         Properties props = new Properties();
         props.put("bootstrap.servers", properties.getProperty("kafka.bootstrap.servers"));
         props.put("acks", "all");
-        props.put("transactional.id", "claims-transactional-id-" + UUID.randomUUID()); // unique coz each producer needs a unique id
+        props.put("transactional.id", componentName + "-transactional-id-" + UUID.randomUUID()); // unique coz each producer needs a unique id
         producer = new KafkaProducer<>(props, new StringSerializer(), new StringSerializer());
         producer.initTransactions();
 
         props = new Properties();
         props.put("bootstrap.servers", properties.getProperty("kafka.bootstrap.servers"));
-        props.put("group.id", "claims");
+        props.put("group.id", componentName);
         props.put("enable.auto.commit", "true");
         props.put("auto.commit.interval.ms", "1000");
         consumer = new KafkaConsumer<>(props, new StringDeserializer(), new StringDeserializer());
-        consumer.subscribe(asList(CLAIM_CREATE_DB_COMMAND_TOPIC, CLAIM_CREATE_SEARCH_COMMAND_TOPIC, CLAIM_CREATE_RELATIONSHIP_COMMAND_TOPIC));
+        consumer.subscribe(recordHandler.getTopics());
 
         executorService.submit(this);
     }
@@ -109,6 +99,10 @@ public class KafkaAdapter implements Runnable {
             // "or to call .get() on the returned Future: a KafkaException would be thrown "
             // "if any of the producer.send() or transactional calls hit an irrecoverable error during a transaction."
             producer.commitTransaction();
+
+            TODO set, but dont log duration;
+            telemetryService.toKafka(records);
+
         } catch (KafkaException e) {
             System.err.println("Problem with Kafka");
             e.printStackTrace();
@@ -121,23 +115,9 @@ public class KafkaAdapter implements Runnable {
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
             for(ConsumerRecord<String, String> r : records) {
                 try {
-                    Claim claim = objectMapper.readValue(r.value(), Claim.class);
-
-                    if(CLAIM_CREATE_DB_COMMAND_TOPIC.equals(r.topic())) {
-                        // create in our DB
-                        claimRepository.createClaim(claim);
-
-                        // inform UI. note having to use a transaction and the lock to publish. alternatively, use a difference producer instance.
-                        self().sendInOneTransaction(singletonList(new ProducerRecord<>(CLAIM_CREATED_EVENT_TOPIC, claim.getId())));
-                    } else if(CLAIM_CREATE_SEARCH_COMMAND_TOPIC.equals(r.topic())) {
-                        // create in Elastic. No need to send record to UI.
-                        elasticSearchAdapter.createClaim(claim);
-                    } else if(CLAIM_CREATE_RELATIONSHIP_COMMAND_TOPIC.equals(r.topic())) {
-                        // create in Neo4J. No need to send record to UI.
-                        neo4JAdapter.createClaim(claim);
-                    } else {
-                        System.err.println("received record from unexpected topic " + r.topic() + ": " + r.value());
-                    }
+                    telemetryService.startFromKafka(r);
+                    recordHandler.handleRecord(r, self()); // TODO doing it this way means we are effectively serial! a later version should handle records in parallel
+                    telemetryService.endFromKafka(r); TODO required for records which are not sent on to kafka or elsewhere, so duration is logged
                 } catch (Exception e) {
                     // TODO handle better => this causes data loss.
                     //  rolling back all is also a problem, as successful ones will be replayed.

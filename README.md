@@ -38,6 +38,8 @@ Delete existing, if necessary:
     kubectl -n kafka-data-consistency delete service neo4j
     kubectl -n kafka-data-consistency delete deployment kibana
     kubectl -n kafka-data-consistency delete service kibana
+    kubectl -n kafka-data-consistency delete deployment elastic-apm-server
+    kubectl -n kafka-data-consistency delete service elastic-apm-server
 
 Create deployments and services:
 
@@ -47,6 +49,7 @@ Create deployments and services:
     kubectl -n kafka-data-consistency apply -f elasticsearch.yaml
     kubectl -n kafka-data-consistency apply -f neo4j.yaml
     kubectl -n kafka-data-consistency apply -f kibana.yaml
+    kubectl -n kafka-data-consistency apply -f elastic-apm-server.yaml
 
 Open ports like this:
 
@@ -392,6 +395,7 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 - add context of "partner" to filter on websocket server side
 - finish build and run scripts
 - dockerize ui, tasks, claims, web
+- kubernetes/prometheus/grafana: https://raw.githubusercontent.com/giantswarm/kubernetes-prometheus/master/manifests-all.yaml
 - still need to think about transaction when writing to own DB and informing UI that a change took place. maybe use CDC?
 - validation up front with http. if not available, then temp tile looks different => validation errors
   during actual async processing of kafka record should then be given to user as a task for them to fix

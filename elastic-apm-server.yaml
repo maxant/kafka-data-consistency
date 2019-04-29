@@ -1,0 +1,38 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: elastic-apm-server
+spec:
+  selector:
+    app: elastic-apm-server
+  type: NodePort
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8200
+    targetPort: 8200
+    nodePort: 30200
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elastic-apm-server
+spec:
+  selector:
+    matchLabels:
+      app: elastic-apm-server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: elastic-apm-server
+    spec:
+      containers:
+      - name: elastic-apm-server
+        image: maxant/elasticapmserver
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8200
+        env:
+        - name: discovery.type
+          value: "single-node"
