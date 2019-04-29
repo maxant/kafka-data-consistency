@@ -53,28 +53,36 @@ Create deployments and services:
 
 Open ports like this:
 
-    # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092, neo4j:30101:7687
+    # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092, neo4j:30101:7687, elastic-apm-server:30200:8200
     firewall-cmd --zone=public --permanent --add-port=30000/tcp
     firewall-cmd --zone=public --permanent --add-port=30001/tcp
     firewall-cmd --zone=public --permanent --add-port=30002/tcp
     firewall-cmd --zone=public --permanent --add-port=30101/tcp
+    firewall-cmd --zone=public --permanent --add-port=30101/tcp
+    firewall-cmd --zone=public --permanent --add-port=30200/tcp
     firewall-cmd --reload
     firewall-cmd --list-all
 
 Setup forwarding like this (some are accessed directly from outside, others are accessed via nginx):
 
-    # zookeeper, kafka_1, kafka_2, elasticsearch, elasticsearch, neo4j, neo4j, kibana
+    # zookeeper, kafka_1, kafka_2
     socat TCP-LISTEN:30000,fork TCP:$(minikube ip):30000 &
     socat TCP-LISTEN:30001,fork TCP:$(minikube ip):30001 &
     socat TCP-LISTEN:30002,fork TCP:$(minikube ip):30002 &
 
+    # elasticsearch
     socat TCP-LISTEN:30050,fork TCP:$(minikube ip):30050 &
     # only for inter node connections: socat TCP-LISTEN:30051,fork TCP:$(minikube ip):30051 &
 
+    # neo4j
     socat TCP-LISTEN:30100,fork TCP:$(minikube ip):30100 &
     socat TCP-LISTEN:30101,fork TCP:$(minikube ip):30101 &
 
+    # kibana
     socat TCP-LISTEN:30150,fork TCP:$(minikube ip):30150 &
+
+    # elastic-apm-server
+    socat TCP-LISTEN:30200,fork TCP:$(minikube ip):30200 &
 
     # minikube port, see kibana metricbeat for kube way down below
     socat TCP-LISTEN:10250,fork TCP:$(minikube ip):10250 &
@@ -309,7 +317,16 @@ E.g. run task service locally, but connecting to kube:
 
     java -Xmx128M -Xms128M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 -jar web/target/web-microbundle.jar --port 8080 &
     java -Xmx128M -Xms128M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8788 -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 -Delasticsearch.baseUrl=kdc.elasticsearch.maxant.ch -Dneo4j.jdbc.url=jdbc:neo4j:bolt://kdc.neo4j.maxant.ch:30101 -Dneo4j.jdbc.username=a -Dneo4j.jdbc.password=a -jar claims/target/claims-microbundle.jar --port 8081 &
-    java -Xmx128M -Xms128M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 -jar tasks/target/tasks-microbundle.jar --port 8082 &
+    java -Xmx128M -Xms128M \
+         -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 \
+         -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 \
+         -javaagent:elastic-apm-agent-1.6.1.jar \
+         -Delastic.apm.service_name=tasks \
+         -Delastic.apm.server_urls=http://maxant.ch:30200 \
+         -Delastic.apm.secret_token= \
+         -Delastic.apm.application_packages=ch.maxant \
+         -jar tasks/target/tasks-microbundle.jar \
+         --port 8082 &
 
 Useful Kube stuff:
 
@@ -828,4 +845,27 @@ Or add a filter:
     }
 
 http://kdc.kibana.maxant.ch/app/kibana#/discover?_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-2h,to:now))&_a=(columns:!(message),filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:c1be7050-69d3-11e9-9ebe-bf41a21a544a,key:kubernetes.namespace,negate:!f,params:(query:kafka-data-consistency),type:phrase,value:kafka-data-consistency),query:(match:(kubernetes.namespace:(query:kafka-data-consistency,type:phrase)))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:c1be7050-69d3-11e9-9ebe-bf41a21a544a,key:query,negate:!f,type:custom,value:'%7B%22regexp%22:%7B%22kubernetes.container.name%22:%7B%22value%22:%22kafka-.%22%7D%7D%7D'),query:(regexp:(kubernetes.container.name:(value:kafka-.))))),index:c1be7050-69d3-11e9-9ebe-bf41a21a544a,interval:auto,query:(language:kuery,query:'kubernetes.namespace:%20%22kafka-data-consistency%22%20and%20(kubernetes.container.name%20:%20%22kafka-1%22%20or%20kubernetes.container.name%20:%20%22kafka-2%22)'),sort:!('@timestamp',desc))
+
+# Tracing
+
+Chose to use elasticsearch's APM Server - it's opentracing according to opentracing.org
+And it is well documented.
+Not yet convinced that the microprofile supports full propagation as well as tracing jdbc etc.
+
+- See https://www.elastic.co/guide/en/apm/server/current/running-on-docker.html
+- Install APM Server into Kube
+- Once APM server is running in Kube, go to kibana home page and setup APM: http://kdc.kibana.maxant.ch/app/kibana#/home/tutorial/apm?_g=()
+- click the button "check apm server status"
+- Download `elastic-apm-agent-1.6.1.jar` from https://search.maven.org/search?q=a:elastic-apm-agent
+- Add the following to the launch config:
+
+         -javaagent:elastic-apm-agent-1.6.1.jar \
+         -Delastic.apm.service_name=tasks \
+         -Delastic.apm.server_urls=http://maxant.ch:30200 \
+         -Delastic.apm.secret_token= \
+         -Delastic.apm.application_packages=ch.maxant \
+
+- start the app
+- click the rest of the buttons in the kibana webapp
+- view data: http://kdc.kibana.maxant.ch/app/apm#/services
 
