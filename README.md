@@ -315,18 +315,42 @@ Create elasticsearch indexes:
 
 E.g. run task service locally, but connecting to kube:
 
-    java -Xmx128M -Xms128M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 -jar web/target/web-microbundle.jar --port 8080 &
-    java -Xmx128M -Xms128M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8788 -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 -Delasticsearch.baseUrl=kdc.elasticsearch.maxant.ch -Dneo4j.jdbc.url=jdbc:neo4j:bolt://kdc.neo4j.maxant.ch:30101 -Dneo4j.jdbc.username=a -Dneo4j.jdbc.password=a -jar claims/target/claims-microbundle.jar --port 8081 &
-    java -Xmx128M -Xms128M \
+    java -Xmx256M -Xms256M \
+         -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 \
+         -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 \
+         -javaagent:elastic-apm-agent-1.6.1.jar \
+             -Delastic.apm.service_name=web \
+             -Delastic.apm.server_urls=http://maxant.ch:30200 -Delastic.apm.secret_token= \
+             -Delastic.apm.application_packages=ch.maxant \
+         -jar web/target/web-microbundle.jar \
+         --port 8080 &
+    java -Xmx256M -Xms256M \
+         -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8788 \
+         -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 \
+         -Delasticsearch.baseUrl=kdc.elasticsearch.maxant.ch \
+         -Dneo4j.jdbc.url=jdbc:neo4j:bolt://kdc.neo4j.maxant.ch:30101 \
+         -Dneo4j.jdbc.username=a \
+         -Dneo4j.jdbc.password=a \
+         -javaagent:elastic-apm-agent-1.6.1.jar \
+             -Delastic.apm.service_name=claims \
+             -Delastic.apm.server_urls=http://maxant.ch:30200 -Delastic.apm.secret_token= \
+             -Delastic.apm.application_packages=ch.maxant \
+         -jar claims/target/claims-microbundle.jar \
+         --port 8081 &
+    java -Xmx256M -Xms256M \
          -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 \
          -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 \
          -javaagent:elastic-apm-agent-1.6.1.jar \
-         -Delastic.apm.service_name=tasks \
-         -Delastic.apm.server_urls=http://maxant.ch:30200 \
-         -Delastic.apm.secret_token= \
-         -Delastic.apm.application_packages=ch.maxant \
+             -Delastic.apm.service_name=tasks \
+             -Delastic.apm.server_urls=http://maxant.ch:30200 -Delastic.apm.secret_token= \
+             -Delastic.apm.application_packages=ch.maxant \
          -jar tasks/target/tasks-microbundle.jar \
          --port 8082 &
+
+Start the UI:
+
+    cd ui
+    node node_modules/http-server/bin/http-server -p 8083 &
 
 Useful Kube stuff:
 
@@ -868,4 +892,15 @@ Not yet convinced that the microprofile supports full propagation as well as tra
 - start the app
 - click the rest of the buttons in the kibana webapp
 - view data: http://kdc.kibana.maxant.ch/app/apm#/services
+
+# MySql
+
+see https://hub.docker.com/_/mysql
+
+    docker run --name mysql -p33306:3306 -e MYSQL_ROOT_PASSWORD=secret -d mysql
+
+
+Connecting to it:
+
+    docker run -it --rm mysql mysql -hmysql -uuser -p
 

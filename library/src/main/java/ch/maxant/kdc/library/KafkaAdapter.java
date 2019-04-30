@@ -1,8 +1,5 @@
 package ch.maxant.kdc.library;
 
-import ch.maxant.kdc.library.telemetry.ComponentName;
-import ch.maxant.kdc.library.telemetry.TelemetryService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -25,8 +22,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
 import static javax.ejb.ConcurrencyManagementType.CONTAINER;
 
 @ConcurrencyManagement(CONTAINER)
@@ -46,34 +41,31 @@ public class KafkaAdapter implements Runnable {
     ManagedExecutorService executorService;
 
     @Inject
-    TelemetryService telemetryService;
-
-    @Inject
     ch.maxant.kdc.library.Properties properties;
 
     @Inject
     RecordHandler recordHandler;
-
-    @Inject
-    @ComponentName
-    String componentName;
 
     @PostConstruct
     public void init() {
         Properties props = new Properties();
         props.put("bootstrap.servers", properties.getProperty("kafka.bootstrap.servers"));
         props.put("acks", "all");
-        props.put("transactional.id", componentName + "-transactional-id-" + UUID.randomUUID()); // unique coz each producer needs a unique id
+        if(recordHandler.useTransactions()) {
+            props.put("transactional.id", recordHandler.getComponentName() + "-transactional-id-" + UUID.randomUUID()); // unique coz each producer needs a unique id
+        }
         producer = new KafkaProducer<>(props, new StringSerializer(), new StringSerializer());
-        producer.initTransactions();
+        if(recordHandler.useTransactions()) {
+            producer.initTransactions();
+        }
 
         props = new Properties();
         props.put("bootstrap.servers", properties.getProperty("kafka.bootstrap.servers"));
-        props.put("group.id", componentName);
+        props.put("group.id", recordHandler.getComponentName());
         props.put("enable.auto.commit", "true");
         props.put("auto.commit.interval.ms", "1000");
         consumer = new KafkaConsumer<>(props, new StringDeserializer(), new StringDeserializer());
-        consumer.subscribe(recordHandler.getTopics());
+        consumer.subscribe(recordHandler.getSubscriptionTopics());
 
         executorService.submit(this);
     }
@@ -99,10 +91,6 @@ public class KafkaAdapter implements Runnable {
             // "or to call .get() on the returned Future: a KafkaException would be thrown "
             // "if any of the producer.send() or transactional calls hit an irrecoverable error during a transaction."
             producer.commitTransaction();
-
-            TODO set, but dont log duration;
-            telemetryService.toKafka(records);
-
         } catch (KafkaException e) {
             System.err.println("Problem with Kafka");
             e.printStackTrace();
@@ -110,14 +98,17 @@ public class KafkaAdapter implements Runnable {
         }
     }
 
+    @Lock(LockType.READ) // sending without a transaction can be done by multiple threads at a time
+    public void publishEvent(String topic, String key, String value) {
+        producer.send(new ProducerRecord<>(topic, key, value));
+    }
+
     public void run() {
         try{
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
             for(ConsumerRecord<String, String> r : records) {
                 try {
-                    telemetryService.startFromKafka(r);
                     recordHandler.handleRecord(r, self()); // TODO doing it this way means we are effectively serial! a later version should handle records in parallel
-                    telemetryService.endFromKafka(r); TODO required for records which are not sent on to kafka or elsewhere, so duration is logged
                 } catch (Exception e) {
                     // TODO handle better => this causes data loss.
                     //  rolling back all is also a problem, as successful ones will be replayed.

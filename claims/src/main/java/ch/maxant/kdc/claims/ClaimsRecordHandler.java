@@ -38,7 +38,7 @@ public class ClaimsRecordHandler implements RecordHandler {
     @Inject
     Neo4JAdapter neo4JAdapter;
 
-    public Collection<String> getTopics() {
+    public Collection<String> getSubscriptionTopics() {
         return asList(CLAIM_CREATE_DB_COMMAND_TOPIC, CLAIM_CREATE_SEARCH_COMMAND_TOPIC, CLAIM_CREATE_RELATIONSHIP_COMMAND_TOPIC);
     }
 
@@ -60,7 +60,15 @@ public class ClaimsRecordHandler implements RecordHandler {
         } else {
             System.err.println("received record from unexpected topic " + r.topic() + ": " + r.value());
         }
-
     }
 
+    @Override
+    public String getComponentName() {
+        return "claims";
+    }
+
+    @Override
+    public boolean useTransactions() {
+        return true;
+    }
 }

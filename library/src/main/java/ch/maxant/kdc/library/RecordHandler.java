@@ -6,8 +6,12 @@ import java.util.Collection;
 
 public interface RecordHandler {
 
-    Collection<String> getTopics();
+    Collection<String> getSubscriptionTopics();
 
     void handleRecord(ConsumerRecord<String, String> record, KafkaAdapter kafkaAdapter) throws Exception;
 
+    String getComponentName();
+
+    /** if returns true, then you can only send using transactions. otherwise you can only send without transactions. */
+    boolean useTransactions();
 }

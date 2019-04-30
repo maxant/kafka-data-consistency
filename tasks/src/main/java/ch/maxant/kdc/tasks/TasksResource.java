@@ -1,17 +1,17 @@
 package ch.maxant.kdc.tasks;
 
+import ch.maxant.kdc.library.KafkaAdapter;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Collection;
 import java.util.List;
 import java.util.Vector;
 
+import static ch.maxant.kdc.tasks.TasksRecordHandler.TASK_CREATED_EVENT_TOPIC;
 import static java.util.stream.Collectors.toList;
 
 @Path("tasks")
@@ -40,7 +40,15 @@ public class TasksResource {
     @DELETE
     public Response delete() {
         model.getTasks().clear();
-        kafka.publishEvent("deleted-all");
+        kafka.publishEvent(TASK_CREATED_EVENT_TOPIC, null, "deleted-all");
         return Response.ok().build();
+    }
+
+    /** THIS METHOD IS TEMPORARY - to investigate tracing. already replaced with kafka! just delete this! */
+    @POST
+    public Response create(Task task) {
+        model.getTasks().computeIfAbsent(task.getForeignReference(), k -> new Vector<>()).add(task.getDescription());
+        kafka.publishEvent(TASK_CREATED_EVENT_TOPIC, null, task.getForeignReference());
+        return Response.noContent().build();
     }
 }

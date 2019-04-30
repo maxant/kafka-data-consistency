@@ -1,7 +1,6 @@
 package ch.maxant.kdc.claims;
 
 import ch.maxant.kdc.library.KafkaAdapter;
-import ch.maxant.kdc.library.telemetry.Measured;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -18,7 +17,6 @@ import static java.util.Arrays.asList;
 
 @Path("claims")
 @ApplicationScoped
-@Measured
 public class ClaimResource {
 
     @Inject
@@ -29,6 +27,9 @@ public class ClaimResource {
 
     @Inject
     ClaimRepository claimRepository;
+
+    @Inject
+    TempTaskService tempTaskService;
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -43,15 +44,24 @@ public class ClaimResource {
         ProducerRecord<String, String> claimDbRecord = new ProducerRecord<>(CLAIM_CREATE_DB_COMMAND_TOPIC, null, null, om.writeValueAsString(claim));
         ProducerRecord<String, String> claimSearchRecord = new ProducerRecord<>(CLAIM_CREATE_SEARCH_COMMAND_TOPIC, null, null, om.writeValueAsString(claim));
         ProducerRecord<String, String> claimRelationshipRecord = new ProducerRecord<>(CLAIM_CREATE_RELATIONSHIP_COMMAND_TOPIC, null, null, om.writeValueAsString(claim));
-        ProducerRecord<String, String> createTaskCommand = new ProducerRecord<>(TASK_CREATE_COMMAND_TOPIC, null, null, om.writeValueAsString(new Task(claim.getId(), "call customer " + claim.getPartnerId())));
 
-        claim.getLocation().setAggretateId(claim.getId());
-        claim.getLocation().setType(Location.LocationType.CLAIM_LOCATION);
-        ProducerRecord<String, String> createLocationCommand = new ProducerRecord<>(LOCATION_CREATE_COMMAND_TOPIC, null, null, om.writeValueAsString(claim.getLocation()));
+        Task task = new Task(claim.getId(), "call customer " + claim.getPartnerId());
+        //ProducerRecord<String, String> createTaskCommand = new ProducerRecord<>(TASK_CREATE_COMMAND_TOPIC, null, null, om.writeValueAsString(task));
 
-        List<ProducerRecord<String, String>> records = asList(claimDbRecord, claimSearchRecord, claimRelationshipRecord, createTaskCommand, createLocationCommand);
+        // temporarily use a rest client to create hte task, to see how tracing works
+        tempTaskService.createTask(task);
+
+        // TODO integrate locations
+        //claim.getLocation().setAggretateId(claim.getId());
+        //claim.getLocation().setType(Location.LocationType.CLAIM_LOCATION);
+        //ProducerRecord<String, String> createLocationCommand = new ProducerRecord<>(LOCATION_CREATE_COMMAND_TOPIC, null, null, om.writeValueAsString(claim.getLocation()));
+
+        List<ProducerRecord<String, String>> records = asList(claimDbRecord, claimSearchRecord,
+                                claimRelationshipRecord /*, createTaskCommand, createLocationCommand*/);
 
         kafka.sendInOneTransaction(records);
+
+        // TODO temporarily add to mysql to investigate tracing
 
         return Response.accepted().build();
     }
