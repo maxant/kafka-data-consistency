@@ -5,7 +5,7 @@ function createClaim(form, partnerId) {
     return new Promise(function (resolve, reject) {
         setTimeout(function(){ // so that demo shows "in progress" message
             const claim = {"summary": form.summary, "description": form.description, "partnerId": partnerId, "reserve": form.reserve, "date": form.date.replace(/\//g, "-")};
-            axios.post(CLAIMS_BASE_URL + 'claims', claim)
+            axios.post(CLAIMS_BASE_URL + 'claims', claim, {headers: {"Elastic-Apm-Traceparent": elasticApm.getCurrentTransaction().traceId}})
             .then(function(response) {
                 if(response.status === 202) {
                     console.log("claim creation request accepted");

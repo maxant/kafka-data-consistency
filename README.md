@@ -470,6 +470,13 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 - define payara config with yml
 - add https://docs.payara.fish/documentation/microprofile/healthcheck.html and use it in start script?
 - https://blog.payara.fish/using-hotswapagent-to-speed-up-development => [hotswapagent.md](hotswapagent.md)
+- Strange problem with Bold driver in payara micro:
+
+    [2019-05-01T23:37:54.931+0200] [] [INFO] [AS-WEB-GLUE-00201] [javax.enterprise.web] [tid: _ThreadID=1 _ThreadName=main] [timeMillis: 1556746674931] [levelValue: 800] Virtual server server loaded default web module
+    [2019-05-01T23:38:07.802+0200] [] [WARNING] [] [javax.enterprise.web.util] [tid: _ThreadID=1 _ThreadName=main] [timeMillis: 1556746687802] [levelValue: 900] The web application [unknown] registered the JDBC driver [org.neo4j.jdbc.bolt.BoltDriver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
+    [2019-05-01T23:38:07.804+0200] [] [WARNING] [] [javax.enterprise.web.util] [tid: _ThreadID=1 _ThreadName=main] [timeMillis: 1556746687804] [levelValue: 900] The web application [unknown] registered the JDBC driver [org.neo4j.jdbc.boltrouting.BoltRoutingNeo4jDriver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
+    [2019-05-01T23:38:07.805+0200] [] [WARNING] [] [javax.enterprise.web.util] [tid: _ThreadID=1 _ThreadName=main] [timeMillis: 1556746687805] [levelValue: 900] The web application [unknown] registered the JDBC driver [org.neo4j.jdbc.http.HttpDriver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
+
 
 # TODO Blog
 
@@ -878,6 +885,7 @@ Not yet convinced that the microprofile supports full propagation as well as tra
 
 - See https://www.elastic.co/guide/en/apm/server/current/running-on-docker.html
 - Install APM Server into Kube
+- config located in elastic-apm-server.docker.yml which is imported in our custom docker build file.
 - Once APM server is running in Kube, go to kibana home page and setup APM: http://kdc.kibana.maxant.ch/app/kibana#/home/tutorial/apm?_g=()
 - click the button "check apm server status"
 - Download `elastic-apm-agent-1.6.1.jar` from https://search.maven.org/search?q=a:elastic-apm-agent
@@ -904,3 +912,14 @@ Connecting to it:
 
     docker run -it --rm mysql mysql -hmysql -uuser -p
 
+Hmmm not working yet...
+
+# Cors Proxy
+
+https://www.npmjs.com/package/local-cors-proxy
+
+not used at the moment. but runs like this:
+
+    node node_modules/local-cors-proxy/bin/lcp.js --proxyUrl=http://maxant.ch:30200 --port=30200
+
+    curl -X "POST" -H "Content-Type: application/x-ndjson" -d @/tmp/body.txt http://localhost:30200/proxy/intake/v2/rum/events

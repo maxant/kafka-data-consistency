@@ -23,6 +23,21 @@
     <script src="https://unpkg.com/neo4j-driver@1.7.3/lib/browser/neo4j-web.js"></script>
     <script src="https://cdn.neo4jlabs.com/neovis.js/v1.0.0/neovis.js"></script>
 
+    <script src="https://unpkg.com/@elastic/apm-rum@4.0.1/dist/bundles/elastic-apm-rum.umd.min.js"></script>
+    <script>
+        // set up tracing (elastic apm) - see https://www.elastic.co/guide/en/apm/agent/js-base/current/api.html
+        // TODO find a better place for apm object to live
+        window.elasticapm = elasticApm.init({
+          serviceName: 'ui',
+          //serverUrl: 'http://localhost:30200/proxy',
+          serverUrl: 'http://maxant.ch:30200',
+          serviceVersion: 'beta',
+          logLevel: 'trace',
+          environment: 'test'
+        });
+        window.elasticapm.setUserContext({id: "UserNumber", username: "ant", email: "someaddress@maxant.ch"});
+    </script>
+
     <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons" rel="stylesheet" type="text/css">
     <link href="https://cdn.jsdelivr.net/npm/ionicons@^4.0.0/dist/css/ionicons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font@^2.0.0/css/materialdesignicons.min.css" rel="stylesheet">

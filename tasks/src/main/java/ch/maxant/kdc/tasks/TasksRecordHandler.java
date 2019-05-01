@@ -41,11 +41,6 @@ public class TasksRecordHandler implements RecordHandler {
     }
 
     @Override
-    public String getComponentName() {
-        return "tasks";
-    }
-
-    @Override
     public boolean useTransactions() {
         return false;
     }

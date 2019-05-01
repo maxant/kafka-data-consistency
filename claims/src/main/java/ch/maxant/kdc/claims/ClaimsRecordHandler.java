@@ -63,11 +63,6 @@ public class ClaimsRecordHandler implements RecordHandler {
     }
 
     @Override
-    public String getComponentName() {
-        return "claims";
-    }
-
-    @Override
     public boolean useTransactions() {
         return true;
     }

@@ -45,11 +45,6 @@ public class WebRecordHandler implements RecordHandler {
     }
 
     @Override
-    public String getComponentName() {
-        return "web";
-    }
-
-    @Override
     public boolean useTransactions() {
         return false;
     }

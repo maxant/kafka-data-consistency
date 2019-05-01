@@ -18,7 +18,7 @@ public class CorsFilter implements Filter {
         res.addHeader("Access-Control-Allow-Origin", "*");
         if("OPTIONS".equals(req.getMethod())) {
             res.addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, HEAD");
-            res.addHeader("Access-Control-Allow-Headers", "content-type");
+            res.addHeader("Access-Control-Allow-Headers", "content-type, elastic-apm-traceparent");
             res.setStatus(200);
         } else {
             chain.doFilter(request, response);

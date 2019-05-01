@@ -10,7 +10,9 @@ public interface RecordHandler {
 
     void handleRecord(ConsumerRecord<String, String> record, KafkaAdapter kafkaAdapter) throws Exception;
 
-    String getComponentName();
+    default String getComponentName() {
+        return System.getProperty("elastic.apm.service_name");
+    }
 
     /** if returns true, then you can only send using transactions. otherwise you can only send without transactions. */
     boolean useTransactions();

@@ -53,6 +53,7 @@ export class Controller {
 
     // example implemented with rxjs
     loadClaims() {
+        const tracingTransaction = window.elasticapm.startTransaction("loadClaims", "ui-tx");
         const store = this[_store];
         const model = this[_model];
         model.claims.loading = true;
@@ -66,8 +67,11 @@ export class Controller {
                 model.claims.error = null;
                 model.claims.entities$.next(response.data);
                 store.updateHistory("loaded claims");
+                tracingTransaction.end();
             },
             error => {
+                window.elasticapm.captureError(error);
+                tracingTransaction.end(); // necessary in addition to capureError, see https://www.elastic.co/guide/en/apm/agent/js-base/current/custom-transactions.html
                 model.claims.error = error.toLocaleString();
                 model.claims.loading = false;
                 model.claims.entities$.next([]);
@@ -78,6 +82,7 @@ export class Controller {
 
     // example implemented with async await
     async createClaim(claim) {
+        const tracingTransaction = window.elasticapm.startTransaction("createClaim", "ui-tx");
         const store = this[_store];
         const model = this[_model];
 
@@ -94,8 +99,11 @@ export class Controller {
         try {
             await service.createClaim(claim, model.partner.entity.id);
         } catch (error) {
+            window.elasticapm.captureError(error);
             model.claims.error = error;
             store.updateHistory("error creating claim: " + error);
+        } finally {
+            tracingTransaction.end();
         }
     }
 
