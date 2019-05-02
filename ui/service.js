@@ -3,9 +3,10 @@ const map = rxjs.operators.map;
 
 function createClaim(form, partnerId) {
     return new Promise(function (resolve, reject) {
-        setTimeout(function(){ // so that demo shows "in progress" message
+//        setTimeout(function(){ // so that demo shows "in progress" message
             const claim = {"summary": form.summary, "description": form.description, "partnerId": partnerId, "reserve": form.reserve, "date": form.date.replace(/\//g, "-")};
-            axios.post(CLAIMS_BASE_URL + 'claims', claim, {headers: {"Elastic-Apm-Traceparent": elasticApm.getCurrentTransaction().traceId}})
+            //example of adding a header: axios.post(CLAIMS_BASE_URL + 'claims', claim, {headers: {"elastic-apm-traceparent": some value}})
+            axios.post(CLAIMS_BASE_URL + 'claims', claim)
             .then(function(response) {
                 if(response.status === 202) {
                     console.log("claim creation request accepted");
@@ -15,7 +16,7 @@ function createClaim(form, partnerId) {
                 console.error("Failed to create claim: " + JSON.stringify(call));
                 reject("Failed to create claim. See console for details. (" + (call.response?call.response.status:"-") + ")");
             });
-        }, 1000);
+//        }, 1000);
     });
 }
 

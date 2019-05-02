@@ -1,5 +1,9 @@
 package ch.maxant.kdc.library;
 
+import co.elastic.apm.api.ElasticApm;
+import co.elastic.apm.api.Scope;
+import co.elastic.apm.api.Span;
+import co.elastic.apm.api.Transaction;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -8,6 +12,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.KafkaException;
+import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
@@ -18,10 +23,10 @@ import javax.ejb.*;
 import javax.enterprise.concurrent.ManagedExecutorService;
 import javax.inject.Inject;
 import java.time.Duration;
-import java.util.List;
 import java.util.Properties;
-import java.util.UUID;
+import java.util.*;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static javax.ejb.ConcurrencyManagementType.CONTAINER;
 
 @ConcurrencyManagement(CONTAINER)
@@ -84,7 +89,11 @@ public class KafkaAdapter implements Runnable {
     public void sendInOneTransaction(List<ProducerRecord<String, String>> records) {
         try {
             producer.beginTransaction();
-            records.forEach(r -> producer.send(r));
+
+            Transaction tracingTx = ElasticApm.currentTransaction();
+
+            records.forEach(record -> publishRecordWithTracing(tracingTx, record));
+
             // we don't have to wait for all futures to complete. see javadocs:
             // "The transactional producer uses exceptions to communicate error states."
             // "In particular, it is not required to specify callbacks for producer.send() "
@@ -100,20 +109,32 @@ public class KafkaAdapter implements Runnable {
 
     @Lock(LockType.READ) // sending without a transaction can be done by multiple threads at a time
     public void publishEvent(String topic, String key, String value) {
-        producer.send(new ProducerRecord<>(topic, key, value));
+        ProducerRecord<String, String> record = new ProducerRecord<>(topic, key, value);
+        publishRecordWithTracing(ElasticApm.currentTransaction(), record);
     }
 
     public void run() {
         try{
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
             for(ConsumerRecord<String, String> r : records) {
-                try {
+
+                r.headers().forEach(h -> System.out.println("header in incoming record: " + h.key() + "/" + new String(h.value(), UTF_8)));
+
+                Transaction transaction = startTracingTx(r);
+                transaction.setName(r.topic());
+                transaction.setType(Transaction.TYPE_REQUEST);
+
+                try (final Scope scope = transaction.activate()) {
                     recordHandler.handleRecord(r, self()); // TODO doing it this way means we are effectively serial! a later version should handle records in parallel
                 } catch (Exception e) {
+                    transaction.captureException(e);
+
                     // TODO handle better => this causes data loss.
                     //  rolling back all is also a problem, as successful ones will be replayed.
                     //  need to filter this out to a place which admin can investigate
                     e.printStackTrace();
+                } finally {
+                    transaction.end();
                 }
             }
             consumer.commitSync();
@@ -128,5 +149,45 @@ public class KafkaAdapter implements Runnable {
     /** get a reference to the EJB instance, so that interceptors work, e.g. the lock */
     private KafkaAdapter self() {
         return ctx.getBusinessObject(this.getClass());
+    }
+
+    private void publishRecordWithTracing(Transaction transaction, ProducerRecord<String, String> record) {
+        // https://discuss.elastic.co/t/java-agent-how-to-manually-instrument-an-rpc-framework-which-is-not-already-supported/172730
+        // https://discuss.elastic.co/t/does-elastic-apm-support-spring-cloud-stream/173620/3
+        // https://discuss.elastic.co/t/java-agent-custom-span-in-multithread-context/178608/10
+        // https://discuss.elastic.co/t/apm-problem-with-java-standalone/175214/3
+
+        // https://www.elastic.co/guide/en/apm/agent/java/current/public-api.html#api-transaction-inject-trace-headers
+        Span span = transaction
+                .startSpan("external", "kafka", record.topic())
+                .setName(record.topic());
+        try (final Scope scope = transaction.activate()) {
+            span.injectTraceHeaders((name, value2) -> {
+                System.out.println("publishEvent injecting: name=" + name + ", value=" + value2);
+                record.headers().add(name, value2.getBytes(UTF_8));
+            });
+            producer.send(record);
+        } catch (Exception e) {
+            span.captureException(e);
+            throw e;
+        } finally {
+            span.end();
+        }
+    }
+
+    private Transaction startTracingTx(ConsumerRecord<String, String> r) {
+        // https://www.elastic.co/guide/en/apm/agent/java/current/public-api.html#api-start-transaction-with-remote-parent-headers
+        return ElasticApm.startTransactionWithRemoteParent(key -> {
+                        System.out.println("reading tracing header for key " + key);
+                        return new String(r.headers().headers(key).iterator().next().value(), UTF_8);
+                    }, headerName -> {
+                        System.out.println("reading tracing headers for key " + headerName);
+                        Iterator<Header> iterator = r.headers().headers(headerName).iterator();
+                        List<String> out = new ArrayList<>();
+                        while(iterator.hasNext()) {
+                            out.add(new String(iterator.next().value(), UTF_8));
+                        }
+                        return out;
+                    });
     }
 }

@@ -1,6 +1,7 @@
 package ch.maxant.kdc.claims;
 
 import ch.maxant.kdc.library.Properties;
+import co.elastic.apm.api.CaptureSpan;
 import org.neo4j.jdbc.bolt.BoltDriver;
 
 import javax.annotation.PostConstruct;
@@ -30,6 +31,7 @@ public class Neo4JAdapter {
     public void shutdown() {
     }
 
+    @CaptureSpan
     public void createClaim(Claim claim) {
         //https://github.com/neo4j-contrib/neo4j-jdbc
 

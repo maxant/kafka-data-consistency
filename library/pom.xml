@@ -24,6 +24,11 @@
             <artifactId>javaee-api</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>co.elastic.apm</groupId>
+            <artifactId>apm-agent-api</artifactId>
+            <version>1.6.1</version>
+        </dependency>
     </dependencies>
 
 </project>

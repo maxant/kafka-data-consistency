@@ -26,16 +26,16 @@
     <script src="https://unpkg.com/@elastic/apm-rum@4.0.1/dist/bundles/elastic-apm-rum.umd.min.js"></script>
     <script>
         // set up tracing (elastic apm) - see https://www.elastic.co/guide/en/apm/agent/js-base/current/api.html
-        // TODO find a better place for apm object to live
-        window.elasticapm = elasticApm.init({
+        elasticApm.init({
           serviceName: 'ui',
           //serverUrl: 'http://localhost:30200/proxy',
           serverUrl: 'http://maxant.ch:30200',
           serviceVersion: 'beta',
           logLevel: 'trace',
-          environment: 'test'
+          environment: 'test',
+          distributedTracingOrigins: ['https://kdc.maxant.ch', 'http://localhost:8083', 'http://localhost:8081'] // only these sites will be logged in APM
         });
-        window.elasticapm.setUserContext({id: "UserNumber", username: "ant", email: "someaddress@maxant.ch"});
+        elasticApm.setUserContext({id: "UserNumber", username: "ant", email: "someaddress@maxant.ch"}); // TODO set depending on JWT
     </script>
 
     <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons" rel="stylesheet" type="text/css">
@@ -43,6 +43,14 @@
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font@^2.0.0/css/materialdesignicons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/animate.css@^3.5.2/animate.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/quasar@1.0.0-beta.17/dist/quasar.min.css" rel="stylesheet" type="text/css">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="theme-color" content="#ffffff">
 
     <script>
         const CLAIMS_BASE_URL = 'http://localhost:8081/claims/rest/';

@@ -421,104 +421,6 @@ Then you can build and redeploy as follows, e.g. the web component:
 
 More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-cmd-line.html
 
-# Links
-
-- Microprofile Specs: https://github.com/eclipse/microprofile-health/releases/tag/1.0
-- Microprofile POMs, etc.: https://github.com/eclipse/microprofile
-- Payara Docs: https://docs.payara.fish/documentation/microprofile/
-- Payara Examples: https://github.com/payara/Payara-Examples/tree/master/microprofile
-
-# TODO
-
-- neo4j: think of scenario where more relationship are involved, which a relational db would struggle with
-- add image for orientdb
-  - orientdb docker image => https://hub.docker.com/_/orientdb
-- add context of "partner" to filter on websocket server side
-- finish build and run scripts
-- dockerize ui, tasks, claims, web
-- kubernetes/prometheus/grafana: https://raw.githubusercontent.com/giantswarm/kubernetes-prometheus/master/manifests-all.yaml
-- still need to think about transaction when writing to own DB and informing UI that a change took place. maybe use CDC?
-- validation up front with http. if not available, then temp tile looks different => validation errors
-  during actual async processing of kafka record should then be given to user as a task for them to fix
-- UI
-  - add claim page to view details of a claim
-  - add aggregate for related claims, so we can show prototype of aggregated data
-  - move claim form to own view
-  - use resolver to avoid async code => except eg using an observable for updating server auto complete
-      - example with addresses from post.ch
-  - see TODOs inside UI component
-  - what are Vue.compile, extend, mixin, util?
-  - https://www.codeinwp.com/blog/vue-ui-component-libraries/ => quasar
-  - useful link for filters: https://vuejs.org/v2/guide/filters.html
-  - useful link for flex: https://css-tricks.com/snippets/css/a-guide-to-flexbox/
-  - useful link for validation: https://vuelidate.netlify.com/
-  - useful link for vue-rxjs: https://github.com/vuejs/vue-rx
-  - useful link for rxjs: https://www.learnrxjs.io/operators/creation/from.html
-  - useful tip: console.dir(document.getElementById("id")) => shows an object rather than the rendered element
-  - useful tip: document.getElementById("claims-form-other").__vue__ => gets the vue component
-  - useful tip: document.getElementById("claims-form-other").__vue__.$refs.input.focus() => set focus on it. not sure this is the correct way to do it tho!
-  - useful tip: document.getElementById("claims-form-other").__vue__.rules.map(function(f){return f(document.getElementById("claims-form-other").__vue__.$refs.input.value)}) => execute all internal validation rules on the component
-  - my question: https://forum.quasar-framework.org/topic/3391/how-can-i-hide-a-column
-  - my question: https://forum.quasar-framework.org/topic/3437/unit-testing-and-simulating-input
-  - my question: https://forum.quasar-framework.org/topic/3438/form-validation
-- example of error messages and e.g. security exceptions via error messages
-- fixme consumer.seekToEnd(asList(new TopicPartition(TASK_CREATED_EVENT_TOPIC, 0), new TopicPartition(CLAIM_CREATED_EVENT_TOPIC, 0)));
-- Tests with running server: https://groups.google.com/forum/#!topic/payara-forum/ZSRGdPkGKpE
-  - starting server: https://blog.payara.fish/using-the-payara-micro-maven-plugin
-  - https://docs.payara.fish/documentation/ecosystem/maven-plugin.html
-- add extra jars to uberjar: https://blog.payara.fish/using-the-payara-micro-maven-plugin
-- define payara config with yml
-- add https://docs.payara.fish/documentation/microprofile/healthcheck.html and use it in start script?
-- https://blog.payara.fish/using-hotswapagent-to-speed-up-development => [hotswapagent.md](hotswapagent.md)
-- Strange problem with Bold driver in payara micro:
-
-    [2019-05-01T23:37:54.931+0200] [] [INFO] [AS-WEB-GLUE-00201] [javax.enterprise.web] [tid: _ThreadID=1 _ThreadName=main] [timeMillis: 1556746674931] [levelValue: 800] Virtual server server loaded default web module
-    [2019-05-01T23:38:07.802+0200] [] [WARNING] [] [javax.enterprise.web.util] [tid: _ThreadID=1 _ThreadName=main] [timeMillis: 1556746687802] [levelValue: 900] The web application [unknown] registered the JDBC driver [org.neo4j.jdbc.bolt.BoltDriver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
-    [2019-05-01T23:38:07.804+0200] [] [WARNING] [] [javax.enterprise.web.util] [tid: _ThreadID=1 _ThreadName=main] [timeMillis: 1556746687804] [levelValue: 900] The web application [unknown] registered the JDBC driver [org.neo4j.jdbc.boltrouting.BoltRoutingNeo4jDriver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
-    [2019-05-01T23:38:07.805+0200] [] [WARNING] [] [javax.enterprise.web.util] [tid: _ThreadID=1 _ThreadName=main] [timeMillis: 1556746687805] [levelValue: 900] The web application [unknown] registered the JDBC driver [org.neo4j.jdbc.http.HttpDriver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
-
-
-# TODO Blog
-
-- need lock when using transactional kafka, but not otherwise since producer is thread safe
-
-
-- objective: use a light weight UI technology that does not require us to have a build system
-  - assume http/2 so that multiple fetches don't worry us
-  - need lazy loading => see example in boot.js
-
-- vuex says "Vuex uses a single state tree - that is, this single object contains all your application level state and serves as the "single source of truth". This also means usually you will have only one store for each application." (https://vuex.vuejs.org/guide/state.html)
-- it also says "So why don't we extract the shared state out of the components, and manage it in a global singleton? With this, our component tree becomes a big "view", and any component can access the state or trigger actions, no matter where they are in the tree!" (https://vuex.vuejs.org/)
-- thats a conflict :-)
-- compare http://blog.maxant.co.uk/pebble/2008/01/02/1199309880000.html and http://blog.maxant.co.uk/pebble/images/ants_mvc.jpg with https://github.com/facebook/flux/tree/master/examples/flux-concepts and https://github.com/facebook/flux/blob/master/examples/flux-concepts/flux-simple-f8-diagram-with-client-action-1300w.png
-- vuex also doesn't match what flux says: "There should be many stores in each application." (https://github.com/facebook/flux/tree/master/examples/flux-concepts)
-- see video here: https://facebook.github.io/flux/ at 11:03 (screen shot at ./ui/mvc-incorrect-as-far-as-ant-thinks.png) (https://www.youtube.com/watch?list=PLb0IAmt7-GS188xDYE-u1ShQmFFGbrk0v&time_continue=659&v=nYkdrAPrdcw)
-- i believe that the arrows going from view back to model are a result of the "separable model architecture" well known in java swing.
-- "So we collapsed these two entities (view and controller) into a single UI object" (https://www.oracle.com/technetwork/java/architecture-142923.html) => that leads to arrows as shown where the view directly updates the model. it is also the problem with two way binding (https://stackoverflow.com/questions/38626156/difference-between-one-way-binding-and-two-way-binding-in-angularjs)
-- don't two-way-bind WITH THE STORE. instead, get forms to fill their own model, and pass that to the CONTROLLER to merge the changes into the main model
-- to ensure that you only write to the model inside the controller
-- this can be inforced by only importing the model in the main components which
-  create their controllers, e.g. the `PartnerView`:
-
-    import {model} from './model.js';
-    import {Store} from './store.js';
-    import {Controller} from './controller.js';
-
-    const store = new Store(model);
-    const controller = new Controller(store, model);
-
-- why doesnt vue have dependency injection? not really needed. or maybe when we go to test? defo then! or maybe not,
-  see example with "mocks"
-  - WRONG - it does exist. see `provide` and `inject` in `claims.js` and `partnerView.js`. mocking works then, see `claims.spec.js`.
-
-- observables => show example of the subscription to claims inside claims.js and
-  how the template treats it as an object. v-for works as expected, but the thing
-  is actually an observable. then show how we add to it by calling getValue in
-  controller, using a BehaviourSubject. and we pass values from axios promise
-  to a service obserable but manually put them into the subject by calling next. can we improve that?
-
-- async route loading via custom loader since vue supports creating routes with promises
-
 # Useful Elasticsearch stuff:
 
 - http://elasticsearch-cheatsheet.jolicode.com/
@@ -901,6 +803,8 @@ Not yet convinced that the microprofile supports full propagation as well as tra
 - click the rest of the buttons in the kibana webapp
 - view data: http://kdc.kibana.maxant.ch/app/apm#/services
 
+Added to UI. Propagation not quite working yet: https://discuss.elastic.co/t/transaction-not-automatically-propagated-from-browser-to-backend/179259
+
 # MySql
 
 see https://hub.docker.com/_/mysql
@@ -923,3 +827,133 @@ not used at the moment. but runs like this:
     node node_modules/local-cors-proxy/bin/lcp.js --proxyUrl=http://maxant.ch:30200 --port=30200
 
     curl -X "POST" -H "Content-Type: application/x-ndjson" -d @/tmp/body.txt http://localhost:30200/proxy/intake/v2/rum/events
+
+# Favicon
+
+Created using https://realfavicongenerator.net/
+
+Added:
+
+- ui/android-chrome-192x192.png
+- ui/android-chrome-512x512.png
+- ui/apple-touch-icon.png
+- ui/browserconfig.xml
+- ui/favicon-16x16.png
+- ui/favicon-32x32.png
+- ui/favicon.ico
+- ui/mstile-144x144.png
+- ui/mstile-150x150.png
+- ui/mstile-310x150.png
+- ui/mstile-310x310.png
+- ui/mstile-70x70.png
+- ui/safari-pinned-tab.svg
+- ui/site.webmanifest
+
+# Links
+
+- Microprofile Specs: https://github.com/eclipse/microprofile-health/releases/tag/1.0
+- Microprofile POMs, etc.: https://github.com/eclipse/microprofile
+- Payara Docs: https://docs.payara.fish/documentation/microprofile/
+- Payara Examples: https://github.com/payara/Payara-Examples/tree/master/microprofile
+
+# TODO
+
+- neo4j: think of scenario where more relationship are involved, which a relational db would struggle with
+- add image for orientdb
+  - orientdb docker image => https://hub.docker.com/_/orientdb
+- add context of "partner" to filter on websocket server side
+- finish build and run scripts
+- dockerize ui, tasks, claims, web
+- kubernetes/prometheus/grafana: https://raw.githubusercontent.com/giantswarm/kubernetes-prometheus/master/manifests-all.yaml
+- still need to think about transaction when writing to own DB and informing UI that a change took place. maybe use CDC?
+- validation up front with http. if not available, then temp tile looks different => validation errors
+  during actual async processing of kafka record should then be given to user as a task for them to fix
+- UI
+  - add claim page to view details of a claim
+  - add aggregate for related claims, so we can show prototype of aggregated data
+  - move claim form to own view
+  - use resolver to avoid async code => except eg using an observable for updating server auto complete
+      - example with addresses from post.ch
+  - see TODOs inside UI component
+  - what are Vue.compile, extend, mixin, util?
+  - https://www.codeinwp.com/blog/vue-ui-component-libraries/ => quasar
+  - useful link for filters: https://vuejs.org/v2/guide/filters.html
+  - useful link for flex: https://css-tricks.com/snippets/css/a-guide-to-flexbox/
+  - useful link for validation: https://vuelidate.netlify.com/
+  - useful link for vue-rxjs: https://github.com/vuejs/vue-rx
+  - useful link for rxjs: https://www.learnrxjs.io/operators/creation/from.html
+  - useful tip: console.dir(document.getElementById("id")) => shows an object rather than the rendered element
+  - useful tip: document.getElementById("claims-form-other").__vue__ => gets the vue component
+  - useful tip: document.getElementById("claims-form-other").__vue__.$refs.input.focus() => set focus on it. not sure this is the correct way to do it tho!
+  - useful tip: document.getElementById("claims-form-other").__vue__.rules.map(function(f){return f(document.getElementById("claims-form-other").__vue__.$refs.input.value)}) => execute all internal validation rules on the component
+  - my question: https://forum.quasar-framework.org/topic/3391/how-can-i-hide-a-column
+  - my question: https://forum.quasar-framework.org/topic/3437/unit-testing-and-simulating-input
+  - my question: https://forum.quasar-framework.org/topic/3438/form-validation
+- example of error messages and e.g. security exceptions via error messages
+- fixme consumer.seekToEnd(asList(new TopicPartition(TASK_CREATED_EVENT_TOPIC, 0), new TopicPartition(CLAIM_CREATED_EVENT_TOPIC, 0)));
+- Tests with running server: https://groups.google.com/forum/#!topic/payara-forum/ZSRGdPkGKpE
+  - starting server: https://blog.payara.fish/using-the-payara-micro-maven-plugin
+  - https://docs.payara.fish/documentation/ecosystem/maven-plugin.html
+- add extra jars to uberjar: https://blog.payara.fish/using-the-payara-micro-maven-plugin
+- define payara config with yml
+- add https://docs.payara.fish/documentation/microprofile/healthcheck.html and use it in start script?
+- https://blog.payara.fish/using-hotswapagent-to-speed-up-development => [hotswapagent.md](hotswapagent.md)
+- Strange problem with Bold driver in payara micro:
+
+    [2019-05-01T23:37:54.931+0200] [] [INFO] [AS-WEB-GLUE-00201] [javax.enterprise.web] [tid: _ThreadID=1 _ThreadName=main] [timeMillis: 1556746674931] [levelValue: 800] Virtual server server loaded default web module
+    [2019-05-01T23:38:07.802+0200] [] [WARNING] [] [javax.enterprise.web.util] [tid: _ThreadID=1 _ThreadName=main] [timeMillis: 1556746687802] [levelValue: 900] The web application [unknown] registered the JDBC driver [org.neo4j.jdbc.bolt.BoltDriver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
+    [2019-05-01T23:38:07.804+0200] [] [WARNING] [] [javax.enterprise.web.util] [tid: _ThreadID=1 _ThreadName=main] [timeMillis: 1556746687804] [levelValue: 900] The web application [unknown] registered the JDBC driver [org.neo4j.jdbc.boltrouting.BoltRoutingNeo4jDriver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
+    [2019-05-01T23:38:07.805+0200] [] [WARNING] [] [javax.enterprise.web.util] [tid: _ThreadID=1 _ThreadName=main] [timeMillis: 1556746687805] [levelValue: 900] The web application [unknown] registered the JDBC driver [org.neo4j.jdbc.http.HttpDriver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
+
+- APM
+  - jdbc driver - try with mysql sync
+  - async EJB or managed executor
+  - bug coz ui isnt shown in full trace
+  - change call to tasks to be an example of mandatory validation => you dont really want that, you want to be able to get a human to intervene async
+    - then move task creation back to kafka
+  - why isnt my bean shown as a span anymore?
+    - actually it is - but only in the stack trace when you click on the second span or whatever it is
+  - remove span around recordHandler?
+
+# TODO Blog
+
+- need lock when using transactional kafka, but not otherwise since producer is thread safe
+
+
+- objective: use a light weight UI technology that does not require us to have a build system
+  - assume http/2 so that multiple fetches don't worry us
+  - need lazy loading => see example in boot.js
+
+- vuex says "Vuex uses a single state tree - that is, this single object contains all your application level state and serves as the "single source of truth". This also means usually you will have only one store for each application." (https://vuex.vuejs.org/guide/state.html)
+- it also says "So why don't we extract the shared state out of the components, and manage it in a global singleton? With this, our component tree becomes a big "view", and any component can access the state or trigger actions, no matter where they are in the tree!" (https://vuex.vuejs.org/)
+- thats a conflict :-)
+- compare http://blog.maxant.co.uk/pebble/2008/01/02/1199309880000.html and http://blog.maxant.co.uk/pebble/images/ants_mvc.jpg with https://github.com/facebook/flux/tree/master/examples/flux-concepts and https://github.com/facebook/flux/blob/master/examples/flux-concepts/flux-simple-f8-diagram-with-client-action-1300w.png
+- vuex also doesn't match what flux says: "There should be many stores in each application." (https://github.com/facebook/flux/tree/master/examples/flux-concepts)
+- see video here: https://facebook.github.io/flux/ at 11:03 (screen shot at ./ui/mvc-incorrect-as-far-as-ant-thinks.png) (https://www.youtube.com/watch?list=PLb0IAmt7-GS188xDYE-u1ShQmFFGbrk0v&time_continue=659&v=nYkdrAPrdcw)
+- i believe that the arrows going from view back to model are a result of the "separable model architecture" well known in java swing.
+- "So we collapsed these two entities (view and controller) into a single UI object" (https://www.oracle.com/technetwork/java/architecture-142923.html) => that leads to arrows as shown where the view directly updates the model. it is also the problem with two way binding (https://stackoverflow.com/questions/38626156/difference-between-one-way-binding-and-two-way-binding-in-angularjs)
+- don't two-way-bind WITH THE STORE. instead, get forms to fill their own model, and pass that to the CONTROLLER to merge the changes into the main model
+- to ensure that you only write to the model inside the controller
+- this can be inforced by only importing the model in the main components which
+  create their controllers, e.g. the `PartnerView`:
+
+    import {model} from './model.js';
+    import {Store} from './store.js';
+    import {Controller} from './controller.js';
+
+    const store = new Store(model);
+    const controller = new Controller(store, model);
+
+- why doesnt vue have dependency injection? not really needed. or maybe when we go to test? defo then! or maybe not,
+  see example with "mocks"
+  - WRONG - it does exist. see `provide` and `inject` in `claims.js` and `partnerView.js`. mocking works then, see `claims.spec.js`.
+
+- observables => show example of the subscription to claims inside claims.js and
+  how the template treats it as an object. v-for works as expected, but the thing
+  is actually an observable. then show how we add to it by calling getValue in
+  controller, using a BehaviourSubject. and we pass values from axios promise
+  to a service obserable but manually put them into the subject by calling next. can we improve that?
+
+- async route loading via custom loader since vue supports creating routes with promises
+
+- APM

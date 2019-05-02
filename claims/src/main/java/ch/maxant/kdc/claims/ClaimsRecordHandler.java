@@ -2,6 +2,7 @@ package ch.maxant.kdc.claims;
 
 import ch.maxant.kdc.library.KafkaAdapter;
 import ch.maxant.kdc.library.RecordHandler;
+import co.elastic.apm.api.CaptureSpan;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -42,6 +43,7 @@ public class ClaimsRecordHandler implements RecordHandler {
         return asList(CLAIM_CREATE_DB_COMMAND_TOPIC, CLAIM_CREATE_SEARCH_COMMAND_TOPIC, CLAIM_CREATE_RELATIONSHIP_COMMAND_TOPIC);
     }
 
+    @CaptureSpan
     @Override
     public void handleRecord(ConsumerRecord<String, String> r, KafkaAdapter kafkaAdapter) throws Exception {
         Claim claim = objectMapper.readValue(r.value(), Claim.class);
