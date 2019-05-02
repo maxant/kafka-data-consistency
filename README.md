@@ -914,11 +914,12 @@ Added:
   - why isnt my bean shown as a span anymore?
     - actually it is - but only in the stack trace when you click on the second span or whatever it is
   - remove span around recordHandler?
+  - is it possible to add logging to the traces? so that logging and tracing are together?
+    - if we had a UUID as a label or tag or something which was also in MDC, that would work...
 
 # TODO Blog
 
 - need lock when using transactional kafka, but not otherwise since producer is thread safe
-
 
 - objective: use a light weight UI technology that does not require us to have a build system
   - assume http/2 so that multiple fetches don't worry us
