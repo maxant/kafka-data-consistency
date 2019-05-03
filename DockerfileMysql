@@ -3,4 +3,4 @@
 
 FROM mysql:8.0.16
 
-// TODO add some sqls to /docker-entrypoint-initdb.d
+# TODO add some sqls to /docker-entrypoint-initdb.d

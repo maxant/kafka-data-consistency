@@ -3,13 +3,22 @@
              xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd"
              version="2.1">
 
+<!--
     <persistence-unit name="neo4j" transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
         <properties>
-
-
-TODO            <property name="javax.persistence.jdbc.driver" value="org.h2.Driver" />
+TODO
+            <property name="javax.persistence.jdbc.driver" value="org.h2.Driver" />
             <property name="javax.persistence.jdbc.url" value="jdbc:h2:mem:dbname;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE" />
         </properties>
     </persistence-unit>
+-->
+    <persistence-unit name="MySql" transaction-type="JTA">
+        <jta-data-source >java:global/MysqlDataSource</jta-data-source>
+        <exclude-unlisted-classes>false</exclude-unlisted-classes>
+        <properties>
+            <!-- <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/> -->
+        </properties>
+    </persistence-unit>
+
 </persistence>

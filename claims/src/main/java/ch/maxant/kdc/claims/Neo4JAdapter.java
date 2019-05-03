@@ -36,6 +36,7 @@ public class Neo4JAdapter {
         //https://github.com/neo4j-contrib/neo4j-jdbc
 
         // TODO use jpa, connection pool, etc.
+next step=> use from jpa, a) to get auto mapping to result object and b) to see if tracing then works
 
         String url = properties.getProperty("neo4j.jdbc.url");
         String user = properties.getProperty("neo4j.jdbc.username");

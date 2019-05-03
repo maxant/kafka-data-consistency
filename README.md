@@ -320,8 +320,14 @@ Create elasticsearch indexes:
     }
     '
 
+Create the databases in MySql:
+
+    docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -psecret -e "CREATE DATABASE claims CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+
+
 E.g. run task service locally, but connecting to kube:
 
+    # web:
     java -Xmx256M -Xms256M \
          -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 \
          -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 \
@@ -331,6 +337,12 @@ E.g. run task service locally, but connecting to kube:
              -Delastic.apm.application_packages=ch.maxant \
          -jar web/target/web-microbundle.jar \
          --port 8080 &
+
+    # claims:
+    export DB_HOST=maxant.ch
+    export DB_PORT=30300
+    export DB_USER=root
+    export DB_PASSWORD=secret
     java -Xmx256M -Xms256M \
          -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8788 \
          -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 \
@@ -344,6 +356,8 @@ E.g. run task service locally, but connecting to kube:
              -Delastic.apm.application_packages=ch.maxant \
          -jar claims/target/claims-microbundle.jar \
          --port 8081 &
+
+    # tasks:
     java -Xmx256M -Xms256M \
          -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 \
          -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 \
@@ -404,11 +418,6 @@ This script also shows how to append the hosts file so that service names can
 be used by applications, but it requires the user to `sudo`. It also contains
 examples of waiting for Zookeeper / Kafka logs to contain certain logs before
 the script continues.
-
-
-## Debug Web Component
-
-    java -Ddefault.property=asdf -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 -jar web/target/web-microbundle.jar
 
 ## Hot deploy with Payara
 
@@ -819,24 +828,25 @@ Links:
 
 # MySql
 
-see https://hub.docker.com/_/mysql and https://blog.jpalardy.com/posts/throwaway-mysql-servers-with-docker/
-
-    BROKEN: docker run -it --rm --name mysql -e MYSQL_ROOT_PASSWORD=pw -p 33060:3306 mysql
+See https://hub.docker.com/_/mysql and https://blog.jpalardy.com/posts/throwaway-mysql-servers-with-docker/
 
     docker run --name mysql -e MYSQL_ALLOW_EMPTY_PASSWORD=yes -p 30300:3306 --rm mysql
 
-    docker run --name mysql -e MYSQL_ROOT_PASSWORD=secret -p 30300:3306 --rm mysql
+Use empty password when prompted.
 
-    mysql --host 172.17.0.2 --port 3306 -u root -p
+Or:
+    docker run --name mysql -e MYSQL_ROOT_PASSWORD=secret -p 30300:3306 --rm mysql
 
 Connecting to it:
 
     docker run -it --rm mysql mysql -h 172.17.0.2 -u root -p
+    docker run -it --rm mysql mysql -h $(minikube ip) --port 30300 -u root -p
+    docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -psecret -e "CREATE DATABASE claims CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 
+    not working, prolly coz its a mariadb client: -(  mysql --host 172.17.0.2 --port 3306 -u root -p
+
+    # by default access from remote is enabled:
     select host, password_expired, password_last_changed, password_lifetime ,account_locked ,  Password_reuse_history ,Password_reuse_time ,Password_require_current from user where user = 'root';
-
-
-Use empty password when prompted.
 
 # Cors Proxy
 

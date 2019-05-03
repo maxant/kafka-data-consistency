@@ -67,6 +67,9 @@ public class ClaimResource {
         // TODO delete this - its temporary to see if the jdbc calls are automatically traced
         neo4JAdapter.createClaim(claim);
 
+        // TODO delete this - its temporary to see if the jpa calls are automatically traced
+        claimRepository.createClaim(claim);
+
         return Response.accepted().build();
     }
 
