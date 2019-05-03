@@ -31,6 +31,9 @@ public class ClaimResource {
     @Inject
     TempTaskService tempTaskService;
 
+    @Inject
+    Neo4JAdapter neo4JAdapter;
+
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response get() {
@@ -61,7 +64,8 @@ public class ClaimResource {
 
         kafka.sendInOneTransaction(records);
 
-        // TODO temporarily add to mysql to investigate tracing
+        // TODO delete this - its temporary to see if the jdbc calls are automatically traced
+        neo4JAdapter.createClaim(claim);
 
         return Response.accepted().build();
     }

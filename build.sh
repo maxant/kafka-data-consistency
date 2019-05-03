@@ -16,6 +16,8 @@ docker build -f DockerfileKibana -t maxant/kibana .
 
 docker build -f DockerfileElasticApmServer -t maxant/elasticapmserver .
 
+docker build -f DockerfileMysql -t maxant/mysql .
+
 ps ax | grep web-microbundle | grep -v grep | awk '{print $1}' | xargs kill
 
 ps ax | grep tasks-microbundle | grep -v grep | awk '{print $1}' | xargs kill

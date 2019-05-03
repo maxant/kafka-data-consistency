@@ -2,21 +2,21 @@ const from = rxjs.from;
 const map = rxjs.operators.map;
 
 function createClaim(form, partnerId) {
+    var span = elasticApm.getCurrentTransaction().startSpan('createClaim', 'http')
     return new Promise(function (resolve, reject) {
-//        setTimeout(function(){ // so that demo shows "in progress" message
-            const claim = {"summary": form.summary, "description": form.description, "partnerId": partnerId, "reserve": form.reserve, "date": form.date.replace(/\//g, "-")};
-            //example of adding a header: axios.post(CLAIMS_BASE_URL + 'claims', claim, {headers: {"elastic-apm-traceparent": some value}})
-            axios.post(CLAIMS_BASE_URL + 'claims', claim)
-            .then(function(response) {
-                if(response.status === 202) {
-                    console.log("claim creation request accepted");
-                    resolve();
-                } else reject("Unexpected response code " + response.status);
-            }).catch(function(call) {
-                console.error("Failed to create claim: " + JSON.stringify(call));
-                reject("Failed to create claim. See console for details. (" + (call.response?call.response.status:"-") + ")");
-            });
-//        }, 1000);
+        const claim = {"summary": form.summary, "description": form.description, "partnerId": partnerId, "reserve": form.reserve, "date": form.date.replace(/\//g, "-")};
+        //example of adding a header: axios.post(CLAIMS_BASE_URL + 'claims', claim, {headers: {"elastic-apm-traceparent": some value}})
+        axios.post(CLAIMS_BASE_URL + 'claims', claim)
+        .then(function(response) {
+            span.end()
+            if(response.status === 202) {
+                console.log("claim creation request accepted");
+                resolve();
+            } else reject("Unexpected response code " + response.status);
+        }).catch(function(call) {
+            console.error("Failed to create claim: " + JSON.stringify(call));
+            reject("Failed to create claim. See console for details. (" + (call.response?call.response.status:"-") + ")");
+        });
     });
 }
 

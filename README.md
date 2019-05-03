@@ -40,6 +40,8 @@ Delete existing, if necessary:
     kubectl -n kafka-data-consistency delete service kibana
     kubectl -n kafka-data-consistency delete deployment elastic-apm-server
     kubectl -n kafka-data-consistency delete service elastic-apm-server
+    kubectl -n kafka-data-consistency delete deployment mysql
+    kubectl -n kafka-data-consistency delete service mysql
 
 Create deployments and services:
 
@@ -50,20 +52,25 @@ Create deployments and services:
     kubectl -n kafka-data-consistency apply -f neo4j.yaml
     kubectl -n kafka-data-consistency apply -f kibana.yaml
     kubectl -n kafka-data-consistency apply -f elastic-apm-server.yaml
+    kubectl -n kafka-data-consistency apply -f mysql.yaml
 
 Open ports like this:
 
-    # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092, neo4j:30101:7687, elastic-apm-server:30200:8200
+    # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092, neo4j:30101:7687, elastic-apm-server:30200:8200, mysql:30300:3306
     firewall-cmd --zone=public --permanent --add-port=30000/tcp
     firewall-cmd --zone=public --permanent --add-port=30001/tcp
     firewall-cmd --zone=public --permanent --add-port=30002/tcp
     firewall-cmd --zone=public --permanent --add-port=30101/tcp
     firewall-cmd --zone=public --permanent --add-port=30101/tcp
     firewall-cmd --zone=public --permanent --add-port=30200/tcp
+    firewall-cmd --zone=public --permanent --add-port=30300/tcp
     firewall-cmd --reload
     firewall-cmd --list-all
 
 Setup forwarding like this (some are accessed directly from outside, others are accessed via nginx):
+
+    # minikube port, see kibana metricbeat for kube way down below
+    socat TCP-LISTEN:10250,fork TCP:$(minikube ip):10250 &
 
     # zookeeper, kafka_1, kafka_2
     socat TCP-LISTEN:30000,fork TCP:$(minikube ip):30000 &
@@ -84,8 +91,8 @@ Setup forwarding like this (some are accessed directly from outside, others are 
     # elastic-apm-server
     socat TCP-LISTEN:30200,fork TCP:$(minikube ip):30200 &
 
-    # minikube port, see kibana metricbeat for kube way down below
-    socat TCP-LISTEN:10250,fork TCP:$(minikube ip):10250 &
+    # mysql
+    socat TCP-LISTEN:30300,fork TCP:$(minikube ip):30300 &
 
 Update nginx with a file under vhosts like this:
 
@@ -803,20 +810,33 @@ Not yet convinced that the microprofile supports full propagation as well as tra
 - click the rest of the buttons in the kibana webapp
 - view data: http://kdc.kibana.maxant.ch/app/apm#/services
 
-Added to UI. Propagation not quite working yet: https://discuss.elastic.co/t/transaction-not-automatically-propagated-from-browser-to-backend/179259
+Added to UI. Propagation now working thanks to span: https://discuss.elastic.co/t/transaction-not-automatically-propagated-from-browser-to-backend/179259
+
+Links:
+
+- Javascript Agent API: https://www.elastic.co/guide/en/apm/agent/js-base/4.x/api.html
+- Java Agent API: https://www.elastic.co/guide/en/apm/agent/java/current/public-api.html
 
 # MySql
 
-see https://hub.docker.com/_/mysql
+see https://hub.docker.com/_/mysql and https://blog.jpalardy.com/posts/throwaway-mysql-servers-with-docker/
 
-    docker run --name mysql -p33306:3306 -e MYSQL_ROOT_PASSWORD=secret -d mysql
+    BROKEN: docker run -it --rm --name mysql -e MYSQL_ROOT_PASSWORD=pw -p 33060:3306 mysql
 
+    docker run --name mysql -e MYSQL_ALLOW_EMPTY_PASSWORD=yes -p 30300:3306 --rm mysql
+
+    docker run --name mysql -e MYSQL_ROOT_PASSWORD=secret -p 30300:3306 --rm mysql
+
+    mysql --host 172.17.0.2 --port 3306 -u root -p
 
 Connecting to it:
 
-    docker run -it --rm mysql mysql -hmysql -uuser -p
+    docker run -it --rm mysql mysql -h 172.17.0.2 -u root -p
 
-Hmmm not working yet...
+    select host, password_expired, password_last_changed, password_lifetime ,account_locked ,  Password_reuse_history ,Password_reuse_time ,Password_require_current from user where user = 'root';
+
+
+Use empty password when prompted.
 
 # Cors Proxy
 

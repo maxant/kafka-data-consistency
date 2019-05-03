@@ -1,0 +1,6 @@
+# docker build -f DockerfileMysql -t maxant/mysql .
+# docker run --name mysql maxant/mysql &
+
+FROM mysql:8.0.16
+
+// TODO add some sqls to /docker-entrypoint-initdb.d
