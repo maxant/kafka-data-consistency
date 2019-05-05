@@ -30,13 +30,19 @@ function buildEmptyClaim(){
        description: "",
        summary: "",
        reserve: 1000.0,
-       date: new Date().toISOString().substr(0,10).replace(/-/g, "/")
+       date: new Date().toISOString().substr(0,10).replace(/-/g, "/"),
+       location: {
+            zip: "",
+            city: "",
+            street: "",
+            number: ""
+       }
     }
 }
 
 Vue.component('claims', claimsComponentObject);
 
-export const claimsFormComponentObject = {
+export const claimFormComponentObject = {
     data() {
         return  {
             form: buildEmptyClaim(),
@@ -152,13 +158,15 @@ export const claimsFormComponentObject = {
                             <q-btn label="create" id="claims-form-create" color="primary" @click="createClaim()" style="margin: 10px;"/>
                             <q-btn label="cancel" id="claims-form-cancel" color="secondary" @click="showingNewclaims = false" style="margin: 10px;"/>
                         </div>
+                        <div class="row">
+                            <location-form :model="form.location" />
+                        </div>
                     </q-card-section>
                 </q-card>
             </div>
     `
 };
-
-Vue.component('claim-form', claimsFormComponentObject);
+Vue.component('claim-form', claimFormComponentObject);
 
 export const claimComponentObject = {
     props: ['claim', 'showLabels'],

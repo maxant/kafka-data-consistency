@@ -1,6 +1,7 @@
 import {} from './partner.js';
 import {} from './contracts.js';
 import {} from './claims.js';
+import {} from './locations.js';
 import {} from './tasks.js';
 import {} from './documents.js';
 import {} from './navigations.js';

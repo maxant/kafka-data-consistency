@@ -1,7 +1,7 @@
 const mount = VueTestUtils.mount;
 const createLocalVue = VueTestUtils.createLocalVue;
 
-import {claimsFormComponentObject} from './claims.js'
+import {claimFormComponentObject} from './claims.js'
 
 QUnit.test( "test claims form", async function( assert ) {
 
@@ -17,7 +17,7 @@ QUnit.test( "test claims form", async function( assert ) {
 
     const done = assert.async();
 
-    const wrapper = mount(claimsFormComponentObject, { localVue, provide: { controller } } )
+    const wrapper = mount(claimFormComponentObject, { localVue, provide: { controller } } )
 
     // add it to the page - nice to watch, but also may help with events?
     document.getElementById("component").appendChild(wrapper.element);

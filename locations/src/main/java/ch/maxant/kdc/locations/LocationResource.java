@@ -45,14 +45,14 @@ public class LocationResource {
     @GET
     @Path("houses/{city}/{street}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getHouses(@PathParam("city") String city, @PathParam("term") String street) {
+    public Response getHouses(@PathParam("city") String city, @PathParam("street") String street) {
         return getHouses(city, street, null);
     }
 
     @GET
     @Path("houses/{city}/{street}/{houseNbr}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getHouses(@PathParam("city") String city, @PathParam("term") String street, @PathParam("houseNbr") String houseNbr) {
+    public Response getHouses(@PathParam("city") String city, @PathParam("street") String street, @PathParam("houseNbr") String houseNbr) {
         return Response.ok(ClientBuilder
                 .newClient()
                 .target("https://service.post.ch/zopa/app/api/addresschecker/v1/")
