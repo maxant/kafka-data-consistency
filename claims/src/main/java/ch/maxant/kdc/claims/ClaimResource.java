@@ -67,9 +67,6 @@ public class ClaimResource {
 
         kafka.sendInOneTransaction(records);
 
-        // TODO delete this - its temporary to see if the jdbc calls are automatically traced
-        neo4JAdapter.createClaim(claim);
-
         return Response.accepted().build();
     }
 

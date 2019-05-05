@@ -6,6 +6,7 @@ import org.neo4j.driver.v1.summary.ResultSummary;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,9 +33,11 @@ public class Neo4JAdapter {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws NoSuchFieldException, IllegalAccessException {
         RawNeo4JAdapter a = new RawNeo4JAdapter();
-        a.properties = new Properties() {
+        Field f = a.getClass().getDeclaredField("properties");
+        f.setAccessible(true);
+        f.set(a, new Properties() {
             @Override
             public String getProperty(String name) {
                 switch (name) {
@@ -45,7 +48,7 @@ public class Neo4JAdapter {
                     default: throw new IllegalArgumentException(name);
                 }
             }
-        };
+        });
         a.init();
         Claim claim = new Claim();
         claim.setDate("2016-08-24");

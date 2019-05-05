@@ -1,7 +1,7 @@
 package ch.maxant.kdc.locations;
 
 import ch.maxant.kdc.library.RawNeo4JAdapter;
-//import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.summary.ResultSummary;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -33,12 +33,11 @@ public class Neo4JAdapter {
         params.put("aggregateId", location.getAggretateId());
         params.put("zip", location.getZip());
         params.put("city", location.getCity());
-/*
+
         ResultSummary result = adapter.runInTx(query, params).consume();
         if(1 != result.counters().nodesCreated() && 1 != result.counters().relationshipsCreated()) {
             throw new RuntimeException("didnt create result as expected! " + result);
         }
-*/
     }
 
 }

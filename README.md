@@ -244,6 +244,7 @@ Create elasticsearch indexes:
             }
         }
     }
+    '
 
     curl -X PUT "kdc.elasticsearch.maxant.ch/partners" -H 'Content-Type: application/json' -d'
     {
@@ -831,7 +832,7 @@ Not yet convinced that the microprofile supports full propagation as well as tra
 - config located in elastic-apm-server.docker.yml which is imported in our custom docker build file.
 - Once APM server is running in Kube, go to kibana home page and setup APM: http://kdc.kibana.maxant.ch/app/kibana#/home/tutorial/apm?_g=()
 - click the button "check apm server status"
-- Download `elastic-apm-agent-1.6.1.jar` from https://search.maven.org/search?q=a:elastic-apm-agent
+- Download `elastic-apm-agent-1.6.1.jar` from https://search.maven.org/search?q=a:elastic-apm-agent and put it in the root folder of this project
 - Add the following to the launch config:
 
          -javaagent:elastic-apm-agent-1.6.1.jar \
@@ -913,23 +914,24 @@ Added:
 
 # TODO
 
-- use mysql to save claims, or tasks?
-- fix env vars for neo4j coz they dont contain neo4j word!
+- build function to reset all data to masterdata
+- use mysql to save tasks. dont bother saving claims for now, other than in memory
 - locations in ES - how are they indexed? can we search for them?
 - neo4j: think of scenario where more relationships are involved, which a relational db would struggle with
   - partners are unrelated. but claims are related over locations and a little over partners. and over products. contracts are related over location and product.
   - but none of the objects in the model relate to the same over an unknown number of relationships.
     - altho they could be if we added related products that were bought by other customers
     - what about this: ()-[1..*]-()-[*]-() hmmm not sure right now...
-- add image for orientdb
-  - orientdb docker image => https://hub.docker.com/_/orientdb
+- use microprofile open tracing, rather than lib from elastic, where possible
 - add context of "partner" to filter on websocket server side
 - finish build and run scripts
-- dockerize ui, tasks, claims, web
-- kubernetes/prometheus/grafana: https://raw.githubusercontent.com/giantswarm/kubernetes-prometheus/master/manifests-all.yaml
+- dockerize ui, tasks, claims, web, locations
 - still need to think about transaction when writing to own DB and informing UI that a change took place. maybe use CDC?
 - validation up front with http. if not available, then temp tile looks different => validation errors
   during actual async processing of kafka record should then be given to user as a task for them to fix
+- add image for orientdb
+  - orientdb docker image => https://hub.docker.com/_/orientdb
+- kubernetes/prometheus/grafana: https://raw.githubusercontent.com/giantswarm/kubernetes-prometheus/master/manifests-all.yaml
 - UI
   - add claim page to view details of a claim
   - add aggregate for related claims, so we can show prototype of aggregated data

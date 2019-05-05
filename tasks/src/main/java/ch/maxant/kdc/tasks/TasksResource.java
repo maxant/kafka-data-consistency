@@ -26,7 +26,7 @@ public class TasksResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getTasks(String businessKey) {
+    public Response getTasks(@QueryParam("businessKey") String businessKey) {
         List<String> tasks;
         if(businessKey == null || businessKey.trim().isEmpty()) {
             tasks = model.getTasks().values().stream().flatMap(Collection::stream).collect(toList());
