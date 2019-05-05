@@ -1,5 +1,6 @@
 package ch.maxant.kdc.library;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -29,7 +30,7 @@ public class JacksonConfig implements ContextResolver<ObjectMapper> {
 
         this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-        //if necessary: this.objectMapper.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, true); //convert non ascii to utf-8
+        this.objectMapper.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, true); //convert non ascii to utf-8
     }
 
     public ObjectMapper getContext(Class<?> objectType) {

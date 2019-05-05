@@ -18,11 +18,12 @@
             <groupId>ch.maxant.kafkadataconsistency</groupId>
             <artifactId>library</artifactId>
         </dependency>
+<!--
         <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-jdbc-driver</artifactId>
-            <version>3.4.0</version>
+            <groupId>org.neo4j.driver</groupId>
+            <artifactId>neo4j-java-driver</artifactId>
         </dependency>
+-->
     </dependencies>
 
     <build>

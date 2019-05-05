@@ -1,5 +1,6 @@
 package ch.maxant.kdc.claims;
 
+import ch.maxant.kdc.library.JacksonConfig;
 import ch.maxant.kdc.library.Properties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpHost;
@@ -93,7 +94,7 @@ public class ElasticSearchAdapter {
 
     public static void main(String[] args) {
         ElasticSearchAdapter adapter = new ElasticSearchAdapter();
-        adapter.objectMapper = new ObjectMapper();
+        adapter.objectMapper = JacksonConfig.getMapper();
         adapter.properties = new Properties(){
             @Override
             public String getProperty(String name) {

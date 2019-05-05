@@ -14,6 +14,7 @@ public interface RecordHandler {
         return System.getProperty("elastic.apm.service_name");
     }
 
-    /** if returns true, then you can only send using transactions. otherwise you can only send without transactions. */
-    boolean useTransactions();
+    /** if returns true, then you can only send using transactions. otherwise
+     * you can only send without transactions. default returns false */
+    default boolean useTransactions() { return false; }
 }

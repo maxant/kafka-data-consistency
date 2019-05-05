@@ -39,9 +39,4 @@ public class TasksRecordHandler implements RecordHandler {
         // inform UI
         kafkaAdapter.publishEvent(TASK_CREATED_EVENT_TOPIC, null, task.getForeignReference());
     }
-
-    @Override
-    public boolean useTransactions() {
-        return false;
-    }
 }

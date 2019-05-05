@@ -24,9 +24,11 @@ ps ax | grep tasks-microbundle | grep -v grep | awk '{print $1}' | xargs kill
 
 ps ax | grep claims-microbundle | grep -v grep | awk '{print $1}' | xargs kill
 
+mvn -pl library clean install && \
 mvn -pl web clean install && \
 mvn -pl claims clean install && \
-mvn -pl tasks clean install
+mvn -pl tasks clean install && \
+mvn -pl locations clean install
 
 cd ui
 npm install

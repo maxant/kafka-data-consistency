@@ -43,9 +43,4 @@ public class WebRecordHandler implements RecordHandler {
             // TODO handle failure better
         }
     }
-
-    @Override
-    public boolean useTransactions() {
-        return false;
-    }
 }

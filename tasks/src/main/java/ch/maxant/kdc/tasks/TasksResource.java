@@ -44,11 +44,14 @@ public class TasksResource {
         return Response.ok().build();
     }
 
-    /** THIS METHOD IS TEMPORARY - to investigate tracing. already replaced with kafka! just delete this! */
     @POST
-    public Response create(Task task) {
-        model.getTasks().computeIfAbsent(task.getForeignReference(), k -> new Vector<>()).add(task.getDescription());
-        kafka.publishEvent(TASK_CREATED_EVENT_TOPIC, null, task.getForeignReference());
-        return Response.noContent().build();
+    @Path("validate")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response validate(Task task) {
+        // just an example. in reality we'd do some proper validation here!
+        if(task.getDescription().equals("invalid")) {
+            return Response.ok("{valid: false}").build();
+        }
+        return Response.ok("{\"valid\": true}").build();
     }
 }

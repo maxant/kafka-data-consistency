@@ -3,6 +3,7 @@ package ch.maxant.kdc.claims;
 import javax.enterprise.context.ApplicationScoped;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.transaction.Transactional;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.Vector;
 
 @ApplicationScoped
+@Transactional
 public class ClaimRepository {
 
     @PersistenceContext(unitName = "MySql")

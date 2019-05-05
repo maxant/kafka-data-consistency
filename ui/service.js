@@ -13,9 +13,9 @@ function createClaim(form, partnerId) {
                 console.log("claim creation request accepted");
                 resolve();
             } else reject("Unexpected response code " + response.status);
-        }).catch(function(call) {
-            console.error("Failed to create claim: " + JSON.stringify(call));
-            reject("Failed to create claim. See console for details. (" + (call.response?call.response.status:"-") + ")");
+        }).catch(function(error) {
+            console.error("Failed to create claim: " + error);
+            reject("Failed to create claim. See console for details. (" + (error.response?error.response.status:"-") + ")");
         });
     });
 }

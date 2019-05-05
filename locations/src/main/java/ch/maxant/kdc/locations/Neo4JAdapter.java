@@ -1,22 +1,45 @@
 package ch.maxant.kdc.locations;
 
-import ch.maxant.kdc.library.Properties;
-import org.neo4j.jdbc.bolt.BoltDriver;
+import ch.maxant.kdc.library.RawNeo4JAdapter;
+//import org.neo4j.driver.v1.summary.ResultSummary;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
-@Stateless
+@ApplicationScoped
 public class Neo4JAdapter {
 
-    @PersistenceContext(unitName = "neo4j")
-    private EntityManager em;
+    @Inject
+    RawNeo4JAdapter adapter;
 
-    public void createClaim(Claim claim) {
-        //https://github.com/neo4j-contrib/neo4j-jdbc
-        String query = "MATCH (p:Partner) WHERE p.id = ? " +
-                       "CREATE (c:Claim { id: ?, date: ? }), " +
-                       "       (p)-[:CLAIMANT]->(c)";
+    public void createLocation(Location location) {
+        switch (location.getType()) {
+            case CLAIM_LOCATION:
+                createLocationAndRelationship("Claim", location);
+                break;
+            default: throw new IllegalArgumentException("unexpected type: " + location.getType());
+        }
+    }
+
+    public void createLocationAndRelationship(String type, Location location) {
+
+        String query = "MATCH (x:" + type + ") WHERE x.id = $aggregateId " +
+                "CREATE (l:Location { zip: $zip, city: $city }), " +
+                "       (l)-[:LOCATION_OF]->(x)";
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("aggregateId", location.getAggretateId());
+        params.put("zip", location.getZip());
+        params.put("city", location.getCity());
+/*
+        ResultSummary result = adapter.runInTx(query, params).consume();
+        if(1 != result.counters().nodesCreated() && 1 != result.counters().relationshipsCreated()) {
+            throw new RuntimeException("didnt create result as expected! " + result);
+        }
+*/
     }
 
 }
+

@@ -29,7 +29,7 @@ public class ClaimResource {
     ClaimRepository claimRepository;
 
     @Inject
-    TempTaskService tempTaskService;
+    TaskService taskService;
 
     @Inject
     Neo4JAdapter neo4JAdapter;
@@ -49,26 +49,26 @@ public class ClaimResource {
         ProducerRecord<String, String> claimRelationshipRecord = new ProducerRecord<>(CLAIM_CREATE_RELATIONSHIP_COMMAND_TOPIC, null, null, om.writeValueAsString(claim));
 
         Task task = new Task(claim.getId(), "call customer " + claim.getPartnerId());
-        //ProducerRecord<String, String> createTaskCommand = new ProducerRecord<>(TASK_CREATE_COMMAND_TOPIC, null, null, om.writeValueAsString(task));
 
-        // temporarily use a rest client to create hte task, to see how tracing works
-        tempTaskService.createTask(task);
+        // an example of online sync validation, if that is required. note that it reduces
+        // robustness and availabiliy of the claims component!
+        taskService.validate(task);
 
-        // TODO integrate locations
-        //claim.getLocation().setAggretateId(claim.getId());
-        //claim.getLocation().setType(Location.LocationType.CLAIM_LOCATION);
-        //ProducerRecord<String, String> createLocationCommand = new ProducerRecord<>(LOCATION_CREATE_COMMAND_TOPIC, null, null, om.writeValueAsString(claim.getLocation()));
+        ProducerRecord<String, String> createTaskCommand = new ProducerRecord<>(TASK_CREATE_COMMAND_TOPIC, null, null, om.writeValueAsString(task));
 
-        List<ProducerRecord<String, String>> records = asList(claimDbRecord, claimSearchRecord,
-                                claimRelationshipRecord /*, createTaskCommand, createLocationCommand*/);
+        List<ProducerRecord<String, String>> records = asList(claimDbRecord, claimSearchRecord, claimRelationshipRecord, createTaskCommand);
+
+        if(claim.getLocation() != null) {
+            claim.getLocation().setAggretateId(claim.getId());
+            claim.getLocation().setType(Location.LocationType.CLAIM_LOCATION);
+            ProducerRecord<String, String> createLocationCommand = new ProducerRecord<>(LOCATION_CREATE_COMMAND_TOPIC, null, null, om.writeValueAsString(claim.getLocation()));
+            records.add(createLocationCommand);
+        }
 
         kafka.sendInOneTransaction(records);
 
         // TODO delete this - its temporary to see if the jdbc calls are automatically traced
         neo4JAdapter.createClaim(claim);
-
-        // TODO delete this - its temporary to see if the jpa calls are automatically traced
-        claimRepository.createClaim(claim);
 
         return Response.accepted().build();
     }

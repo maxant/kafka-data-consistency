@@ -163,6 +163,7 @@ Create topics (on minikube host):
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic claim-create-search-command
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic claim-create-relationship-command
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic task-create-command
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic location-create-command
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic claim-created-event
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic task-created-event
     kafka_2.11-2.1.1/bin/kafka-topics.sh --list --zookeeper $(minikube ip):30000
@@ -324,11 +325,15 @@ Create the databases in MySql:
 
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -psecret -e "CREATE DATABASE claims CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 
+Set Java to version 8, because of Payara! (https://blog.payara.fish/java-11-support-in-payara-server-coming-soon)
+
+    export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64/
 
 E.g. run task service locally, but connecting to kube:
 
     # web:
-    java -Xmx256M -Xms256M \
+    export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64/
+    $JAVA_HOME/bin/java -Xmx256M -Xms256M \
          -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 \
          -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 \
          -javaagent:elastic-apm-agent-1.6.1.jar \
@@ -339,17 +344,20 @@ E.g. run task service locally, but connecting to kube:
          --port 8080 &
 
     # claims:
-    export DB_HOST=maxant.ch
-    export DB_PORT=30300
-    export DB_USER=root
-    export DB_PASSWORD=secret
-    java -Xmx256M -Xms256M \
+    export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64/
+    export MYSQL_HOST=maxant.ch
+    export MYSQL_PORT=30300
+    export MYSQL_USER=root
+    export MYSQL_PASSWORD=secret
+    export NEO4J_HOST=kdc.neo4j.maxant.ch
+    export NEO4J_PORT=30101
+    export NEO4J_USER=a
+    export NEO4J_PASSWORD=a
+    $JAVA_HOME/bin/java -Xmx256M -Xms256M \
          -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8788 \
          -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 \
          -Delasticsearch.baseUrl=kdc.elasticsearch.maxant.ch \
-         -Dneo4j.jdbc.url=jdbc:neo4j:bolt://kdc.neo4j.maxant.ch:30101 \
-         -Dneo4j.jdbc.username=a \
-         -Dneo4j.jdbc.password=a \
+         -Dtasks.baseurl=http://localhost:8082/tasks/rest/ \
          -javaagent:elastic-apm-agent-1.6.1.jar \
              -Delastic.apm.service_name=claims \
              -Delastic.apm.server_urls=http://maxant.ch:30200 -Delastic.apm.secret_token= \
@@ -358,7 +366,8 @@ E.g. run task service locally, but connecting to kube:
          --port 8081 &
 
     # tasks:
-    java -Xmx256M -Xms256M \
+    export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64/
+    $JAVA_HOME/bin/java -Xmx256M -Xms256M \
          -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8789 \
          -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 \
          -javaagent:elastic-apm-agent-1.6.1.jar \
@@ -367,6 +376,22 @@ E.g. run task service locally, but connecting to kube:
              -Delastic.apm.application_packages=ch.maxant \
          -jar tasks/target/tasks-microbundle.jar \
          --port 8082 &
+
+    # locations:
+    export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64/
+    export NEO4J_HOST=kdc.neo4j.maxant.ch
+    export NEO4J_PORT=30101
+    export NEO4J_USER=a
+    export NEO4J_PASSWORD=a
+    $JAVA_HOME/bin/java -Xmx256M -Xms256M \
+         -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8791 \
+         -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 \
+         -javaagent:elastic-apm-agent-1.6.1.jar \
+             -Delastic.apm.service_name=locations \
+             -Delastic.apm.server_urls=http://maxant.ch:30200 -Delastic.apm.secret_token= \
+             -Delastic.apm.application_packages=ch.maxant \
+         -jar locations/target/locations-microbundle.jar \
+         --port 8084 &
 
 Start the UI:
 
@@ -795,7 +820,7 @@ Or add a filter:
 
 http://kdc.kibana.maxant.ch/app/kibana#/discover?_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-2h,to:now))&_a=(columns:!(message),filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:c1be7050-69d3-11e9-9ebe-bf41a21a544a,key:kubernetes.namespace,negate:!f,params:(query:kafka-data-consistency),type:phrase,value:kafka-data-consistency),query:(match:(kubernetes.namespace:(query:kafka-data-consistency,type:phrase)))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:c1be7050-69d3-11e9-9ebe-bf41a21a544a,key:query,negate:!f,type:custom,value:'%7B%22regexp%22:%7B%22kubernetes.container.name%22:%7B%22value%22:%22kafka-.%22%7D%7D%7D'),query:(regexp:(kubernetes.container.name:(value:kafka-.))))),index:c1be7050-69d3-11e9-9ebe-bf41a21a544a,interval:auto,query:(language:kuery,query:'kubernetes.namespace:%20%22kafka-data-consistency%22%20and%20(kubernetes.container.name%20:%20%22kafka-1%22%20or%20kubernetes.container.name%20:%20%22kafka-2%22)'),sort:!('@timestamp',desc))
 
-# Tracing
+# Tracing (APM)
 
 Chose to use elasticsearch's APM Server - it's opentracing according to opentracing.org
 And it is well documented.
@@ -888,7 +913,14 @@ Added:
 
 # TODO
 
-- neo4j: think of scenario where more relationship are involved, which a relational db would struggle with
+- use mysql to save claims, or tasks?
+- fix env vars for neo4j coz they dont contain neo4j word!
+- locations in ES - how are they indexed? can we search for them?
+- neo4j: think of scenario where more relationships are involved, which a relational db would struggle with
+  - partners are unrelated. but claims are related over locations and a little over partners. and over products. contracts are related over location and product.
+  - but none of the objects in the model relate to the same over an unknown number of relationships.
+    - altho they could be if we added related products that were bought by other customers
+    - what about this: ()-[1..*]-()-[*]-() hmmm not sure right now...
 - add image for orientdb
   - orientdb docker image => https://hub.docker.com/_/orientdb
 - add context of "partner" to filter on websocket server side
@@ -936,13 +968,11 @@ Added:
     [2019-05-01T23:38:07.805+0200] [] [WARNING] [] [javax.enterprise.web.util] [tid: _ThreadID=1 _ThreadName=main] [timeMillis: 1556746687805] [levelValue: 900] The web application [unknown] registered the JDBC driver [org.neo4j.jdbc.http.HttpDriver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
 
 - APM
-  - jdbc driver - try with mysql sync
+  - jdbc driver - mysql works, neo4j doesnt, i guess its not jdbc4 conform?
   - async EJB or managed executor
-  - bug coz ui isnt shown in full trace
   - change call to tasks to be an example of mandatory validation => you dont really want that, you want to be able to get a human to intervene async
     - then move task creation back to kafka
-  - why isnt my bean shown as a span anymore?
-    - actually it is - but only in the stack trace when you click on the second span or whatever it is
+  - only spans show stack traces
   - remove span around recordHandler?
   - is it possible to add logging to the traces? so that logging and tracing are together?
     - if we had a UUID as a label or tag or something which was also in MDC, that would work...
