@@ -10,6 +10,7 @@ import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.List;
 
 import static ch.maxant.kdc.claims.ClaimsRecordHandler.*;
@@ -56,7 +57,8 @@ public class ClaimResource {
 
         ProducerRecord<String, String> createTaskCommand = new ProducerRecord<>(TASK_CREATE_COMMAND_TOPIC, null, null, om.writeValueAsString(task));
 
-        List<ProducerRecord<String, String>> records = asList(claimDbRecord, claimSearchRecord, claimRelationshipRecord, createTaskCommand);
+
+        List<ProducerRecord<String, String>> records = new ArrayList<>(asList(claimDbRecord, claimSearchRecord, claimRelationshipRecord, createTaskCommand));
 
         if(claim.getLocation() != null) {
             claim.getLocation().setAggretateId(claim.getId());

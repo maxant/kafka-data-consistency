@@ -4,7 +4,13 @@ const map = rxjs.operators.map;
 function createClaim(form, partnerId) {
     var span = elasticApm.getCurrentTransaction().startSpan('createClaim', 'http')
     return new Promise(function (resolve, reject) {
-        const claim = {"summary": form.summary, "description": form.description, "partnerId": partnerId, "reserve": form.reserve, "date": form.date.replace(/\//g, "-")};
+        const claim = { "summary": form.summary,
+                        "description": form.description,
+                        "partnerId": partnerId,
+                        "reserve": form.reserve,
+                        "date": form.date.replace(/\//g, "-"),
+                        "location": form.location
+                      };
         //example of adding a header: axios.post(CLAIMS_BASE_URL + 'claims', claim, {headers: {"elastic-apm-traceparent": some value}})
         axios.post(CLAIMS_BASE_URL + 'claims', claim)
         .then(function(response) {

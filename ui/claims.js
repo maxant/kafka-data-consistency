@@ -155,11 +155,11 @@ export const claimFormComponentObject = {
                             <div class="col-4 error" v-else-if="$v.form.description.$dirty && !$v.form.description.maxLength">Description must have at most {{$v.form.description.$params.maxLength.max}} letters</div>
                         </div>
                         <div class="row">
-                            <q-btn label="create" id="claims-form-create" color="primary" @click="createClaim()" style="margin: 10px;"/>
-                            <q-btn label="cancel" id="claims-form-cancel" color="secondary" @click="showingNewclaims = false" style="margin: 10px;"/>
+                            <location-form :model="form.location" />
                         </div>
                         <div class="row">
-                            <location-form :model="form.location" />
+                            <q-btn label="create" id="claims-form-create" color="primary" @click="createClaim()" style="margin: 10px;"/>
+                            <q-btn label="cancel" id="claims-form-cancel" color="secondary" @click="showingNewclaims = false" style="margin: 10px;"/>
                         </div>
                     </q-card-section>
                 </q-card>

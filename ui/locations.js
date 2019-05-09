@@ -56,6 +56,9 @@ export const locationFormComponentObject = {
                     console.log("error getting houses: " + error)
                     update(() => self.houseOptions = [])
                 });
+        },
+        zipChanged(val) {
+            console.log("zip changed: " + val)
         }
     },
     template: `
@@ -64,6 +67,10 @@ export const locationFormComponentObject = {
                 v-model="zip"
                 use-input
                 hide-selected
+                clearable
+                label="zip"
+                stack-label
+                @input="zipChanged"
                 input-debounce="500"
                 :options="zipOptions"
                 option-label="desc"
@@ -76,6 +83,9 @@ export const locationFormComponentObject = {
                 v-model="house"
                 use-input
                 hide-selected
+                clearable
+                label="street & number"
+                stack-label
                 input-debounce="500"
                 :options="houseOptions"
                 option-label="desc"
@@ -85,7 +95,6 @@ export const locationFormComponentObject = {
             >
             </q-select>
             <div v-if="pleaseSelectZip" class="error">Please choose a zip first</div>
-            {{model}}
         </div>
     `
 };
