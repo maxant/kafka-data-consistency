@@ -170,6 +170,10 @@ Create topics (on minikube host):
 
 Create elasticsearch indexes:
 
+    # check existing:
+    curl -X GET "kdc.elasticsearch.maxant.ch/claims"
+    curl -X GET "kdc.elasticsearch.maxant.ch/partners"
+
     curl -X DELETE "kdc.elasticsearch.maxant.ch/claims"
     curl -X DELETE "kdc.elasticsearch.maxant.ch/partners"
 
@@ -463,6 +467,14 @@ Then you can build and redeploy as follows, e.g. the web component:
 
 More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-cmd-line.html
 
+# Useful Kafka stuff:
+
+Read from a topic:
+
+    kafka_2.11-2.1.1/bin/kafka-console-consumer.sh --bootstrap-server maxant.ch:30000 --topic location-create-command --from-beginning
+
+
+
 # Useful Elasticsearch stuff:
 
 - http://elasticsearch-cheatsheet.jolicode.com/
@@ -470,8 +482,16 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 
     curl -X GET "kdc.elasticsearch.maxant.ch/_cat/indices?v"
 
-    health status index  uuid                   pri rep docs.count docs.deleted store.size pri.store.size
-    yellow open   claims 5SY5zm3bRxCgeTAac4wazQ   1   1          1            0      6.2kb          6.2kb
+    health status index                              uuid                   pri rep docs.count docs.deleted store.size pri.store.size
+    yellow open   claims                             -KxQ_roSTNW8IFwFGi6N2Q   1   1          0            0       230b           230b
+    yellow open   apm-7.0.0-metric-2019.05.09        RQrz7bcTQhWUYW9GAgzYnw   1   1       2667            0    966.3kb        966.3kb
+    yellow open   partners                           mxbLnKQgTIywF8D4OZ12aA   1   1          0            0       230b           230b
+    yellow open   apm-7.0.0-error-2019.05.09         e5Qp8VTqQLyBP4o_DiuGlQ   1   1          3            0     57.4kb         57.4kb
+    yellow open   apm-7.0.0-transaction-2019.05.09   vOQCq7SeTimzfOIshOofww   1   1        227            0    684.3kb        684.3kb
+    yellow open   metricbeat-7.0.0-2019.05.08-000001 rUfDO3ekQ4G0VGzSauON9Q   1   1    1541549            0    546.9mb        546.9mb
+    yellow open   apm-7.0.0-span-2019.05.09          6UIsLN4TT6Ov-MvAupV6iw   1   1        432            0      816kb          816kb
+    yellow open   .kibana                            Y6bbGKqTT2eyJmDJE2cbzA   1   1          7           10    199.3kb        199.3kb
+    yellow open   filebeat-7.0.0-2019.05.08-000001   tJCTsiL6QzqvPIfE6Lnnxg   1   1     940117            0      277mb          277mb
 
 - Create and index a document:
 
@@ -488,9 +508,9 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 
 - Pretty print a regexp query (note `?pretty`):
 
-    curl -X GET "kdc.elasticsearch.maxant.ch/claims/_search?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "regexp" : { "description" : ".*m\u0027avion.*" } } }'
+    curl -X GET "kdc.elasticsearch.maxant.ch/claims/_search?pretty" -H 'Content-Type: application/json' -d'{ "query" : { "regexp" : { "description" : ".*avion.*" } } }'
 
-NOTE that a regexp query does not use analyzers!!
+**NOTE that a regexp query does not use analyzers!!** - so a search for "m'avion" doesn't work!
 
 - field types: https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html
 
@@ -714,7 +734,8 @@ The first matches even though the record contains "arrived". The second matches 
 - (not used directly: https://www.elastic.co/guide/en/kibana/current/docker.html)
 - Go to http://kdc.kibana.maxant.ch
 - manage indexes here: http://kdc.kibana.maxant.ch/app/kibana#/management/elasticsearch/index_management/indices?_g=()
-- create an index for `claims` using `date` as the time field
+- create an index for `claims*` using `date` as the time field
+- create an index for `apm-*` using `@timestamp` as the time field
 - find all claims in a period:
   - http://kdc.kibana.maxant.ch/app/kibana#/discover?_g=(refreshInterval:(pause:!t,value:0),time:(from:'2019-03-01T15:15:58.115Z',to:now))&_a=(columns:!(_source),index:eb741a10-69c1-11e9-9ebe-bf41a21a544a,interval:auto,query:(language:kuery,query:''),sort:!(date,desc))
   - visualise sum of reserve per day: http://kdc.kibana.maxant.ch/app/kibana#/visualize/create?_g=(refreshInterval:(pause:!t,value:0),time:(from:'2019-03-01T15:15:58.115Z',to:now))&_a=(filters:!(),linked:!f,query:(language:kuery,query:''),uiState:(),vis:(aggs:!((enabled:!t,id:'2',params:(field:reserve),schema:metric,type:sum),(enabled:!t,id:'3',params:(customInterval:'2h',drop_partials:!f,extended_bounds:(),field:date,interval:d,min_doc_count:1,timeRange:(from:'2019-03-01T15:15:58.115Z',to:now),time_zone:Europe%2FZurich,useNormalizedEsInterval:!t),schema:segment,type:date_histogram)),params:(addLegend:!t,addTimeMarker:!f,addTooltip:!t,categoryAxes:!((id:CategoryAxis-1,labels:(show:!t,truncate:100),position:bottom,scale:(type:linear),show:!t,style:(),title:(),type:category)),grid:(categoryLines:!f),legendPosition:right,seriesParams:!((data:(id:'2',label:'Sum%20of%20reserve'),drawLinesBetweenPoints:!t,mode:stacked,show:!t,showCircles:!t,type:histogram,valueAxis:ValueAxis-1)),times:!(),type:histogram,valueAxes:!((id:ValueAxis-1,labels:(filter:!f,rotate:0,show:!t,truncate:100),name:LeftAxis-1,position:left,scale:(mode:normal,type:linear),show:!t,style:(),title:(text:'Sum%20of%20reserve'),type:value))),title:'',type:histogram))&indexPattern=eb741a10-69c1-11e9-9ebe-bf41a21a544a&type=histogram
