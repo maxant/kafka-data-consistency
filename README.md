@@ -1041,3 +1041,29 @@ Added:
 - async route loading via custom loader since vue supports creating routes with promises
 
 - APM
+
+- Temporal Problems
+Came across the problem of not being able to create the location, which creates the relationship to the claim at the same time, because that record was processed
+before the record which creates the claim in Neo4J. The problem is that there is a dependency between writing the two data sets (the claim; the location with
+the relationship to the claim) which turns into a timing issue in the design where the components are chosen by their responsibilities for certain business
+entities. I can think of three solutions to this problem:
+
+  - build some logic which recognises that dependent data is being processed too early, and put it somewhere until later,
+  - build logic into both components so that the relationship between the claim and the location is created by the second component to run,
+  - use a Kafka partition to provide a solution to this ordering problem, because partitions guarantee order.
+
+The first solution begs the question of where to store the data and when to then process it. The second solution is a simple solution for data stores like
+Neo4J where the relationship can be created by either component, but wouldn't work with a relational database with a foreign key constraint, because the
+child record cannot be created until after the parent record has been. So I chose to use the third solution, and at the same time, formalise it with a design
+rule:
+
+_"If a data store enforces constraints on it's data model, for example as a relational database does when inserting child records where foreign keys
+  constraints are specified, then the insertion order of the data becomes important.  As soon as ordering is important, it becomes necessary to encapsulate
+  that data store behind a Kafka partition, so that there is a guarantee of the order of the incoming records."_
+
+The claims component creates the Kafka record to persist the claim in Neo4J, and the command to create the location in the location component, which in turn
+adds the location to Neo4J and the relationship between the claim and the location.
+So if change that design and encapsulate Neo4J behind a component named "analysis" (think operational data versus analytical data), and let the UI call the
+claim component which creates a command record in Kafka to add the claim to the analytical component, and a command record to create the location.
+The location component will create a command record to create the location in the analytical component at some time after the claim command record was created
+and because both records use the claim ID as the key, the timing problem is automatically solved.
