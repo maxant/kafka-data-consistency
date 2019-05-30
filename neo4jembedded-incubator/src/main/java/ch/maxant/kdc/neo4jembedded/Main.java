@@ -77,7 +77,7 @@ public class Main {
             }
             try(Transaction tx2 = session.beginTransaction()) {
                 StatementResult result = tx2.run(
-                        "match (n:Contract)-[r]-(n2) where n.created < '2018-01-01' AND n.expires >= '2018-01-01' return *"
+                        "match (n:Contract)-[r:replacedBy]-() where n.created < '2017-12-02' AND n.expires >= '2017-12-02' return *"
                 );
                 while(result.hasNext()) {
                     Record r = result.next();
