@@ -1,3 +1,8 @@
+neo4jembedded-incubator/neo4jstore
+neo4jembedded-incubator/certificates
+neo4jembedded-incubator/logs
+neo4jembedded-incubator/store_lock
+
 **/.idea
 kafka_2.11-2.1.1
 **/target

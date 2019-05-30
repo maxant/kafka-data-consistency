@@ -37,6 +37,9 @@ public class Neo4JAdapter {
         ResultSummary result = adapter.runInTx(query, params).consume();
         if(1 != result.counters().nodesCreated() && 1 != result.counters().relationshipsCreated()) {
             throw new RuntimeException("didnt create result as expected! " + result);
+
+why doesnt this work, is it a timing issue? if it is, then this pattern doesnt work without commands!
+
         }
     }
 
