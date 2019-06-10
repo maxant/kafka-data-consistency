@@ -53,6 +53,9 @@ public class Main {
                 // when a correction is made, we need to update the expires attribute of the node being corrected ie. technically replaced by another node.
                 // also need to add relationships to make it all fit together correctly
                 //
+
+                //this ones strange: match (n:Contract)-[r:replacedBy]-() where n.created < '2018-06-01' AND n.expires >= '2018-06-01' return *
+
                 tx2.run(
                         "CREATE (g1:Contract { number: 1, from: '2017-05-01', to: '2017-12-31', created: '2017-05-01', expires: '9999-12-31' })," +
                                "(g2:Contract { number: 2, from: '2018-01-01', to: '9999-12-31', created: '2017-12-01', expires: '9999-12-31' })," +

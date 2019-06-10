@@ -306,6 +306,7 @@ https://docs.payara.fish/documentation/ecosystem/maven-plugin.html
         <module>claims</module>
         <module>tasks</module>
         <module>locations</module>
+	<module>graphs</module>
         <module>neo4jembedded-incubator</module>
     </modules>
 

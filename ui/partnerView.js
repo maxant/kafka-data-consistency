@@ -13,6 +13,7 @@ function buildNavigations() {
         { title: 'search', name: 'search', params: {} },
         { title: 'lazy',   name: 'lazy',   params: {} },
         { title: 'graph',  name: 'graph',  params: {} },
+        { title: 'contract history',  name: 'contract-history',  params: {} },
     ];
 };
 

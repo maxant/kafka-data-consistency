@@ -32,9 +32,6 @@ public class ClaimResource {
     @Inject
     TaskService taskService;
 
-    @Inject
-    Neo4JAdapter neo4JAdapter;
-
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response get() {
@@ -45,28 +42,38 @@ public class ClaimResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response create(Claim claim) throws JsonProcessingException {
 
+        // (1) send data to claims database
         ProducerRecord<String, String> claimDbRecord = new ProducerRecord<>(CLAIM_CREATE_DB_COMMAND_TOPIC, null, null, om.writeValueAsString(claim));
+
+        // (2) send data to elastic search, our "search system"
         ProducerRecord<String, String> claimSearchRecord = new ProducerRecord<>(CLAIM_CREATE_SEARCH_COMMAND_TOPIC, null, null, om.writeValueAsString(claim));
-        ProducerRecord<String, String> claimRelationshipRecord = new ProducerRecord<>(CLAIM_CREATE_RELATIONSHIP_COMMAND_TOPIC, null, null, om.writeValueAsString(claim));
 
+        // (3) create a task, validate it, and send it to the tasks component for persisting it there
         Task task = new Task(claim.getId(), "call customer " + claim.getPartnerId());
-
         // an example of online sync validation, if that is required. note that it reduces
         // robustness and availabiliy of the claims component!
         taskService.validate(task);
-
         ProducerRecord<String, String> createTaskCommand = new ProducerRecord<>(TASK_CREATE_COMMAND_TOPIC, null, null, om.writeValueAsString(task));
 
+        // collect the records in preparation for sending them en bloc
+        List<ProducerRecord<String, String>> records = new ArrayList<>(asList(claimDbRecord, claimSearchRecord, createTaskCommand));
 
-        List<ProducerRecord<String, String>> records = new ArrayList<>(asList(claimDbRecord, claimSearchRecord, claimRelationshipRecord, createTaskCommand));
-
+        // handle the location if present
         if(claim.getLocation() != null) {
-            claim.getLocation().setAggretateId(claim.getId());
-            claim.getLocation().setType(Location.LocationType.CLAIM_LOCATION);
+            claim.getLocation().setAggretateId(claim.getId()); // enrich the record because the UI doesn't know this field
+            claim.getLocation().setType(Location.LocationType.CLAIM_LOCATION); // ditto
+            // (4) send the location data to the location component for persisting it there
             ProducerRecord<String, String> createLocationCommand = new ProducerRecord<>(LOCATION_CREATE_COMMAND_TOPIC, null, null, om.writeValueAsString(claim.getLocation()));
             records.add(createLocationCommand);
         }
 
+        // (5) send data to neo4j, our "graph analytics system" - VERY IMPORTANT, use the claim ID as the key, because
+        // the location needs to be created afterwards and will use the same ID, to ensure they land on the same partition
+        String value = "CLAIM::" + om.writeValueAsString(claim);
+        ProducerRecord<String, String> claimRelationshipsRecord = new ProducerRecord<>(GRAPH_CREATE_COMMAND_TOPIC, null, claim.getId(), value);
+        records.add(claimRelationshipsRecord);
+
+        // (6) now send all those "commands" in one tx
         kafka.sendInOneTransaction(records);
 
         return Response.accepted().build();

@@ -54,13 +54,16 @@ Create deployments and services:
     kubectl -n kafka-data-consistency apply -f elastic-apm-server.yaml
     kubectl -n kafka-data-consistency apply -f mysql.yaml
 
+Delete evicted pods (after crashes):
+
+    kubectl -n kafka-data-consistency get pods | grep Evicted | awk '{print $1}' | xargs kubectl -n kafka-data-consistency delete pod
+
 Open ports like this:
 
     # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092, neo4j:30101:7687, elastic-apm-server:30200:8200, mysql:30300:3306
     firewall-cmd --zone=public --permanent --add-port=30000/tcp
     firewall-cmd --zone=public --permanent --add-port=30001/tcp
     firewall-cmd --zone=public --permanent --add-port=30002/tcp
-    firewall-cmd --zone=public --permanent --add-port=30101/tcp
     firewall-cmd --zone=public --permanent --add-port=30101/tcp
     firewall-cmd --zone=public --permanent --add-port=30200/tcp
     firewall-cmd --zone=public --permanent --add-port=30300/tcp
@@ -161,12 +164,16 @@ Create topics (on minikube host):
 
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic claim-create-db-command
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic claim-create-search-command
-    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic claim-create-relationship-command
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic graph-create-command
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic task-create-command
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic location-create-command
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic claim-created-event
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic task-created-event
     kafka_2.11-2.1.1/bin/kafka-topics.sh --list --zookeeper $(minikube ip):30000
+
+If you have to delete topics, do it like this:
+
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --zookeeper $(minikube ip):30000 --delete --topic claim-create-relationship-command
 
 Create elasticsearch indexes:
 
@@ -354,10 +361,6 @@ E.g. run task service locally, but connecting to kube:
     export MYSQL_PORT=30300
     export MYSQL_USER=root
     export MYSQL_PASSWORD=secret
-    export NEO4J_HOST=kdc.neo4j.maxant.ch
-    export NEO4J_PORT=30101
-    export NEO4J_USER=a
-    export NEO4J_PASSWORD=a
     $JAVA_HOME/bin/java -Xmx256M -Xms256M \
          -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8788 \
          -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 \
@@ -384,10 +387,6 @@ E.g. run task service locally, but connecting to kube:
 
     # locations:
     export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64/
-    export NEO4J_HOST=kdc.neo4j.maxant.ch
-    export NEO4J_PORT=30101
-    export NEO4J_USER=a
-    export NEO4J_PASSWORD=a
     $JAVA_HOME/bin/java -Xmx256M -Xms256M \
          -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8791 \
          -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 \
@@ -397,6 +396,23 @@ E.g. run task service locally, but connecting to kube:
              -Delastic.apm.application_packages=ch.maxant \
          -jar locations/target/locations-microbundle.jar \
          --port 8084 &
+
+    # graphs:
+    export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64/
+    export NEO4J_HOST=kdc.neo4j.maxant.ch
+    export NEO4J_PORT=30101
+    export NEO4J_USER=a
+    export NEO4J_PASSWORD=a
+    $JAVA_HOME/bin/java -Xmx256M -Xms256M \
+         -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8792 \
+         -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 \
+         -Delasticsearch.baseUrl=kdc.elasticsearch.maxant.ch \
+         -javaagent:elastic-apm-agent-1.6.1.jar \
+             -Delastic.apm.service_name=claims \
+             -Delastic.apm.server_urls=http://maxant.ch:30200 -Delastic.apm.secret_token= \
+             -Delastic.apm.application_packages=ch.maxant \
+         -jar graphs/target/graphs-microbundle.jar \
+         --port 8085 &
 
 Start the UI:
 
@@ -1063,7 +1079,7 @@ _"If a data store enforces constraints on it's data model, for example as a rela
 
 The claims component creates the Kafka record to persist the claim in Neo4J, and the command to create the location in the location component, which in turn
 adds the location to Neo4J and the relationship between the claim and the location.
-So if change that design and encapsulate Neo4J behind a component named "analysis" (think operational data versus analytical data), and let the UI call the
+So change that design and encapsulate Neo4J behind a component named "graphs", and let the UI call the
 claim component which creates a command record in Kafka to add the claim to the analytical component, and a command record to create the location.
 The location component will create a command record to create the location in the analytical component at some time after the claim command record was created
 and because both records use the claim ID as the key, the timing problem is automatically solved.
