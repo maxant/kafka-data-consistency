@@ -951,6 +951,11 @@ Added:
 
 # TODO
 
+- kube secrets: https://kubernetes.io/docs/concepts/configuration/secret/
+- minikube volumes:
+  - https://stackoverflow.com/questions/42456159/minikube-volumes
+  - https://github.com/kubernetes/minikube/blob/master/docs/persistent_volumes.md
+  -
 - build function to reset all data to masterdata
 - use mysql to save tasks. dont bother saving claims for now, other than in memory
 - locations in ES - how are they indexed? can we search for them?
