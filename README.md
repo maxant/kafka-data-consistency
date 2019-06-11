@@ -54,10 +54,6 @@ Create deployments and services:
     kubectl -n kafka-data-consistency apply -f elastic-apm-server.yaml
     kubectl -n kafka-data-consistency apply -f mysql.yaml
 
-Delete evicted pods (after crashes):
-
-    kubectl -n kafka-data-consistency get pods | grep Evicted | awk '{print $1}' | xargs kubectl -n kafka-data-consistency delete pod
-
 Open ports like this:
 
     # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092, neo4j:30101:7687, elastic-apm-server:30200:8200, mysql:30300:3306
@@ -408,7 +404,7 @@ E.g. run task service locally, but connecting to kube:
          -Dkafka.bootstrap.servers=maxant.ch:30001,maxant.ch:30002 \
          -Delasticsearch.baseUrl=kdc.elasticsearch.maxant.ch \
          -javaagent:elastic-apm-agent-1.6.1.jar \
-             -Delastic.apm.service_name=claims \
+             -Delastic.apm.service_name=graphs \
              -Delastic.apm.server_urls=http://maxant.ch:30200 -Delastic.apm.secret_token= \
              -Delastic.apm.application_packages=ch.maxant \
          -jar graphs/target/graphs-microbundle.jar \
@@ -444,6 +440,10 @@ Useful Kube stuff:
     kubectl run hello-minikube --image=k8s.gcr.io/echoserver:1.10 --port=8080
     # create a service from a deployment
     kubectl expose deployment hello-minikube --type=NodePort
+
+    #Delete evicted pods (after crashes):
+    kubectl -n kafka-data-consistency get pods | grep Evicted | awk '{print $1}' | xargs kubectl -n kafka-data-consistency delete pod
+
 
 ## Starting Kafka with docker
 
@@ -606,7 +606,7 @@ The first matches even though the record contains "arrived". The second matches 
     MATCH (n)
     DETACH DELETE n
 
-    MATCH (n)-[r]-(n2)
+    MATCH (n)-[r]-(m)
     RETURN *
 
     CREATE (c1:Contract { id: "V-9087-4321" }),
@@ -633,7 +633,7 @@ The first matches even though the record contains "arrived". The second matches 
            (cl6:Claim { id: "05565b5c-ab65-4e00-b562-046e0d5bef70", date: "2019-04-24" }),
            (p3)-[:CLAIMANT]->(cl6)
 
-    MATCH (n)-[r]-(n2)
+    MATCH (n)-[r]-(m)
     RETURN *
 
     CREATE CONSTRAINT ON (p:Partner) ASSERT p.id IS UNIQUE
@@ -641,7 +641,7 @@ The first matches even though the record contains "arrived". The second matches 
     CREATE CONSTRAINT ON (c:Claim) ASSERT c.id IS UNIQUE
     CREATE INDEX ON :Claim(date)
 
-    MATCH (n)-[r]-(n2)
+    MATCH (n)-[r]-(m)
     RETURN *
 
 - constraints: https://neo4j.com/docs/getting-started/current/cypher-intro/schema/#cypher-intro-schema-constraints

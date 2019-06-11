@@ -1,5 +1,6 @@
 package ch.maxant.kdc.graphs;
 
+import ch.maxant.kdc.library.Properties;
 import co.elastic.apm.api.ElasticApm;
 import co.elastic.apm.api.Scope;
 import co.elastic.apm.api.Span;
@@ -10,7 +11,6 @@ import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import java.util.Map;
-import java.util.Properties;
 
 @ApplicationScoped
 public class RawNeo4JAdapter {

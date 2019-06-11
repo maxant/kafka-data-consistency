@@ -46,6 +46,6 @@ public class GraphRecordHandler implements RecordHandler {
 
     @Override
     public boolean useTransactions() {
-        return true;
+        return false;
     }
 }
