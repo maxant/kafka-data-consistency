@@ -951,19 +951,25 @@ Added:
 
 # TODO
 
+- build function to reset all data to masterdata
+- fix tracing - we don't get any data at the moment!
+- add creation time to claim and use that as index in kibana
+- add user to claim to see who created it
+- add jwt from microprofile?
+- contract history and embedded neo4j with bolt vs table with graph identifier column
+- coverage selection, mapping contract to claim
+- need to build the contract component which can do contract history
 - kube secrets: https://kubernetes.io/docs/concepts/configuration/secret/
 - minikube volumes:
   - https://stackoverflow.com/questions/42456159/minikube-volumes
   - https://github.com/kubernetes/minikube/blob/master/docs/persistent_volumes.md
-  -
-- build function to reset all data to masterdata
 - use mysql to save tasks. dont bother saving claims for now, other than in memory
-- locations in ES - how are they indexed? can we search for them?
 - neo4j: think of scenario where more relationships are involved, which a relational db would struggle with
   - partners are unrelated. but claims are related over locations and a little over partners. and over products. contracts are related over location and product.
   - but none of the objects in the model relate to the same over an unknown number of relationships.
     - altho they could be if we added related products that were bought by other customers
     - what about this: ()-[1..*]-()-[*]-() hmmm not sure right now...
+    - history!: (:Contract)<-[1..*:REPLACED_BY]-(:Contract)-[1..*:REPLACES]->(:Contract)
 - use microprofile open tracing, rather than lib from elastic, where possible
 - add context of "partner" to filter on websocket server side
 - finish build and run scripts
@@ -1024,6 +1030,9 @@ Added:
 # TODO Blog
 
 - need lock when using transactional kafka, but not otherwise since producer is thread safe
+
+- locations in ES are saved as part of the claims document - how are they indexed? can we search for them?
+  - yes they are in there, and they can be searched for
 
 - objective: use a light weight UI technology that does not require us to have a build system
   - assume http/2 so that multiple fetches don't worry us
