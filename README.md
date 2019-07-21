@@ -510,13 +510,30 @@ Read from a topic:
 
 # KSQL
 
+After installation into Kube as documented above, we can test that it's running via it's REST API:
+
+    curl -s "http://maxant.ch:30400/info" | jq '.'
+
+Create a stream:
+
+    curl -X POST "http://maxant.ch:30400/ksql" -H 'Accept: application/vnd.ksql.v1+json' -H 'Content-Type: application/vnd.ksql.v1+json' -d'
+        {
+          "ksql": "CREATE STREAM pageviews_home AS SELECT * FROM pageviews_original WHERE pageid='home'; CREATE STREAM pageviews_alice AS SELECT * FROM pageviews_original WHERE userid='alice';",
+          "streamsProperties": {
+            "ksql.streams.auto.offset.reset": "earliest"
+          }
+        }
+        '
+
+## Links:
+
 - Installation: https://docs.confluent.io/current/ksql/docs/installation/install-ksql-with-docker.html
 - Tutorials: https://docs.confluent.io/current/ksql/docs/tutorials/
 - Docs: https://docs.confluent.io/current/ksql/docs/index.html
 - REST API: https://docs.confluent.io/current/ksql/docs/developer-guide/api.html
 - Kafka Connect - JDBC Deep Dive: https://www.confluent.io/blog/kafka-connect-deep-dive-jdbc-source-connector
 - Cook Book: https://www.confluent.io/product/ksql/stream-processing-cookbook
-
+- Example docker compose content: https://github.com/confluentinc/cp-docker-images/blob/5.3.0-post/examples/cp-all-in-one/docker-compose.yml
 
 # Useful Elasticsearch stuff:
 

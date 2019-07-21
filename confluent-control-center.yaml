@@ -1,0 +1,58 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: confluent-control-center
+spec:
+  selector:
+    app: confluent-control-center
+  type: NodePort
+  ports:
+  - name: tcp
+    protocol: TCP
+    port: 9021
+    targetPort: 9021
+    nodePort: 30500
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: confluent-control-center
+spec:
+  selector:
+    matchLabels:
+      app: confluent-control-center
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: confluent-control-center
+    spec:
+      containers:
+      - name: confluent-control-center
+        image: maxant/confluent-control-center
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 9021
+        env:
+        - name: CONTROL_CENTER_BOOTSTRAP_SERVERS
+          value: "kafka-1.kafka-data-consistency:9092,kafka-2.kafka-data-consistency:9092"
+        - name: CONTROL_CENTER_ZOOKEEPER_CONNECT
+          value: "zookeeper.kafka-data-consistency:2181"
+        - name: TODO___CONTROL_CENTER_CONNECT_CLUSTER
+          value: "TODO___kafkaconnect.kafka-data-consistency:8083"
+        - name: CONTROL_CENTER_KSQL_URL
+          value: "http://ksql-server-1.kafka-data-consistency:8088"
+        - name: CONTROL_CENTER_KSQL_ADVERTISED_URL
+          value: "http://ksql-server-1.kafka-data-consistency:8088"
+        - name: TODO___CONTROL_CENTER_SCHEMA_REGISTRY_URL
+          value: "TODO___http://schema-registry.kafka-data-consistency:8081"
+        - name: CONTROL_CENTER_REPLICATION_FACTOR
+          value: "1"
+        - name: CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS
+          value: "1"
+        - name: CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS
+          value: "1"
+        - name: CONFLUENT_METRICS_TOPIC_REPLICATION
+          value: "1"
+        - name: PORT
+          value: "9021"
