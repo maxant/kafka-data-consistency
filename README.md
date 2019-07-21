@@ -12,6 +12,19 @@ Kafka needs to be present to build a suitable docker image.
     rm kafka_2.11-2.1.1.tgz
     #git init
 
+## Start Minikube and Dashboard
+
+    minikube start --memory 8192 --cpus 4
+    minikube addons enable metrics-server
+    minikube dashboard &
+    # make sure you note the port, and then run this, replacing the `39309` from the output of the dashboard:
+    socat TCP-LISTEN:40000,fork TCP:127.0.0.1:39309 &
+
+After a while, remove evicted pods if necessary:
+
+    kubectl -n kafka-data-consistency get pods | grep Evicted | awk '{print $1}' | xargs kubectl -n kafka-data-consistency delete pod
+
+
 ## Kubernetes
 
 If necessary use the minikube docker host:
@@ -42,6 +55,7 @@ Delete existing, if necessary:
     kubectl -n kafka-data-consistency delete service elastic-apm-server
     kubectl -n kafka-data-consistency delete deployment mysql
     kubectl -n kafka-data-consistency delete service mysql
+    kubectl -n kafka-data-consistency delete service ksql-server-1
 
 Create deployments and services:
 
@@ -53,16 +67,18 @@ Create deployments and services:
     kubectl -n kafka-data-consistency apply -f kibana.yaml
     kubectl -n kafka-data-consistency apply -f elastic-apm-server.yaml
     kubectl -n kafka-data-consistency apply -f mysql.yaml
+    kubectl -n kafka-data-consistency apply -f ksql-server-1.yaml
 
 Open ports like this:
 
-    # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092, neo4j:30101:7687, elastic-apm-server:30200:8200, mysql:30300:3306
+    # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092, neo4j:30101:7687, elastic-apm-server:30200:8200, mysql:30300:3306, ksql-server-1:30400:8088
     firewall-cmd --zone=public --permanent --add-port=30000/tcp
     firewall-cmd --zone=public --permanent --add-port=30001/tcp
     firewall-cmd --zone=public --permanent --add-port=30002/tcp
     firewall-cmd --zone=public --permanent --add-port=30101/tcp
     firewall-cmd --zone=public --permanent --add-port=30200/tcp
     firewall-cmd --zone=public --permanent --add-port=30300/tcp
+    firewall-cmd --zone=public --permanent --add-port=30400/tcp
     firewall-cmd --reload
     firewall-cmd --list-all
 
@@ -92,6 +108,9 @@ Setup forwarding like this (some are accessed directly from outside, others are 
 
     # mysql
     socat TCP-LISTEN:30300,fork TCP:$(minikube ip):30300 &
+
+    # ksql-server-1
+    socat TCP-LISTEN:30400,fork TCP:$(minikube ip):30400 &
 
 Update nginx with a file under vhosts like this:
 
@@ -430,8 +449,8 @@ Useful Kube stuff:
     kubectl create -f deploy/1.8+/
     minikube addons enable metrics-server
     minikube dashboard &
-    # make sure you note the port, and then run this, replacing the XXXXX from the output of the dashboard:
-    socat TCP-LISTEN:40000,fork TCP:127.0.0.1:53885 &
+    # make sure you note the port, and then run this, replacing the `39309` from the output of the dashboard:
+    socat TCP-LISTEN:40000,fork TCP:127.0.0.1:39309 &
 
     # connect to the vm. eg. top and stuff to see whats going on inside.
     minikube ssh
@@ -489,6 +508,14 @@ Read from a topic:
 
     kafka_2.11-2.1.1/bin/kafka-console-consumer.sh --bootstrap-server maxant.ch:30000 --topic location-create-command --from-beginning
 
+# KSQL
+
+- Installation: https://docs.confluent.io/current/ksql/docs/installation/install-ksql-with-docker.html
+- Tutorials: https://docs.confluent.io/current/ksql/docs/tutorials/
+- Docs: https://docs.confluent.io/current/ksql/docs/index.html
+- REST API: https://docs.confluent.io/current/ksql/docs/developer-guide/api.html
+- Kafka Connect - JDBC Deep Dive: https://www.confluent.io/blog/kafka-connect-deep-dive-jdbc-source-connector
+- Cook Book: https://www.confluent.io/product/ksql/stream-processing-cookbook
 
 
 # Useful Elasticsearch stuff:

@@ -1,0 +1,44 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: ksql-server-1
+spec:
+  selector:
+    app: ksql-server-1
+  type: NodePort
+  ports:
+  - name: tcp
+    protocol: TCP
+    port: 8088
+    targetPort: 8088
+    nodePort: 30400
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ksql-server-1
+spec:
+  selector:
+    matchLabels:
+      app: ksql-server-1
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ksql-server-1
+    spec:
+      containers:
+      - name: ksql-server-1
+        image: maxant/ksqlserver
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8088
+        env:
+        - name: ID
+          value: "1"
+        - name: KSQL_BOOTSTRAP_SERVERS
+          value: "kafka-1.kafka-data-consistency:9092,kafka-2.kafka-data-consistency:9092"
+        - name: KSQL_LISTENERS
+          value: "http://0.0.0.0:8088"
+        - name: KSQL_KSQL_SERVICE_ID
+          value: "ksql_service_1_"

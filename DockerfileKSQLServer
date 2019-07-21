@@ -1,0 +1,8 @@
+#########################################################
+# docker build -f DockerfileKSQLServer -t maxant/ksqlserver .
+# docker run --name ksql_$id -e "ID=$id" -e "KSQL_BOOTSTRAP_SERVERS=kafka-1.kafka-data-consistency:9092,kafka-2.kafka-data-consistency:9092" -e "KSQL_LISTENERS=http://0.0.0.0:8088" -e "KSQL_KSQL_SERVICE_ID=ksql_service_1_" maxant/ksqlserver &
+#########################################################
+
+FROM confluentinc/cp-ksql-server:5.3.0
+
+
