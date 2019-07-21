@@ -56,6 +56,7 @@ Delete existing, if necessary:
     kubectl -n kafka-data-consistency delete deployment mysql
     kubectl -n kafka-data-consistency delete service mysql
     kubectl -n kafka-data-consistency delete service ksql-server-1
+    kubectl -n kafka-data-consistency delete service confluent-control-center
 
 Create deployments and services:
 
@@ -68,10 +69,11 @@ Create deployments and services:
     kubectl -n kafka-data-consistency apply -f elastic-apm-server.yaml
     kubectl -n kafka-data-consistency apply -f mysql.yaml
     kubectl -n kafka-data-consistency apply -f ksql-server-1.yaml
+    kubectl -n kafka-data-consistency apply -f confluent-control-center.yaml
 
 Open ports like this:
 
-    # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092, neo4j:30101:7687, elastic-apm-server:30200:8200, mysql:30300:3306, ksql-server-1:30400:8088
+    # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092, neo4j:30101:7687, elastic-apm-server:30200:8200, mysql:30300:3306, ksql-server-1:30400:8088, confluent-control-center:30500:9021
     firewall-cmd --zone=public --permanent --add-port=30000/tcp
     firewall-cmd --zone=public --permanent --add-port=30001/tcp
     firewall-cmd --zone=public --permanent --add-port=30002/tcp
@@ -79,6 +81,7 @@ Open ports like this:
     firewall-cmd --zone=public --permanent --add-port=30200/tcp
     firewall-cmd --zone=public --permanent --add-port=30300/tcp
     firewall-cmd --zone=public --permanent --add-port=30400/tcp
+    firewall-cmd --zone=public --permanent --add-port=30500/tcp
     firewall-cmd --reload
     firewall-cmd --list-all
 
@@ -112,7 +115,10 @@ Setup forwarding like this (some are accessed directly from outside, others are 
     # ksql-server-1
     socat TCP-LISTEN:30400,fork TCP:$(minikube ip):30400 &
 
-Update nginx with a file under vhosts like this:
+    # confluent-control-center
+    socat TCP-LISTEN:30500,fork TCP:$(minikube ip):30500 &
+
+Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-consistency.conf):
 
     #
     # created by ant, 20190423
@@ -154,6 +160,19 @@ Update nginx with a file under vhosts like this:
         server_name kdc.kibana.maxant.ch;
         location / {
             proxy_pass http://localhost:30150/;
+        }
+      }
+
+      # ############################################################
+      # kdc.ccc.maxant.ch (confluent control center)
+      # ############################################################
+
+      server {
+        listen 80;
+
+        server_name kdc.ccc.maxant.ch;
+        location / {
+            proxy_pass http://localhost:30500/;
         }
       }
 
@@ -508,11 +527,30 @@ Read from a topic:
 
     kafka_2.11-2.1.1/bin/kafka-console-consumer.sh --bootstrap-server maxant.ch:30000 --topic location-create-command --from-beginning
 
+Create a topic:
+
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic ksql-test-topic
+
+Write some test data to a topic:
+
+    kafka_2.11-2.1.1/bin/kafka-console-producer.sh --broker-list maxant.ch:30001,maxant.ch:30002 --topic ksql-test-topic
+
 # KSQL
 
 After installation into Kube as documented above, we can test that it's running via it's REST API:
 
     curl -s "http://maxant.ch:30400/info" | jq '.'
+
+Run ksql-cli locally:
+
+    docker run -it --rm --name ksql-cli confluentinc/cp-ksql-cli:5.3.0
+
+Then:
+
+    server http://maxant.ch:30400
+    show topics;
+    print 'claim-create-db-command';
+
 
 Create a stream:
 
