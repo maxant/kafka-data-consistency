@@ -16,18 +16,25 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 /**
+ * Throws out non-german-speakering citizens (keeps only CH/DE/AT).
  * Anonymises last name (personally identifiable information aka PII).
  * Adds age.
  */
-public class FilterSwissAndAnonymiseAndAddAgeKafkaStream {
+public class FilterNonGermanSpeakingAndAnonymiseAndAddAgeKafkaStream {
 
     private static final ObjectMapper om = JacksonConfig.getMapper();
+    private static final Set<Integer> GERMAN_SPEAKING_COUNTRY_CODES;
+
+    static {
+        GERMAN_SPEAKING_COUNTRY_CODES = new HashSet<Integer>(){{
+            add(756); // CH
+            add( 40); // AT
+            add(276); // DE
+        }};
+    }
 
     public static void main(final String[] args) {
         final String bootstrapServers = args.length > 0 ? args[0] : "maxant.ch:30001,maxant.ch:30002";
@@ -45,7 +52,7 @@ public class FilterSwissAndAnonymiseAndAddAgeKafkaStream {
             .peek((k,p) -> printf("input partner %s", p))
             .map((k,v) -> KeyValue.pair(k, mapToPartner(v))) // deserialise json
             .filter((k,p) -> { // filter only swiss
-                boolean keep = p.getNationality() == 756;
+                boolean keep = GERMAN_SPEAKING_COUNTRY_CODES.contains(p.getNationality());
                 printf("keeping %s: %s", p.getId(), keep);
                 return keep;
             })
@@ -56,7 +63,7 @@ public class FilterSwissAndAnonymiseAndAddAgeKafkaStream {
                 p.setAge(Period.between(p.getDateOfBirth(), LocalDate.now()).getYears());
                 return p;
             })
-            .mapValues(FilterSwissAndAnonymiseAndAddAgeKafkaStream::toJsonString)
+            .mapValues(FilterNonGermanSpeakingAndAnonymiseAndAddAgeKafkaStream::toJsonString)
             .peek((k,p) -> printf("output partner %s", p))
             .to("partners-created-swiss-anonymous-with-age");
 

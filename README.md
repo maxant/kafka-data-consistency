@@ -544,7 +544,13 @@ Write some test data to a topic:
 
 # KSQL
 
-After installation into Kube as documented above, we can test that it's running via it's REST API:
+Run the partner generator: `PartnerResource#main` => it generates new random partner data, a record every few seconds. 
+
+Run a Kafka Stream `FilterNonGermanSpeakingAndAnonymiseAndAddAgeKafkaStream#main`, which does what it says on the tin, using the generated partner data!
+
+You then have the basis for the queries which are created in this chapter.
+
+After installation of ksql-server-1 into Kube as documented above, we can test that it's running via it's REST API:
 
     curl -s "http://maxant.ch:30401/info" | jq '.'
 
@@ -552,49 +558,133 @@ Run ksql-cli locally:
 
     docker run -it --rm --name ksql-cli confluentinc/cp-ksql-cli:5.3.0
 
-Then:
+Then connect to the ksql-server:
 
     server http://maxant.ch:30401
+
+And play around a little:
+
     show topics;
-    print 'claim-create-db-command';
+    print 'partner-created-event';
 
+Create a streams:
 
-Create a stream:
-
+    #all partners, as a stream:
     curl -X POST "http://maxant.ch:30401/ksql" -H 'Content-Type: application/vnd.ksql.v1+json' -d '
     {
-      "ksql": "CREATE STREAM pageviews_home AS SELECT * FROM pageviews_original WHERE pageid='home'; CREATE STREAM pageviews_alice AS SELECT * FROM pageviews_original WHERE userid='alice';",
+      "ksql": "CREATE STREAM s_partner (id VARCHAR, firstname VARCHAR, lastname VARCHAR, dateOfBirth VARCHAR, nationality INTEGER) WITH (KAFKA_TOPIC = '\''partner-created-event'\'', VALUE_FORMAT='\''JSON'\'', KEY = '\''id'\'');",
       "streamsProperties": {
         "ksql.streams.auto.offset.reset": "earliest"
       }
     }'
 
-
-Create a table:
-
+    # all german speaking anonymised partners with age, as a stream:
     curl -X POST "http://maxant.ch:30401/ksql" -H 'Content-Type: application/vnd.ksql.v1+json' -d '
     {
-      "ksql": "CREATE TABLE partners (id VARCHAR, firstname VARCHAR, lastname VARCHAR) WITH (KAFKA_TOPIC = '\''ksql-test-cud-partners'\'', VALUE_FORMAT='\''JSON'\'', KEY = '\''id'\'');",
+      "ksql": "CREATE STREAM s_partner_germanspeaking_anon_age (id VARCHAR, firstname VARCHAR, lastname VARCHAR, dateOfBirth VARCHAR, nationality INTEGER, age INTEGER) WITH (KAFKA_TOPIC = '\''partners-created-swiss-anonymous-with-age'\'', VALUE_FORMAT='\''JSON'\'', KEY = '\''id'\'');",
       "streamsProperties": {
         "ksql.streams.auto.offset.reset": "earliest"
       }
     }'
+
+Average age of customers in a hopping window (windows requires a stream rather than a table as their basis!):
+
+    select sum(age)/count(*) from s_partner_germanspeaking_anon_age WINDOW HOPPING (SIZE 120 SECONDS, ADVANCE BY 60 SECONDS) group by 1;
+
+    # average age of new partners per country in the last two minutes, hopping by minute (returns two rows per country)
+    select nationality, count(*) as number, sum(age)/count(*) from s_partner_germanspeaking_anon_age WINDOW HOPPING (SIZE 120 SECONDS, ADVANCE BY 60 SECONDS) group by nationality;
+
+    # average age of new partners per country, for each minute
+    select nationality, count(*) as number, sum(age)/count(*) from s_partner_germanspeaking_anon_age WINDOW TUMBLING (SIZE 60 SECONDS) group by nationality;
+
+Create tables:
+
+    # a table of raw partners:
+    curl -X POST "http://maxant.ch:30401/ksql" -H 'Content-Type: application/vnd.ksql.v1+json' -d '
+    {
+      "ksql": "CREATE TABLE t_partner (id VARCHAR, firstname VARCHAR, lastname VARCHAR, dateOfBirth VARCHAR, nationality INTEGER) WITH (KAFKA_TOPIC = '\''partner-created-event'\'', VALUE_FORMAT='\''JSON'\'', KEY = '\''id'\'');",
+      "streamsProperties": {
+        "ksql.streams.auto.offset.reset": "earliest"
+      }
+    }'
+
+    # a table of german speaking anonymised parters with age:
+    curl -X POST "http://maxant.ch:30401/ksql" -H 'Content-Type: application/vnd.ksql.v1+json' -d '
+    {
+      "ksql": "CREATE TABLE t_partner_germanspeaking_anon_age (id VARCHAR, firstname VARCHAR, lastname VARCHAR, dateOfBirth VARCHAR, nationality INTEGER, age INTEGER) WITH (KAFKA_TOPIC = '\''partners-created-swiss-anonymous-with-age'\'', VALUE_FORMAT='\''JSON'\'', KEY = '\''id'\'');",
+      "streamsProperties": {
+        "ksql.streams.auto.offset.reset": "earliest"
+      }
+    }'
+
+    # count of new partners, per 5 min window:
+    curl -X POST "http://maxant.ch:30401/ksql" -H 'Content-Type: application/vnd.ksql.v1+json' -d '
+    {
+      "ksql": "CREATE TABLE t_new_partners_per_5mins AS SELECT nationality, COUNT(*) AS event_count FROM s_partner_germanspeaking_anon_age WINDOW TUMBLING (SIZE 5 MINUTES) GROUP BY nationality;",
+      "streamsProperties": {
+        "ksql.streams.auto.offset.reset": "earliest"
+      }
+    }'
+
+    # now we can select this data:
+    curl -X POST "http://maxant.ch:30401/query" -H 'Content-Type: application/vnd.ksql.v1+json' -d '
+    {
+      "ksql": "SELECT TIMESTAMPTOSTRING(ROWTIME, '\''yyyy-MM-dd HH:mm:ss.SSS'\''), nationality, event_count FROM t_new_partners_per_5mins;",
+      "streamsProperties": {
+        "ksql.streams.auto.offset.reset": "latest"
+      }
+    }'
+
+It outputs a new line every few seconds if there is no new data. 
+It outputs a new row each time a new record is processed.
+The record contains the timestamp, so that we can work out which window we are talking about (in this case 22:30-22:35).
+It contains the country code, eg. 276, which had a count of 8, then a count of 9. Then a row came in for country code 
+756 with a count of 5. So we can add the count.
+
+    {"row":{"columns":["2019-07-24 22:32:01.891",276,8]},"errorMessage":null,"finalMessage":null,"terminal":false}
+
+    {"row":{"columns":["2019-07-24 22:32:05.153",276,9]},"errorMessage":null,"finalMessage":null,"terminal":false}
+    
+    
+    {"row":{"columns":["2019-07-24 22:32:07.834",756,5]},"errorMessage":null,"finalMessage":null,"terminal":false}
+    
+    {"row":{"columns":["2019-07-24 22:34:34.190",276,17]},"errorMessage":null,"finalMessage":null,"terminal":false}
+
+
+
+    {"row":{"columns":["2019-07-24 22:34:43.019",756,12]},"errorMessage":null,"finalMessage":null,"terminal":false}
+
+    {"row":{"columns":["2019-07-24 22:34:53.200",40,14]},"errorMessage":null,"finalMessage":null,"terminal":false}
+
+
+    {"row":{"columns":["2019-07-24 22:35:06.644",40,1]},"errorMessage":null,"finalMessage":null,"terminal":false}
+
+Notice how the count is reset to 1, when a new record arrives in the new window (22:35-22:40).
+
+So we could well use this data to draw a graph with live updates, in a UI.
+
 
 Go back to ksql-cli and:
 
     show tables;
     describe partners;
-    select * from partners; // seems to follow and only print when records arrive
+    select * from t_partner; // seems to follow and only print when records arrive
+    SELECT ROWTIME, TIMESTAMPTOSTRING(ROWTIME, 'yyyy-MM-dd HH:mm:ss.SSS'), firstname, nationality, dateOfBirth from t_partner;
     show queries;
-    describe extended partners;
+    describe extended t_partner;
     list properties;
     SET 'auto.offset.reset'='earliest'; // so that select works from start of topic/partition
 
-You can query via REST like this:
+    # average partner ages -> every time a record arrives, the result row is outputted for that record, eg. with the last example the new count and average age is outputted for the country of the record that was just processed.
+    select sum(age)/count(*) from t_partner_germanspeaking_anon_age group by 1;
+    select nationality, sum(age)/count(*) from t_partner_germanspeaking_anon_age group by nationality;
+    select nationality, count(*) as number, sum(age)/count(*) from t_partner_germanspeaking_anon_age group by nationality;
+
+You can query via REST like this (could be useful for an event store?? not really...):
 
     curl -X POST "http://maxant.ch:30401/query" -H 'Content-Type: application/vnd.ksql.v1+json' -d '
     {
-      "ksql": "select * from partners;",
+      "ksql": "select * from s_partner where id = '\''9d601f00-47a7-446b-8bd6-e3843f0a7273'\'';",
       "streamsProperties": {
         "ksql.streams.auto.offset.reset": "earliest"
       }
@@ -602,14 +692,17 @@ You can query via REST like this:
 
 But this too continues to respond with data. It isn't designed to give a snapshot rather it's designed to give a stream of data.
 
+Notice the special escaping of single quotes within the single quoted body with `'\''`, ie. the quote is escaped and also within quotes!
+
 ### Notes on KSQL:
 
-- Table uses upsert semantics (CUD). Vs stream which is just a long list of records.
+- Table uses upsert semantics (CUD) vs. stream which is just a long list of records.
 
 ### TODO KSQL:
 
 - persistency? what happens when ksql server instance goes down? the data is persistent according to the topic - it is still there.
-- how to create a global table using rest?
+- what happens if kafka stream dies? it continues from the index from which it left off when it crashed.
+- how to create a global table using rest? its possible with kafka stream API...
 - article on unioning data from other ksql-server nodes in the cluster?
 - creating indexes on tables to improve performance?
 - select * from beginning => must set `ksql.streams.auto.offset.reset` (web) or `auto.offset.reset` (ksql-cli) to the value `earliest`

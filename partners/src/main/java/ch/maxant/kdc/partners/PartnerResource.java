@@ -19,8 +19,7 @@ import javax.ws.rs.core.Response;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Properties;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -29,6 +28,21 @@ import static java.util.Collections.singletonList;
 @Path("partners")
 @ApplicationScoped
 public class PartnerResource {
+
+    private static final List<Integer> COUNTRY_CODES;
+
+    static {
+        COUNTRY_CODES = new ArrayList<Integer>(){{
+            add(756); // CH
+            add( 40); // AT
+            add(276); // DE
+            add(826); // UK
+            add(840); // US
+            add(156); // CN
+            add(166); // CC
+            add(214); // DO
+        }};
+    }
 
     @Inject
     KafkaAdapter kafka;
@@ -52,14 +66,14 @@ public class PartnerResource {
         final Properties props = new Properties();
         props.put("bootstrap.servers", "maxant.ch:30001,maxant.ch:30002");
         props.put("acks", "all");
-        final KafkaProducer producer = new KafkaProducer<>(props, new StringSerializer(), new StringSerializer());
+        final KafkaProducer<String, String> producer = new KafkaProducer<>(props, new StringSerializer(), new StringSerializer());
         final ObjectMapper om = JacksonConfig.getMapper();
         while(true) {
             String now = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
             Partner partner = new Partner(
                 "Ant-" + now,
                 "Kaye",
-                754 + random.nextInt(3),
+                COUNTRY_CODES.get(random.nextInt(COUNTRY_CODES.size())),
                 LocalDate.of(LocalDate.now().getYear() - 18 - random.nextInt(62), 1, 1).plusDays(random.nextInt(365))
             );
             String json = om.writeValueAsString(partner);

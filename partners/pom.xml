@@ -62,7 +62,7 @@
                     <!-- MainClass in mainfest make a executable jar -->
                     <archive>
                         <manifest>
-                            <mainClass>ch.maxant.kdc.partners.FilterSwissAndAnonymiseAndAddAgeKafkaStream</mainClass>
+                            <mainClass>ch.maxant.kdc.partners.FilterNonGermanSpeakingAndAnonymiseAndAddAgeKafkaStream</mainClass>
                         </manifest>
                     </archive>
 
