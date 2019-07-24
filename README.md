@@ -24,7 +24,6 @@ After a while, remove evicted pods if necessary:
 
     kubectl -n kafka-data-consistency get pods | grep Evicted | awk '{print $1}' | xargs kubectl -n kafka-data-consistency delete pod
 
-
 ## Kubernetes
 
 If necessary use the minikube docker host:
@@ -56,6 +55,7 @@ Delete existing, if necessary:
     kubectl -n kafka-data-consistency delete deployment mysql
     kubectl -n kafka-data-consistency delete service mysql
     kubectl -n kafka-data-consistency delete service ksql-server-1
+    kubectl -n kafka-data-consistency delete service ksql-server-2
     kubectl -n kafka-data-consistency delete service confluent-control-center
 
 Create deployments and services:
@@ -69,18 +69,21 @@ Create deployments and services:
     kubectl -n kafka-data-consistency apply -f elastic-apm-server.yaml
     kubectl -n kafka-data-consistency apply -f mysql.yaml
     kubectl -n kafka-data-consistency apply -f ksql-server-1.yaml
+    kubectl -n kafka-data-consistency apply -f ksql-server-2.yaml
     kubectl -n kafka-data-consistency apply -f confluent-control-center.yaml
 
 Open ports like this:
 
-    # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092, neo4j:30101:7687, elastic-apm-server:30200:8200, mysql:30300:3306, ksql-server-1:30400:8088, confluent-control-center:30500:9021
+    # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092, neo4j:30101:7687, elastic-apm-server:30200:8200,
+    # mysql:30300:3306, ksql-server-1:30401:8088, ksql-server-2:30402:8088, confluent-control-center:30500:9021
     firewall-cmd --zone=public --permanent --add-port=30000/tcp
     firewall-cmd --zone=public --permanent --add-port=30001/tcp
     firewall-cmd --zone=public --permanent --add-port=30002/tcp
     firewall-cmd --zone=public --permanent --add-port=30101/tcp
     firewall-cmd --zone=public --permanent --add-port=30200/tcp
     firewall-cmd --zone=public --permanent --add-port=30300/tcp
-    firewall-cmd --zone=public --permanent --add-port=30400/tcp
+    firewall-cmd --zone=public --permanent --add-port=30401/tcp
+    firewall-cmd --zone=public --permanent --add-port=30402/tcp
     firewall-cmd --zone=public --permanent --add-port=30500/tcp
     firewall-cmd --reload
     firewall-cmd --list-all
@@ -112,8 +115,9 @@ Setup forwarding like this (some are accessed directly from outside, others are 
     # mysql
     socat TCP-LISTEN:30300,fork TCP:$(minikube ip):30300 &
 
-    # ksql-server-1
-    socat TCP-LISTEN:30400,fork TCP:$(minikube ip):30400 &
+    # ksql-server-1, ksql-server-2
+    socat TCP-LISTEN:30401,fork TCP:$(minikube ip):30401 &
+    socat TCP-LISTEN:30402,fork TCP:$(minikube ip):30402 &
 
     # confluent-control-center
     socat TCP-LISTEN:30500,fork TCP:$(minikube ip):30500 &
@@ -203,6 +207,7 @@ Create topics (on minikube host):
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic location-create-command
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic claim-created-event
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic task-created-event
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic partner-created-event
     kafka_2.11-2.1.1/bin/kafka-topics.sh --list --zookeeper $(minikube ip):30000
 
 If you have to delete topics, do it like this:
@@ -525,21 +530,23 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 
 Read from a topic:
 
-    kafka_2.11-2.1.1/bin/kafka-console-consumer.sh --bootstrap-server maxant.ch:30000 --topic location-create-command --from-beginning
+    kafka_2.11-2.1.1/bin/kafka-console-consumer.sh --bootstrap-server maxant.ch:30001 --topic ksql-test-cud-partners --from-beginning
 
 Create a topic:
 
-    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic ksql-test-topic
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic ksql-test-cud-partners
+
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --list --zookeeper $(minikube ip):30000
 
 Write some test data to a topic:
 
-    kafka_2.11-2.1.1/bin/kafka-console-producer.sh --broker-list maxant.ch:30001,maxant.ch:30002 --topic ksql-test-topic
+    kafka_2.11-2.1.1/bin/kafka-console-producer.sh --broker-list maxant.ch:30001,maxant.ch:30002 --topic ksql-test-cud-partners
 
 # KSQL
 
 After installation into Kube as documented above, we can test that it's running via it's REST API:
 
-    curl -s "http://maxant.ch:30400/info" | jq '.'
+    curl -s "http://maxant.ch:30401/info" | jq '.'
 
 Run ksql-cli locally:
 
@@ -547,25 +554,71 @@ Run ksql-cli locally:
 
 Then:
 
-    server http://maxant.ch:30400
+    server http://maxant.ch:30401
     show topics;
     print 'claim-create-db-command';
 
 
 Create a stream:
 
-    curl -X POST "http://maxant.ch:30400/ksql" -H 'Accept: application/vnd.ksql.v1+json' -H 'Content-Type: application/vnd.ksql.v1+json' -d'
-        {
-          "ksql": "CREATE STREAM pageviews_home AS SELECT * FROM pageviews_original WHERE pageid='home'; CREATE STREAM pageviews_alice AS SELECT * FROM pageviews_original WHERE userid='alice';",
-          "streamsProperties": {
-            "ksql.streams.auto.offset.reset": "earliest"
-          }
-        }
-        '
+    curl -X POST "http://maxant.ch:30401/ksql" -H 'Content-Type: application/vnd.ksql.v1+json' -d '
+    {
+      "ksql": "CREATE STREAM pageviews_home AS SELECT * FROM pageviews_original WHERE pageid='home'; CREATE STREAM pageviews_alice AS SELECT * FROM pageviews_original WHERE userid='alice';",
+      "streamsProperties": {
+        "ksql.streams.auto.offset.reset": "earliest"
+      }
+    }'
+
+
+Create a table:
+
+    curl -X POST "http://maxant.ch:30401/ksql" -H 'Content-Type: application/vnd.ksql.v1+json' -d '
+    {
+      "ksql": "CREATE TABLE partners (id VARCHAR, firstname VARCHAR, lastname VARCHAR) WITH (KAFKA_TOPIC = '\''ksql-test-cud-partners'\'', VALUE_FORMAT='\''JSON'\'', KEY = '\''id'\'');",
+      "streamsProperties": {
+        "ksql.streams.auto.offset.reset": "earliest"
+      }
+    }'
+
+Go back to ksql-cli and:
+
+    show tables;
+    describe partners;
+    select * from partners; // seems to follow and only print when records arrive
+    show queries;
+    describe extended partners;
+    list properties;
+    SET 'auto.offset.reset'='earliest'; // so that select works from start of topic/partition
+
+You can query via REST like this:
+
+    curl -X POST "http://maxant.ch:30401/query" -H 'Content-Type: application/vnd.ksql.v1+json' -d '
+    {
+      "ksql": "select * from partners;",
+      "streamsProperties": {
+        "ksql.streams.auto.offset.reset": "earliest"
+      }
+    }'
+
+But this too continues to respond with data. It isn't designed to give a snapshot rather it's designed to give a stream of data.
+
+### Notes on KSQL:
+
+- Table uses upsert semantics (CUD). Vs stream which is just a long list of records.
+
+### TODO KSQL:
+
+- persistency? what happens when ksql server instance goes down? the data is persistent according to the topic - it is still there.
+- how to create a global table using rest?
+- article on unioning data from other ksql-server nodes in the cluster?
+- creating indexes on tables to improve performance?
+- select * from beginning => must set `ksql.streams.auto.offset.reset` (web) or `auto.offset.reset` (ksql-cli) to the value `earliest`
+  - it is NOT fast!
 
 ## Links:
 
 - Installation: https://docs.confluent.io/current/ksql/docs/installation/install-ksql-with-docker.html
+- Concepts: https://docs.confluent.io/current/streams/concepts.html => Global Table and info that KTable only contains data for partition. TODO where is the page that talks about manually fetching data from other ksql nodes?
 - Tutorials: https://docs.confluent.io/current/ksql/docs/tutorials/
 - Docs: https://docs.confluent.io/current/ksql/docs/index.html
 - REST API: https://docs.confluent.io/current/ksql/docs/developer-guide/api.html
