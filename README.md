@@ -208,6 +208,9 @@ Create topics (on minikube host):
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic claim-created-event
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic task-created-event
     kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic partner-created-event
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic partner-created-anonymous
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic partner-created-german-speaking-anonymous-with-age
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic partner-created-german-speaking-global-count
     kafka_2.11-2.1.1/bin/kafka-topics.sh --list --zookeeper $(minikube ip):30000
 
 If you have to delete topics, do it like this:
@@ -544,9 +547,11 @@ Write some test data to a topic:
 
 # KSQL
 
-Run the partner generator: `PartnerResource#main` => it generates new random partner data, a record every few seconds. 
+Run the partner generator: `PartnerGenerator#main` => it generates new random partner data, a record every few seconds. 
 
 Run a Kafka Stream `FilterNonGermanSpeakingAndAnonymiseAndAddAgeKafkaStream#main`, which does what it says on the tin, using the generated partner data!
+Note that you can start multiple instances of this. If you add another, there is a rebalancing and local state is sent over to
+the new consumer and no longer reported by the original one.
 
 You then have the basis for the queries which are created in this chapter.
 
@@ -581,7 +586,7 @@ Create a streams:
     # all german speaking anonymised partners with age, as a stream:
     curl -X POST "http://maxant.ch:30401/ksql" -H 'Content-Type: application/vnd.ksql.v1+json' -d '
     {
-      "ksql": "CREATE STREAM s_partner_germanspeaking_anon_age (id VARCHAR, firstname VARCHAR, lastname VARCHAR, dateOfBirth VARCHAR, nationality INTEGER, age INTEGER) WITH (KAFKA_TOPIC = '\''partners-created-swiss-anonymous-with-age'\'', VALUE_FORMAT='\''JSON'\'', KEY = '\''id'\'');",
+      "ksql": "CREATE STREAM s_partner_germanspeaking_anon_age (id VARCHAR, firstname VARCHAR, lastname VARCHAR, dateOfBirth VARCHAR, nationality INTEGER, age INTEGER) WITH (KAFKA_TOPIC = '\''partners-created-german-speaking-anonymous-with-age'\'', VALUE_FORMAT='\''JSON'\'', KEY = '\''id'\'');",
       "streamsProperties": {
         "ksql.streams.auto.offset.reset": "earliest"
       }
@@ -611,7 +616,7 @@ Create tables:
     # a table of german speaking anonymised parters with age:
     curl -X POST "http://maxant.ch:30401/ksql" -H 'Content-Type: application/vnd.ksql.v1+json' -d '
     {
-      "ksql": "CREATE TABLE t_partner_germanspeaking_anon_age (id VARCHAR, firstname VARCHAR, lastname VARCHAR, dateOfBirth VARCHAR, nationality INTEGER, age INTEGER) WITH (KAFKA_TOPIC = '\''partners-created-swiss-anonymous-with-age'\'', VALUE_FORMAT='\''JSON'\'', KEY = '\''id'\'');",
+      "ksql": "CREATE TABLE t_partner_germanspeaking_anon_age (id VARCHAR, firstname VARCHAR, lastname VARCHAR, dateOfBirth VARCHAR, nationality INTEGER, age INTEGER) WITH (KAFKA_TOPIC = '\''partners-created-german-speaking-anonymous-with-age'\'', VALUE_FORMAT='\''JSON'\'', KEY = '\''id'\'');",
       "streamsProperties": {
         "ksql.streams.auto.offset.reset": "earliest"
       }
@@ -697,6 +702,9 @@ Notice the special escaping of single quotes within the single quoted body with 
 ### Notes on KSQL:
 
 - Table uses upsert semantics (CUD) vs. stream which is just a long list of records.
+- Default persistent storage for Streams: https://github.com/facebook/rocksdb
+- `InvalidStateStoreException: The state store, CountByPartnerCountryStoreName, may have migrated to another instance.`
+  - this seems to happen if I have three keys in my store, but I run 4 instances of the stream application.
 
 ### TODO KSQL:
 
@@ -704,9 +712,24 @@ Notice the special escaping of single quotes within the single quoted body with 
 - what happens if kafka stream dies? it continues from the index from which it left off when it crashed.
 - how to create a global table using rest? its possible with kafka stream API...
 - article on unioning data from other ksql-server nodes in the cluster?
+  - https://docs.confluent.io/current/streams/concepts.html#interactive-queries
+  - https://docs.confluent.io/current/streams/developer-guide/interactive-queries.html#querying-remote-state-stores-for-the-entire-app
 - creating indexes on tables to improve performance?
 - select * from beginning => must set `ksql.streams.auto.offset.reset` (web) or `auto.offset.reset` (ksql-cli) to the value `earliest`
   - it is NOT fast!
+- KSQL builds on top of streams builds on top of Kafka
+- contents of global ktable doesnt appear to be updated immediately:
+
+    join country count 11 into the partner from 276
+    join country count 11 into the partner from 276
+    join country count 11 into the partner from 276
+    join country count 11 into the partner from 276
+    join country count 15 into the partner from 276
+    join country count 15 into the partner from 276
+ 
+That is output of a single stream application (no others were running at the time).
+The above should have consecutive counts, because the count is increased every time a record is processed!
+As you can see, it is suddenly increased from 11 to 15. Note that the load was low - those lines were output over several seconds.
 
 ## Links:
 
