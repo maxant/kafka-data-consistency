@@ -54,8 +54,11 @@ Delete existing, if necessary:
     kubectl -n kafka-data-consistency delete service elastic-apm-server
     kubectl -n kafka-data-consistency delete deployment mysql
     kubectl -n kafka-data-consistency delete service mysql
+    kubectl -n kafka-data-consistency delete deployment ksql-server-1
     kubectl -n kafka-data-consistency delete service ksql-server-1
+    kubectl -n kafka-data-consistency delete deployment ksql-server-2
     kubectl -n kafka-data-consistency delete service ksql-server-2
+    kubectl -n kafka-data-consistency delete deployment confluent-control-center
     kubectl -n kafka-data-consistency delete service confluent-control-center
 
 Create deployments and services:
@@ -699,6 +702,9 @@ But this too continues to respond with data. It isn't designed to give a snapsho
 
 Notice the special escaping of single quotes within the single quoted body with `'\''`, ie. the quote is escaped and also within quotes!
 
+NOTE: you can add `limit 1` to the end of hte quey and if you select from a table, you get the one record based on the ID that you are selecting.
+Useful if you are selecting by ID, otherwise useless.
+
 ### Notes on KSQL:
 
 - Table uses upsert semantics (CUD) vs. stream which is just a long list of records.
@@ -718,6 +724,16 @@ Notice the special escaping of single quotes within the single quoted body with 
 - select * from beginning => must set `ksql.streams.auto.offset.reset` (web) or `auto.offset.reset` (ksql-cli) to the value `earliest`
   - it is NOT fast!
 - KSQL builds on top of streams builds on top of Kafka
+  - since each ksql-server is basically a kafka stream application, and it isn't possible to create a global
+    ktable with ksql [TODO], it should mean that each ksql-server has the same limitations that a kstream app
+    has, namely that the data contained in the tables are paritioned and you need to find the correct version of a 
+    server in order to query the data that you are looking for. but it ISNT TRUE! we have a topic with all partners
+    and a table `t_partner` built on top of it, but both ksql-server instances can retrieve a partner as follows:
+    `select * from t_partner where id = '7e1a141b-b8a6-4f4a-b368-45da2a9e92a1';`
+    See: https://stackoverflow.com/questions/57333738/is-ksql-making-remote-requests-under-the-hood-or-is-a-table-actually-a-global-k
+- seems REALLY REALLY slow: https://stackoverflow.com/questions/57334056/why-is-ksql-taking-so-long-to-respond
+- indexes in KSQL? https://stackoverflow.com/questions/57334096/is-it-possible-to-create-indexes-in-ksql-to-improve-joins-selects-based-on-field
+- TODO how can we add several ksql servers to ccc?
 - contents of global ktable doesnt appear to be updated immediately:
 
     join country count 11 into the partner from 276
