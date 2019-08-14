@@ -722,17 +722,26 @@ Useful if you are selecting by ID, otherwise useless.
   - https://docs.confluent.io/current/streams/developer-guide/interactive-queries.html#querying-remote-state-stores-for-the-entire-app
 - creating indexes on tables to improve performance?
 - select * from beginning => must set `ksql.streams.auto.offset.reset` (web) or `auto.offset.reset` (ksql-cli) to the value `earliest`
-  - it is NOT fast!
+  - it is NOT fast! see below
 - KSQL builds on top of streams builds on top of Kafka
-  - since each ksql-server is basically a kafka stream application, and it isn't possible to create a global
-    ktable with ksql [TODO], it should mean that each ksql-server has the same limitations that a kstream app
-    has, namely that the data contained in the tables are paritioned and you need to find the correct version of a 
-    server in order to query the data that you are looking for. but it ISNT TRUE! we have a topic with all partners
-    and a table `t_partner` built on top of it, but both ksql-server instances can retrieve a partner as follows:
-    `select * from t_partner where id = '7e1a141b-b8a6-4f4a-b368-45da2a9e92a1';`
-    See: https://stackoverflow.com/questions/57333738/is-ksql-making-remote-requests-under-the-hood-or-is-a-table-actually-a-global-k
+  - a ksql-server runs multiple kafka stream applications (each ksql is a stream app).
+  - it isn't possible to create a global ktable with ksql.
+  - queries are passed from ksql-server to ksql-server over a command topic
+  - queries running on a ksql-server are persistent and just subscribe to a subset of partitions
+  - queries running in the CLI are not passed around, but run locally on that server with their own app Id and so 
+  - they subscribe to all topics
+  - `print mytable` appears to be the equivalent of `select * from mytable` i.e. a transient query which subscribes to
+    all partitions. i say that because if i do that on both ksql-server instances, I see the same events on both CLIs.
+  - see https://stackoverflow.com/questions/57333738 for more information about the above statements. 
+    
 - seems REALLY REALLY slow: https://stackoverflow.com/questions/57334056/why-is-ksql-taking-so-long-to-respond
-- indexes in KSQL? https://stackoverflow.com/questions/57334096/is-it-possible-to-create-indexes-in-ksql-to-improve-joins-selects-based-on-field
+  - Based on the information gained from https://stackoverflow.com/questions/57333738/ it could make sense that 
+    it takes so long to respond coz it takes time for the ksql-server to start the "kafka stream application" 
+    which runs the query. That is a lot of overhead just to read a single record as done above. One could 
+    conclude that using a ksql-server and it's REST API to build something like an (event) store which you can 
+    query for records relating to a specific ID doesn't make sense. It makes more sense to use ksql to manipulate 
+    data and then subscribe to an output topic instead of using REST.
+- indexes in KSQL? https://stackoverflow.com/questions/57334096 => no secondary indexes. you could create a topic for each key that you want... does that make sense?
 - TODO how can we add several ksql servers to ccc?
 - contents of global ktable doesnt appear to be updated immediately:
 
