@@ -9,13 +9,13 @@ cloud "Kafka\nTASK_CREATE"
 cloud "Kafka\nTASK_CREATED"
 actor User
 
-note "The user clicks to save a claim. \n The claim is sent to the Claims component. \n There a decision is made to create a task, \n which is validated before committing two \n records to Kafka in one transaction. \n  \n The claim is saved by the claims component \n and that fact is sent as an event to the browser \n so that it can update the relevant portion \n of the UI. \n \n The same happens for the task." as N
+note "The user clicks to save a claim. \n \n 1. The claim is sent to the Claims component (1.1). \n There a decision is made to create a task, which is \n validated (1.2) before committing two records to \n Kafka in one transaction (1.3 the claim to be \n persisted; 1.4 the task to be persisted). \n  \n 2. The claim is saved by the claims component \n (2.1, 2.2) and that fact is sent as an event to the \n browser so that it can update the relevant portion \n of the UI (2.3-5). \n \n 3. The same happens for the task (3.1-5)." as N
 
-User --> [Browser] : 1.1\ncreate
-[Browser] --> [Claims] : 1.2
-[Claims] --> [Tasks] : 1.3\nvalidate
-[Claims] --> [Kafka\nCLAIM_CREATE_DB] : 1.4
-[Claims] --> [Kafka\nTASK_CREATE] : 1.5
+User --> [Browser] : create
+[Browser] --> [Claims] : 1.1
+[Claims] --> [Tasks] : 1.2\nvalidate
+[Claims] --> [Kafka\nCLAIM_CREATE_DB] : 1.3
+[Claims] --> [Kafka\nTASK_CREATE] : 1.4
 
 [Kafka\nCLAIM_CREATE_DB] --> [Claims] : 2.1
 [Claims] --> [Mysql] : 2.2
