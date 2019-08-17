@@ -4,12 +4,32 @@ Experiement with using Kafka and idempotency to garantee data consistency by cre
 
 ## Architecture
 
+### Loading the page in the browser
+
+![Loading the page in the browser](http://www.plantuml.com/plantuml/png/5Sqn3i8m38NXdLF00PhiJBq9CeuXKHEtify5t9vqUa_wXdzra256lzoQSeyYOVrQWSFlEHjzqhkXnZDSZ7U5A1Bl8m_waY9lzDfeAGHQfdfpYF9lwZoMoRWs22DC7YPKqd6MLj4ozmy0)
+
 ### Simplified view of creating a claim
 
-![Creating a claim](http://www.plantuml.com/plantuml/png/3SbH3i8W44NHhUW22lzkfdbEHvaKA1dUHDszVDsRdBjrgN5eUBqLSin7pevFUXjBF6EgozMfdKckbXk-wCmdNYUs0yIsTDgaTlajNUCPBiMemd3TnHLSgR2sJskZQXhHwXy0)
+![Simplified view of creating a claim](http://www.plantuml.com/plantuml/png/3SbH3i8W44NHhUW22lzkfdbEHvaKA1dUHDszVDsRdBjrgN5eUBqLSin7pevFUXjBF6EgozMfdKckbXk-wCmdNYUs0yIsTDgaTlajNUCPBiMemd3TnHLSgR2sJskZQXhHwXy0)
 
+### Playing with KStreams and KSQL
 
-(see https://stackoverflow.com/a/32771815/458370)
+![Playing with KStreams and KSQL](http://www.plantuml.com/plantuml/png/5SqnhW8n38JX_ftYSO1DUggz2JAE8T4ctiWU2xWzePgHlkBV7MI8qVykJRb7aR3-Nu7frvoDNkdPKECUBiQdGXI9pv47lKcH3teSj1K2RKkzEKJvitGTosHS6uGH9hT91XNpD7-rNRIi_G80)
+
+### Complex view of creating a claim
+
+![Complex view of creating a claim](http://www.plantuml.com/plantuml/png/5Or1hi8m34Jt_nIV0xJPi-fDqE0O4ZL9AsSiuFQOrHlfZVIsIHYzjxzB7T8ygrlxB-GvhoaPNkkpilZTfveSWpguoj5Jnnk3QSTZnv91B65ddN6GJzWObc1IAbNefZSn1GCDjQ_dhxZfoC4l)
+
+### How to generate UML
+
+See https://stackoverflow.com/a/32771815/458370
+Put link to raw puml file into this: http://www.plantuml.com/plantuml/form, and use the output single line URL in the above link, e.g.:
+
+    @startuml
+    !includeurl https://raw.githubusercontent.com/maxant/kafka-data-consistency/master/architecture_create_claim_simple.puml
+    @enduml
+
+Never change the readme file again, just the contents of the puml file!
 
 ## Installing Kafka
 
