@@ -2,6 +2,15 @@
 
 Experiement with using Kafka and idempotency to garantee data consistency by creating a reactive asynchronous system.
 
+## Architecture
+
+### Simplified view of creating a claim
+
+![Creating a claim](http://www.plantuml.com/plantuml/png/3SbH3i8W44NHhUW22lzkfdbEHvaKA1dUHDszVDsRdBjrgN5eUBqLSin7pevFUXjBF6EgozMfdKckbXk-wCmdNYUs0yIsTDgaTlajNUCPBiMemd3TnHLSgR2sJskZQXhHwXy0)
+
+
+(see https://stackoverflow.com/a/32771815/458370)
+
 ## Installing Kafka
 
 Kafka needs to be present to build a suitable docker image.
