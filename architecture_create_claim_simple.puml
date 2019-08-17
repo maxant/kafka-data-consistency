@@ -1,0 +1,32 @@
+@startuml
+
+skinparam componentStyle uml2
+
+database Mysql
+cloud "Kafka\nCLAIM_CREATE_DB"
+cloud "Kafka\nCLAIM_CREATED"
+cloud "Kafka\nTASK_CREATE"
+cloud "Kafka\nTASK_CREATED"
+actor User
+
+note "The user clicks to save a claim. \n The claim is sent to the Claims component. \n There a decision is made to create a task, \n which is validated before committing two \n records to Kafka in one transaction. \n  \n The claim is saved by the claims component \n and that fact is sent as an event to the browser \n so that it can update the relevant portion \n of the UI. \n \n The same happens for the task." as N
+
+User --> [Browser] : 1.1\ncreate
+[Browser] --> [Claims] : 1.2
+[Claims] --> [Tasks] : 1.3\nvalidate
+[Claims] --> [Kafka\nCLAIM_CREATE_DB] : 1.4
+[Claims] --> [Kafka\nTASK_CREATE] : 1.5
+
+[Kafka\nCLAIM_CREATE_DB] --> [Claims] : 2.1
+[Claims] --> [Mysql] : 2.2
+[Claims] --> [Kafka\nCLAIM_CREATED] : 2.3
+[Kafka\nCLAIM_CREATED] --> [Web] : 2.4
+[Web] --> [Browser] : 2.5\nRefresh
+
+[Kafka\nTASK_CREATE] --> [Tasks] : 3.1
+[Tasks] --> [Mysql] : 3.2
+[Tasks] --> [Kafka\nTASK_CREATED] : 3.3
+[Kafka\nTASK_CREATED] --> [Web] : 3.4
+[Web] --> [Browser] : 3.5\nRefresh
+
+@enduml

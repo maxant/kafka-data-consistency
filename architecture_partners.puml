@@ -1,0 +1,15 @@
+@startuml
+
+skinparam componentStyle uml2
+
+note "A Java program generates partners \n of all ages and nationalities. These \n are first sent into Kafka, then processed \n by a KStream and then again using KSQL" as N
+
+cloud Kafka
+
+[Partners] --> [Kafka] : 200 generate
+[Kafka] --> [Partner KStreams] : 210 subscribe
+[Partner KStreams] --> [Kafka] : 220 filter,\nmap,\njoin
+[Kafka] --> [KSQL Server] : 230 subscribe\nand\nfilter
+[KSQL Server] --> [Kafka] : 240 publish
+
+@enduml

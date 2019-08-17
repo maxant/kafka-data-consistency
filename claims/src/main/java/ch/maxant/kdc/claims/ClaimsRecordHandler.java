@@ -43,7 +43,7 @@ public class ClaimsRecordHandler implements RecordHandler {
             // create in our DB
             claimRepository.createClaim(claim);
 
-            // inform UI. note having to use a transaction and the lock to publish. alternatively, use a difference producer instance.
+            // inform UI. note having to use a transaction and the lock to publish. alternatively, use a different producer instance.
             kafkaAdapter.sendInOneTransaction(singletonList(new ProducerRecord<>(CLAIM_CREATED_EVENT_TOPIC, claim.getId())));
         } else if(CLAIM_CREATE_SEARCH_COMMAND_TOPIC.equals(r.topic())) {
             // create in Elastic. No need to send record to UI.

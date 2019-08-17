@@ -1,0 +1,51 @@
+@startuml
+
+skinparam componentStyle uml2
+
+database Mysql
+database Neo4J
+database "Elastic Search"
+cloud Kafka {
+    database CLAIM_CREATE_DB
+    database CLAIM_CREATE_SEARCH
+    database TASK_CREATE
+    database LOCATION_CREATE
+    database CLAIM_CREATED
+    database GRAPH_CREATE
+}
+actor User
+
+User --> [Browser]
+[Browser] --> [Locations] : 1 search
+[Locations] --> [post.ch] : 1.1 search
+[Browser] --> [Claims] : 2 create
+[Claims] --> [Tasks] : 2.1 validate
+[Claims] --> CLAIM_CREATE_DB : 2.2
+[Claims] --> CLAIM_CREATE_SEARCH : 2.3
+[Claims] --> TASK_CREATE : 2.4
+[Claims] --> GRAPH_CREATE : 2.5
+[Claims] --> LOCATION_CREATE : 2.6
+
+[CLAIM_CREATE_DB] --> [Claims] : 2.2.1
+[Claims] --> [Mysql] : 2.2.1.1
+[Claims] --> [CLAIM_CREATED] : 2.2.1.1.1
+[CLAIM_CREATED] --> [Web] : 2.2.1.1.1.1
+[Web] --> [Browser] : 2.2.1.1.1.1.1\nRefresh
+
+[CLAIM_CREATE_SEARCH] --> [Claims] : 2.3.1
+[Claims] --> [Elastic Search] : 2.3.1.1
+
+[TASK_CREATE] --> [Tasks] : 2.4.1
+[Tasks] --> [Mysql] : 2.4.1.1
+[Tasks] --> [TASK_CREATED] : 2.4.1.1.1
+[TASK_CREATED] --> [Web] : 2.4.1.1.1.1
+[Web] --> [Browser] : 2.4.1.1.1.1.1\nRefresh
+
+[GRAPH_CREATE] --> [Graphs] : 2.5.1
+[Graphs] --> [Neo4J] : 2.5.1.1
+
+[LOCATION_CREATE] --> [Locations] : 2.6.1
+[Locations] --> [Graphs] : 2.6.1.1
+[Graphs] --> [Neo4J] : 2.6.1.1.1
+
+@enduml

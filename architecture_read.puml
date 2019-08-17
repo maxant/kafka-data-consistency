@@ -1,0 +1,20 @@
+@startuml
+
+skinparam componentStyle uml2
+
+database Mysql
+database Neo4J
+database "Elastic Search"
+
+[Browser] --> [UI] : vuejs
+[Browser] --> [Claims] : load claims
+[Browser] --> [Tasks] : load tasks
+[Claims] --> [Mysql] : load claims
+[Tasks] --> [Mysql] : load tasks
+[Browser] --> [Kibana] : visualise
+[Kibana] --> [Elastic Search] : search
+[Browser] --> [Elastic Search] : search
+[Browser] --> [Neo4J] : visualise
+
+
+@enduml
