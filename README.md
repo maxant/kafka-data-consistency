@@ -30,8 +30,6 @@ Put link to raw puml file into this: http://www.plantuml.com/plantuml/form, and 
     !includeurl https://raw.githubusercontent.com/maxant/kafka-data-consistency/master/architecture_create_claim_simple.puml
     @enduml
 
-Never change the readme file again, just the contents of the puml file!
-
 ## Installing Kafka
 
 Kafka needs to be present to build a suitable docker image.
