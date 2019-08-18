@@ -2,7 +2,7 @@
 
 skinparam componentStyle uml2
 
-note "A Java program generates partners \n of all ages and nationalities. These \n are first sent into Kafka, then processed \n by a KStream and then again using KSQL" as N
+note "A Java program generates partners \n of all ages and nationalities. These \n are first sent into Kafka, then processed \n by a Kafka Stream and then again using KSQL" as N
 
 cloud Kafka
 
