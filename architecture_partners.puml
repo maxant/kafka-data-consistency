@@ -7,8 +7,8 @@ note "A Java program generates partners \n of all ages and nationalities. These 
 cloud Kafka
 
 [Partners] --> [Kafka] : 200 generate
-[Kafka] --> [Partner KStreams] : 210 subscribe
-[Partner KStreams] --> [Kafka] : 220 filter,\nmap,\njoin
+[Kafka] --> [Partner Kakfa Stream] : 210 subscribe
+[Partner Kakfa Stream] --> [Kafka] : 220 filter,\nmap,\njoin
 [Kafka] --> [KSQL Server] : 230 subscribe\nand\nfilter
 [KSQL Server] --> [Kafka] : 240 publish
 

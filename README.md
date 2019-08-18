@@ -12,9 +12,9 @@ Experiement with using Kafka and idempotency to garantee data consistency by cre
 
 ![Simplified view of creating a claim](http://www.plantuml.com/plantuml/svg/5Or13i8m30Jll08UqEREgJ-fZ6kerIIDxBM0tsDEizAiD8k33D7gvQQTQsmILgyxCFnUYj5xVYdsU8IByTaX7JEVhJJwK4Svw7dGj15eIklgUU1lsXnMo7XN22DCLZOX92ffMrtRg3AFVtYHlYL_)
 
-### Playing with KStreams and KSQL
+### Playing with Kafka Streams and KSQL
 
-![Playing with KStreams and KSQL](http://www.plantuml.com/plantuml/svg/5SqnhW8n38JX_ftYSO1DUggz2JAE8T4ctiWU2xWzePgHlkBV7MI8qVykJRb7aR3-Nu7frvoDNkdPKECUBiQdGXI9pv47lKcH3teSj1K2RKkzEKJvitGTosHS6uGH9hT91XNpD7-rNRIi_G80)
+![Playing with Kafka Streams and KSQL](http://www.plantuml.com/plantuml/svg/5SqnhW8n38JX_ftYSO1DUggz2JAE8T4ctiWU2xWzePgHlkBV7MI8qVykJRb7aR3-Nu7frvoDNkdPKECUBiQdGXI9pv47lKcH3teSj1K2RKkzEKJvitGTosHS6uGH9hT91XNpD7-rNRIi_G80)
 
 ### Complex view of creating a claim
 
