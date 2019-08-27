@@ -225,6 +225,56 @@ Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-co
         }
       }
 
+      # ############################################################
+      # ksql.maxant.ch - to enable cors
+      # ############################################################
+      server {
+        listen 80;
+        server_name ksql.maxant.ch;
+      
+            # https://enable-cors.org/server_nginx.html
+            #location / {
+            # if ($request_method = 'OPTIONS') {
+            #    add_header 'Access-Control-Allow-Origin' '*';
+            #    add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+            #    #
+            #    # Custom headers and headers various browsers *should* be OK with but aren't
+            #    #
+            #    add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+            #    #
+            #    # Tell client that this pre-flight info is valid for 20 days
+            #    #
+            #    add_header 'Access-Control-Max-Age' 1728000;
+            #    add_header 'Content-Type' 'text/plain; charset=utf-8';
+            #    add_header 'Content-Length' 0;
+            #    return 204;
+            # }
+            # if ($request_method = 'POST') {
+            #    add_header 'Access-Control-Allow-Origin' '*';
+            #    add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+            #    add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+            #    add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range';
+            # }
+            # if ($request_method = 'GET') {
+            #    add_header 'Access-Control-Allow-Origin' '*';
+            #    add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+            #    add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+            #    add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range';
+            # }
+            # proxy_pass http://localhost:30401/;
+            #}
+        
+            location /home  {
+                               add_header 'Content-Type' 'text/html';
+                               alias /tempi/ksql-app.html;
+            }
+            location /query {    
+                               proxy_read_timeout 3600s; # an hour => after that the browser is probably gone, or it needs to reopen the request
+                               proxy_pass http://localhost:30401/query/;
+            }
+      }
+
+
 Restart nginx:
 
     systemctl restart nginx
@@ -699,6 +749,29 @@ Notice how the count is reset to 1, when a new record arrives in the new window 
 
 So we could well use this data to draw a graph with live updates, in a UI.
 
+## Terminate a running query
+
+    ksql> describe extended t_young_partners;
+    
+    Name                 : T_YOUNG_PARTNERS
+    ...
+    Queries that write into this TABLE
+    -----------------------------------
+    CTAS_T_YOUNG_PARTNERS_0 : CREATE TABLE T_YOUNG_PARTNERS WITH (REPLICAS = 2, PARTITIONS = 4, KAFKA_TOPIC = 'T_YOUNG_PARTNERS') AS SELECT *
+    FROM T_PARTNER T_PARTNER
+    WHERE (T_PARTNER.DATEOFBIRTH >= '2000-01-01');
+    ...
+
+Notice `CTAS_T_YOUNG_PARTNERS_0` => this is used for terminating the running query:
+    
+    ksql> terminate CTAS_T_YOUNG_PARTNERS_0;
+    
+     Message           
+    -------------------
+     Query terminated. 
+    -------------------
+
+## More KSQL stuff:
 
 Go back to ksql-cli and:
 
@@ -783,6 +856,43 @@ Useful if you are selecting by ID, otherwise useless.
 That is output of a single stream application (no others were running at the time).
 The above should have consecutive counts, because the count is increased every time a record is processed!
 As you can see, it is suddenly increased from 11 to 15. Note that the load was low - those lines were output over several seconds.
+
+## KSQL Web Client
+
+- See nginx config, esp. the timeout
+
+
+    CREATE TABLE T_YOUNG_PARTNERS WITH (REPLICAS = 2, PARTITIONS = 4, KAFKA_TOPIC = 'T_YOUNG_PARTNERS') AS SELECT *
+    FROM T_PARTNER T_PARTNER
+    WHERE (T_PARTNER.DATEOFBIRTH >= '1990-01-01');
+
+Javascript: 
+
+    var body = {"ksql": "SELECT * FROM t_young_partners;","streamsProperties": {"ksql.streams.auto.offset.reset": "earliest"}};
+    function go() {
+        window.responses = "";
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 3 && this.status == 200) {
+                window.responses += this.responseText;
+                console.log("got more data...");
+                this.responseText.split('\n').forEach(r => {
+                    if(r && r.trim()) {
+                        try {
+                            console.log(JSON.parse(r));
+                        } catch(e) {
+                            console.error(e);
+                        }
+                    }
+                });
+            }
+        };
+        xhttp.open("POST", "/query", true);
+        xhttp.setRequestHeader('Content-Type', 'application/vnd.ksql.v1+json');
+        xhttp.send(JSON.stringify(body));
+    }
+    go();
+
 
 ## Links:
 
