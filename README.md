@@ -1365,6 +1365,7 @@ Added:
 
 # TODO
 
+- make web subscribe to sink of a KSQL with windowed average age of new young partners
 - build function to reset all data to masterdata
 - fix tracing - we don't get any data at the moment!
 - add creation time to claim and use that as index in kibana

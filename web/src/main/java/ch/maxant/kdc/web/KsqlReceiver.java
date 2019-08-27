@@ -36,6 +36,13 @@ public class KsqlReceiver {
     public void onStartup(@Observes @Initialized(ApplicationScoped.class) Object event) {
         System.out.println("\r\n\r\nSTARTED\r\n");
 
+        // ////////////////////////////////////////////////////////////////////////////////////////
+        // this works, but it is a good example of how not to do it. the select statement is only
+        // running on one instance of the ksql server. it subscribes to all partitions.
+        // a better way to do it is to subscribe to the sink topic which the T_YOUNG_PARTNERS ksql
+        // is writing to!
+        // ////////////////////////////////////////////////////////////////////////////////////////
+
         WebTarget target = client.target("http://maxant.ch:30401/");
         Invocation.Builder request = target.path("query").request();
         String body = "{" +
