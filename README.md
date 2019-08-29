@@ -572,6 +572,51 @@ Useful Kube stuff:
     kubectl -n kafka-data-consistency get pods | grep Evicted | awk '{print $1}' | xargs kubectl -n kafka-data-consistency delete pod
 
 
+## Quarkus / GraalVM
+
+Generate a project:
+
+    mvn io.quarkus:quarkus-maven-plugin:0.21.1:create -DprojectGroupId=ch.maxant.kdc -DprojectArtifactId=webq -DclassName="ch.maxant.kdc.webq.RestResource" -Dpath="/webq"
+
+Compile in dev mode (profit from hot-reload - no need to compile in IntelliJ!!):
+
+    ./mvnw compile quarkus:dev
+
+Package a runner:
+
+    ./mvnw package
+
+Run it:
+
+    java -jar target/webq-1.0-SNAPSHOT-runner.jar 
+
+Note that this jar has a dependency on webq-....jar, and also on the target/lib folder => copy everything relatively when running outside of the maven module folder. E.g.:
+
+    mkdir /tmp/quarkus
+    cp -R target/lib /tmp/quarkus/lib
+    cp -R target/webq-1.0-SNAPSHOT*jar /tmp/quarkus/
+    cd /tmp/quarkus/
+    java -jar webq-1.0-SNAPSHOT-runner.jar 
+
+
+Build a native executable: install Graal from https://github.com/oracle/graal/releases/download/vm-19.2.0/graalvm-ce-linux-amd64-19.2.0.tar.gz
+
+    export GRAALVM_HOME=/shared/graal/graalvm-ce-19.2.0/
+
+Install `native-image` and dependencies:
+
+    /shared/graal/graalvm-ce-19.2.0/bin/gu install native-image
+
+    sudo apt-get install build-essential libz-dev
+
+Compile the native image:
+
+    ./mvnw clean compile package -Pnative
+
+Run it:
+
+    ./target/webq-1.0-SNAPSHOT-runner
+
 ## Starting Kafka with docker
 
 WARNING: this section may be slightly out of date!
@@ -1365,6 +1410,8 @@ Added:
 
 # TODO
 
+- migrate web to webq
+- read https://smallrye.io/smallrye-reactive-messaging/
 - make web subscribe to sink of a KSQL with windowed average age of new young partners
 - build function to reset all data to masterdata
 - fix tracing - we don't get any data at the moment!
