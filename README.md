@@ -1364,6 +1364,7 @@ Connecting to it:
     docker run -it --rm mysql mysql -h 172.17.0.2 -u root -p
     docker run -it --rm mysql mysql -h $(minikube ip) --port 30300 -u root -p
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -psecret -e "CREATE DATABASE claims CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+    docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -psecret -e "CREATE DATABASE contracts CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 
     not working, prolly coz its a mariadb client: -(  mysql --host 172.17.0.2 --port 3306 -u root -p
 
