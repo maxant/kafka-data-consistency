@@ -1,27 +1,36 @@
 package ch.maxant.kdc.contracts;
 
 import org.hibernate.annotations.Type;
+import org.hibernate.envers.Audited;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Audited
 @Entity
-@Table(name = "contracts")
+@Table(name = "CONTRACTS")
 public class Contract {
 
     @Id
-    @Column(name = "id")
+    @Column(name = "ID")
     @Type(type="uuid-char")
     private UUID id = UUID.randomUUID();
 
-    @Column(updatable = false, nullable = false, name = "contractnumber")
+    @Column(updatable = false, nullable = false, name = "CONTRACTNUMBER")
     private String contractNumber;
 
     @Version
-    @Column(nullable = false, name = "version")
+    @Column(nullable = false, name = "VERSION")
     private Integer version;
 
-    @Column(nullable = false, name = "a")
+    @Column(nullable = false, name = "FROM_")
+    private LocalDateTime from;
+
+    @Column(nullable = false, name = "TO_")
+    private LocalDateTime to;
+
+    @Column(nullable = false, name = "A")
     private String a;
 
     public UUID getId() {
@@ -44,16 +53,27 @@ public class Contract {
         return version;
     }
 
-    // TODO it would be nice to get rid of this, but without it, jsonb doesnt set the version number on incoming requests. check out how to configure jsonb like jackson
-    public void setVersion(Integer version) {
-        this.version = version;
-    }
-
     public String getA() {
         return a;
     }
 
     public void setA(String a) {
         this.a = a;
+    }
+
+    public LocalDateTime getFrom() {
+        return from;
+    }
+
+    public void setFrom(LocalDateTime from) {
+        this.from = from;
+    }
+
+    public LocalDateTime getTo() {
+        return to;
+    }
+
+    public void setTo(LocalDateTime to) {
+        this.to = to;
     }
 }

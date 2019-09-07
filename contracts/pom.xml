@@ -13,6 +13,11 @@
         <quarkus.version>0.21.2</quarkus.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <!-- depends on quarkus-resteasy-jackson
+             see https://github.com/quarkusio/quarkus/blob/master/bom/runtime/pom.xml
+             and search for a compatible version at maven central -->
+        <jackson.version>2.9.9</jackson.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -32,8 +37,25 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jsonb</artifactId>
+            <artifactId>quarkus-resteasy-jackson</artifactId>
         </dependency>
+        <!-- added to serialise java.time.LocalDate as an ISO 8601 String -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-parameter-names</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jdk8</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm</artifactId>
@@ -50,6 +72,12 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-flyway</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-envers</artifactId>
+            <!-- watch out - should be compatible with hibernate version used by quarkus -->
+            <version>5.4.4.Final</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -40,7 +40,7 @@ public class RestResourceTest {
         Response response = given()
             .when()
             .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-            .body("{\"contractNumber\":\"" + cn + "\",\"a\":\"1\"}")
+            .body("{\"contractNumber\":\"" + cn + "\",\"from\":\"2019-01-01T00:00:00.000\",\"to\":\"9999-12-31T23:59:59.999\",\"a\":\"1\"}")
             .post("/contracts")
             .then()
             .statusCode(200)
@@ -61,6 +61,8 @@ public class RestResourceTest {
             .body("[0].a", is("1"))
             .extract().response();
         assertEquals(String.valueOf(cn), response.path("[0].contractNumber"));
+        assertEquals("2019-01-01T00:00:00", response.path("[0].from"));
+        assertEquals("9999-12-31T23:59:59.999", response.path("[0].to"));
 
         // get by id
         response = given()
@@ -73,12 +75,14 @@ public class RestResourceTest {
             .body("a", is("1"))
             .extract().response();
         assertEquals(String.valueOf(cn), response.path("contractNumber"));
+        assertEquals("2019-01-01T00:00:00", response.path("from"));
+        assertEquals("9999-12-31T23:59:59.999", response.path("to"));
 
         // update
         response = given()
             .when()
             .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-            .body("{\"contractNumber\":\"" + cn + "\", \"version\":0, \"id\": \"" + id + "\",\"a\":\"2\"}")
+            .body("{\"contractNumber\":\"" + cn + "\", \"version\":0, \"id\": \"" + id + "\",\"from\":\"2019-01-01T00:00:00.000\",\"to\":\"9999-12-31T23:59:59.999\",\"a\":\"2\"}")
             .put("/contracts")
             .then()
             .statusCode(200)
@@ -87,12 +91,14 @@ public class RestResourceTest {
             .body("version", Matchers.is(1))
             .extract().response();
         assertEquals(String.valueOf(cn), response.path("contractNumber"));
+        assertEquals("2019-01-01T00:00:00", response.path("from"));
+        assertEquals("9999-12-31T23:59:59.999", response.path("to"));
 
         // update - optimistic lock exception
         given()
             .when()
             .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-                .body("{\"contractNumber\":\"" + cn + "\", \"version\":0, \"id\": \"" + id + "\",\"a\":\"3\"}")
+            .body("{\"contractNumber\":\"" + cn + "\", \"version\":0, \"id\": \"" + id + "\",\"from\":\"2019-01-01T00:00:00.000\",\"to\":\"9999-12-31T23:59:59.999\",\"a\":\"3\"}")
             .put("/contracts")
             .then()
             .statusCode(409)
@@ -111,5 +117,7 @@ public class RestResourceTest {
                 .body("[0].a", is("2"))
                 .extract().response();
         assertEquals(String.valueOf(cn), response.path("[0].contractNumber"));
+        assertEquals("2019-01-01T00:00:00", response.path("[0].from"));
+        assertEquals("9999-12-31T23:59:59.999", response.path("[0].to"));
     }
 }

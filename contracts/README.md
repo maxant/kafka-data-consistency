@@ -1,17 +1,30 @@
+# Component for managing contracts
 
-runs using quarkus
+Runs using quarkus. Dev mode with hot-replacement:
 
-persistence is in mysql
+    mvn compile quarkus:dev
 
-create DB:
+Persistence is in mysql.
+
+Create DB:
 
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -psecret -e "CREATE DATABASE contracts CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 
-Conncecting: 
+Tables, etc. are created using Flyway.
+
+Connecting via a mysql client:
 
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -psecret contracts
 
 # TODO
 
-- jsonb => setVersion on Contract
+- implement updating versions of contracts
+- try putting further attributes into their own table
+- compare
+- consider backdated changes to attributes for both cases
+- is doing so when all attributes are in own table, properly normalised?
+- or is the problem that the attributes have different valid periods, and so belong in different tables?
+- how the hell would one UI update just one attribute? I guess  like "change discount on contract", which leaves the payment frequency, and if that was updated to a given time, then it mustnt be over-written
 - @QuarkusTest
+- mysql client is showing localdatetime as timezoned, even tho java works...
+- reading datetime from mysql is causing millis to be dropped when they are zero
