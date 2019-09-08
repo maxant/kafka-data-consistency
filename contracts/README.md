@@ -32,4 +32,3 @@ H2 Web UI:
 - @QuarkusTest
 - mysql client is showing localdatetime as timezoned, even tho java works...
 - reading datetime from mysql is causing millis to be dropped when they are zero
-- product is being loaded, even tho its marked as lazy: https://discourse.hibernate.org/t/hibernate-5-1-10-lazy-loading-doesnt-work/401/3

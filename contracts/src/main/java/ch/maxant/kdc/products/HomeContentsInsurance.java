@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 @Audited
 @Entity
 @Table(name = "HOME_CONTENTS_PRODUCTS")
-public class HomeContentsInsurance extends Product {
+public class HomeContentsInsurance extends Product implements WithTotalInsuredValue {
 
     public HomeContentsInsurance() {
         setName(getClass().getSimpleName());

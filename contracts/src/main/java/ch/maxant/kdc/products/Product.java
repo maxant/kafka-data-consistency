@@ -19,6 +19,10 @@ public class Product {
     @Type(type="uuid-char")
     private UUID id = UUID.randomUUID();
 
+    @Column(name = "CONTRACT_ID")
+    @Type(type="uuid-char")
+    private UUID contractId;
+
     @Version
     @Column(nullable = false, name = "VERSION")
     private Integer version;
@@ -73,5 +77,13 @@ public class Product {
 
     protected void setName(String name) {
         this.name = name;
+    }
+
+    public void setContractId(UUID contractId) {
+        this.contractId = contractId;
+    }
+
+    public UUID getContractId() {
+        return contractId;
     }
 }

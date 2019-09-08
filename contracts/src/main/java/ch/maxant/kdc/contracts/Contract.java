@@ -1,6 +1,5 @@
 package ch.maxant.kdc.contracts;
 
-import ch.maxant.kdc.products.Product;
 import org.hibernate.annotations.Type;
 import org.hibernate.envers.Audited;
 
@@ -30,10 +29,6 @@ public class Contract {
 
     @Column(nullable = false, name = "TO_")
     private LocalDateTime to;
-
-    @OneToOne(fetch = FetchType.LAZY, optional = false) // optional false forces lazy. without it, jpa is generating extra sql to load the product
-    @JoinColumn(name = "PRODUCT_ID", referencedColumnName = "ID")
-    private Product product;
 
     public UUID getId() {
         return id;
@@ -69,13 +64,5 @@ public class Contract {
 
     public void setTo(LocalDateTime to) {
         this.to = to;
-    }
-
-    public Product getProduct() {
-        return product;
-    }
-
-    public void setProduct(Product product) {
-        this.product = product;
     }
 }
