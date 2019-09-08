@@ -41,13 +41,16 @@ public class RestResourceTest {
             .when()
             .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
             .body("{\"contractNumber\":\"" + cn + "\",\"from\":\"2019-01-01T00:00:00.000\",\"to\":\"9999-12-31T23:59:59.999\",\"a\":\"1\"}")
-            .post("/contracts")
+            .post("/contracts/HomeContentsInsurance")
             .then()
             .statusCode(200)
             .body("version", Matchers.is(0))
+            .body("product.name", is("HomeContentsInsurance"))
             .extract().response();
         String id = response.path("id");
         assertEquals(String.valueOf(cn), response.path("contractNumber"));
+        assertEquals("0", response.path("product.discount").toString());
+        assertEquals("100000.0", response.path("product.totalInsuredValue").toString());
 
         // get list by contract number
         response = given()
@@ -58,7 +61,7 @@ public class RestResourceTest {
             .body("$", hasSize(1))
             .body("[0].id", is(id))
             .body("[0].version", is(0))
-            .body("[0].a", is("1"))
+            .body("[0].product", Matchers.nullValue())
             .extract().response();
         assertEquals(String.valueOf(cn), response.path("[0].contractNumber"));
         assertEquals("2019-01-01T00:00:00", response.path("[0].from"));
@@ -72,11 +75,13 @@ public class RestResourceTest {
             .statusCode(200)
             .body("id", is(id))
             .body("version", is(0))
-            .body("a", is("1"))
+            .body("product.name", is("HomeContentsInsurance"))
             .extract().response();
         assertEquals(String.valueOf(cn), response.path("contractNumber"));
         assertEquals("2019-01-01T00:00:00", response.path("from"));
         assertEquals("9999-12-31T23:59:59.999", response.path("to"));
+        assertEquals("0", response.path("product.discount"));
+        assertEquals("100000.00", response.path("product.totalInsuredValue"));
 
         // update
         response = given()
@@ -87,8 +92,8 @@ public class RestResourceTest {
             .then()
             .statusCode(200)
             .body("id", Matchers.is(id))
-            .body("a", Matchers.is("2"))
             .body("version", Matchers.is(1))
+            .body("product.name", is("HomeContentsInsurance"))
             .extract().response();
         assertEquals(String.valueOf(cn), response.path("contractNumber"));
         assertEquals("2019-01-01T00:00:00", response.path("from"));

@@ -6,21 +6,25 @@ Runs using quarkus. Dev mode with hot-replacement:
 
 Persistence is in mysql.
 
-Create DB:
-
-    docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -psecret -e "CREATE DATABASE contracts CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
-
-Tables, etc. are created using Flyway.
-
 Connecting via a mysql client:
 
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -psecret contracts
+
+Create DB:
+
+    DROP DATABASE contracts;
+    CREATE DATABASE contracts CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+Tables, etc. are created using Flyway.
+
+H2 Web UI:
+
+    java -cp /home/ant/.m2/repository/mysql/mysql-connector-java/8.0.17/mysql-connector-java-8.0.17.jar:/home/ant/Downloads/h2-1.4.199.jar org.h2.tools.GUIConsole
 
 # TODO
 
 - implement updating versions of contracts
 - try putting further attributes into their own table
-- compare
 - consider backdated changes to attributes for both cases
 - is doing so when all attributes are in own table, properly normalised?
 - or is the problem that the attributes have different valid periods, and so belong in different tables?
@@ -28,3 +32,4 @@ Connecting via a mysql client:
 - @QuarkusTest
 - mysql client is showing localdatetime as timezoned, even tho java works...
 - reading datetime from mysql is causing millis to be dropped when they are zero
+- product is being loaded, even tho its marked as lazy: https://discourse.hibernate.org/t/hibernate-5-1-10-lazy-loading-doesnt-work/401/3
