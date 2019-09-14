@@ -160,9 +160,10 @@ public class RestResource {
         return Response.ok(c).build();
     }
 
-    /** @return a list of all product instances in the entire history of the contractNumber, sorty by "from" date. */
+    /** @return a list of all product instances in all contract versions with the given contractNumber,
+     * sorty by "from" date. products contain a copy of the contract. */
     @GET
-    @Path("/history/{contractNumber}")
+    @Path("/product/versions/{contractNumber}")
     public Response getAllHistory(@PathParam("contractNumber") String contractNumber) {
 
         List<Contract> contracts = em.createQuery("select c from Contract c where c.contractNumber = :cn", Contract.class)

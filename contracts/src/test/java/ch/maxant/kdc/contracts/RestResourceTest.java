@@ -241,7 +241,7 @@ public class RestResourceTest {
 
         response = given()
                 .when()
-                .get("/contracts/history/" + cn)
+                .get("/contracts/product/versions/" + cn)
                 .then()
                 .statusCode(200)
                 .body("$", hasSize(3))
