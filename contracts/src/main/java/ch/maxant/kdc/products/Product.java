@@ -1,5 +1,6 @@
 package ch.maxant.kdc.products;
 
+import ch.maxant.kdc.contracts.Contract;
 import org.hibernate.annotations.Type;
 import org.hibernate.envers.Audited;
 
@@ -12,7 +13,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "PRODUCTS")
 @Inheritance(strategy = InheritanceType.JOINED)
-public class Product {
+public class Product implements WithValidity {
 
     @Id
     @Column(name = "ID")
@@ -38,6 +39,10 @@ public class Product {
 
     @Column(nullable = false, updatable = false, name = "NAME")
     private String name;
+
+    /** optionally set depending on call made */
+    @Transient
+    private Contract contract;
 
     public void setId(UUID id) {
         this.id = id;
@@ -79,11 +84,19 @@ public class Product {
         this.name = name;
     }
 
+    public UUID getContractId() {
+        return contractId;
+    }
+
     public void setContractId(UUID contractId) {
         this.contractId = contractId;
     }
 
-    public UUID getContractId() {
-        return contractId;
+    public Contract getContract() {
+        return contract;
+    }
+
+    public void setContract(Contract contract) {
+        this.contract = contract;
     }
 }

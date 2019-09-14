@@ -16,17 +16,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class RestResourceTest {
 
     @Test
-    public void test() {
+    public void version() {
         given()
           .when().get("/contracts/dbversion")
           .then()
              .statusCode(200)
-             .body(is("1.001"));
+             .body(is("1.003"));
     }
 
     @Test
     public void all() {
         long cn = System.currentTimeMillis(); // unique enough
+
+        System.out.println("creating contract " + cn);
 
         // check nothing exists
         given()
@@ -63,19 +65,6 @@ public class RestResourceTest {
         assertEquals("2019-01-01T00:00:00", response.path("[0].from"));
         assertEquals("9999-12-31T23:59:59.999", response.path("[0].to"));
 
-        // get by id
-        response = given()
-            .when()
-            .get("/contracts/" + id)
-            .then()
-            .statusCode(200)
-            .body("id", is(id))
-            .body("version", is(0))
-            .extract().response();
-        assertEquals(String.valueOf(cn), response.path("contractNumber"));
-        assertEquals("2019-01-01T00:00:00", response.path("from"));
-        assertEquals("9999-12-31T23:59:59.999", response.path("to"));
-
         // update
         response = given()
             .when()
@@ -99,7 +88,6 @@ public class RestResourceTest {
             .put("/contracts")
             .then()
             .statusCode(409)
-            .log().all()
         ;
 
         // get list by contract number
@@ -115,5 +103,181 @@ public class RestResourceTest {
         assertEquals(String.valueOf(cn), response.path("[0].contractNumber"));
         assertEquals("2019-01-15T00:00:00", response.path("[0].from"));
         assertEquals("9999-12-31T23:59:59.999", response.path("[0].to"));
+
+        // get details including product instance
+        response = given()
+                .when()
+                .get("/contracts/" + cn + "/2019-02-01")
+                .then()
+                .statusCode(200)
+                .extract().response();
+        id = response.path("id");
+        assertEquals(String.valueOf(cn), response.path("contractNumber"));
+        assertEquals("2019-01-15T00:00:00", response.path("from"));
+        assertEquals("9999-12-31T23:59:59.999", response.path("to"));
+        assertEquals(Integer.valueOf(1), response.path("version"));
+        assertEquals(id, response.path("product.contractId"));
+        assertEquals("2019-01-15T00:00:00", response.path("product.from"));
+        assertEquals("9999-12-31T23:59:59.999", response.path("product.to"));
+        assertEquals(Integer.valueOf(1), response.path("product.version"));
+        assertEquals("0.0", response.path("product.discount").toString());
+        assertEquals("HomeContentsInsurance", response.path("product.name"));
+        assertEquals("100000.0", response.path("product.totalInsuredValue").toString());
+
+        // update
+        given()
+                .when()
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body("{\"contractNumber\": \"" + cn + "\",\"from\":\"2020-01-01T00:00:00.000\",\"newTotalInsuredValue\":20000.00}")
+                .put("/contracts/totalInsuredValue")
+                .then()
+                .log().all()
+                .statusCode(204);
+
+        // old product instance version
+        response = given()
+                .when()
+                .get("/contracts/" + cn + "/2019-12-31")
+                .then()
+                .statusCode(200)
+                .extract().response();
+        assertEquals(String.valueOf(cn), response.path("contractNumber"));
+        assertEquals("2019-01-15T00:00:00", response.path("from"));
+        assertEquals("9999-12-31T23:59:59.999", response.path("to"));
+        assertEquals(Integer.valueOf(1), response.path("version"));
+        assertEquals(id, response.path("product.contractId"));
+        assertEquals("2019-01-15T00:00:00", response.path("product.from"));
+        assertEquals("2019-12-31T23:59:59.999", response.path("product.to"));
+        assertEquals(Integer.valueOf(2), response.path("product.version"));
+        assertEquals("0.0", response.path("product.discount").toString());
+        assertEquals("HomeContentsInsurance", response.path("product.name"));
+        assertEquals("100000.0", response.path("product.totalInsuredValue").toString());
+
+        // new product instance version
+        response = given()
+                .when()
+                .get("/contracts/" + cn + "/2020-01-01")
+                .then()
+                .statusCode(200)
+                .extract().response();
+        assertEquals(String.valueOf(cn), response.path("contractNumber"));
+        assertEquals("2019-01-15T00:00:00", response.path("from"));
+        assertEquals("9999-12-31T23:59:59.999", response.path("to"));
+        assertEquals(Integer.valueOf(1), response.path("version"));
+        assertEquals(id, response.path("product.contractId"));
+        assertEquals("2020-01-01T00:00:00", response.path("product.from"));
+        assertEquals("9999-12-31T23:59:59.999", response.path("product.to"));
+        assertEquals(Integer.valueOf(0), response.path("product.version"));
+        assertEquals("0.0", response.path("product.discount").toString());
+        assertEquals("HomeContentsInsurance", response.path("product.name"));
+        assertEquals("20000.0", response.path("product.totalInsuredValue").toString());
+
+        // update #2
+        given()
+                .when()
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body("{\"contractNumber\": \"" + cn + "\",\"from\":\"2019-07-01T00:00:00.000\",\"newTotalInsuredValue\":30000.00}")
+                .put("/contracts/totalInsuredValue")
+                .then()
+                .log().all()
+                .statusCode(204);
+
+        // first product instance version
+        response = given()
+                .when()
+                .get("/contracts/" + cn + "/2019-06-30")
+                .then()
+                .statusCode(200)
+                .extract().response();
+        assertEquals(String.valueOf(cn), response.path("contractNumber"));
+        assertEquals("2019-01-15T00:00:00", response.path("from"));
+        assertEquals("9999-12-31T23:59:59.999", response.path("to"));
+        assertEquals(Integer.valueOf(1), response.path("version"));
+        assertEquals(id, response.path("product.contractId"));
+        assertEquals("2019-01-15T00:00:00", response.path("product.from"));
+        assertEquals("2019-06-30T23:59:59.999", response.path("product.to"));
+        assertEquals(Integer.valueOf(3), response.path("product.version"));
+        assertEquals("0.0", response.path("product.discount").toString());
+        assertEquals("HomeContentsInsurance", response.path("product.name"));
+        assertEquals("100000.0", response.path("product.totalInsuredValue").toString());
+
+        // second product instance version
+        response = given()
+                .when()
+                .get("/contracts/" + cn + "/2019-09-01")
+                .then()
+                .statusCode(200)
+                .extract().response();
+        assertEquals(String.valueOf(cn), response.path("contractNumber"));
+        assertEquals("2019-01-15T00:00:00", response.path("from"));
+        assertEquals("9999-12-31T23:59:59.999", response.path("to"));
+        assertEquals(Integer.valueOf(1), response.path("version"));
+        assertEquals(id, response.path("product.contractId"));
+        assertEquals("2019-07-01T00:00:00", response.path("product.from"));
+        assertEquals("2019-12-31T23:59:59.999", response.path("product.to"));
+        assertEquals(Integer.valueOf(0), response.path("product.version"));
+        assertEquals("0.0", response.path("product.discount").toString());
+        assertEquals("HomeContentsInsurance", response.path("product.name"));
+        assertEquals("30000.0", response.path("product.totalInsuredValue").toString());
+
+        // third product instance version
+        response = given()
+                .when()
+                .get("/contracts/" + cn + "/2020-01-01")
+                .then()
+                .statusCode(200)
+                .extract().response();
+        assertEquals(String.valueOf(cn), response.path("contractNumber"));
+        assertEquals("2019-01-15T00:00:00", response.path("from"));
+        assertEquals("9999-12-31T23:59:59.999", response.path("to"));
+        assertEquals(Integer.valueOf(1), response.path("version"));
+        assertEquals(id, response.path("product.contractId"));
+        assertEquals("2020-01-01T00:00:00", response.path("product.from"));
+        assertEquals("9999-12-31T23:59:59.999", response.path("product.to"));
+        assertEquals(Integer.valueOf(0), response.path("product.version"));
+        assertEquals("0.0", response.path("product.discount").toString());
+        assertEquals("HomeContentsInsurance", response.path("product.name"));
+        assertEquals("30000.0", response.path("product.totalInsuredValue").toString());
+
+        response = given()
+                .when()
+                .get("/contracts/history/" + cn)
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(3))
+                .extract().response();
+        assertEquals(String.valueOf(cn), response.path("[0].contract.contractNumber"));
+        assertEquals("2019-01-15T00:00:00", response.path("[0].contract.from"));
+        assertEquals("9999-12-31T23:59:59.999", response.path("[0].contract.to"));
+        assertEquals("2019-01-15T00:00:00", response.path("[0].from"));
+        assertEquals("2019-06-30T23:59:59.999", response.path("[0].to"));
+        assertEquals("0.0", response.path("[0].discount").toString());
+        assertEquals("HomeContentsInsurance", response.path("[0].name"));
+        assertEquals("100000.0", response.path("[0].totalInsuredValue").toString());
+        assertEquals((String)response.path("[0].contract.id"), response.path("[0].contractId"));
+
+        assertEquals(String.valueOf(cn), response.path("[1].contract.contractNumber"));
+        assertEquals("2019-01-15T00:00:00", response.path("[1].contract.from"));
+        assertEquals("9999-12-31T23:59:59.999", response.path("[1].contract.to"));
+        assertEquals("2019-07-01T00:00:00", response.path("[1].from"));
+        assertEquals("2019-12-31T23:59:59.999", response.path("[1].to"));
+        assertEquals("0.0", response.path("[1].discount").toString());
+        assertEquals("HomeContentsInsurance", response.path("[1].name"));
+        assertEquals("30000.0", response.path("[1].totalInsuredValue").toString());
+        assertEquals((String)response.path("[1].contract.id"), response.path("[1].contractId"));
+
+        assertEquals(String.valueOf(cn), response.path("[2].contract.contractNumber"));
+        assertEquals("2019-01-15T00:00:00", response.path("[2].contract.from"));
+        assertEquals("9999-12-31T23:59:59.999", response.path("[2].contract.to"));
+        assertEquals("2020-01-01T00:00:00", response.path("[2].from"));
+        assertEquals("9999-12-31T23:59:59.999", response.path("[2].to"));
+        assertEquals("0.0", response.path("[2].discount").toString());
+        assertEquals("HomeContentsInsurance", response.path("[2].name"));
+        assertEquals("30000.0", response.path("[2].totalInsuredValue").toString());
+        assertEquals((String)response.path("[2].contract.id"), response.path("[2].contractId"));
+
+        // check everything belongs to same contract version
+        assertEquals((String)response.path("[0].contractId"), response.path("[1].contractId"));
+        assertEquals((String)response.path("[1].contractId"), response.path("[2].contractId"));
     }
 }

@@ -2,20 +2,19 @@ package ch.maxant.kdc.contracts;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 public class UpdateTotalInsuredValueRequest {
 
-    private UUID contractId;
+    private String contractNumber;
     private LocalDateTime from;
     private BigDecimal newTotalInsuredValue;
 
-    public UUID getContractId() {
-        return contractId;
+    public String getContractNumber() {
+        return contractNumber;
     }
 
-    public void setContractId(UUID contractId) {
-        this.contractId = contractId;
+    public void setContractNumber(String contractNumber) {
+        this.contractNumber = contractNumber;
     }
 
     public BigDecimal getNewTotalInsuredValue() {
