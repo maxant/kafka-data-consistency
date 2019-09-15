@@ -43,7 +43,7 @@ public class RestResourceTest {
             .when()
             .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
             .body("{\"contractNumber\":\"" + cn + "\",\"from\":\"2019-01-01T00:00:00.000\",\"to\":\"9999-12-31T23:59:59.999\"}")
-            .post("/contracts/HomeContentsInsurance")
+            .post("/contracts/BuildingInsurance")
             .then()
             .statusCode(200)
             .body("version", Matchers.is(0))
@@ -121,15 +121,15 @@ public class RestResourceTest {
         assertEquals("9999-12-31T23:59:59.999", response.path("product.to"));
         assertEquals(Integer.valueOf(1), response.path("product.version"));
         assertEquals("0.0", response.path("product.discount").toString());
-        assertEquals("HomeContentsInsurance", response.path("product.name"));
-        assertEquals("100000.0", response.path("product.totalInsuredValue").toString());
+        assertEquals("BuildingInsurance", response.path("product.name"));
+        assertEquals("100.0", response.path("product.indexValue").toString());
 
         // update
         given()
                 .when()
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-                .body("{\"contractNumber\": \"" + cn + "\",\"from\":\"2020-01-01T00:00:00.000\",\"newTotalInsuredValue\":20000.00}")
-                .put("/contracts/totalInsuredValue")
+                .body("{\"contractNumber\": \"" + cn + "\",\"from\":\"2020-01-01T00:00:00.000\",\"newIndexValue\":102.00}")
+                .put("/contracts/indexValue")
                 .then()
                 .log().all()
                 .statusCode(204);
@@ -150,8 +150,8 @@ public class RestResourceTest {
         assertEquals("2019-12-31T23:59:59.999", response.path("product.to"));
         assertEquals(Integer.valueOf(2), response.path("product.version"));
         assertEquals("0.0", response.path("product.discount").toString());
-        assertEquals("HomeContentsInsurance", response.path("product.name"));
-        assertEquals("100000.0", response.path("product.totalInsuredValue").toString());
+        assertEquals("BuildingInsurance", response.path("product.name"));
+        assertEquals("100.0", response.path("product.indexValue").toString());
 
         // new product instance version
         response = given()
@@ -169,15 +169,15 @@ public class RestResourceTest {
         assertEquals("9999-12-31T23:59:59.999", response.path("product.to"));
         assertEquals(Integer.valueOf(0), response.path("product.version"));
         assertEquals("0.0", response.path("product.discount").toString());
-        assertEquals("HomeContentsInsurance", response.path("product.name"));
-        assertEquals("20000.0", response.path("product.totalInsuredValue").toString());
+        assertEquals("BuildingInsurance", response.path("product.name"));
+        assertEquals("102.0", response.path("product.indexValue").toString());
 
         // update #2
         given()
                 .when()
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-                .body("{\"contractNumber\": \"" + cn + "\",\"from\":\"2019-07-01T00:00:00.000\",\"newTotalInsuredValue\":30000.00}")
-                .put("/contracts/totalInsuredValue")
+                .body("{\"contractNumber\": \"" + cn + "\",\"from\":\"2019-07-01T00:00:00.000\",\"newIndexValue\":103.00}")
+                .put("/contracts/indexValue")
                 .then()
                 .log().all()
                 .statusCode(204);
@@ -198,8 +198,8 @@ public class RestResourceTest {
         assertEquals("2019-06-30T23:59:59.999", response.path("product.to"));
         assertEquals(Integer.valueOf(3), response.path("product.version"));
         assertEquals("0.0", response.path("product.discount").toString());
-        assertEquals("HomeContentsInsurance", response.path("product.name"));
-        assertEquals("100000.0", response.path("product.totalInsuredValue").toString());
+        assertEquals("BuildingInsurance", response.path("product.name"));
+        assertEquals("100.0", response.path("product.indexValue").toString());
 
         // second product instance version
         response = given()
@@ -217,8 +217,8 @@ public class RestResourceTest {
         assertEquals("2019-12-31T23:59:59.999", response.path("product.to"));
         assertEquals(Integer.valueOf(0), response.path("product.version"));
         assertEquals("0.0", response.path("product.discount").toString());
-        assertEquals("HomeContentsInsurance", response.path("product.name"));
-        assertEquals("30000.0", response.path("product.totalInsuredValue").toString());
+        assertEquals("BuildingInsurance", response.path("product.name"));
+        assertEquals("103.0", response.path("product.indexValue").toString());
 
         // third product instance version
         response = given()
@@ -236,8 +236,8 @@ public class RestResourceTest {
         assertEquals("9999-12-31T23:59:59.999", response.path("product.to"));
         assertEquals(Integer.valueOf(0), response.path("product.version"));
         assertEquals("0.0", response.path("product.discount").toString());
-        assertEquals("HomeContentsInsurance", response.path("product.name"));
-        assertEquals("30000.0", response.path("product.totalInsuredValue").toString());
+        assertEquals("BuildingInsurance", response.path("product.name"));
+        assertEquals("103.0", response.path("product.indexValue").toString());
 
         response = given()
                 .when()
@@ -252,8 +252,8 @@ public class RestResourceTest {
         assertEquals("2019-01-15T00:00:00", response.path("[0].from"));
         assertEquals("2019-06-30T23:59:59.999", response.path("[0].to"));
         assertEquals("0.0", response.path("[0].discount").toString());
-        assertEquals("HomeContentsInsurance", response.path("[0].name"));
-        assertEquals("100000.0", response.path("[0].totalInsuredValue").toString());
+        assertEquals("BuildingInsurance", response.path("[0].name"));
+        assertEquals("100.0", response.path("[0].indexValue").toString());
         assertEquals((String)response.path("[0].contract.id"), response.path("[0].contractId"));
 
         assertEquals(String.valueOf(cn), response.path("[1].contract.contractNumber"));
@@ -262,8 +262,8 @@ public class RestResourceTest {
         assertEquals("2019-07-01T00:00:00", response.path("[1].from"));
         assertEquals("2019-12-31T23:59:59.999", response.path("[1].to"));
         assertEquals("0.0", response.path("[1].discount").toString());
-        assertEquals("HomeContentsInsurance", response.path("[1].name"));
-        assertEquals("30000.0", response.path("[1].totalInsuredValue").toString());
+        assertEquals("BuildingInsurance", response.path("[1].name"));
+        assertEquals("103.0", response.path("[1].indexValue").toString());
         assertEquals((String)response.path("[1].contract.id"), response.path("[1].contractId"));
 
         assertEquals(String.valueOf(cn), response.path("[2].contract.contractNumber"));
@@ -272,8 +272,8 @@ public class RestResourceTest {
         assertEquals("2020-01-01T00:00:00", response.path("[2].from"));
         assertEquals("9999-12-31T23:59:59.999", response.path("[2].to"));
         assertEquals("0.0", response.path("[2].discount").toString());
-        assertEquals("HomeContentsInsurance", response.path("[2].name"));
-        assertEquals("30000.0", response.path("[2].totalInsuredValue").toString());
+        assertEquals("BuildingInsurance", response.path("[2].name"));
+        assertEquals("103.0", response.path("[2].indexValue").toString());
         assertEquals((String)response.path("[2].contract.id"), response.path("[2].contractId"));
 
         // check everything belongs to same contract version

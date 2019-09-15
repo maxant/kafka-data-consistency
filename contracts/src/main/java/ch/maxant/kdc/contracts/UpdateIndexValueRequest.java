@@ -3,11 +3,11 @@ package ch.maxant.kdc.contracts;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public class UpdateTotalInsuredValueRequest {
+public class UpdateIndexValueRequest {
 
     private String contractNumber;
     private LocalDateTime from;
-    private BigDecimal newTotalInsuredValue;
+    private BigDecimal newIndexValue;
 
     public String getContractNumber() {
         return contractNumber;
@@ -17,12 +17,12 @@ public class UpdateTotalInsuredValueRequest {
         this.contractNumber = contractNumber;
     }
 
-    public BigDecimal getNewTotalInsuredValue() {
-        return newTotalInsuredValue;
+    public BigDecimal getNewIndexValue() {
+        return newIndexValue;
     }
 
-    public void setNewTotalInsuredValue(BigDecimal newTotalInsuredValue) {
-        this.newTotalInsuredValue = newTotalInsuredValue;
+    public void setNewIndexValue(BigDecimal newIndexValue) {
+        this.newIndexValue = newIndexValue;
     }
 
     public LocalDateTime getFrom() {

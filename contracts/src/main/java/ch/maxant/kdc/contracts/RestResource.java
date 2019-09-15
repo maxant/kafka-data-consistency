@@ -1,8 +1,8 @@
 package ch.maxant.kdc.contracts;
 
-import ch.maxant.kdc.products.HomeContentsInsurance;
+import ch.maxant.kdc.products.BuildingInsurance;
 import ch.maxant.kdc.products.Product;
-import ch.maxant.kdc.products.WithTotalInsuredValue;
+import ch.maxant.kdc.products.WithIndexValue;
 import ch.maxant.kdc.products.WithValidity;
 
 import javax.inject.Inject;
@@ -62,14 +62,14 @@ public class RestResource {
         // TODO validate that there is no other contract which overlaps this period with the same number!
         // if there is, the caller needs to first update existing ones, and make space!
 
-        if (HomeContentsInsurance.class.getSimpleName().equals(productClass)) {
+        if (BuildingInsurance.class.getSimpleName().equals(productClass)) {
             em.persist(contract);
 
-            HomeContentsInsurance product = new HomeContentsInsurance();
+            BuildingInsurance product = new BuildingInsurance();
             product.setContractId(contract.getId());
             // set some defaults
             product.setDiscount(BigDecimal.ZERO);
-            product.setTotalInsuredValue(new BigDecimal("100000.00"));
+            product.setIndexValue(new BigDecimal("100.00"));
             product.setTo(contract.getTo());
             product.setFrom(contract.getFrom());
             em.persist(product);
@@ -208,8 +208,8 @@ public class RestResource {
 
     @PUT
     @Transactional
-    @Path("/totalInsuredValue")
-    public Response updateTotalInsuredValue(UpdateTotalInsuredValueRequest request) throws Exception {
+    @Path("/indexValue")
+    public Response updateIndexValue(UpdateIndexValueRequest request) throws Exception {
         // split something like this:
         //
         //  |-----A-----|--B--|--C--|
@@ -234,8 +234,8 @@ public class RestResource {
                 .setParameter("date", request.getFrom())
                 .getSingleResult();
 
-        if (!(product instanceof WithTotalInsuredValue)) {
-            throw new IllegalArgumentException("Contract does not support total insurance value");
+        if (!(product instanceof WithIndexValue)) {
+            throw new IllegalArgumentException("Contract does not support index value");
         }
 
         // create a new one
@@ -244,9 +244,9 @@ public class RestResource {
         d.setFrom(request.getFrom());
         d.setTo(product.getTo());
         d.setDiscount(product.getDiscount());
-        ((WithTotalInsuredValue) d).setTotalInsuredValue(request.getNewTotalInsuredValue());
+        ((WithIndexValue) d).setIndexValue(request.getNewIndexValue());
         em.persist(d);
-        System.out.println("inserted new product instance version from " + d.getFrom() + " to " + d.getTo() + " with total insured sum " + request.getNewTotalInsuredValue());
+        System.out.println("inserted new product instance version from " + d.getFrom() + " to " + d.getTo() + " with index value " + request.getNewIndexValue());
 
         // update validity of original
         product.setTo(request.getFrom().minus(1, ChronoUnit.MILLIS));
@@ -254,14 +254,14 @@ public class RestResource {
 
         // update the rest
         int updateCount = em.createQuery("update Product p " +
-                                            "set p.totalInsuredValue = :totalInsuredValue " +
+                                            "set p.indexValue = :indexValue " +
                                             "where p.contractId = :cid " +
                                             "and p.from >= :ts")
-                .setParameter("totalInsuredValue", request.getNewTotalInsuredValue())
+                .setParameter("indexValue", request.getNewIndexValue())
                 .setParameter("cid", c.getId())
                 .setParameter("ts", d.getTo())
                 .executeUpdate();
-        System.out.println("updated " + updateCount + " product instance versions with new total insured value " + request.getNewTotalInsuredValue());
+        System.out.println("updated " + updateCount + " product instance versions with new index value " + request.getNewIndexValue());
 
         return Response.noContent().build();
     }
