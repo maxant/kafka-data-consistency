@@ -20,7 +20,8 @@ Let's call each row in the products table a "minor timeline".
 
 Runs using quarkus. Dev mode with hot-replacement:
 
-    mvn compile quarkus:dev
+    mvn clean
+    mvn compile quarkus:dev -Ddebug=5005
 
 ## API Docs
 
@@ -51,6 +52,13 @@ H2 Web UI:
 
 # TODO
 
+- fix APM agent => does it work with quarkus?
+- fix parent pom and dependencies on kids
+- fix how webq subscribes to messages => can be done with just one config instead of two
+- move common quarkus stuff into a lib and use that lib in the quarkus apps
+- remove web and tasks, as they are replaced by quarkus
+- migrate all to quarkus
+- move contract-history route into contract route
 - connect contract to a partner
   - partners come from topic
 - send creation and replacement to neo4j

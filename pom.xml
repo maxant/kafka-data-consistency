@@ -301,11 +301,13 @@ https://docs.payara.fish/documentation/ecosystem/maven-plugin.html
     </build>
 
     <modules>
+<!-- TODO RE-ADD THESE
         <module>library</module>
         <module>web</module>
         <module>claims</module>
         <module>tasks</module>
         <module>locations</module>
+-->
         <module>graphs</module>
         <module>partners</module>
         <module>neo4jembedded-incubator</module>

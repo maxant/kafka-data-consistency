@@ -1345,7 +1345,8 @@ Added to UI. Propagation now working thanks to span: https://discuss.elastic.co/
 
 Links:
 
-- Javascript Agent API: https://www.elastic.co/guide/en/apm/agent/js-base/4.x/api.html
+- Javascript Agent API: https://www.elastic.co/guide/en/apm/agent/rum-js/current/index.html
+  - old: Javascript Agent API: https://www.elastic.co/guide/en/apm/agent/js-base/4.x/api.html
 - Java Agent API: https://www.elastic.co/guide/en/apm/agent/java/current/public-api.html
 
 # MySql
