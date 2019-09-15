@@ -13,14 +13,24 @@ one with some sugar added, the other with sweetner.
 Initially, a product instance shares the same validity as the contract which it belongs to.
 But as values are changed in the product instance, new versions of the product instance are created (new rows in the DB).
 However there is only ever one which is valid at any instant in time.
-Let's call each row in the contracts table a "big timeline".
-Let's call each row in the products table a "small timeline".
+Let's call each row in the contracts table a "major timeline".
+Let's call each row in the products table a "minor timeline".
 
 ## Running
 
 Runs using quarkus. Dev mode with hot-replacement:
 
     mvn compile quarkus:dev
+
+## API Docs
+
+http://localhost:8085/api
+
+## UI
+
+Start the UI and navigate over to: http://localhost:8083/#/contract/1568556465087
+
+## Persistence
 
 Persistence is in mysql.
 
@@ -41,9 +51,12 @@ H2 Web UI:
 
 # TODO
 
-- creating a contract version needs to first validate that there is no overlap with other versions with the same number!
+- connect contract to a partner
+  - partners come from topic
+- send creation and replacement to neo4j
+- add ui to allow for indexing and replacing
 - try putting further attributes into their own table => or even verticalised, to compare performance...
-- or is the problem that the attributes have different valid periods, and so belong in different tables?
-- @QuarkusTest
+  - especially size of database, since saving all attributes in one table doesnt appear to be properly normalised!
 - reading datetime from mysql is causing millis to be dropped when they are zero
+- @QuarkusTest
 - mysql client is showing localdatetime as timezoned, even tho java and intellij plugin works... how to tell mysql client to behave?

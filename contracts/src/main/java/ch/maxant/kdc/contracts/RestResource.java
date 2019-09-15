@@ -4,6 +4,7 @@ import ch.maxant.kdc.products.BuildingInsurance;
 import ch.maxant.kdc.products.Product;
 import ch.maxant.kdc.products.WithIndexValue;
 import ch.maxant.kdc.products.WithValidity;
+import org.eclipse.microprofile.openapi.annotations.Operation;
 
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
@@ -70,11 +71,12 @@ public class RestResource {
         return Response.ok(contract).build();
     }
 
-    /** cuts the contract which currently intersects the given contract so that it ends when the new one starts.
-     * the input may not intersect more than one existing one. the input must start after the existing one. the existing one must be the last. */
     @POST
     @Transactional
     @Path("/replace/{productClass}")
+    @Operation(summary = "Replace an existing contract with a new version.",
+            description = "cuts the contract which currently intersects the given contract so that it ends when the new one starts." +
+                    "the input may not intersect more than one existing one. the input must start after the existing one. the existing one must be the last.")
     public Response createReplacementContract(@PathParam("productClass") String productClass, Contract contract) {
 
         List<Contract> existingVersions = em.createQuery("select c from Contract c where c.contractNumber = :cn")
@@ -265,7 +267,7 @@ public class RestResource {
                 .getResultList()
                 .stream()
                 .peek(p -> p.setContract(contractsIndexedByCid.get(p.getContractId())))
-                .sorted(Comparator.comparing(Product::getFrom))
+                .sorted(Comparator.comparing((Product p) -> p.getContract().getFrom()).thenComparing(Product::getFrom))
                 .collect(toList());
 
         return Response.ok(products).build();

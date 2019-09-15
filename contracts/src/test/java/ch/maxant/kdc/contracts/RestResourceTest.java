@@ -1,7 +1,9 @@
 package ch.maxant.kdc.contracts;
 
+import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.HttpHeaders;
@@ -15,6 +17,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 //@QuarkusTest TODO what does this do exactly?
 public class RestResourceTest {
+
+    @BeforeAll
+    public static void init() {
+        RestAssured.port = 8085;
+    }
 
     @Test
     public void version() {
@@ -356,7 +363,7 @@ public class RestResourceTest {
         assertEquals("1030000.0", response.path("[2].insuredSum").toString());
         assertEquals((String)response.path("[2].contract.id"), response.path("[2].contractId"));
 
-        // what we now have is (two big timelines, the first having two small timelines):
+        // what we now have is (two major timelines, the first having two minor timelines):
         //
         // |--A 100% 1'000'000--|--B 103% 1'000'000 --|
         //                                            |-- C 100% 1'030'000 -->

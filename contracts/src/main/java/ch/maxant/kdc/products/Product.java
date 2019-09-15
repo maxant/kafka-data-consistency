@@ -111,6 +111,10 @@ public class Product implements WithValidity {
         this.insuredSum = insuredSum;
     }
 
+    public UUID getId() {
+        return id;
+    }
+
     @Override
     public String toString() {
         return "Product{" +
