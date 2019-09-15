@@ -13,19 +13,16 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 
 @Path("/contracts")
@@ -54,38 +51,129 @@ public class RestResource {
         return Response.ok(contractVersions).build();
     }
 
+    /** create a brand new contract */
     @POST
     @Transactional
     @Path("/{productClass}")
     public Response createContract(@PathParam("productClass") String productClass, Contract contract) {
 
-        // TODO validate that there is no other contract which overlaps this period with the same number!
-        // if there is, the caller needs to first update existing ones, and make space!
+        List<Contract> existingVersions = em.createQuery("select c from Contract c where c.contractNumber = :cn")
+                .setParameter("cn", contract.getContractNumber())
+                .getResultList();
 
-        if (BuildingInsurance.class.getSimpleName().equals(productClass)) {
-            em.persist(contract);
-
-            BuildingInsurance product = new BuildingInsurance();
-            product.setContractId(contract.getId());
-            // set some defaults
-            product.setDiscount(BigDecimal.ZERO);
-            product.setIndexValue(new BigDecimal("100.00"));
-            product.setTo(contract.getTo());
-            product.setFrom(contract.getFrom());
-            em.persist(product);
-        } else {
-            return Response.status(BAD_REQUEST.getStatusCode(), "unknown product class " + productClass).build();
+        if(!existingVersions.isEmpty()) {
+            throw new IllegalArgumentException("a contract with that number already exists. it must be replaced using /contracts/replace");
         }
+
+        createContractVersion(productClass, contract, existingVersions);
+
         return Response.ok(contract).build();
     }
 
+    /** cuts the contract which currently intersects the given contract so that it ends when the new one starts.
+     * the input may not intersect more than one existing one. the input must start after the existing one. the existing one must be the last. */
+    @POST
+    @Transactional
+    @Path("/replace/{productClass}")
+    public Response createReplacementContract(@PathParam("productClass") String productClass, Contract contract) {
+
+        List<Contract> existingVersions = em.createQuery("select c from Contract c where c.contractNumber = :cn")
+                .setParameter("cn", contract.getContractNumber())
+                .getResultList();
+
+        List<Contract> candidatesToBeReplaced = existingVersions.stream().filter(c -> c.isOverlapping(contract)).collect(toList());
+
+        if(candidatesToBeReplaced.size() != 1) {
+            throw new IllegalArgumentException("input contract spans more than one existing contract: " + candidatesToBeReplaced);
+        }
+        Contract toBeReplaced = candidatesToBeReplaced.get(0);
+
+        if(contract.getFrom().isBefore(toBeReplaced.getFrom())) {
+            throw new IllegalArgumentException("input contract doesnt start on or after existing contract: " + toBeReplaced);
+        }
+
+        if(existingVersions.stream().anyMatch(c -> c.getFrom().isAfter(toBeReplaced.getFrom()))) {
+            throw new IllegalArgumentException("input contract spans a contract which is not the last one");
+        }
+
+        toBeReplaced.setTo(contract.getFrom().minus(1, ChronoUnit.MILLIS));
+        fixProductInstanceVersions(toBeReplaced); // cut product instance validity short, as we have just cut the contract short
+
+        createContractVersion(productClass, contract, existingVersions);
+
+        return Response.ok(contract).build();
+    }
+
+    private void createContractVersion(String productClass, Contract contract, List<Contract> existingVersions) {
+
+        validateNewContract(contract, existingVersions);
+
+        Product product;
+        if (BuildingInsurance.class.getSimpleName().equals(productClass)) {
+            product = new BuildingInsurance();
+            // set the value to a default, unless one is supplied
+            BigDecimal indexValue = new BigDecimal("100.00");
+            if(contract.getProduct() != null && contract.getProduct() instanceof WithIndexValue && ((WithIndexValue) contract.getProduct()).getIndexValue() != null) {
+                indexValue = ((WithIndexValue) contract.getProduct()).getIndexValue();
+            }
+            ((BuildingInsurance)product).setIndexValue(indexValue);
+        } else {
+            throw new RuntimeException("unknown product class '" + productClass + "'");
+        }
+
+        em.persist(contract);
+
+        // set insured sum based on incoming product, if present, with fallback to max value
+        if(contract.getProduct() != null) {
+            product.setInsuredSum(contract.getProduct().getInsuredSum());
+        }
+        if(product.getInsuredSum() == null) {
+            product.setInsuredSum(new BigDecimal(99_999_999));
+        }
+
+        // set up product
+        product.setContractId(contract.getId());
+        product.setDiscount(BigDecimal.ZERO);
+        product.setTo(contract.getTo());
+        product.setFrom(contract.getFrom());
+
+        em.persist(product);
+
+        // attach newly created product so that it can be returned to the caller
+        contract.setProduct(product);
+
+        // TODO send new version to neo4j, which will need to sort out relationships between versions!
+    }
+
+    private void validateNewContract(Contract newContract, List<Contract> existingVersions) {
+        // look for overlapping contract versions with the same contract number
+        List<Contract> overlaps = existingVersions.stream().filter(c -> c.isOverlapping(newContract)).collect(toList());
+        if(!overlaps.isEmpty()) {
+            throw new IllegalArgumentException("contract overlaps with " + overlaps.get(0));
+        }
+
+        // ensure there are no gaps either!
+        List<Contract> allVersions = new ArrayList<>(existingVersions);
+        allVersions.add(newContract);
+        allVersions.sort(Comparator.comparing(Contract::getFrom));
+        Contract previous = null;
+        for(Contract current : allVersions) {
+            if(previous != null) {
+                if(Duration.between(previous.getTo(), current.getFrom()).getNano() != 1_000_000) { // 1ms = 1 mio ns
+                    throw new IllegalArgumentException("there is no seemless continuation between " + previous + " and " + current);
+                }
+            }
+            previous = current;
+        }
+    }
+
+    @Deprecated // this is nasty, because it can be used to create gaps between contract versions! => we dont want that!
     @PUT
     @Transactional
     public Response updateContract(Contract contract) {
         try {
             contract = em.merge(contract);
-            final Contract cf = contract;
-            fixProductInstanceVersions(contract, cf);
+            fixProductInstanceVersions(contract);
 
             return Response.ok(contract).build();
         } catch (OptimisticLockException e) {
@@ -94,7 +182,7 @@ public class RestResource {
     }
 
     /** now update/delete product instance versions */
-    private void fixProductInstanceVersions(Contract contract, Contract cf) {
+    private void fixProductInstanceVersions(Contract contract) {
         List<Product> products = em.createQuery("select p from Product p where p.contractId = :cid", Product.class)
                 .setParameter("cid", contract.getId())
                 .getResultList();
@@ -118,23 +206,23 @@ public class RestResource {
         // CASE 3: and of course a combination of cases 1 & 2... so handle "from" and then handle "to".
 
         // if there is nothing before the "from", then its case 2 so adjust the first one, otherwise its case 1.
-        if(products.stream().allMatch(p -> cf.getFrom().isBefore(p.getFrom()))) {
+        if(products.stream().allMatch(p -> contract.getFrom().isBefore(p.getFrom()))) {
             // case 2 for "from" => adjust first one
-            products.stream().sorted(Comparator.comparing(Product::getFrom)).findFirst().get().setFrom(cf.getFrom());
+            products.stream().sorted(Comparator.comparing(Product::getFrom)).findFirst().get().setFrom(contract.getFrom());
         } else {
             // case 1 for "from". so i) delete anything ending before "from" and ii) adjust "from" for anything overlapping "from"
-            products.stream().filter(p -> p.getTo().isBefore(cf.getFrom())).forEach(p -> em.remove(p));
-            products.stream().filter(p -> matches(cf.getFrom(), p)).forEach(p -> p.setFrom(cf.getFrom()));
+            products.stream().filter(p -> p.getTo().isBefore(contract.getFrom())).forEach(p -> em.remove(p));
+            products.stream().filter(p -> matches(contract.getFrom(), p)).forEach(p -> p.setFrom(contract.getFrom()));
         }
 
         // if there is nothing after the "to", then its case 2 so adjust the last one, otherwise its case 1.
-        if(products.stream().allMatch(p -> cf.getTo().isAfter(p.getTo()))) {
+        if(products.stream().allMatch(p -> contract.getTo().isAfter(p.getTo()))) {
             // case 2 for "to" => adjust first one in reversed list
-            products.stream().sorted(Comparator.comparing(Product::getTo).reversed()).findFirst().get().setTo(cf.getTo());
+            products.stream().sorted(Comparator.comparing(Product::getTo).reversed()).findFirst().get().setTo(contract.getTo());
         } else {
             // case 1 for "to". so i) delete anything starting after "to" and ii) adjust "to" for anything overlapping "to"
-            products.stream().filter(p -> p.getFrom().isAfter(cf.getTo())).forEach(p -> em.remove(p));
-            products.stream().filter(p -> matches(cf.getTo(), p)).forEach(p -> p.setTo(cf.getTo()));
+            products.stream().filter(p -> p.getFrom().isAfter(contract.getTo())).forEach(p -> em.remove(p));
+            products.stream().filter(p -> matches(contract.getTo(), p)).forEach(p -> p.setTo(contract.getTo()));
         }
     }
 
@@ -244,6 +332,7 @@ public class RestResource {
         d.setFrom(request.getFrom());
         d.setTo(product.getTo());
         d.setDiscount(product.getDiscount());
+        d.setInsuredSum(product.getInsuredSum());
         ((WithIndexValue) d).setIndexValue(request.getNewIndexValue());
         em.persist(d);
         System.out.println("inserted new product instance version from " + d.getFrom() + " to " + d.getTo() + " with index value " + request.getNewIndexValue());

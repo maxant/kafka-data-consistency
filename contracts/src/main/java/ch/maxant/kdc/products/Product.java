@@ -37,6 +37,9 @@ public class Product implements WithValidity {
     @Column(nullable = false, name = "DISCOUNT")
     private BigDecimal discount;
 
+    @Column(nullable = false, name = "INSURED_SUM")
+    private BigDecimal insuredSum;
+
     @Column(nullable = false, updatable = false, name = "NAME")
     private String name;
 
@@ -98,5 +101,27 @@ public class Product implements WithValidity {
 
     public void setContract(Contract contract) {
         this.contract = contract;
+    }
+
+    public BigDecimal getInsuredSum() {
+        return insuredSum;
+    }
+
+    public void setInsuredSum(BigDecimal insuredSum) {
+        this.insuredSum = insuredSum;
+    }
+
+    @Override
+    public String toString() {
+        return "Product{" +
+                "id=" + id +
+                ", contractId=" + contractId +
+                ", version=" + version +
+                ", from=" + from +
+                ", to=" + to +
+                ", discount=" + discount +
+                ", insuredSum=" + insuredSum +
+                ", name='" + name + '\'' +
+                '}';
     }
 }

@@ -79,4 +79,15 @@ public class Contract implements WithValidity {
     public void setProduct(Product product) {
         this.product = product;
     }
+
+    @Override
+    public String toString() {
+        return "Contract{" +
+                "id=" + id +
+                ", contractNumber='" + contractNumber + '\'' +
+                ", version=" + version +
+                ", from=" + from +
+                ", to=" + to +
+                '}';
+    }
 }
