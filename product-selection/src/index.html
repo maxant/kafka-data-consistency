@@ -1,0 +1,75 @@
+<html>
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/rxjs/6.5.3/rxjs.umd.min.js"></script>
+
+    <!-- script src="https://unpkg.com/@webcomponents/webcomponentsjs@2.4.0/webcomponents-bundle.js"></script -->
+<!--
+    <script src="https://unpkg.com/@webcomponents/webcomponentsjs/webcomponents-bundle.js"></script>
+
+    < ! - - load the element - - >
+
+    <script type="module" src="./model.js"></script>
+
+-->
+    <script type="module" src="my-button.js"></script>
+</head>
+<body>
+<my-button id="myButton1" model="value"></my-button>
+<hr>
+<h2>TODO</h2>
+<ul>
+    <li>Slots - https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_templates_and_slots => https://developer.mozilla.org/en-US/docs/Web/API/HTMLSlotElement</li>
+    <li>attach shadow => mode - whats it do exactly?</li>
+    <li>CSS pseudo-classes => https://developer.mozilla.org/en-US/docs/Web/Web_Components</li>
+    <li>polymer (see also the polyfills link) - https://www.polymer-project.org/</li>
+    <li>material - https://github.com/material-components/material-components-web-components</li>
+</ul>
+
+<script type="module">
+  import '@material/mwc-linear-progress';
+</script>
+<mwc-linear-progress progress="0.5"></mwc-linear-progress>
+
+<script type="module">
+
+// this is the controller - code written by an app developer
+
+import { model } from './model.js';
+import { service } from './service.js';
+const map = rxjs.operators.map;
+
+const button = document.querySelector('#myButton1');
+window.start = 0;
+
+// connect user actions (button clicks) to he
+rxjs.fromEvent(button, 'pressed')
+    .subscribe(val => {
+        window.start = new Date().getTime();
+        service.incrementModelValue();
+    });
+// TODO when would we need to unsubscribe?
+
+// hook up our business model to the view - when it changes, update the view
+model.observable.pipe(map(e => {
+    return {name: e.name, value: e.value, time: new Date()};
+})).subscribe(e => {
+    if(e.name == 'value') {
+        button.label = `${model.value} (done in ${new Date().getTime() - window.start}ms)`;
+    }
+});
+
+// set the initial value of the button
+button.label = model.value;
+
+// also works like this:
+// hook up the UI to the model - react to user actions by making model changes
+button.addEventListener('pressed', value => {
+    // console.log("works too");
+});
+
+button.renderObservable.subscribe(e => {
+    console.log(`completed render after ${new Date().getTime() - window.start}ms`);
+});
+</script>
+</body>
+</html>
