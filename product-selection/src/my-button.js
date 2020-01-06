@@ -44,7 +44,7 @@ template.innerHTML = `
       white-space: nowrap;
       cursor: pointer;
       outline: none;
-      width: 100%;
+      width: 200px;
       height: 40px;
       box-sizing: border-box;
       border: 1px solid #a1a1a1;
@@ -56,6 +56,7 @@ template.innerHTML = `
   </style>
   <div class="container">
     <button></button>
+    <slot></slot>
     <ul id="times">
     </ul>
   </div>
@@ -71,6 +72,7 @@ class Button extends HTMLElement {
 
     this.$button = this._shadowRoot.querySelector('button'); // the button that gets clicked
     this.$times  = this._shadowRoot.querySelector('#times'); // a list of times when the button was clicked
+    this.$slot  = this._shadowRoot.querySelector('slot'); // content set from outside
 
     // hook up events to custom event which this component emits
     this.$button.addEventListener('click', () => {
@@ -92,12 +94,27 @@ class Button extends HTMLElement {
     //      element.label = 'Click Me';
     // without the setter, it wouldnt work because the above is setting a property, not an attribute of the html!
   }
+  get mystyle() {
+    return this.getAttribute('mystyle');
+  }
+  set mystyle(value) {
+console.log("setting mystyle: " + value);
+    this.setAttribute('mystyle', value);
+  }
   static get observedAttributes() {
-    return ['label'];
+    return ['label', 'mystyle'];
   }
   connectedCallback() {
 console.log(`my-button connected callback`);
     if (this.hasAttribute('as-atom')) { // this is how to query an attributes existence. attributes are found in the html
+    }
+
+    let slotContext = this.$slot.assignedNodes()[0].textContent;
+    if(slotContext) {
+        slotContext = slotContext.trim();
+        if(slotContext.startsWith("{{")) {
+            this.slotContext = slotContext.substr(2, slotContext.length - 4);
+        }
     }
   }
   disconnectedCallback() {
@@ -112,6 +129,15 @@ console.log(`my-button changed callback: ${name} from '${oldVal}' to '${newVal}'
     // because there's a getter, we don't need to do this:
     //      this[name] = newVal;
 
+    if(name == 'mystyle') {
+        newVal.split(';').forEach(s => {
+            let kv = s.trim().split(':');
+            if(kv[0].trim().length) {
+                this.$button.style[kv[0].trim()] = kv[1].trim();
+            }
+        });
+    }
+
     this.render();
   }
   render() {
@@ -121,6 +147,10 @@ console.log(`my-button changed callback: ${name} from '${oldVal}' to '${newVal}'
         s += `<li>${t}</li>`; // string manipulation is many times faster than eg. appendChild
     });
     this.$times.innerHTML = s;
+
+    if(this.slotContext && this.model) {
+        this.$slot.assignedNodes()[0].textContent = _.get(this.model, this.slotContext);
+    }
 
     if(this._renderObservable) this._renderObservable.next();
   }

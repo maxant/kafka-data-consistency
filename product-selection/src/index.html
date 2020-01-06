@@ -1,5 +1,6 @@
 <html>
 <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/rxjs/6.5.3/rxjs.umd.min.js"></script>
 
     <!-- script src="https://unpkg.com/@webcomponents/webcomponentsjs@2.4.0/webcomponents-bundle.js"></script -->
@@ -12,12 +13,20 @@
 
 -->
     <script type="module" src="my-button.js"></script>
+
+    <style>
+        # this doesnt work. you cannot seem to style internal stuff. so you need to build that.
+        my-button button {
+            border: 5px solid red;
+        }
+    </style>
 </head>
 <body>
-<my-button id="myButton1" model="value"></my-button>
+<my-button id="myButton1" model="value" mystyle="color: green; font-weight: 900;">{{data.value}}</my-button>
 <hr>
 <h2>TODO</h2>
 <ul>
+    <li>See also https://developers.google.com/web/fundamentals/web-components/customelements</li>
     <li>Slots - https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_templates_and_slots => https://developer.mozilla.org/en-US/docs/Web/API/HTMLSlotElement</li>
     <li>attach shadow => mode - whats it do exactly?</li>
     <li>CSS pseudo-classes => https://developer.mozilla.org/en-US/docs/Web/Web_Components</li>
@@ -26,7 +35,7 @@
 </ul>
 
 <script type="module">
-  import '@material/mwc-linear-progress';
+//TODO isnt working import '@material/mwc-linear-progress';
 </script>
 <mwc-linear-progress progress="0.5"></mwc-linear-progress>
 
@@ -39,12 +48,24 @@ import { service } from './service.js';
 const map = rxjs.operators.map;
 
 const button = document.querySelector('#myButton1');
+button.model = {
+    data: {
+        value: "(click to increment)"
+    }
+};
 window.start = 0;
 
-// connect user actions (button clicks) to he
+// connect user actions (button clicks) to the service. you could also do this declaratively,
+// if the component hat knowledge of an injector. or you could override a function which you
+// could attach to the element, which it calls from internally, if present.
 rxjs.fromEvent(button, 'pressed')
     .subscribe(val => {
         window.start = new Date().getTime();
+
+        // this works: button.innerHTML = "incremented at " + new Date(); // since web components don't have binding out of the box, we do it programmatically rather than declaritively
+        //but its nicer with handlebars and done declaratively:
+        button.model.data.value = "incremented at " + new Date();
+
         service.incrementModelValue();
     });
 // TODO when would we need to unsubscribe?
