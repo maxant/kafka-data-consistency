@@ -26,13 +26,25 @@
  *     ... do something...
  * });
  *
+ * you can also add a model, which can be used with some moustache type cleverness to declare the contents:
+ *
+ * <my-button>{{data.value}}</my-button>
+ * button.model = { data: { value: "(click to increment)" } };
+ *
+ * This is refreshed every time the button is redrawn (when its attributes change).
  */
 const template = document.createElement('template');
 template.innerHTML = `
   <style>
+    :host[italic] {
+        font-style: italic;
+    }
+
     .container {
       padding: 8px;
+      border: 1px solid green;
     }
+
     button {
       display: block;
       overflow: hidden;
@@ -48,10 +60,14 @@ template.innerHTML = `
       height: 40px;
       box-sizing: border-box;
       border: 1px solid #a1a1a1;
-      background: #ffffff;
+      background: var(--my-button-background-color, orange); /*orange is the default */
       box-shadow: 0 2px 4px 0 rgba(0,0,0, 0.05), 0 2px 8px 0 rgba(161,161,161, 0.4);
       color: #363636;
       cursor: pointer;
+    }
+
+    :host {
+        border: 1px solid red; /* looks weird, but seems unrelated to css. not sure why. we just want to put a box around the component. can do that with an outer div too. */
     }
   </style>
   <div class="container">

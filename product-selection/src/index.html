@@ -15,21 +15,43 @@
     <script type="module" src="my-button.js"></script>
 
     <style>
-        # this doesnt work. you cannot seem to style internal stuff. so you need to build that.
+        /* this doesnt work. you cannot seem to style internal stuff. so you need to build that. */
         my-button button {
             border: 5px solid red;
+        }
+
+        /* using variables: */
+        my-button {
+            --my-button-background-color: #488cff; /* see the style inside the component, where this variable is used*/
+        }
+
+        :root { /* matches the root - see https://developer.mozilla.org/en-US/docs/Web/CSS/:root*/
+            color: #488cff
+        }
+
+        my-button[italic] {
+            font-style: italic;
         }
     </style>
 </head>
 <body>
-<my-button id="myButton1" model="value" mystyle="color: green; font-weight: 900;">{{data.value}}</my-button>
+<div style="border: 1px solid lightgrey;">
+<my-button id="myButton1" italico mystyle="color: green; font-weight: 900;">{{data.value}}</my-button>
+</div>
 <hr>
 <h2>TODO</h2>
 <ul>
-    <li>See also https://developers.google.com/web/fundamentals/web-components/customelements</li>
-    <li>Slots - https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_templates_and_slots => https://developer.mozilla.org/en-US/docs/Web/API/HTMLSlotElement</li>
+    <li>in theory we can use say vue to modify attributes or subscribe to events. then vue is only used for the glue between controller, model and view.</li>
+    <li>https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout</li>
     <li>attach shadow => mode - whats it do exactly?</li>
+</ul>
+<h2>Interesting Reads</h2>
+<ul>
+    <li>http://smacss.com/book/type-layout</li>
+    <li>https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout</li>
     <li>CSS pseudo-classes => https://developer.mozilla.org/en-US/docs/Web/Web_Components</li>
+    <li>https://developers.google.com/web/fundamentals/web-components/customelements</li>
+    <li>Slots - https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_templates_and_slots => https://developer.mozilla.org/en-US/docs/Web/API/HTMLSlotElement</li>
     <li>polymer (see also the polyfills link) - https://www.polymer-project.org/</li>
     <li>material - https://github.com/material-components/material-components-web-components</li>
 </ul>
@@ -92,5 +114,6 @@ button.renderObservable.subscribe(e => {
     console.log(`completed render after ${new Date().getTime() - window.start}ms`);
 });
 </script>
+
 </body>
 </html>
