@@ -1,6 +1,5 @@
 package ch.maxant.kdc.partners;
 
-import ch.maxant.kdc.library.JacksonConfig;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -41,7 +40,7 @@ public class PartnerGenerator {
         props.put("bootstrap.servers", "maxant.ch:30001,maxant.ch:30002");
         props.put("acks", "all");
         final KafkaProducer<String, String> producer = new KafkaProducer<>(props, new StringSerializer(), new StringSerializer());
-        final ObjectMapper om = JacksonConfig.getMapper();
+        final ObjectMapper om = new ObjectMapper();
         while(true) {
             String now = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
             Partner partner = new Partner(

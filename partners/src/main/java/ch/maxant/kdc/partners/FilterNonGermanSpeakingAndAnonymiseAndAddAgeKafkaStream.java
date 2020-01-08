@@ -1,7 +1,6 @@
 // original from here: https://raw.githubusercontent.com/confluentinc/kafka-streams-examples/5.3.0-post/src/main/java/io/confluent/examples/streams/MapFunctionLambdaExample.java
 package ch.maxant.kdc.partners;
 
-import ch.maxant.kdc.library.JacksonConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
@@ -28,7 +27,7 @@ import java.util.*;
  */
 public class FilterNonGermanSpeakingAndAnonymiseAndAddAgeKafkaStream implements Topics {
 
-    private static final ObjectMapper om = JacksonConfig.getMapper();
+    private static final ObjectMapper om = new ObjectMapper();
 
     private static final Set<Integer> GERMAN_SPEAKING_COUNTRY_CODES = new HashSet<Integer>(){{
         add(756); // CH
@@ -54,7 +53,8 @@ public class FilterNonGermanSpeakingAndAnonymiseAndAddAgeKafkaStream implements 
         StreamsBuilder builder = new StreamsBuilder();
 
         // build the global ktable which can be queried from any instance to find counts for all countries
-        GlobalKTable<String, String> countByCountryGkt = builder.globalTable(PARTNER_CREATED_GERMAN_SPEAKING_GLOBAL_COUNT, Materialized.as(GLOBAL_COUNT_BY_PARTNER_COUNTRY_STORE_NAME));
+        GlobalKTable<String, String> countByCountryGkt = builder.globalTable(PARTNER_CREATED_GERMAN_SPEAKING_GLOBAL_COUNT,
+                                                                            Materialized.as(GLOBAL_COUNT_BY_PARTNER_COUNTRY_STORE_NAME));
 
         KStream<String, Partner> partnerCreatedStream = builder.stream(PARTNER_CREATED_EVENT, Consumed.with(stringSerde, stringSerde))
                 .map((k, v) -> KeyValue.pair(k, mapToPartner(v))) // deserialise json
