@@ -2,6 +2,12 @@
 <head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/rxjs/6.5.3/rxjs.umd.min.js"></script>
+<!-- for prod:
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+-->
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue-rx@6.1.0/dist/vue-rx.min.js"></script>
+
 
     <!-- script src="https://unpkg.com/@webcomponents/webcomponentsjs@2.4.0/webcomponents-bundle.js"></script -->
 <!--
@@ -35,13 +41,37 @@
     </style>
 </head>
 <body>
-<div style="border: 1px solid lightgrey;">
-<my-button id="myButton1" italico mystyle="color: green; font-weight: 900;">{{data.value}}</my-button>
+<div id="app" style="border: 1px solid lightgrey;">
+
+    <p>We are inside a Vue.js App here. Notice how the the attributes work on this component:</p>
+
+    <ul>
+        <li>italic - the web component responds to this and adds the italic font-style if its present</li>
+        <li>mystyle - similar - all the contents is iterated, but added only to the internal button</li>
+        <li>label - is the text shown on the button and is bound to the model observable which is defined
+            in the vue definition</li>
+        <li>when the button is pressed, a vue method is called. but programmatically, we also respond by
+            updating the model with a service call</li>
+    </ul>
+
+    <p>So we can use web components to define our own components, but a framework like vue or angular to declaratively hook
+        the web components up to models and methods (user actions). hey we could even include a store or go for old school
+        mvc.</p>
+
+    <p id="output" style="color: grey; font-size: small;"></p>
+
+    <my-button id="myButton1"
+               italic
+               mystyle="color: darkgreen; font-weight: 900;"
+               :label="mo2"
+               v-on:mypressed="pressedit">
+        {{mo}}
+    </my-button>
+
 </div>
 <hr>
 <h2>TODO</h2>
 <ul>
-    <li>in theory we can use say vue to modify attributes or subscribe to events. then vue is only used for the glue between controller, model and view.</li>
     <li>https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout</li>
     <li>attach shadow => mode - whats it do exactly?</li>
 </ul>
@@ -57,11 +87,6 @@
 </ul>
 
 <script type="module">
-//TODO isnt working import '@material/mwc-linear-progress';
-</script>
-<mwc-linear-progress progress="0.5"></mwc-linear-progress>
-
-<script type="module">
 
 // this is the controller - code written by an app developer
 
@@ -69,24 +94,34 @@ import { model } from './model.js';
 import { service } from './service.js';
 const map = rxjs.operators.map;
 
+// it is important to instantiate vue BEFORE selecting components from the document, otherwise something isnt quite right, and e.g. subscribing to events doesnt work
+var app = new Vue({
+    el: '#app',
+    methods: {
+        pressedit(e) {
+            console.log("my-button was pressed: " + e.srcElement.id);
+        }
+    },
+    subscriptions() { // used by vue-rxjs
+        return {
+            mo: model.observable.pipe(map(e => `updated at ${new Date().toISOString().substr(0,23)}`)),
+            mo2: model.observable.pipe(map(e => `${e.value} done in ${new Date().getTime()-window.start} ms`))
+        };
+    },
+});
+
 const button = document.querySelector('#myButton1');
-button.model = {
-    data: {
-        value: "(click to increment)"
-    }
-};
 window.start = 0;
 
 // connect user actions (button clicks) to the service. you could also do this declaratively,
 // if the component hat knowledge of an injector. or you could override a function which you
 // could attach to the element, which it calls from internally, if present.
-rxjs.fromEvent(button, 'pressed')
+rxjs.fromEvent(button, 'mypressed')
     .subscribe(val => {
         window.start = new Date().getTime();
 
         // this works: button.innerHTML = "incremented at " + new Date(); // since web components don't have binding out of the box, we do it programmatically rather than declaritively
-        //but its nicer with handlebars and done declaratively:
-        button.model.data.value = "incremented at " + new Date();
+        // but its nicer done declaratively using vue. see `subscriptions`, above
 
         service.incrementModelValue();
     });
@@ -94,10 +129,13 @@ rxjs.fromEvent(button, 'pressed')
 
 // hook up our business model to the view - when it changes, update the view
 model.observable.pipe(map(e => {
-    return {name: e.name, value: e.value, time: new Date()};
+    return {property: e.property, value: e.value, time: new Date()};
 })).subscribe(e => {
-    if(e.name == 'value') {
-        button.label = `${model.value} (done in ${new Date().getTime() - window.start}ms)`;
+    if(e.property == 'value') {
+        // can do any manner of things here, e.g. setting the button label:
+        let msg = `${model.value} (done in ${new Date().getTime() - window.start}ms)`;
+        // button.label = msg;
+        console.log(msg);
     }
 });
 
@@ -106,14 +144,19 @@ button.label = model.value;
 
 // also works like this:
 // hook up the UI to the model - react to user actions by making model changes
-button.addEventListener('pressed', value => {
-    // console.log("works too");
+button.addEventListener('mypressed', value => {
+     console.log("works too");
 });
 
 button.renderObservable.subscribe(e => {
-    console.log(`completed render after ${new Date().getTime() - window.start}ms`);
+    let msg = `completely finished rendering the web component after ${new Date().getTime() - window.start}ms`;
+    document.querySelector("#output").innerHTML = `(${msg})`;
+    console.log(msg);
 });
+
 </script>
+
+
 
 </body>
 </html>

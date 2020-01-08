@@ -1,11 +1,10 @@
 // this is an RxJS backed business model, owned by the application developer
 
 class Model {
-    _observable;
-    observable = rxjs.Observable.create(o => this._observable = o);
+    observable = new rxjs.Subject();
 
     fire(name, value) {
-        this._observable.next({name, value});
+        this.observable.next({property: name, value});
     }
 }
 

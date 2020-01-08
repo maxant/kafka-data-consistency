@@ -8,7 +8,7 @@
  *
  * Properties: "label" => gets/sets the attribute "label"
  * Attributes: "label" => the text shown by this button
- * Events: "pressed" => emitted when the thing is clicked
+ * Events: "mypressed" => emitted when the thing is clicked
  * Definition: "my-button"
  *
  * Example:
@@ -16,13 +16,13 @@
  * <my-button id="aBtn"></my-button>
  *
  * const btn = document.querySelector('#aBtn');
- * rxjs.fromEvent(btn, 'pressed')
+ * rxjs.fromEvent(btn, 'mypressed')
  *     .subscribe(val => {
  *         ... do something...
  *     });
  *
  * // This also works:
- * btn.addEventListener('pressed', value => {
+ * btn.addEventListener('mypressed', value => {
  *     ... do something...
  * });
  *
@@ -79,7 +79,6 @@ template.innerHTML = `
 `;
 class Button extends HTMLElement {
   times = [];
-  _renderObservable;
   renderObservable;
   constructor() {
     super();
@@ -88,17 +87,14 @@ class Button extends HTMLElement {
 
     this.$button = this._shadowRoot.querySelector('button'); // the button that gets clicked
     this.$times  = this._shadowRoot.querySelector('#times'); // a list of times when the button was clicked
-    this.$slot  = this._shadowRoot.querySelector('slot'); // content set from outside
 
     // hook up events to custom event which this component emits
     this.$button.addEventListener('click', () => {
       this.times.unshift(new Date());
-      this.dispatchEvent(
-        new CustomEvent('pressed', {})
-      );
+      this.dispatchEvent(new CustomEvent('mypressed', {}));
     });
 
-    this.renderObservable = rxjs.Observable.create(o => this._renderObservable = o);
+    this.renderObservable = new rxjs.Subject();
   }
   get label() {
     return this.getAttribute('label');
@@ -123,14 +119,6 @@ console.log("setting mystyle: " + value);
   connectedCallback() {
 console.log(`my-button connected callback`);
     if (this.hasAttribute('as-atom')) { // this is how to query an attributes existence. attributes are found in the html
-    }
-
-    let slotContext = this.$slot.assignedNodes()[0].textContent;
-    if(slotContext) {
-        slotContext = slotContext.trim();
-        if(slotContext.startsWith("{{")) {
-            this.slotContext = slotContext.substr(2, slotContext.length - 4);
-        }
     }
   }
   disconnectedCallback() {
@@ -163,12 +151,7 @@ console.log(`my-button changed callback: ${name} from '${oldVal}' to '${newVal}'
         s += `<li>${t}</li>`; // string manipulation is many times faster than eg. appendChild
     });
     this.$times.innerHTML = s;
-
-    if(this.slotContext && this.model) {
-        this.$slot.assignedNodes()[0].textContent = _.get(this.model, this.slotContext);
-    }
-
-    if(this._renderObservable) this._renderObservable.next();
+    this.renderObservable.next();
   }
 }
 window.customElements.define('my-button', Button);
