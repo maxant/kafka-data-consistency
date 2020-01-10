@@ -5,7 +5,7 @@ import { model } from './model.js';
 export let service = {
 
     incrementModelValue() {
-        model.value = model.value + 1;
+        model.value++;
     }
 
 };

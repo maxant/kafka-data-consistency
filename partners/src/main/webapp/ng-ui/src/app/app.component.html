@@ -1,0 +1,16 @@
+<p>Completely rendered web component in {{renderObservable$ | async}}</p>
+
+<my-button id="myButton1"
+           italic
+           mystyle="color: darkgreen; font-weight: 900;"
+           label="{{count}}"
+           (mypressed)="onPressed()"
+>
+  Clicked {{count}} times
+</my-button>
+<!--
+           :label="mo2"
+           v-on:mypressed="pressedit">
+  {{mo}}
+
+-->

@@ -1,0 +1,3 @@
+my-button {
+    --my-button-background-color: #ff8cff; /* see the style inside the component, where this variable is used*/
+}
