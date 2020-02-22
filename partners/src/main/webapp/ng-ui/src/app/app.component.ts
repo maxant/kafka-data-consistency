@@ -1,6 +1,7 @@
 import { Component, OnInit, NgZone } from '@angular/core';
 import { map, delay } from 'rxjs/operators';
 import { Observable, Subject } from 'rxjs';
+import 'date-carousel/date-carousel.js'
 
 @Component({
   selector: 'app-root',
@@ -11,6 +12,8 @@ export class AppComponent implements OnInit {
   count = 0;
   renderObservable$ = new Subject();
   start = this.now();
+  adate = this.now(-2);
+  adate2 = this.now(-3);
 
   constructor(private ngZone: NgZone){
   }
@@ -53,7 +56,12 @@ export class AppComponent implements OnInit {
     this.count++;
   }
 
-  now() {
-    return new Date().getTime();
+  now(days) {
+    return new Date(new Date().getTime() + (days?24*3600000*days:0));
+  }
+
+  dateChosen(e) {
+    console.log("chosen: " + new Date(e.srcElement.datePicked));
+//    this.adate = e.srcElement.datePicked;
   }
 }

@@ -8,9 +8,9 @@
 >
   Clicked {{count}} times
 </my-button>
-<!--
-           :label="mo2"
-           v-on:mypressed="pressedit">
-  {{mo}}
 
--->
+<hr>
+
+<date-carousel id="date" [datePicked]="adate" [datepicked]="adate2" (on-day-pick)="dateChosen($event)"></date-carousel>
+<p>{{adate}}</p>
+<p>{{adate2}}</p>

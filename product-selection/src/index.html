@@ -8,7 +8,6 @@
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue-rx@6.1.0/dist/vue-rx.min.js"></script>
 
-
     <!-- script src="https://unpkg.com/@webcomponents/webcomponentsjs@2.4.0/webcomponents-bundle.js"></script -->
 <!--
     <script src="https://unpkg.com/@webcomponents/webcomponentsjs/webcomponents-bundle.js"></script>
@@ -18,7 +17,10 @@
     <script type="module" src="./model.js"></script>
 
 -->
+
+    <script>if (!window.customElements) { document.write('<!--'); }</script>
     <script type="module" src="my-button.js"></script>
+    <!--! DO NOT REMOVE THIS COMMENT, WE NEED ITS CLOSING MARKER -->
 
     <style>
         /* this doesnt work. you cannot seem to style internal stuff. so you need to build that. */
@@ -68,6 +70,12 @@
         {{mo}}
     </my-button>
 
+    <hr>
+<!--
+    <input type="date" value=":date">
+-->
+    <calendar-element date=":date"></calendar-element>
+
 </div>
 <hr>
 <h2>TODO</h2>
@@ -97,6 +105,9 @@ const map = rxjs.operators.map;
 // it is important to instantiate vue BEFORE selecting components from the document, otherwise something isnt quite right, and e.g. subscribing to events doesnt work
 var app = new Vue({
     el: '#app',
+    data: {
+        date: new Date()
+    },
     methods: {
         pressedit(e) {
             console.log("my-button was pressed: " + e.srcElement.id);
