@@ -1,0 +1,30 @@
+<html>
+<head>
+    <meta charset="utf-8">
+
+    <link href="https://unpkg.com/primevue/resources/themes/nova-light/theme.css " rel="stylesheet">
+    <link href="https://unpkg.com/primevue/resources/primevue.min.css " rel="stylesheet">
+    <link href="https://unpkg.com/primeicons/primeicons.css " rel="stylesheet">
+    <script src="https://unpkg.com/vue"></script>
+    <script src="https://unpkg.com/primevue/components/calendar/calendar.umd.min.js"></script>
+    <script src="https://unpkg.com/primevue/components/inputtext/inputtext.umd.min.js"></script>
+    <script src="https://unpkg.com/primevue/components/card/card.umd.min.js"></script>
+    <script src="https://unpkg.com/primevue/components/button/button.umd.min.js"></script>
+    <script src="https://unpkg.com/primevue/components/togglebutton/togglebutton.umd.min.js"></script>
+
+    <script src="https://unpkg.com/lodash@4.17.15/core.min.js"></script>
+
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div id="app">
+
+        <wizard v-show="!completed" :model="wizardViewModel" v-on:wizard-complete="wizardComplete">
+        </wizard>
+
+        <pre v-show="completed">{{getMyCentralBusinessModelAsJson()}}</pre>
+    </div>
+
+    <script src="index.js"></script>
+</body>
+</html>
