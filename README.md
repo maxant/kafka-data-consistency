@@ -42,88 +42,21 @@ Kafka needs to be present to build a suitable docker image.
 
 ## Use docker-compose
 
-minikube and others either didnt work on CentOS7 or used too much CPU.
+(minikube and others either didnt work on CentOS7 or used too much CPU - see [kube.md](kube.md))
 
+see `docker-compose.yml`
 
-## Install minikube
+Make sure the portainer folder exists:
 
-(version 1.8.2 didnt work on centos 7.7 => reverted to an older version)
+    mkdir /portainer_data
 
-    curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-1.7.2-0.x86_64.rpm
-    rpm -ivh minikube-1.7.2-0.x86_64.rpm 
-    /usr/bin/minikube start --vm-driver=kvm2 --alsologtostderr -v=8 --force
-
-## Start Minikube and Dashboard
-
-    minikube start --memory 8192 --cpus 4
-    minikube addons enable metrics-server
-    minikube dashboard &
-    # paste the URL into nginx config and restart nginx
-    # make sure you note the port, and then run this, replacing the `39309` from the output of the dashboard:
-    socat TCP-LISTEN:40000,fork TCP:127.0.0.1:39309 &
-
-After a while, remove evicted pods if necessary:
-
-    kubectl -n kafka-data-consistency get pods | grep Evicted | awk '{print $1}' | xargs kubectl -n kafka-data-consistency delete pod
-
-## Kubernetes
-
-If necessary use the minikube docker host:
-
-    eval $(minikube -p minikube docker-env)
-
-Run `./build.sh` after getting Kafka (see above).
-
-Create a namespace:
-
-    kubectl create -f namespace.json
-
-    # set default namespace for kubectl (note commands lower down still provide it, but now unneccesarily)
-    kubectl config set-context --current --namespace=kafka-data-consistency
-
-Delete existing, if necessary:
-
-    kubectl -n kafka-data-consistency delete deployment zookeeper
-    kubectl -n kafka-data-consistency delete service zookeeper
-    kubectl -n kafka-data-consistency delete deployment kafka-1
-    kubectl -n kafka-data-consistency delete service kafka-1
-    kubectl -n kafka-data-consistency delete deployment kafka-2
-    kubectl -n kafka-data-consistency delete service kafka-2
-    kubectl -n kafka-data-consistency delete deployment elasticsearch
-    kubectl -n kafka-data-consistency delete service elasticsearch
-    kubectl -n kafka-data-consistency delete deployment neo4j
-    kubectl -n kafka-data-consistency delete service neo4j
-    kubectl -n kafka-data-consistency delete deployment kibana
-    kubectl -n kafka-data-consistency delete service kibana
-    kubectl -n kafka-data-consistency delete deployment elastic-apm-server
-    kubectl -n kafka-data-consistency delete service elastic-apm-server
-    kubectl -n kafka-data-consistency delete deployment mysql
-    kubectl -n kafka-data-consistency delete service mysql
-    kubectl -n kafka-data-consistency delete deployment ksql-server-1
-    kubectl -n kafka-data-consistency delete service ksql-server-1
-    kubectl -n kafka-data-consistency delete deployment ksql-server-2
-    kubectl -n kafka-data-consistency delete service ksql-server-2
-    kubectl -n kafka-data-consistency delete deployment confluent-control-center
-    kubectl -n kafka-data-consistency delete service confluent-control-center
-
-Create deployments and services:
-
-    kubectl -n kafka-data-consistency apply -f zookeeper.yaml
-    kubectl -n kafka-data-consistency apply -f kafka-1.yaml
-    kubectl -n kafka-data-consistency apply -f kafka-2.yaml
-    kubectl -n kafka-data-consistency apply -f elasticsearch.yaml
-    kubectl -n kafka-data-consistency apply -f neo4j.yaml
-    kubectl -n kafka-data-consistency apply -f kibana.yaml
-    kubectl -n kafka-data-consistency apply -f elastic-apm-server.yaml
-    kubectl -n kafka-data-consistency apply -f mysql.yaml
-    kubectl -n kafka-data-consistency apply -f ksql-server-1.yaml
-    kubectl -n kafka-data-consistency apply -f ksql-server-2.yaml
-    kubectl -n kafka-data-consistency apply -f confluent-control-center.yaml
+Access Portainer here: http://portainer.maxant.ch/
 
 Open ports like this:
 
     # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092, neo4j:30101:7687, elastic-apm-server:30200:8200,
-    # mysql:30300:3306, ksql-server-1:30401:8088, ksql-server-2:30402:8088, confluent-control-center:30500:9021
+    # mysql:30300:3306, ksql-server-1:30401:8088, ksql-server-2:30402:8088, confluent-control-center:30500:9021,
+    # kafdrop:30050, portainer: 29999
     firewall-cmd --zone=public --permanent --add-port=30000/tcp
     firewall-cmd --zone=public --permanent --add-port=30001/tcp
     firewall-cmd --zone=public --permanent --add-port=30002/tcp
@@ -135,40 +68,6 @@ Open ports like this:
     firewall-cmd --zone=public --permanent --add-port=30500/tcp
     firewall-cmd --reload
     firewall-cmd --list-all
-
-Setup forwarding like this (some are accessed directly from outside, others are accessed via nginx):
-
-    # minikube port, see kibana metricbeat for kube way down below
-    socat TCP-LISTEN:10250,fork TCP:$(minikube ip):10250 &
-
-    # zookeeper, kafka_1, kafka_2
-    socat TCP-LISTEN:30000,fork TCP:$(minikube ip):30000 &
-    socat TCP-LISTEN:30001,fork TCP:$(minikube ip):30001 &
-    socat TCP-LISTEN:30002,fork TCP:$(minikube ip):30002 &
-
-    # elasticsearch
-    socat TCP-LISTEN:30050,fork TCP:$(minikube ip):30050 &
-    # only for inter node connections: socat TCP-LISTEN:30051,fork TCP:$(minikube ip):30051 &
-
-    # neo4j
-    socat TCP-LISTEN:30100,fork TCP:$(minikube ip):30100 &
-    socat TCP-LISTEN:30101,fork TCP:$(minikube ip):30101 &
-
-    # kibana
-    socat TCP-LISTEN:30150,fork TCP:$(minikube ip):30150 &
-
-    # elastic-apm-server
-    socat TCP-LISTEN:30200,fork TCP:$(minikube ip):30200 &
-
-    # mysql
-    socat TCP-LISTEN:30300,fork TCP:$(minikube ip):30300 &
-
-    # ksql-server-1, ksql-server-2
-    socat TCP-LISTEN:30401,fork TCP:$(minikube ip):30401 &
-    socat TCP-LISTEN:30402,fork TCP:$(minikube ip):30402 &
-
-    # confluent-control-center
-    socat TCP-LISTEN:30500,fork TCP:$(minikube ip):30500 &
 
 Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-consistency.conf):
 
@@ -229,19 +128,30 @@ Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-co
       }
 
       # ############################################################
-      # minikube.maxant.ch - dashboard
+      # portainer.maxant.ch - dashboard
       # ############################################################
 
       server {
         listen 80;
 
-        server_name minikube.maxant.ch;
+        server_name portainer.maxant.ch;
         location / {
-            # uses socat port, so that we dont need to mess around with nginx if we have to restart the dashboard
-            proxy_pass http://127.0.0.1:33812/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/;
+            proxy_pass http://localhost:9000/;
         }
       }
 
+      # ############################################################
+      # kafdrop.maxant.ch - kafka dashboard
+      # ############################################################
+    
+      server {
+        listen 80;
+    
+        server_name kafdrop.maxant.ch;
+        location / {
+            proxy_pass http://localhost:30050/;
+        }
+      }
       # ############################################################
       # ksql.maxant.ch - to enable cors
       # ############################################################
@@ -291,29 +201,28 @@ Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-co
             }
       }
 
-
 Restart nginx:
 
     systemctl restart nginx
 
-Create topics (on minikube host):
+Create topics:
 
-    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic claim-create-db-command
-    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic claim-create-search-command
-    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic graph-create-command
-    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic task-create-command
-    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic location-create-command
-    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic claim-created-event
-    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic task-created-event
-    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic partner-created-event
-    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic partner-created-anonymous
-    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic partner-created-german-speaking-anonymous-with-age
-    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic partner-created-german-speaking-global-count
-    kafka_2.11-2.1.1/bin/kafka-topics.sh --list --zookeeper $(minikube ip):30000
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic claim-create-db-command
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic claim-create-search-command
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic graph-create-command
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic task-create-command
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic location-create-command
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic claim-created-event
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic task-created-event
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic partner-created-event
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic partner-created-anonymous
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic partner-created-german-speaking-anonymous-with-age
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic partner-created-german-speaking-global-count
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --list --zookeeper maxant.ch:30000
 
 If you have to delete topics, do it like this:
 
-    kafka_2.11-2.1.1/bin/kafka-topics.sh --zookeeper $(minikube ip):30000 --delete --topic claim-create-relationship-command
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --zookeeper maxant.ch:30000 --delete --topic claim-create-relationship-command
 
 Create elasticsearch indexes:
 
@@ -481,7 +390,7 @@ Set Java to version 8, because of Payara! (https://blog.payara.fish/java-11-supp
 
     export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64/
 
-E.g. run task service locally, but connecting to kube:
+E.g. run task service locally, but connecting to maxant.ch:
 
     # web:
     export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64/
@@ -558,39 +467,6 @@ Start the UI:
 
     cd ui
     node node_modules/http-server/bin/http-server -p 8083 &
-
-Useful Kube stuff:
-
-    kubectl describe nodes
-
-    # restart kube entirely, deleting everything
-    minikube stop
-    rm -rf ~/.minikube
-    minikube delete
-    minikube config set vm-driver kvm2
-    minikube delete
-    minikube start --memory 8192 --cpus 4
-    # if there is an error above, like "cluster does not exist", or it doesnt do anything, then add `--force` at the start
-    git clone https://github.com/kubernetes-incubator/metrics-server.git
-    cd metrics-server/
-    kubectl create -f deploy/1.8+/
-    minikube addons enable metrics-server
-    minikube dashboard &
-    # make sure you note the port, and then run this, replacing the `39309` from the output of the dashboard:
-    socat TCP-LISTEN:40000,fork TCP:127.0.0.1:39309 &
-
-    # connect to the vm. eg. top and stuff to see whats going on inside.
-    minikube ssh
-
-    # create a deployment
-    kubectl run hello-minikube --image=k8s.gcr.io/echoserver:1.10 --port=8080
-    # create a service from a deployment
-    kubectl expose deployment hello-minikube --type=NodePort
-
-    #Delete evicted pods (after crashes):
-    kubectl -n kafka-data-consistency get pods | grep Evicted | awk '{print $1}' | xargs kubectl -n kafka-data-consistency delete pod
-
-    completely remove minikube: https://gist.github.com/robinkraft/a0987b50de8b45e4bdc907d841db8f23
 
 ## Quarkus / GraalVM
 
@@ -683,9 +559,9 @@ Read from a topic:
 
 Create a topic:
 
-    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic ksql-test-cud-partners
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic ksql-test-cud-partners
 
-    kafka_2.11-2.1.1/bin/kafka-topics.sh --list --zookeeper $(minikube ip):30000
+    kafka_2.11-2.1.1/bin/kafka-topics.sh --list --zookeeper maxant.ch:30000
 
 Write some test data to a topic:
 
@@ -701,7 +577,7 @@ the new consumer and no longer reported by the original one.
 
 You then have the basis for the queries which are created in this chapter.
 
-After installation of ksql-server-1 into Kube as documented above, we can test that it's running via it's REST API:
+After installation of ksql-server-1 into docker as documented above, we can test that it's running via it's REST API:
 
     curl -s "http://maxant.ch:30401/info" | jq '.'
 
@@ -1344,9 +1220,9 @@ And it is well documented.
 Not yet convinced that the microprofile supports full propagation as well as tracing jdbc etc.
 
 - See https://www.elastic.co/guide/en/apm/server/current/running-on-docker.html
-- Install APM Server into Kube
+- Install APM Server into docker
 - config located in elastic-apm-server.docker.yml which is imported in our custom docker build file.
-- Once APM server is running in Kube, go to kibana home page and setup APM: http://kdc.kibana.maxant.ch/app/kibana#/home/tutorial/apm?_g=()
+- Once APM server is running in docker, go to kibana home page and setup APM: http://kdc.kibana.maxant.ch/app/kibana#/home/tutorial/apm?_g=()
 - click the button "check apm server status"
 - Download `elastic-apm-agent-1.6.1.jar` from https://search.maven.org/search?q=a:elastic-apm-agent and put it in the root folder of this project
 - Add the following to the launch config:
@@ -1383,7 +1259,7 @@ Or:
 Connecting to it:
 
     docker run -it --rm mysql mysql -h 172.17.0.2 -u root -p
-    docker run -it --rm mysql mysql -h $(minikube ip) --port 30300 -u root -p
+    docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -psecret -e "CREATE DATABASE claims CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -psecret -e "CREATE DATABASE contracts CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 
@@ -1444,10 +1320,6 @@ Added:
 - contract history and embedded neo4j with bolt vs table with graph identifier column
 - coverage selection, mapping contract to claim
 - need to build the contract component which can do contract history
-- kube secrets: https://kubernetes.io/docs/concepts/configuration/secret/
-- minikube volumes:
-  - https://stackoverflow.com/questions/42456159/minikube-volumes
-  - https://github.com/kubernetes/minikube/blob/master/docs/persistent_volumes.md
 - use mysql to save tasks. dont bother saving claims for now, other than in memory
 - neo4j: think of scenario where more relationships are involved, which a relational db would struggle with
   - partners are unrelated. but claims are related over locations and a little over partners. and over products. contracts are related over location and product.
@@ -1464,7 +1336,6 @@ Added:
   during actual async processing of kafka record should then be given to user as a task for them to fix
 - add image for orientdb
   - orientdb docker image => https://hub.docker.com/_/orientdb
-- kubernetes/prometheus/grafana: https://raw.githubusercontent.com/giantswarm/kubernetes-prometheus/master/manifests-all.yaml
 - UI
   - add claim page to view details of a claim
   - add aggregate for related claims, so we can show prototype of aggregated data
@@ -1511,116 +1382,6 @@ Added:
   - remove span around recordHandler?
   - is it possible to add logging to the traces? so that logging and tracing are together?
     - if we had a UUID as a label or tag or something which was also in MDC, that would work...
-
-# K3S
-
-See https://k3s.io/
-See https://rancher.com/docs/k3s/latest/en/cluster-access/
-
-    curl -sfL https://get.k3s.io | sh -
-
-    sudo systemctl status k3s
-
-    k3s kubectl help
-    k3s kubectl --all-namespaces get pods
-    k3s kubectl get services --namespace kafka-data-consistency
-    k3s kubectl --namespace kafka-data-consistency explain pods
-    k3s kubectl --namespace kafka-data-consistency get pods
-
-Get password for accessing https://localhost:6443:
-
-    cat /etc/rancher/k3s/k3s.yaml
-
-Didnt work because of problem with no xfs file system on centos 7.
-
-    /usr/local/bin/k3s-uninstall.sh
-
-See https://github.com/rancher/k3s/issues/495
-
-Future: https://kauri.io/37-install-and-configure-a-kubernetes-cluster-with/418b3bc1e0544fbc955a4bbba6fff8a9/a
-
-# Kind
-
-See https://kind.sigs.k8s.io/docs/user/quick-start/
-
-
-create a cluster (with debug logging, to see any errors in detail):
-
-    ./kind create cluster --name kdc-dev -v 99
-
-delete a cluster:
-
-    ./kind delete cluster --name kdc-dev
-
-Failed due to not being able to pull some images. no info found on google. might be related to centos7 and not having the right file system?
-
-# microk8s
-
-Needs Snap, which needs Centos 7.6 or higher.
-
-    cat /etc/centos-release
-
-https://snapcraft.io/install/microk8s/centos
-
-    yum install epel-release
-
-    yum install snapd
-    systemctl enable --now snapd.socket
-    ln -s /var/lib/snapd/snap /snap
-    reboot
-
-    snap install microk8s --classic --channel=1.17/stable
-    usermod -a -G microk8s $USER
-    #re-enter the session
-    su - $USER
-
-    #inspect microk8s:
-    microk8s.inspect
-
-it told me to create `/etc/docker/daemon.json` with this content:
-
-    {
-        "insecure-registries" : ["localhost:32000"] 
-    }
-
-then restart docker with `systemctl restart docker`
-
-the inspection command also creates a tarball with all kinds of stuff like logs in it.
-
-
-    microk8s.status
-    microk8s.status --wait-ready
-
-
-
-microk8s.kubectl get nodes
-microk8s.kubectl get services
-
-
-If RBAC is not enabled access the dashboard using the default token retrieved with:
-
-token=$(microk8s.kubectl -n kube-system get secret | grep default-token | cut -d " " -f1)
-microk8s.kubectl -n kube-system describe secret $token
-
-In an RBAC enabled setup (microk8s.enable RBAC) you need to create a user with restricted
-permissions as shown in:
-https://github.com/kubernetes/dashboard/blob/master/docs/user/access-control/creating-sample-user.md
-
-microk8s also failed to work on centos7. maybe also due to xfs. 
-cannot change xfs partitions sizes, so not able to make any new volumes. wait for centos8...
-
-# minikube
-
-cant get that to work now either
-
-# kvm alpine for k3s
-
-osinfo-query os
-# that supports alpine 3.8
-
-
-
-
 
 # TODO Blog
 
