@@ -3,6 +3,8 @@
 # and then starts kafka as normal
 #########################################################
 
+env
+
 file=/kafka/config/server.properties
 
 #new lines at end of file
