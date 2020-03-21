@@ -1,0 +1,49 @@
+version: '3'
+services:
+  zookeeper:
+    image: "maxant/zookeeper"
+    container_name: "zookeeper"
+    ports:
+      - "30000:2181"
+  kafka-1:
+    image: "maxant/kafka"
+    container_name: "kafka-1"
+    ports:
+      - "30001:9092"
+    environment:
+      ID: 1
+      ZOOKEEPER_HOST_PORT: "zookeeper:2181"
+      ADVERTISED_LISTENER_HOST_PORT: "maxant.ch:30001"
+    depends_on:
+      - zookeeper
+  kafka-2:
+    image: "maxant/kafka"
+    container_name: "kafka-2"
+    ports:
+      - "30002:9092"
+    environment:
+      ID: 2
+      ZOOKEEPER_HOST_PORT: "zookeeper:2181"
+      ADVERTISED_LISTENER_HOST_PORT: "maxant.ch:30002"
+    depends_on:
+      - zookeeper
+  kafdrop:
+    image: obsidiandynamics/kafdrop
+    container_name: "kafdrop"
+    ports:
+      - "30050:9000"
+    environment:
+      KAFKA_BROKERCONNECT: "maxant.ch:30001,maxant.ch:30002"
+    depends_on:
+      - kafka-1
+      - kafka-2
+  portainer:
+    image: portainer/portainer
+    container_name: portainer
+    ports:
+      - "29999:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /portainer_data:/data
+
+
