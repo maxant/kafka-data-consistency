@@ -40,11 +40,25 @@ Kafka needs to be present to build a suitable docker image.
     rm kafka_2.11-2.1.1.tgz
     #git init
 
+## Use docker-compose
+
+minikube and others either didnt work on CentOS7 or used too much CPU.
+
+
+## Install minikube
+
+(version 1.8.2 didnt work on centos 7.7 => reverted to an older version)
+
+    curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-1.7.2-0.x86_64.rpm
+    rpm -ivh minikube-1.7.2-0.x86_64.rpm 
+    /usr/bin/minikube start --vm-driver=kvm2 --alsologtostderr -v=8 --force
+
 ## Start Minikube and Dashboard
 
     minikube start --memory 8192 --cpus 4
     minikube addons enable metrics-server
     minikube dashboard &
+    # paste the URL into nginx config and restart nginx
     # make sure you note the port, and then run this, replacing the `39309` from the output of the dashboard:
     socat TCP-LISTEN:40000,fork TCP:127.0.0.1:39309 &
 
@@ -56,13 +70,16 @@ After a while, remove evicted pods if necessary:
 
 If necessary use the minikube docker host:
 
-    eval $(minikube docker-env)
+    eval $(minikube -p minikube docker-env)
 
 Run `./build.sh` after getting Kafka (see above).
 
 Create a namespace:
 
     kubectl create -f namespace.json
+
+    # set default namespace for kubectl (note commands lower down still provide it, but now unneccesarily)
+    kubectl config set-context --current --namespace=kafka-data-consistency
 
 Delete existing, if necessary:
 
@@ -221,7 +238,7 @@ Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-co
         server_name minikube.maxant.ch;
         location / {
             # uses socat port, so that we dont need to mess around with nginx if we have to restart the dashboard
-            proxy_pass http://127.0.0.1:40000/api/v1/namespaces/kube-system/services/http:kubernetes-dashboard:/proxy/;
+            proxy_pass http://127.0.0.1:33812/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/;
         }
       }
 
@@ -551,7 +568,9 @@ Useful Kube stuff:
     rm -rf ~/.minikube
     minikube delete
     minikube config set vm-driver kvm2
+    minikube delete
     minikube start --memory 8192 --cpus 4
+    # if there is an error above, like "cluster does not exist", or it doesnt do anything, then add `--force` at the start
     git clone https://github.com/kubernetes-incubator/metrics-server.git
     cd metrics-server/
     kubectl create -f deploy/1.8+/
@@ -571,6 +590,7 @@ Useful Kube stuff:
     #Delete evicted pods (after crashes):
     kubectl -n kafka-data-consistency get pods | grep Evicted | awk '{print $1}' | xargs kubectl -n kafka-data-consistency delete pod
 
+    completely remove minikube: https://gist.github.com/robinkraft/a0987b50de8b45e4bdc907d841db8f23
 
 ## Quarkus / GraalVM
 
@@ -659,7 +679,7 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 
 Read from a topic:
 
-    kafka_2.11-2.1.1/bin/kafka-console-consumer.sh --bootstrap-server maxant.ch:30001 --topic ksql-test-cud-partners --from-beginning
+    kafka_2.11-2.1.1/bin/kafka-console-consumer.sh --bootstrap-servers maxant.ch:30001 --topic ksql-test-cud-partners --from-beginning
 
 Create a topic:
 
@@ -1412,6 +1432,7 @@ Added:
 
 # TODO
 
+- interesting, whats this do exactly? `docker system prune -f --volumes`
 - migrate web to webq
 - read https://smallrye.io/smallrye-reactive-messaging/
 - make web subscribe to sink of a KSQL with windowed average age of new young partners
@@ -1490,6 +1511,116 @@ Added:
   - remove span around recordHandler?
   - is it possible to add logging to the traces? so that logging and tracing are together?
     - if we had a UUID as a label or tag or something which was also in MDC, that would work...
+
+# K3S
+
+See https://k3s.io/
+See https://rancher.com/docs/k3s/latest/en/cluster-access/
+
+    curl -sfL https://get.k3s.io | sh -
+
+    sudo systemctl status k3s
+
+    k3s kubectl help
+    k3s kubectl --all-namespaces get pods
+    k3s kubectl get services --namespace kafka-data-consistency
+    k3s kubectl --namespace kafka-data-consistency explain pods
+    k3s kubectl --namespace kafka-data-consistency get pods
+
+Get password for accessing https://localhost:6443:
+
+    cat /etc/rancher/k3s/k3s.yaml
+
+Didnt work because of problem with no xfs file system on centos 7.
+
+    /usr/local/bin/k3s-uninstall.sh
+
+See https://github.com/rancher/k3s/issues/495
+
+Future: https://kauri.io/37-install-and-configure-a-kubernetes-cluster-with/418b3bc1e0544fbc955a4bbba6fff8a9/a
+
+# Kind
+
+See https://kind.sigs.k8s.io/docs/user/quick-start/
+
+
+create a cluster (with debug logging, to see any errors in detail):
+
+    ./kind create cluster --name kdc-dev -v 99
+
+delete a cluster:
+
+    ./kind delete cluster --name kdc-dev
+
+Failed due to not being able to pull some images. no info found on google. might be related to centos7 and not having the right file system?
+
+# microk8s
+
+Needs Snap, which needs Centos 7.6 or higher.
+
+    cat /etc/centos-release
+
+https://snapcraft.io/install/microk8s/centos
+
+    yum install epel-release
+
+    yum install snapd
+    systemctl enable --now snapd.socket
+    ln -s /var/lib/snapd/snap /snap
+    reboot
+
+    snap install microk8s --classic --channel=1.17/stable
+    usermod -a -G microk8s $USER
+    #re-enter the session
+    su - $USER
+
+    #inspect microk8s:
+    microk8s.inspect
+
+it told me to create `/etc/docker/daemon.json` with this content:
+
+    {
+        "insecure-registries" : ["localhost:32000"] 
+    }
+
+then restart docker with `systemctl restart docker`
+
+the inspection command also creates a tarball with all kinds of stuff like logs in it.
+
+
+    microk8s.status
+    microk8s.status --wait-ready
+
+
+
+microk8s.kubectl get nodes
+microk8s.kubectl get services
+
+
+If RBAC is not enabled access the dashboard using the default token retrieved with:
+
+token=$(microk8s.kubectl -n kube-system get secret | grep default-token | cut -d " " -f1)
+microk8s.kubectl -n kube-system describe secret $token
+
+In an RBAC enabled setup (microk8s.enable RBAC) you need to create a user with restricted
+permissions as shown in:
+https://github.com/kubernetes/dashboard/blob/master/docs/user/access-control/creating-sample-user.md
+
+microk8s also failed to work on centos7. maybe also due to xfs. 
+cannot change xfs partitions sizes, so not able to make any new volumes. wait for centos8...
+
+# minikube
+
+cant get that to work now either
+
+# kvm alpine for k3s
+
+osinfo-query os
+# that supports alpine 3.8
+
+
+
+
 
 # TODO Blog
 

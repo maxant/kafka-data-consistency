@@ -1,3 +1,4 @@
+/*
 // prime components https://www.primefaces.org/primevue/
 // (if unsure of global name, then check the javascript console using autocomplete)
 Vue.component('Calendar', calendar);
@@ -156,3 +157,5 @@ function loadOffer(offers) {
         }, 500);
     });
 }
+*/
+console.log("asdf")
