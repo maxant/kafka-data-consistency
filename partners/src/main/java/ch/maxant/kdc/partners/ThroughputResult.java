@@ -36,11 +36,15 @@ public class ThroughputResult {
         while (true) {
             ConsumerRecords<String, String> records = consumer.poll(Duration.of(1, ChronoUnit.SECONDS));
             records.iterator().forEachRemaining(r -> {
-                ThroughputAggregateRecord record = fromJson(om, r.value(), ThroughputAggregateRecord.class);
-                if(record.getNumRecordsProcessed() != 10) {
-                    System.out.printf("%s %s\r\n", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME), r);
+                if(r.value() != null) {
+                    ThroughputAggregateRecord record = fromJson(om, r.value(), ThroughputAggregateRecord.class);
+                    if(record.getNumRecordsProcessed() != 10) {
+                        System.out.printf("%s %s\r\n", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME), r);
+                    } else {
+                        System.out.printf("%s aggregate was ok\r\n", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+                    }
                 } else {
-                    System.out.printf("%s aggregate was ok\r\n", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+                    System.err.printf("got null body for record %s\r\n", r);
                 }
             });
         }

@@ -52,6 +52,12 @@ Make sure the portainer folder exists:
 
 Access Portainer here: http://portainer.maxant.ch/
 
+Monitor docker CPU/Memory with:
+
+    docker stats
+    
+or open http://cadvisor.maxant.ch/
+
 Open ports like this:
 
     # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092, neo4j:30101:7687, elastic-apm-server:30200:8200,
