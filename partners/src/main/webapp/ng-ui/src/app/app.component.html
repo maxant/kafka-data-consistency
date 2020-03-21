@@ -1,0 +1,16 @@
+<p>Completely rendered web component in {{renderObservable$ | async}}</p>
+
+<my-button id="myButton1"
+           italic
+           mystyle="color: darkgreen; font-weight: 900;"
+           label="{{count}}"
+           (mypressed)="onPressed()"
+>
+  Clicked {{count}} times
+</my-button>
+
+<hr>
+
+<date-carousel id="date" [datePicked]="adate" [datepicked]="adate2" (on-day-pick)="dateChosen($event)"></date-carousel>
+<p>{{adate}}</p>
+<p>{{adate2}}</p>

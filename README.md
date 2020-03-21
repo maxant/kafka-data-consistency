@@ -225,6 +225,56 @@ Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-co
         }
       }
 
+      # ############################################################
+      # ksql.maxant.ch - to enable cors
+      # ############################################################
+      server {
+        listen 80;
+        server_name ksql.maxant.ch;
+      
+            # https://enable-cors.org/server_nginx.html
+            #location / {
+            # if ($request_method = 'OPTIONS') {
+            #    add_header 'Access-Control-Allow-Origin' '*';
+            #    add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+            #    #
+            #    # Custom headers and headers various browsers *should* be OK with but aren't
+            #    #
+            #    add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+            #    #
+            #    # Tell client that this pre-flight info is valid for 20 days
+            #    #
+            #    add_header 'Access-Control-Max-Age' 1728000;
+            #    add_header 'Content-Type' 'text/plain; charset=utf-8';
+            #    add_header 'Content-Length' 0;
+            #    return 204;
+            # }
+            # if ($request_method = 'POST') {
+            #    add_header 'Access-Control-Allow-Origin' '*';
+            #    add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+            #    add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+            #    add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range';
+            # }
+            # if ($request_method = 'GET') {
+            #    add_header 'Access-Control-Allow-Origin' '*';
+            #    add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+            #    add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+            #    add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range';
+            # }
+            # proxy_pass http://localhost:30401/;
+            #}
+        
+            location /home  {
+                               add_header 'Content-Type' 'text/html';
+                               alias /tempi/ksql-app.html;
+            }
+            location /query {    
+                               proxy_read_timeout 3600s; # an hour => after that the browser is probably gone, or it needs to reopen the request
+                               proxy_pass http://localhost:30401/query/;
+            }
+      }
+
+
 Restart nginx:
 
     systemctl restart nginx
@@ -522,6 +572,51 @@ Useful Kube stuff:
     kubectl -n kafka-data-consistency get pods | grep Evicted | awk '{print $1}' | xargs kubectl -n kafka-data-consistency delete pod
 
 
+## Quarkus / GraalVM
+
+Generate a project:
+
+    mvn io.quarkus:quarkus-maven-plugin:0.21.1:create -DprojectGroupId=ch.maxant.kdc -DprojectArtifactId=webq -DclassName="ch.maxant.kdc.webq.RestResource" -Dpath="/webq"
+
+Compile in dev mode (profit from hot-reload - no need to compile in IntelliJ!!):
+
+    ./mvnw compile quarkus:dev
+
+Package a runner:
+
+    ./mvnw package
+
+Run it:
+
+    java -jar target/webq-1.0-SNAPSHOT-runner.jar 
+
+Note that this jar has a dependency on webq-....jar, and also on the target/lib folder => copy everything relatively when running outside of the maven module folder. E.g.:
+
+    mkdir /tmp/quarkus
+    cp -R target/lib /tmp/quarkus/lib
+    cp -R target/webq-1.0-SNAPSHOT*jar /tmp/quarkus/
+    cd /tmp/quarkus/
+    java -jar webq-1.0-SNAPSHOT-runner.jar 
+
+
+Build a native executable: install Graal from https://github.com/oracle/graal/releases/download/vm-19.2.0/graalvm-ce-linux-amd64-19.2.0.tar.gz
+
+    export GRAALVM_HOME=/shared/graal/graalvm-ce-19.2.0/
+
+Install `native-image` and dependencies:
+
+    /shared/graal/graalvm-ce-19.2.0/bin/gu install native-image
+
+    sudo apt-get install build-essential libz-dev
+
+Compile the native image:
+
+    ./mvnw clean compile package -Pnative
+
+Run it:
+
+    ./target/webq-1.0-SNAPSHOT-runner
+
 ## Starting Kafka with docker
 
 WARNING: this section may be slightly out of date!
@@ -699,6 +794,29 @@ Notice how the count is reset to 1, when a new record arrives in the new window 
 
 So we could well use this data to draw a graph with live updates, in a UI.
 
+## Terminate a running query
+
+    ksql> describe extended t_young_partners;
+    
+    Name                 : T_YOUNG_PARTNERS
+    ...
+    Queries that write into this TABLE
+    -----------------------------------
+    CTAS_T_YOUNG_PARTNERS_0 : CREATE TABLE T_YOUNG_PARTNERS WITH (REPLICAS = 2, PARTITIONS = 4, KAFKA_TOPIC = 'T_YOUNG_PARTNERS') AS SELECT *
+    FROM T_PARTNER T_PARTNER
+    WHERE (T_PARTNER.DATEOFBIRTH >= '2000-01-01');
+    ...
+
+Notice `CTAS_T_YOUNG_PARTNERS_0` => this is used for terminating the running query:
+    
+    ksql> terminate CTAS_T_YOUNG_PARTNERS_0;
+    
+     Message           
+    -------------------
+     Query terminated. 
+    -------------------
+
+## More KSQL stuff:
 
 Go back to ksql-cli and:
 
@@ -783,6 +901,43 @@ Useful if you are selecting by ID, otherwise useless.
 That is output of a single stream application (no others were running at the time).
 The above should have consecutive counts, because the count is increased every time a record is processed!
 As you can see, it is suddenly increased from 11 to 15. Note that the load was low - those lines were output over several seconds.
+
+## KSQL Web Client
+
+- See nginx config, esp. the timeout
+
+
+    CREATE TABLE T_YOUNG_PARTNERS WITH (REPLICAS = 2, PARTITIONS = 4, KAFKA_TOPIC = 'T_YOUNG_PARTNERS') AS SELECT *
+    FROM T_PARTNER T_PARTNER
+    WHERE (T_PARTNER.DATEOFBIRTH >= '1990-01-01');
+
+Javascript: 
+
+    var body = {"ksql": "SELECT * FROM t_young_partners;","streamsProperties": {"ksql.streams.auto.offset.reset": "earliest"}};
+    function go() {
+        window.responses = "";
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 3 && this.status == 200) {
+                window.responses += this.responseText;
+                console.log("got more data...");
+                this.responseText.split('\n').forEach(r => {
+                    if(r && r.trim()) {
+                        try {
+                            console.log(JSON.parse(r));
+                        } catch(e) {
+                            console.error(e);
+                        }
+                    }
+                });
+            }
+        };
+        xhttp.open("POST", "/query", true);
+        xhttp.setRequestHeader('Content-Type', 'application/vnd.ksql.v1+json');
+        xhttp.send(JSON.stringify(body));
+    }
+    go();
+
 
 ## Links:
 
@@ -1190,7 +1345,8 @@ Added to UI. Propagation now working thanks to span: https://discuss.elastic.co/
 
 Links:
 
-- Javascript Agent API: https://www.elastic.co/guide/en/apm/agent/js-base/4.x/api.html
+- Javascript Agent API: https://www.elastic.co/guide/en/apm/agent/rum-js/current/index.html
+  - old: Javascript Agent API: https://www.elastic.co/guide/en/apm/agent/js-base/4.x/api.html
 - Java Agent API: https://www.elastic.co/guide/en/apm/agent/java/current/public-api.html
 
 # MySql
@@ -1209,6 +1365,7 @@ Connecting to it:
     docker run -it --rm mysql mysql -h 172.17.0.2 -u root -p
     docker run -it --rm mysql mysql -h $(minikube ip) --port 30300 -u root -p
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -psecret -e "CREATE DATABASE claims CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+    docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -psecret -e "CREATE DATABASE contracts CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 
     not working, prolly coz its a mariadb client: -(  mysql --host 172.17.0.2 --port 3306 -u root -p
 
@@ -1255,6 +1412,9 @@ Added:
 
 # TODO
 
+- migrate web to webq
+- read https://smallrye.io/smallrye-reactive-messaging/
+- make web subscribe to sink of a KSQL with windowed average age of new young partners
 - build function to reset all data to masterdata
 - fix tracing - we don't get any data at the moment!
 - add creation time to claim and use that as index in kibana

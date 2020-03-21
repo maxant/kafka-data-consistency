@@ -1,0 +1,173 @@
+<html>
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/rxjs/6.5.3/rxjs.umd.min.js"></script>
+<!-- for prod:
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+-->
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue-rx@6.1.0/dist/vue-rx.min.js"></script>
+
+    <!-- script src="https://unpkg.com/@webcomponents/webcomponentsjs@2.4.0/webcomponents-bundle.js"></script -->
+<!--
+    <script src="https://unpkg.com/@webcomponents/webcomponentsjs/webcomponents-bundle.js"></script>
+
+    < ! - - load the element - - >
+
+    <script type="module" src="./model.js"></script>
+
+-->
+
+    <script>if (!window.customElements) { document.write('<!--'); }</script>
+    <script type="module" src="my-button.js"></script>
+    <!--! DO NOT REMOVE THIS COMMENT, WE NEED ITS CLOSING MARKER -->
+
+    <style>
+        /* this doesnt work. you cannot seem to style internal stuff. so you need to build that. */
+        my-button button {
+            border: 5px solid red;
+        }
+
+        /* using variables: */
+        my-button {
+            --my-button-background-color: #488cff; /* see the style inside the component, where this variable is used*/
+        }
+
+        :root { /* matches the root - see https://developer.mozilla.org/en-US/docs/Web/CSS/:root*/
+            color: #488cff
+        }
+
+        my-button[italic] {
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+<div id="app" style="border: 1px solid lightgrey;">
+
+    <p>We are inside a Vue.js App here. Notice how the the attributes work on this component:</p>
+
+    <ul>
+        <li>italic - the web component responds to this and adds the italic font-style if its present</li>
+        <li>mystyle - similar - all the contents is iterated, but added only to the internal button</li>
+        <li>label - is the text shown on the button and is bound to the model observable which is defined
+            in the vue definition</li>
+        <li>when the button is pressed, a vue method is called. but programmatically, we also respond by
+            updating the model with a service call</li>
+    </ul>
+
+    <p>So we can use web components to define our own components, but a framework like vue or angular to declaratively hook
+        the web components up to models and methods (user actions). hey we could even include a store or go for old school
+        mvc.</p>
+
+    <p id="output" style="color: grey; font-size: small;"></p>
+
+    <my-button id="myButton1"
+               italic
+               mystyle="color: darkgreen; font-weight: 900;"
+               :label="mo2"
+               v-on:mypressed="pressedit">
+        {{mo}}
+    </my-button>
+
+    <hr>
+<!--
+    <input type="date" value=":date">
+-->
+    <calendar-element date=":date"></calendar-element>
+
+</div>
+<hr>
+<h2>TODO</h2>
+<ul>
+    <li>https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout</li>
+    <li>attach shadow => mode - whats it do exactly?</li>
+</ul>
+<h2>Interesting Reads</h2>
+<ul>
+    <li>http://smacss.com/book/type-layout</li>
+    <li>https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout</li>
+    <li>CSS pseudo-classes => https://developer.mozilla.org/en-US/docs/Web/Web_Components</li>
+    <li>https://developers.google.com/web/fundamentals/web-components/customelements</li>
+    <li>Slots - https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_templates_and_slots => https://developer.mozilla.org/en-US/docs/Web/API/HTMLSlotElement</li>
+    <li>polymer (see also the polyfills link) - https://www.polymer-project.org/</li>
+    <li>material - https://github.com/material-components/material-components-web-components</li>
+</ul>
+
+<script type="module">
+
+// this is the controller - code written by an app developer
+
+import { model } from './model.js';
+import { service } from './service.js';
+const map = rxjs.operators.map;
+
+// it is important to instantiate vue BEFORE selecting components from the document, otherwise something isnt quite right, and e.g. subscribing to events doesnt work
+var app = new Vue({
+    el: '#app',
+    data: {
+        date: new Date()
+    },
+    methods: {
+        pressedit(e) {
+            console.log("my-button was pressed: " + e.srcElement.id);
+        }
+    },
+    subscriptions() { // used by vue-rxjs
+        return {
+            mo: model.observable.pipe(map(e => `updated at ${new Date().toISOString().substr(0,23)}`)),
+            mo2: model.observable.pipe(map(e => `${e.value} done in ${new Date().getTime()-window.start} ms`))
+        };
+    },
+});
+
+const button = document.querySelector('#myButton1');
+window.start = 0;
+
+// connect user actions (button clicks) to the service. you could also do this declaratively,
+// if the component hat knowledge of an injector. or you could override a function which you
+// could attach to the element, which it calls from internally, if present.
+rxjs.fromEvent(button, 'mypressed')
+    .subscribe(val => {
+        window.start = new Date().getTime();
+
+        // this works: button.innerHTML = "incremented at " + new Date(); // since web components don't have binding out of the box, we do it programmatically rather than declaritively
+        // but its nicer done declaratively using vue. see `subscriptions`, above
+
+        service.incrementModelValue();
+    });
+// TODO when would we need to unsubscribe?
+
+// hook up our business model to the view - when it changes, update the view
+model.observable.pipe(map(e => {
+    return {property: e.property, value: e.value, time: new Date()};
+})).subscribe(e => {
+    if(e.property == 'value') {
+        // can do any manner of things here, e.g. setting the button label:
+        let msg = `${model.value} (done in ${new Date().getTime() - window.start}ms)`;
+        // button.label = msg;
+        console.log(msg);
+    }
+});
+
+// set the initial value of the button
+button.label = model.value;
+
+// also works like this:
+// hook up the UI to the model - react to user actions by making model changes
+button.addEventListener('mypressed', value => {
+     console.log("works too");
+});
+
+button.renderObservable.subscribe(e => {
+    let msg = `completely finished rendering the web component after ${new Date().getTime() - window.start}ms`;
+    document.querySelector("#output").innerHTML = `(${msg})`;
+    console.log(msg);
+});
+
+</script>
+
+
+
+</body>
+</html>

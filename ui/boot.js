@@ -8,6 +8,7 @@ import {} from './navigations.js';
 import {} from './ruler.js';
 
 import {PartnerView} from './partnerView.js';
+import {ContractView} from './contractView.js';
 import {SearchView} from './searchView.js';
 import {GraphView} from './graphView.js';
 import {ContractHistoryView} from './contractHistoryView.js';
@@ -22,12 +23,13 @@ const LazyView = () => lazyImport("./lazy.js")
 
 const router = new VueRouter({
     routes: [
-        { path: '*',            redirect: '/search' },
-        { path: '/search',      name: 'search',  component: SearchView   },
-        { path: '/graph',       name: 'graph',   component: GraphView    },
-        { path: '/partner/:id', name: 'partner', component: PartnerView  },
-        { path: '/lazy',        name: 'lazy',    component: LazyView     },
-        { path: '/claim/:id',   name: 'claim',   component: ClaimView    },
+        { path: '*',             redirect: '/contract/1568556465087' },
+        { path: '/search',       name: 'search',   component: SearchView   },
+        { path: '/graph',        name: 'graph',    component: GraphView    },
+        { path: '/partner/:id',  name: 'partner',  component: PartnerView  },
+        { path: '/contract/:cn', name: 'contract', component: ContractView },
+        { path: '/lazy',         name: 'lazy',     component: LazyView     },
+        { path: '/claim/:id',    name: 'claim',    component: ClaimView    },
         { path: '/contract-history', name: 'contract-history',    component: ContractHistoryView },
     ]
 });

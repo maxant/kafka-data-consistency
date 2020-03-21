@@ -23,7 +23,12 @@
     <script src="https://unpkg.com/neo4j-driver@1.7.3/lib/browser/neo4j-web.js"></script>
     <script src="https://cdn.neo4jlabs.com/neovis.js/v1.0.0/neovis.js"></script>
 
-    <script src="https://unpkg.com/@elastic/apm-rum@4.0.1/dist/bundles/elastic-apm-rum.umd.min.js"></script>
+    <script src="https://unpkg.com/vis-timeline@5.1.0/dist/vis-timeline-graph2d.min.js"></script>
+    <link href="https://unpkg.com/vis-timeline@5.1.0/dist/vis-timeline-graph2d.min.css" rel="stylesheet" type="text/css">
+
+    <script src="https://unpkg.com/@elastic/apm-rum@4.4.3/dist/bundles/elastic-apm-rum.umd.min.js"></script>
+
+
     <script>
         // set up tracing (elastic apm) - see https://www.elastic.co/guide/en/apm/agent/js-base/current/api.html
         elasticApm.init({
@@ -54,6 +59,7 @@
 
     <script>
         const CLAIMS_BASE_URL = 'http://localhost:8081/claims/rest/';
+        const CONTRACTS_BASE_URL = 'http://localhost:8085/contracts/';
         const TASKS_BASE_URL =  'http://localhost:8082/tasks/rest/';
         const LOCATIONS_BASE_URL =  'http://localhost:8084/locations/rest/';
         const UI_HOST_PORT = 'localhost:8080';
