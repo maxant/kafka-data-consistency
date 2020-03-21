@@ -45,5 +45,15 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /portainer_data:/data
+  cadvisor:
+    image: google/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - "29998:8080"
+    volumes:
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /sys:/sys:ro
+      - /var/run:/var/run:rw
+      - /:/rootfs:ro
 
 

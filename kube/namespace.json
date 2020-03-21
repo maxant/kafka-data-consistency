@@ -1,0 +1,11 @@
+{
+  "kind": "Namespace",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "kafka-data-consistency",
+    "labels": {
+      "name": "kafka-data-consistency"
+    }
+  }
+}
+
