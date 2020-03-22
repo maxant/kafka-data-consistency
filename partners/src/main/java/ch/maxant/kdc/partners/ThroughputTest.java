@@ -23,8 +23,8 @@ public class ThroughputTest {
         //
         // generate data every 100ms and see how long it takes to go thru a stream
         //
-        // requires: kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic throughput-test-source
-        //           kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic throughput-test-aggregated
+        // requires: kafka_2.11-2.4.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic throughput-test-source
+        //           kafka_2.11-2.4.1/bin/kafka-topics.sh --create --zookeeper $(minikube ip):30000 --replication-factor 2 --partitions 4 --topic throughput-test-aggregated
         //
         ///////////////////////////////////////////////////
 
