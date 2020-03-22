@@ -44,7 +44,7 @@ public class ThroughputTest {
             Future<RecordMetadata> f = producer.send(record);
             RecordMetadata recordMetadata = f.get();
             System.out.format("%s - wrote test data to kafka: %s, result: %s\n", now, json, recordMetadata.offset());
-            Thread.sleep(1);
+            Thread.sleep(1000);
             if (i++ % 10 == 0) {
                 id = UUID.randomUUID();
                 System.out.println("started new transaction: " + id);
