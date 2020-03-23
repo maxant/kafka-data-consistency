@@ -44,6 +44,7 @@ public class ThroughputTestStream {
         streamsConfiguration.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 1);
         streamsConfiguration.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 1);
         streamsConfiguration.put(StreamsConfig.POLL_MS_CONFIG, 1);
+        streamsConfiguration.put(StreamsConfig.WINDOW_STORE_CHANGE_LOG_ADDITIONAL_RETENTION_MS_CONFIG, 1);
 
         streamsConfiguration.put(ProducerConfig.LINGER_MS_CONFIG, 0); // overrides 100 for stream, even though normal producer is 0
 
