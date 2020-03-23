@@ -27,6 +27,8 @@ public class ThroughputResult {
         //
         // listen to data on output topic
         //
+        // see https://stackoverflow.com/q/60822669/458370
+        //
         ///////////////////////////////////////////////////
 
         final Properties props = new Properties();
