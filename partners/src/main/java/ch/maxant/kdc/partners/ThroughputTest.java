@@ -1,14 +1,18 @@
 package ch.maxant.kdc.partners;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.Properties;
+import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.Future;
 
@@ -35,19 +39,31 @@ public class ThroughputTest {
         final ObjectMapper om = new ObjectMapper();
         int i = 0;
         UUID id = UUID.randomUUID();
+        Queue<Long> lastCommitTimes = new CircularFifoQueue<>(100);
         while (true) {
-            String now = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-            ThroughputInitialRecord data = new ThroughputInitialRecord(id.toString(), now);
+            i++;
+            long start = System.currentTimeMillis();
+            ThroughputInitialRecord data = new ThroughputInitialRecord(id.toString(), LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME), i % 10);
             String json = om.writeValueAsString(data);
-            System.out.println("Created record: " + json);
             ProducerRecord<String, String> record = new ProducerRecord<>("throughput-test-source", null, id.toString(), json);
             Future<RecordMetadata> f = producer.send(record);
-            RecordMetadata recordMetadata = f.get();
-            System.out.format("%s - wrote test data to kafka: %s, result: %s\n", now, json, recordMetadata.offset());
-            Thread.sleep(1000);
-            if (i++ % 10 == 0) {
+            RecordMetadata recordMetadata = f.get(); // <=== BLOCKS!
+            long duration = System.currentTimeMillis() - start;
+            if(i > 10) lastCommitTimes.add(duration);
+            double avgCommitTime = lastCommitTimes.stream().mapToDouble(Long::doubleValue).average().orElse(0);
+            System.out.format("%s - wrote test data to kafka in %dms, averaging %fms: %s, result: offset=%s, timestamp=%s\n",
+                    LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                    duration,
+                    avgCommitTime,
+                    json,
+                    recordMetadata.offset(),
+                    new Date(recordMetadata.timestamp()).toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            );
+            Thread.sleep(10);
+            if (i % 10 == 0) {
                 id = UUID.randomUUID();
                 System.out.println("started new transaction: " + id);
+                Thread.sleep(3000);
             }
         }
     }

@@ -6,28 +6,40 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ThroughputAggregateRecord {
 
     private String id;
-    private List<ThroughputInitialRecord> records = new ArrayList<>();
-    private String firstProcessed = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-    private String lastProcessed = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+    private Set<ThroughputInitialRecord> records = initialiseThroughputInitialRecords();
+    private String windowStart;
+    private String windowEnd;
+    private String firstAggregation;
+    private String lastAggregation;
+    private int numOfMerges;
+    private String finalMappingTime;
 
-    public void addRecord(ThroughputInitialRecord r) {
+    private TreeSet<ThroughputInitialRecord> initialiseThroughputInitialRecords() {
+        return new TreeSet<>(Comparator.comparing(ThroughputInitialRecord::getIndexInSet));
+    }
+
+    private String firstAdded = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+    private String lastAdded = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+
+    public ThroughputInitialRecord addRecord(ThroughputInitialRecord r) {
         records.add(r);
-        lastProcessed = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        lastAdded = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        return r;
     }
 
     public String getId() {
         return id;
     }
 
-    public List<ThroughputInitialRecord> getRecords() {
+    public Set<ThroughputInitialRecord> getRecords() {
         return records;
     }
 
@@ -47,16 +59,101 @@ public class ThroughputAggregateRecord {
         return records.stream().map(ThroughputInitialRecord::getStart).sorted(Comparator.reverseOrder()).findFirst().orElse(null);
     }
 
-    public String getFirstProcessed() {
-        return firstProcessed;
+    public String getFirstAdded() {
+        return firstAdded;
     }
 
-    public String getLastProcessed() {
-        return lastProcessed;
+    public String getLastAdded() {
+        return lastAdded;
     }
 
     public int getNumRecordsProcessed() {
         return records.size();
+    }
+
+    public void merge(ThroughputAggregateRecord that) {
+        if(this.firstAdded != null) {
+            if(that.firstAdded != null) {
+                this.firstAdded = this.firstAdded.compareTo(that.firstAdded) < 0 ? this.firstAdded : that.firstAdded;
+            } else {
+                // already ok
+            }
+        } else {
+            if(that.firstAdded != null) {
+                this.firstAdded = that.firstAdded;
+            } else {
+                // both are null, leave it like that
+            }
+        }
+
+        if(this.id == null && that.id != null) {
+            this.id = that.id;
+        } else if(this.id != null && that.id == null) {
+            if(that.records.size() != 0) {
+                System.out.printf("how are we supposed to merge these?\r\n");
+                return;
+            }
+            return; // that.id is null and that.records is empty => nothing to merge into this
+        } // else ids are the same
+
+        Set<ThroughputInitialRecord> rs1 = this.records == null ? initialiseThroughputInitialRecords() : this.records;
+        Set<ThroughputInitialRecord> rs2 = that.records == null ? initialiseThroughputInitialRecords() : that.records;
+
+        this.records = rs1;
+        rs1.addAll(rs2);
+
+        this.numOfMerges++;
+    }
+
+    public void setWindowStart(String windowStart) {
+        this.windowStart = windowStart;
+    }
+
+    public String getWindowStart() {
+        return windowStart;
+    }
+
+    public void setWindowEnd(String windowEnd) {
+        this.windowEnd = windowEnd;
+    }
+
+    public String getWindowEnd() {
+        return windowEnd;
+    }
+
+    public String getFirstAggregation() {
+        return firstAggregation;
+    }
+
+    public void setFirstAggregation(String firstAggregation) {
+        this.firstAggregation = firstAggregation;
+    }
+
+    public String getLastAggregation() {
+        return lastAggregation;
+    }
+
+    public void setLastAggregation(String lastAggregation) {
+        if(this.firstAggregation == null) {
+            this.firstAggregation = lastAggregation;
+        }
+        this.lastAggregation = lastAggregation;
+    }
+
+    public int getNumOfMerges() {
+        return numOfMerges;
+    }
+
+    public void setNumOfMerges(int numOfMerges) {
+        this.numOfMerges = numOfMerges;
+    }
+
+    public String getFinalMappingTime() {
+        return finalMappingTime;
+    }
+
+    public void setFinalMappingTime(String finalMappingTime) {
+        this.finalMappingTime = finalMappingTime;
     }
 
     @Override

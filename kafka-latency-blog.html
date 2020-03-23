@@ -1,0 +1,753 @@
+
+
+
+Default ProducerConfig values (Kafka version: 2.4.1):
+<code>
+acks = all
+batch.size = 16384
+bootstrap.servers = [maxant.ch:30001, maxant.ch:30002]
+buffer.memory = 33554432
+client.dns.lookup = default
+client.id =
+compression.type = none
+connections.max.idle.ms = 540000
+delivery.timeout.ms = 120000
+enable.idempotence = false
+interceptor.classes = []
+key.serializer = class org.apache.kafka.common.serialization.StringSerializer
+linger.ms = 0
+max.block.ms = 60000
+max.in.flight.requests.per.connection = 5
+max.request.size = 1048576
+metadata.max.age.ms = 300000
+metric.reporters = []
+metrics.num.samples = 2
+metrics.recording.level = INFO
+metrics.sample.window.ms = 30000
+partitioner.class = class org.apache.kafka.clients.producer.internals.DefaultPartitioner
+receive.buffer.bytes = 32768
+reconnect.backoff.max.ms = 1000
+reconnect.backoff.ms = 50
+request.timeout.ms = 30000
+retries = 2147483647
+retry.backoff.ms = 100
+sasl.client.callback.handler.class = null
+sasl.jaas.config = null
+sasl.kerberos.kinit.cmd = /usr/bin/kinit
+sasl.kerberos.min.time.before.relogin = 60000
+sasl.kerberos.service.name = null
+sasl.kerberos.ticket.renew.jitter = 0.05
+sasl.kerberos.ticket.renew.window.factor = 0.8
+sasl.login.callback.handler.class = null
+sasl.login.class = null
+sasl.login.refresh.buffer.seconds = 300
+sasl.login.refresh.min.period.seconds = 60
+sasl.login.refresh.window.factor = 0.8
+sasl.login.refresh.window.jitter = 0.05
+sasl.mechanism = GSSAPI
+security.protocol = PLAINTEXT
+security.providers = null
+send.buffer.bytes = 131072
+ssl.cipher.suites = null
+ssl.enabled.protocols = [TLSv1.2, TLSv1.1, TLSv1]
+ssl.endpoint.identification.algorithm = https
+ssl.key.password = null
+ssl.keymanager.algorithm = SunX509
+ssl.keystore.location = null
+ssl.keystore.password = null
+ssl.keystore.type = JKS
+ssl.protocol = TLS
+ssl.provider = null
+ssl.secure.random.implementation = null
+ssl.trustmanager.algorithm = PKIX
+ssl.truststore.location = null
+ssl.truststore.password = null
+ssl.truststore.type = JKS
+transaction.timeout.ms = 60000
+transactional.id = null
+value.serializer = class org.apache.kafka.common.serialization.StringSerializer
+</code>
+
+default consumer config:
+<code>
+    [main] INFO org.apache.kafka.common.utils.AppInfoParser - Kafka version: 2.4.1
+
+    [main] INFO org.apache.kafka.clients.consumer.ConsumerConfig - ConsumerConfig values:
+    allow.auto.create.topics = true
+    auto.commit.interval.ms = 5000
+    auto.offset.reset = latest
+    bootstrap.servers = [maxant.ch:30001, maxant.ch:30002]
+    check.crcs = true
+    client.dns.lookup = default
+    client.id = throughput-test-result-consumer
+    client.rack =
+    connections.max.idle.ms = 540000
+    default.api.timeout.ms = 60000
+    enable.auto.commit = true
+    exclude.internal.topics = true
+    fetch.max.bytes = 52428800
+    fetch.max.wait.ms = 500
+    fetch.min.bytes = 1
+    group.id = throughput-test-result-group-id
+    group.instance.id = null
+    heartbeat.interval.ms = 3000
+    interceptor.classes = []
+    internal.leave.group.on.close = true
+    isolation.level = read_uncommitted
+    key.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+    max.partition.fetch.bytes = 1048576
+    max.poll.interval.ms = 300000
+    max.poll.records = 500
+    metadata.max.age.ms = 300000
+    metric.reporters = []
+    metrics.num.samples = 2
+    metrics.recording.level = INFO
+    metrics.sample.window.ms = 30000
+    partition.assignment.strategy = [class org.apache.kafka.clients.consumer.RangeAssignor]
+    receive.buffer.bytes = 65536
+    reconnect.backoff.max.ms = 1000
+    reconnect.backoff.ms = 50
+    request.timeout.ms = 30000
+    retry.backoff.ms = 100
+    sasl.client.callback.handler.class = null
+    sasl.jaas.config = null
+    sasl.kerberos.kinit.cmd = /usr/bin/kinit
+    sasl.kerberos.min.time.before.relogin = 60000
+    sasl.kerberos.service.name = null
+    sasl.kerberos.ticket.renew.jitter = 0.05
+    sasl.kerberos.ticket.renew.window.factor = 0.8
+    sasl.login.callback.handler.class = null
+    sasl.login.class = null
+    sasl.login.refresh.buffer.seconds = 300
+    sasl.login.refresh.min.period.seconds = 60
+    sasl.login.refresh.window.factor = 0.8
+    sasl.login.refresh.window.jitter = 0.05
+    sasl.mechanism = GSSAPI
+    security.protocol = PLAINTEXT
+    security.providers = null
+    send.buffer.bytes = 131072
+    session.timeout.ms = 10000
+    ssl.cipher.suites = null
+    ssl.enabled.protocols = [TLSv1.2, TLSv1.1, TLSv1]
+    ssl.endpoint.identification.algorithm = https
+    ssl.key.password = null
+    ssl.keymanager.algorithm = SunX509
+    ssl.keystore.location = null
+    ssl.keystore.password = null
+    ssl.keystore.type = JKS
+    ssl.protocol = TLS
+    ssl.provider = null
+    ssl.secure.random.implementation = null
+    ssl.trustmanager.algorithm = PKIX
+    ssl.truststore.location = null
+    ssl.truststore.password = null
+    ssl.truststore.type = JKS
+    value.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+</code>
+
+
+default stream config:
+<code>
+    [main] INFO org.apache.kafka.streams.StreamsConfig - StreamsConfig values:
+    application.id = throughput-test
+    application.server =
+    bootstrap.servers = [maxant.ch:30001, maxant.ch:30002]
+    buffered.records.per.partition = 1000
+    cache.max.bytes.buffering = 10485760
+    client.id = throughput-test-client
+    commit.interval.ms = 30000
+    connections.max.idle.ms = 540000
+    default.deserialization.exception.handler = class org.apache.kafka.streams.errors.LogAndFailExceptionHandler
+    default.key.serde = class org.apache.kafka.common.serialization.Serdes$StringSerde
+    default.production.exception.handler = class org.apache.kafka.streams.errors.DefaultProductionExceptionHandler
+    default.timestamp.extractor = class org.apache.kafka.streams.processor.FailOnInvalidTimestamp
+    default.value.serde = class org.apache.kafka.common.serialization.Serdes$StringSerde
+    max.task.idle.ms = 0
+    metadata.max.age.ms = 300000
+    metric.reporters = []
+    metrics.num.samples = 2
+    metrics.recording.level = INFO
+    metrics.sample.window.ms = 30000
+    num.standby.replicas = 0
+    num.stream.threads = 1
+    partition.grouper = class org.apache.kafka.streams.processor.DefaultPartitionGrouper
+    poll.ms = 100
+    processing.guarantee = at_least_once
+    receive.buffer.bytes = 32768
+    reconnect.backoff.max.ms = 1000
+    reconnect.backoff.ms = 50
+    replication.factor = 1
+    request.timeout.ms = 40000
+    retries = 0
+    retry.backoff.ms = 100
+    rocksdb.config.setter = null
+    security.protocol = PLAINTEXT
+    send.buffer.bytes = 131072
+    state.cleanup.delay.ms = 600000
+    state.dir = /tmp/kafka-streams/throughput-test/20200322T160431.596485
+    topology.optimization = none
+    upgrade.from = null
+    windowstore.changelog.additional.retention.ms = 86400000
+
+    [main] INFO org.apache.kafka.streams.KafkaStreams - stream-client [throughput-test-client] Kafka Streams version: 2.4.1
+    [main] INFO org.apache.kafka.streams.KafkaStreams - stream-client [throughput-test-client] Kafka Streams commit ID: c57222ae8cd7866b
+    [main] INFO org.apache.kafka.clients.admin.AdminClientConfig - AdminClientConfig values:
+    bootstrap.servers = [maxant.ch:30001, maxant.ch:30002]
+    client.dns.lookup = default
+    client.id = throughput-test-client-admin
+    connections.max.idle.ms = 300000
+    metadata.max.age.ms = 300000
+    metric.reporters = []
+    metrics.num.samples = 2
+    metrics.recording.level = INFO
+    metrics.sample.window.ms = 30000
+    receive.buffer.bytes = 65536
+    reconnect.backoff.max.ms = 1000
+    reconnect.backoff.ms = 50
+    request.timeout.ms = 120000
+    retries = 5
+    retry.backoff.ms = 100
+    sasl.client.callback.handler.class = null
+    sasl.jaas.config = null
+    sasl.kerberos.kinit.cmd = /usr/bin/kinit
+    sasl.kerberos.min.time.before.relogin = 60000
+    sasl.kerberos.service.name = null
+    sasl.kerberos.ticket.renew.jitter = 0.05
+    sasl.kerberos.ticket.renew.window.factor = 0.8
+    sasl.login.callback.handler.class = null
+    sasl.login.class = null
+    sasl.login.refresh.buffer.seconds = 300
+    sasl.login.refresh.min.period.seconds = 60
+    sasl.login.refresh.window.factor = 0.8
+    sasl.login.refresh.window.jitter = 0.05
+    sasl.mechanism = GSSAPI
+    security.protocol = PLAINTEXT
+    security.providers = null
+    send.buffer.bytes = 131072
+    ssl.cipher.suites = null
+    ssl.enabled.protocols = [TLSv1.2, TLSv1.1, TLSv1]
+    ssl.endpoint.identification.algorithm = https
+    ssl.key.password = null
+    ssl.keymanager.algorithm = SunX509
+    ssl.keystore.location = null
+    ssl.keystore.password = null
+    ssl.keystore.type = JKS
+    ssl.protocol = TLS
+    ssl.provider = null
+    ssl.secure.random.implementation = null
+    ssl.trustmanager.algorithm = PKIX
+    ssl.truststore.location = null
+    ssl.truststore.password = null
+    ssl.truststore.type = JKS
+
+    [main] INFO org.apache.kafka.common.utils.AppInfoParser - Kafka version: 2.4.1
+    [main] INFO org.apache.kafka.common.utils.AppInfoParser - Kafka commitId: c57222ae8cd7866b
+    [main] INFO org.apache.kafka.common.utils.AppInfoParser - Kafka startTimeMs: 1584889472720
+    [main] INFO org.apache.kafka.streams.processor.internals.StreamThread - stream-thread [throughput-test-client-StreamThread-1] Creating restore consumer client
+    [main] INFO org.apache.kafka.clients.consumer.ConsumerConfig - ConsumerConfig values:
+    allow.auto.create.topics = true
+    auto.commit.interval.ms = 5000
+    auto.offset.reset = none
+    bootstrap.servers = [maxant.ch:30001, maxant.ch:30002]
+    check.crcs = true
+    client.dns.lookup = default
+    client.id = throughput-test-client-StreamThread-1-restore-consumer
+    client.rack =
+    connections.max.idle.ms = 540000
+    default.api.timeout.ms = 60000
+    enable.auto.commit = false
+    exclude.internal.topics = true
+    fetch.max.bytes = 52428800
+    fetch.max.wait.ms = 500
+    fetch.min.bytes = 1
+    group.id = null
+    group.instance.id = null
+    heartbeat.interval.ms = 3000
+    interceptor.classes = []
+    internal.leave.group.on.close = false
+    isolation.level = read_uncommitted
+    key.deserializer = class org.apache.kafka.common.serialization.ByteArrayDeserializer
+    max.partition.fetch.bytes = 1048576
+    max.poll.interval.ms = 300000
+    max.poll.records = 1000
+    metadata.max.age.ms = 300000
+    metric.reporters = []
+    metrics.num.samples = 2
+    metrics.recording.level = INFO
+    metrics.sample.window.ms = 30000
+    partition.assignment.strategy = [class org.apache.kafka.clients.consumer.RangeAssignor]
+    receive.buffer.bytes = 65536
+    reconnect.backoff.max.ms = 1000
+    reconnect.backoff.ms = 50
+    request.timeout.ms = 30000
+    retry.backoff.ms = 100
+    sasl.client.callback.handler.class = null
+    sasl.jaas.config = null
+    sasl.kerberos.kinit.cmd = /usr/bin/kinit
+    sasl.kerberos.min.time.before.relogin = 60000
+    sasl.kerberos.service.name = null
+    sasl.kerberos.ticket.renew.jitter = 0.05
+    sasl.kerberos.ticket.renew.window.factor = 0.8
+    sasl.login.callback.handler.class = null
+    sasl.login.class = null
+    sasl.login.refresh.buffer.seconds = 300
+    sasl.login.refresh.min.period.seconds = 60
+    sasl.login.refresh.window.factor = 0.8
+    sasl.login.refresh.window.jitter = 0.05
+    sasl.mechanism = GSSAPI
+    security.protocol = PLAINTEXT
+    security.providers = null
+    send.buffer.bytes = 131072
+    session.timeout.ms = 10000
+    ssl.cipher.suites = null
+    ssl.enabled.protocols = [TLSv1.2, TLSv1.1, TLSv1]
+    ssl.endpoint.identification.algorithm = https
+    ssl.key.password = null
+    ssl.keymanager.algorithm = SunX509
+    ssl.keystore.location = null
+    ssl.keystore.password = null
+    ssl.keystore.type = JKS
+    ssl.protocol = TLS
+    ssl.provider = null
+    ssl.secure.random.implementation = null
+    ssl.trustmanager.algorithm = PKIX
+    ssl.truststore.location = null
+    ssl.truststore.password = null
+    ssl.truststore.type = JKS
+    value.deserializer = class org.apache.kafka.common.serialization.ByteArrayDeserializer
+
+    [main] INFO org.apache.kafka.common.utils.AppInfoParser - Kafka version: 2.4.1
+    [main] INFO org.apache.kafka.common.utils.AppInfoParser - Kafka commitId: c57222ae8cd7866b
+    [main] INFO org.apache.kafka.common.utils.AppInfoParser - Kafka startTimeMs: 1584889472867
+    [main] INFO org.apache.kafka.streams.processor.internals.StreamThread - stream-thread [throughput-test-client-StreamThread-1] Creating shared producer client
+    [main] INFO org.apache.kafka.clients.producer.ProducerConfig - ProducerConfig values:
+    acks = 1
+    batch.size = 16384
+    bootstrap.servers = [maxant.ch:30001, maxant.ch:30002]
+    buffer.memory = 33554432
+    client.dns.lookup = default
+    client.id = throughput-test-client-StreamThread-1-producer
+    compression.type = none
+    connections.max.idle.ms = 540000
+    delivery.timeout.ms = 120000
+    enable.idempotence = false
+    interceptor.classes = []
+    key.serializer = class org.apache.kafka.common.serialization.ByteArraySerializer
+    linger.ms = 100
+    max.block.ms = 60000
+    max.in.flight.requests.per.connection = 5
+    max.request.size = 1048576
+    metadata.max.age.ms = 300000
+    metric.reporters = []
+    metrics.num.samples = 2
+    metrics.recording.level = INFO
+    metrics.sample.window.ms = 30000
+    partitioner.class = class org.apache.kafka.clients.producer.internals.DefaultPartitioner
+    receive.buffer.bytes = 32768
+    reconnect.backoff.max.ms = 1000
+    reconnect.backoff.ms = 50
+    request.timeout.ms = 30000
+    retries = 2147483647
+    retry.backoff.ms = 100
+    sasl.client.callback.handler.class = null
+    sasl.jaas.config = null
+    sasl.kerberos.kinit.cmd = /usr/bin/kinit
+    sasl.kerberos.min.time.before.relogin = 60000
+    sasl.kerberos.service.name = null
+    sasl.kerberos.ticket.renew.jitter = 0.05
+    sasl.kerberos.ticket.renew.window.factor = 0.8
+    sasl.login.callback.handler.class = null
+    sasl.login.class = null
+    sasl.login.refresh.buffer.seconds = 300
+    sasl.login.refresh.min.period.seconds = 60
+    sasl.login.refresh.window.factor = 0.8
+    sasl.login.refresh.window.jitter = 0.05
+    sasl.mechanism = GSSAPI
+    security.protocol = PLAINTEXT
+    security.providers = null
+    send.buffer.bytes = 131072
+    ssl.cipher.suites = null
+    ssl.enabled.protocols = [TLSv1.2, TLSv1.1, TLSv1]
+    ssl.endpoint.identification.algorithm = https
+    ssl.key.password = null
+    ssl.keymanager.algorithm = SunX509
+    ssl.keystore.location = null
+    ssl.keystore.password = null
+    ssl.keystore.type = JKS
+    ssl.protocol = TLS
+    ssl.provider = null
+    ssl.secure.random.implementation = null
+    ssl.trustmanager.algorithm = PKIX
+    ssl.truststore.location = null
+    ssl.truststore.password = null
+    ssl.truststore.type = JKS
+    transaction.timeout.ms = 60000
+    transactional.id = null
+    value.serializer = class org.apache.kafka.common.serialization.ByteArraySerializer
+
+    [main] INFO org.apache.kafka.clients.consumer.ConsumerConfig - ConsumerConfig values:
+    allow.auto.create.topics = true
+    auto.commit.interval.ms = 5000
+    auto.offset.reset = earliest
+    bootstrap.servers = [maxant.ch:30001, maxant.ch:30002]
+    check.crcs = true
+    client.dns.lookup = default
+    client.id = throughput-test-client-StreamThread-1-consumer
+    client.rack =
+    connections.max.idle.ms = 540000
+    default.api.timeout.ms = 60000
+    enable.auto.commit = false
+    exclude.internal.topics = true
+    fetch.max.bytes = 52428800
+    fetch.max.wait.ms = 500
+    fetch.min.bytes = 1
+    group.id = throughput-test
+    group.instance.id = null
+    heartbeat.interval.ms = 3000
+    interceptor.classes = []
+    internal.leave.group.on.close = false
+    isolation.level = read_uncommitted
+    key.deserializer = class org.apache.kafka.common.serialization.ByteArrayDeserializer
+    max.partition.fetch.bytes = 1048576
+    max.poll.interval.ms = 300000
+    max.poll.records = 1000
+    metadata.max.age.ms = 300000
+    metric.reporters = []
+    metrics.num.samples = 2
+    metrics.recording.level = INFO
+    metrics.sample.window.ms = 30000
+    partition.assignment.strategy = [org.apache.kafka.streams.processor.internals.StreamsPartitionAssignor]
+    receive.buffer.bytes = 65536
+    reconnect.backoff.max.ms = 1000
+    reconnect.backoff.ms = 50
+    request.timeout.ms = 30000
+    retry.backoff.ms = 100
+    sasl.client.callback.handler.class = null
+    sasl.jaas.config = null
+    sasl.kerberos.kinit.cmd = /usr/bin/kinit
+    sasl.kerberos.min.time.before.relogin = 60000
+    sasl.kerberos.service.name = null
+    sasl.kerberos.ticket.renew.jitter = 0.05
+    sasl.kerberos.ticket.renew.window.factor = 0.8
+    sasl.login.callback.handler.class = null
+    sasl.login.class = null
+    sasl.login.refresh.buffer.seconds = 300
+    sasl.login.refresh.min.period.seconds = 60
+    sasl.login.refresh.window.factor = 0.8
+    sasl.login.refresh.window.jitter = 0.05
+    sasl.mechanism = GSSAPI
+    security.protocol = PLAINTEXT
+    security.providers = null
+    send.buffer.bytes = 131072
+    session.timeout.ms = 10000
+    ssl.cipher.suites = null
+    ssl.enabled.protocols = [TLSv1.2, TLSv1.1, TLSv1]
+    ssl.endpoint.identification.algorithm = https
+    ssl.key.password = null
+    ssl.keymanager.algorithm = SunX509
+    ssl.keystore.location = null
+    ssl.keystore.password = null
+    ssl.keystore.type = JKS
+    ssl.protocol = TLS
+    ssl.provider = null
+    ssl.secure.random.implementation = null
+    ssl.trustmanager.algorithm = PKIX
+    ssl.truststore.location = null
+    ssl.truststore.password = null
+    ssl.truststore.type = JKS
+    value.deserializer = class org.apache.kafka.common.serialization.ByteArrayDeserializer
+</code>
+
+
+ones to think about:
+
+- batch.size = 16384
+-
+
+
+clients run on a laptop with wifi. according to https://www.speedtest.net, ping time is 4ms, download is 73Mbps, upload is 24 Mbps.
+
+
+
+PUBLICATION
+
+2020-03-22T22:45:08.330969 - wrote test data to kafka in 430ms, averaging 0.000000ms: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:07.905492","indexInSet":1}, result: offset=121, timestamp=2020-03-22T22:45:08.194
+2020-03-22T22:45:08.370377 - wrote test data to kafka in 25ms, averaging 0.000000ms: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.345127","indexInSet":2}, result: offset=122, timestamp=2020-03-22T22:45:08.345
+2020-03-22T22:45:08.405928 - wrote test data to kafka in 24ms, averaging 0.000000ms: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.381411","indexInSet":3}, result: offset=123, timestamp=2020-03-22T22:45:08.381
+2020-03-22T22:45:08.447325 - wrote test data to kafka in 31ms, averaging 0.000000ms: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.416988","indexInSet":4}, result: offset=124, timestamp=2020-03-22T22:45:08.417
+2020-03-22T22:45:08.484402 - wrote test data to kafka in 26ms, averaging 0.000000ms: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.458338","indexInSet":5}, result: offset=125, timestamp=2020-03-22T22:45:08.458
+2020-03-22T22:45:08.52233 - wrote test data to kafka in 27ms, averaging 0.000000ms: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.49547","indexInSet":6}, result: offset=126, timestamp=2020-03-22T22:45:08.495
+2020-03-22T22:45:08.562151 - wrote test data to kafka in 29ms, averaging 0.000000ms: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.53345","indexInSet":7}, result: offset=127, timestamp=2020-03-22T22:45:08.533
+2020-03-22T22:45:08.599736 - wrote test data to kafka in 26ms, averaging 0.000000ms: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.573237","indexInSet":8}, result: offset=128, timestamp=2020-03-22T22:45:08.573
+2020-03-22T22:45:08.638328 - wrote test data to kafka in 25ms, averaging 0.000000ms: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.613166","indexInSet":9}, result: offset=129, timestamp=2020-03-22T22:45:08.613
+2020-03-22T22:45:08.675918 - wrote test data to kafka in 26ms, averaging 0.000000ms: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.649331","indexInSet":0}, result: offset=130, timestamp=2020-03-22T22:45:08.649
+started new transaction: 903524c2-79f5-4e88-9854-fc8f39bd17fa
+2020-03-22T22:45:11.722268 - wrote test data to kafka in 33ms, averaging 33.000000ms: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.688664","indexInSet":1}, result: offset=131, timestamp=2020-03-22T22:45:11.689
+2020-03-22T22:45:11.769887 - wrote test data to kafka in 34ms, averaging 33.500000ms: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.735427","indexInSet":2}, result: offset=132, timestamp=2020-03-22T22:45:11.735
+2020-03-22T22:45:11.809117 - wrote test data to kafka in 27ms, averaging 31.333333ms: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.78109","indexInSet":3}, result: offset=133, timestamp=2020-03-22T22:45:11.781
+2020-03-22T22:45:11.846258 - wrote test data to kafka in 24ms, averaging 29.500000ms: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.822089","indexInSet":4}, result: offset=134, timestamp=2020-03-22T22:45:11.822
+2020-03-22T22:45:11.88582 - wrote test data to kafka in 28ms, averaging 29.200000ms: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.857749","indexInSet":5}, result: offset=135, timestamp=2020-03-22T22:45:11.858
+2020-03-22T22:45:11.923493 - wrote test data to kafka in 27ms, averaging 28.833333ms: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.896903","indexInSet":6}, result: offset=136, timestamp=2020-03-22T22:45:11.899
+2020-03-22T22:45:11.959719 - wrote test data to kafka in 25ms, averaging 28.285714ms: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.934496","indexInSet":7}, result: offset=137, timestamp=2020-03-22T22:45:11.934
+2020-03-22T22:45:11.999003 - wrote test data to kafka in 28ms, averaging 28.250000ms: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.970872","indexInSet":8}, result: offset=138, timestamp=2020-03-22T22:45:11.971
+2020-03-22T22:45:12.035294 - wrote test data to kafka in 26ms, averaging 28.000000ms: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:12.010048","indexInSet":9}, result: offset=139, timestamp=2020-03-22T22:45:12.01
+2020-03-22T22:45:12.070676 - wrote test data to kafka in 24ms, averaging 27.600000ms: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:12.046318","indexInSet":0}, result: offset=140, timestamp=2020-03-22T22:45:12.046
+started new transaction: 49e72230-fc2d-43e8-9835-b4118f592e34
+2020-03-22T22:45:15.111469 - wrote test data to kafka in 29ms, averaging 27.727273ms: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.082902","indexInSet":1}, result: offset=141, timestamp=2020-03-22T22:45:15.083
+2020-03-22T22:45:15.153258 - wrote test data to kafka in 29ms, averaging 27.833333ms: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.124827","indexInSet":2}, result: offset=142, timestamp=2020-03-22T22:45:15.125
+2020-03-22T22:45:15.189059 - wrote test data to kafka in 24ms, averaging 27.538462ms: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.16423","indexInSet":3}, result: offset=143, timestamp=2020-03-22T22:45:15.164
+2020-03-22T22:45:15.224381 - wrote test data to kafka in 25ms, averaging 27.357143ms: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.200032","indexInSet":4}, result: offset=144, timestamp=2020-03-22T22:45:15.2
+2020-03-22T22:45:15.260902 - wrote test data to kafka in 25ms, averaging 27.200000ms: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.236068","indexInSet":5}, result: offset=145, timestamp=2020-03-22T22:45:15.236
+2020-03-22T22:45:15.297098 - wrote test data to kafka in 25ms, averaging 27.062500ms: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.271721","indexInSet":6}, result: offset=146, timestamp=2020-03-22T22:45:15.272
+2020-03-22T22:45:15.332679 - wrote test data to kafka in 25ms, averaging 26.941176ms: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.307941","indexInSet":7}, result: offset=147, timestamp=2020-03-22T22:45:15.308
+2020-03-22T22:45:15.368616 - wrote test data to kafka in 25ms, averaging 26.833333ms: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.343634","indexInSet":8}, result: offset=148, timestamp=2020-03-22T22:45:15.344
+2020-03-22T22:45:15.404833 - wrote test data to kafka in 25ms, averaging 26.736842ms: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.37942","indexInSet":9}, result: offset=149, timestamp=2020-03-22T22:45:15.379
+2020-03-22T22:45:15.440847 - wrote test data to kafka in 24ms, averaging 26.600000ms: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.41702","indexInSet":0}, result: offset=150, timestamp=2020-03-22T22:45:15.417
+started new transaction: 0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69
+2020-03-22T22:45:18.480489 - wrote test data to kafka in 28ms, averaging 26.666667ms: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.452082","indexInSet":1}, result: offset=151, timestamp=2020-03-22T22:45:18.452
+2020-03-22T22:45:18.516783 - wrote test data to kafka in 24ms, averaging 26.545455ms: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.492502","indexInSet":2}, result: offset=152, timestamp=2020-03-22T22:45:18.492
+2020-03-22T22:45:18.554456 - wrote test data to kafka in 26ms, averaging 26.521739ms: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.528727","indexInSet":3}, result: offset=153, timestamp=2020-03-22T22:45:18.529
+2020-03-22T22:45:18.605833 - wrote test data to kafka in 40ms, averaging 27.083333ms: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.565943","indexInSet":4}, result: offset=154, timestamp=2020-03-22T22:45:18.566
+2020-03-22T22:45:18.641552 - wrote test data to kafka in 24ms, averaging 26.960000ms: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.617221","indexInSet":5}, result: offset=155, timestamp=2020-03-22T22:45:18.617
+2020-03-22T22:45:18.677981 - wrote test data to kafka in 25ms, averaging 26.884615ms: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.652531","indexInSet":6}, result: offset=156, timestamp=2020-03-22T22:45:18.652
+2020-03-22T22:45:18.713167 - wrote test data to kafka in 25ms, averaging 26.814815ms: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.689025","indexInSet":7}, result: offset=157, timestamp=2020-03-22T22:45:18.689
+2020-03-22T22:45:18.747373 - wrote test data to kafka in 24ms, averaging 26.714286ms: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.723934","indexInSet":8}, result: offset=158, timestamp=2020-03-22T22:45:18.724
+2020-03-22T22:45:18.784507 - wrote test data to kafka in 25ms, averaging 26.655172ms: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.759861","indexInSet":9}, result: offset=159, timestamp=2020-03-22T22:45:18.76
+2020-03-22T22:45:18.821283 - wrote test data to kafka in 26ms, averaging 26.633333ms: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.796012","indexInSet":0}, result: offset=160, timestamp=2020-03-22T22:45:18.796
+started new transaction: 915d5b49-240a-423f-a7f8-aa3ca6f8081d
+2020-03-22T22:45:21.858934 - wrote test data to kafka in 26ms, averaging 26.612903ms: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.83286","indexInSet":1}, result: offset=161, timestamp=2020-03-22T22:45:21.833
+2020-03-22T22:45:21.896645 - wrote test data to kafka in 25ms, averaging 26.562500ms: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.871517","indexInSet":2}, result: offset=162, timestamp=2020-03-22T22:45:21.871
+2020-03-22T22:45:21.93861 - wrote test data to kafka in 30ms, averaging 26.666667ms: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.908975","indexInSet":3}, result: offset=163, timestamp=2020-03-22T22:45:21.909
+2020-03-22T22:45:21.975013 - wrote test data to kafka in 25ms, averaging 26.617647ms: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.949835","indexInSet":4}, result: offset=164, timestamp=2020-03-22T22:45:21.95
+2020-03-22T22:45:22.016124 - wrote test data to kafka in 29ms, averaging 26.685714ms: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.986708","indexInSet":5}, result: offset=165, timestamp=2020-03-22T22:45:21.986
+2020-03-22T22:45:22.06803 - wrote test data to kafka in 40ms, averaging 27.055556ms: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.027555","indexInSet":6}, result: offset=166, timestamp=2020-03-22T22:45:22.027
+2020-03-22T22:45:22.10299 - wrote test data to kafka in 24ms, averaging 26.972973ms: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.079006","indexInSet":7}, result: offset=167, timestamp=2020-03-22T22:45:22.079
+2020-03-22T22:45:22.139754 - wrote test data to kafka in 26ms, averaging 26.947368ms: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.113892","indexInSet":8}, result: offset=168, timestamp=2020-03-22T22:45:22.114
+2020-03-22T22:45:22.174769 - wrote test data to kafka in 24ms, averaging 26.871795ms: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.150575","indexInSet":9}, result: offset=169, timestamp=2020-03-22T22:45:22.15
+2020-03-22T22:45:22.211673 - wrote test data to kafka in 26ms, averaging 26.850000ms: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.185645","indexInSet":0}, result: offset=170, timestamp=2020-03-22T22:45:22.185
+
+
+
+STREAM
+
+
+2020-03-22T22:45:08.557644 handling record, 649ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:07.905492","indexInSet":1}
+2020-03-22T22:45:08.657647 handling record, 312ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.345127","indexInSet":2}
+2020-03-22T22:45:08.681650 handling record, 300ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.381411","indexInSet":3}
+2020-03-22T22:45:08.682763 handling record, 266ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.416988","indexInSet":4}
+2020-03-22T22:45:08.688023 handling record, 229ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.458338","indexInSet":5}
+2020-03-22T22:45:08.695712 handling record, 196ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.49547","indexInSet":6}
+2020-03-22T22:45:08.697244 handling record, 163ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.53345","indexInSet":7}
+2020-03-22T22:45:08.698471 handling record, 125ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.573237","indexInSet":8}
+2020-03-22T22:45:08.699677 handling record, 86ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.613166","indexInSet":9}
+2020-03-22T22:45:08.708238 handling record, 51ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.649331","indexInSet":0}
+2020-03-22T22:45:08.922672 aggregating record, 1017ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:07.905492","indexInSet":1}
+2020-03-22T22:45:08.940585 merging
+2020-03-22T22:45:08.944363 aggregating record, 598ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.345127","indexInSet":2}
+2020-03-22T22:45:08.969691 merging
+2020-03-22T22:45:08.971610 aggregating record, 590ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.381411","indexInSet":3}
+2020-03-22T22:45:08.975184 merging
+2020-03-22T22:45:08.977168 aggregating record, 560ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.416988","indexInSet":4}
+2020-03-22T22:45:08.982685 merging
+2020-03-22T22:45:08.990824 aggregating record, 532ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.458338","indexInSet":5}
+2020-03-22T22:45:08.994913 merging
+2020-03-22T22:45:09.015610 aggregating record, 520ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.49547","indexInSet":6}
+2020-03-22T22:45:09.025323 merging
+2020-03-22T22:45:09.040093 aggregating record, 506ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.53345","indexInSet":7}
+2020-03-22T22:45:09.054331 merging
+2020-03-22T22:45:09.057890 aggregating record, 484ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.573237","indexInSet":8}
+2020-03-22T22:45:09.061425 merging
+2020-03-22T22:45:09.063437 aggregating record, 450ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.613166","indexInSet":9}
+2020-03-22T22:45:09.070829 merging
+2020-03-22T22:45:09.075075 aggregating record, 425ms after it was created: {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.649331","indexInSet":0}
+2020-03-22T22:45:11.728084 handling record, 39ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.688664","indexInSet":1}
+2020-03-22T22:45:11.756860 aggregating record, 68ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.688664","indexInSet":1}
+2020-03-22T22:45:11.784868 handling record, 49ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.735427","indexInSet":2}
+2020-03-22T22:45:11.816176 handling record, 34ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.78109","indexInSet":3}
+2020-03-22T22:45:11.841392 merging
+2020-03-22T22:45:11.842927 aggregating record, 107ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.735427","indexInSet":2}
+2020-03-22T22:45:11.864170 handling record, 41ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.822089","indexInSet":4}
+2020-03-22T22:45:11.866848 merging
+2020-03-22T22:45:11.868250 aggregating record, 87ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.78109","indexInSet":3}
+2020-03-22T22:45:11.892634 handling record, 35ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.857749","indexInSet":5}
+2020-03-22T22:45:11.915351 merging
+2020-03-22T22:45:11.916424 aggregating record, 94ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.822089","indexInSet":4}
+2020-03-22T22:45:11.937951 handling record, 41ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.896903","indexInSet":6}
+2020-03-22T22:45:11.940346 merging
+2020-03-22T22:45:11.941837 aggregating record, 84ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.857749","indexInSet":5}
+2020-03-22T22:45:11.962311 handling record, 28ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.934496","indexInSet":7}
+2020-03-22T22:45:11.984997 merging
+2020-03-22T22:45:11.986854 aggregating record, 90ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.896903","indexInSet":6}
+2020-03-22T22:45:12.006680 handling record, 36ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.970872","indexInSet":8}
+2020-03-22T22:45:12.009363 merging
+2020-03-22T22:45:12.013515 aggregating record, 79ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.934496","indexInSet":7}
+2020-03-22T22:45:12.033240 merging
+2020-03-22T22:45:12.036328 aggregating record, 66ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.970872","indexInSet":8}
+2020-03-22T22:45:12.054081 handling record, 43ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:12.010048","indexInSet":9}
+2020-03-22T22:45:12.075857 handling record, 29ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:12.046318","indexInSet":0}
+2020-03-22T22:45:12.103645 merging
+2020-03-22T22:45:12.105660 aggregating record, 95ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:12.010048","indexInSet":9}
+2020-03-22T22:45:12.121860 merging
+2020-03-22T22:45:12.123258 aggregating record, 77ms after it was created: {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:12.046318","indexInSet":0}
+2020-03-22T22:45:15.116244 handling record, 33ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.082902","indexInSet":1}
+2020-03-22T22:45:15.143711 aggregating record, 61ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.082902","indexInSet":1}
+2020-03-22T22:45:15.209550 grouped and windowed in 455ms from 2020-03-22T22:45:08.194 to 2020-03-22T22:45:08.649: key=9c768055-55e7-436c-8553-ee064852cc0e, value={"id":"9c768055-55e7-436c-8553-ee064852cc0e","records":[{"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.573237","indexInSet":8},{"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.53345","indexInSet":7},{"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.613166","indexInSet":9},{"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.416988","indexInSet":4},{"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.381411","indexInSet":3},{"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.49547","indexInSet":6},{"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.458338","indexInSet":5},{"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.649331","indexInSet":0},{"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.345127","indexInSet":2},{"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:07.905492","indexInSet":1}],"windowStart":null,"windowEnd":null,"firstAdded":"2020-03-22T22:45:08.742228","lastAdded":"2020-03-22T22:45:09.074462","earliestCreated":"2020-03-22T22:45:07.905492","latestCreated":"2020-03-22T22:45:08.649331","numRecordsProcessed":10}
+2020-03-22T22:45:15.240348 grouped and windowed in 357ms from 2020-03-22T22:45:11.689 to 2020-03-22T22:45:12.046: key=903524c2-79f5-4e88-9854-fc8f39bd17fa, value={"id":"903524c2-79f5-4e88-9854-fc8f39bd17fa","records":[{"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.934496","indexInSet":7},{"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.970872","indexInSet":8},{"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:12.010048","indexInSet":9},{"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.78109","indexInSet":3},{"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.822089","indexInSet":4},{"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.857749","indexInSet":5},{"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.896903","indexInSet":6},{"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:12.046318","indexInSet":0},{"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.688664","indexInSet":1},{"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.735427","indexInSet":2}],"windowStart":null,"windowEnd":null,"firstAdded":"2020-03-22T22:45:11.755201","lastAdded":"2020-03-22T22:45:12.12302","earliestCreated":"2020-03-22T22:45:11.688664","latestCreated":"2020-03-22T22:45:12.046318","numRecordsProcessed":10}
+2020-03-22T22:45:15.243550 grouped and windowed in 0ms from 2020-03-22T22:45:15.083 to 2020-03-22T22:45:15.083: key=49e72230-fc2d-43e8-9835-b4118f592e34, value={"id":"49e72230-fc2d-43e8-9835-b4118f592e34","records":[{"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.082902","indexInSet":1}],"windowStart":null,"windowEnd":null,"firstAdded":"2020-03-22T22:45:15.141759","lastAdded":"2020-03-22T22:45:15.143376","earliestCreated":"2020-03-22T22:45:15.082902","latestCreated":"2020-03-22T22:45:15.082902","numRecordsProcessed":1}
+2020-03-22T22:45:15.316254 handling record, 191ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.124827","indexInSet":2}
+2020-03-22T22:45:15.354130 handling record, 189ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.16423","indexInSet":3}
+2020-03-22T22:45:15.355996 handling record, 155ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.200032","indexInSet":4}
+2020-03-22T22:45:15.357964 handling record, 121ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.236068","indexInSet":5}
+2020-03-22T22:45:15.359058 handling record, 87ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.271721","indexInSet":6}
+2020-03-22T22:45:15.360969 handling record, 53ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.307941","indexInSet":7}
+2020-03-22T22:45:15.378287 handling record, 35ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.343634","indexInSet":8}
+2020-03-22T22:45:15.382076 merging
+2020-03-22T22:45:15.383958 aggregating record, 259ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.124827","indexInSet":2}
+2020-03-22T22:45:15.408913 merging
+2020-03-22T22:45:15.410361 aggregating record, 246ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.16423","indexInSet":3}
+2020-03-22T22:45:15.412737 merging
+2020-03-22T22:45:15.414043 aggregating record, 213ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.200032","indexInSet":4}
+2020-03-22T22:45:15.417959 merging
+2020-03-22T22:45:15.419463 aggregating record, 183ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.236068","indexInSet":5}
+2020-03-22T22:45:15.422030 merging
+2020-03-22T22:45:15.423536 aggregating record, 152ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.271721","indexInSet":6}
+2020-03-22T22:45:15.426320 merging
+2020-03-22T22:45:15.427887 aggregating record, 120ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.307941","indexInSet":7}
+2020-03-22T22:45:15.431352 handling record, 52ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.37942","indexInSet":9}
+2020-03-22T22:45:15.436451 merging
+2020-03-22T22:45:15.438025 aggregating record, 94ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.343634","indexInSet":8}
+2020-03-22T22:45:15.454618 handling record, 37ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.41702","indexInSet":0}
+2020-03-22T22:45:15.530437 merging
+2020-03-22T22:45:15.533438 aggregating record, 154ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.37942","indexInSet":9}
+2020-03-22T22:45:15.556451 merging
+2020-03-22T22:45:15.558127 aggregating record, 140ms after it was created: {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.41702","indexInSet":0}
+2020-03-22T22:45:18.484264 handling record, 31ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.452082","indexInSet":1}
+2020-03-22T22:45:18.513083 aggregating record, 60ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.452082","indexInSet":1}
+2020-03-22T22:45:18.534326 handling record, 42ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.492502","indexInSet":2}
+2020-03-22T22:45:18.560105 handling record, 31ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.528727","indexInSet":3}
+2020-03-22T22:45:18.607627 merging
+2020-03-22T22:45:18.609360 aggregating record, 117ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.492502","indexInSet":2}
+2020-03-22T22:45:18.625930 handling record, 60ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.565943","indexInSet":4}
+2020-03-22T22:45:18.627813 merging
+2020-03-22T22:45:18.628743 aggregating record, 100ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.528727","indexInSet":3}
+2020-03-22T22:45:18.648074 handling record, 30ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.617221","indexInSet":5}
+2020-03-22T22:45:18.676987 merging
+2020-03-22T22:45:18.679424 aggregating record, 113ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.565943","indexInSet":4}
+2020-03-22T22:45:18.697244 handling record, 45ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.652531","indexInSet":6}
+2020-03-22T22:45:18.698874 merging
+2020-03-22T22:45:18.699864 aggregating record, 82ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.617221","indexInSet":5}
+2020-03-22T22:45:18.718722 handling record, 29ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.689025","indexInSet":7}
+2020-03-22T22:45:18.741552 merging
+2020-03-22T22:45:18.742786 aggregating record, 90ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.652531","indexInSet":6}
+2020-03-22T22:45:18.764546 handling record, 41ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.723934","indexInSet":8}
+2020-03-22T22:45:18.767441 merging
+2020-03-22T22:45:18.769677 aggregating record, 80ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.689025","indexInSet":7}
+2020-03-22T22:45:18.788070 handling record, 28ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.759861","indexInSet":9}
+2020-03-22T22:45:18.809561 merging
+2020-03-22T22:45:18.810326 aggregating record, 87ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.723934","indexInSet":8}
+2020-03-22T22:45:18.832915 handling record, 36ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.796012","indexInSet":0}
+2020-03-22T22:45:18.834802 merging
+2020-03-22T22:45:18.836087 aggregating record, 76ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.759861","indexInSet":9}
+2020-03-22T22:45:18.858070 merging
+2020-03-22T22:45:18.859274 aggregating record, 63ms after it was created: {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.796012","indexInSet":0}
+2020-03-22T22:45:21.864424 handling record, 32ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.83286","indexInSet":1}
+2020-03-22T22:45:21.899585 aggregating record, 67ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.83286","indexInSet":1}
+2020-03-22T22:45:21.931323 handling record, 60ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.871517","indexInSet":2}
+2020-03-22T22:45:21.953074 handling record, 44ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.908975","indexInSet":3}
+2020-03-22T22:45:21.978785 handling record, 29ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.949835","indexInSet":4}
+2020-03-22T22:45:21.982159 merging
+2020-03-22T22:45:21.984064 aggregating record, 112ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.871517","indexInSet":2}
+2020-03-22T22:45:22.019101 merging
+2020-03-22T22:45:22.020451 aggregating record, 112ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.908975","indexInSet":3}
+2020-03-22T22:45:22.039145 handling record, 52ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.986708","indexInSet":5}
+2020-03-22T22:45:22.040970 merging
+2020-03-22T22:45:22.041890 aggregating record, 92ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.949835","indexInSet":4}
+2020-03-22T22:45:22.070369 handling record, 43ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.027555","indexInSet":6}
+2020-03-22T22:45:22.097597 merging
+2020-03-22T22:45:22.099275 aggregating record, 113ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.986708","indexInSet":5}
+2020-03-22T22:45:22.118442 handling record, 39ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.079006","indexInSet":7}
+2020-03-22T22:45:22.120192 merging
+2020-03-22T22:45:22.121135 aggregating record, 93ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.027555","indexInSet":6}
+2020-03-22T22:45:22.142250 handling record, 29ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.113892","indexInSet":8}
+2020-03-22T22:45:22.166508 merging
+2020-03-22T22:45:22.167344 aggregating record, 88ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.079006","indexInSet":7}
+2020-03-22T22:45:22.190010 handling record, 39ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.150575","indexInSet":9}
+2020-03-22T22:45:22.192040 merging
+2020-03-22T22:45:22.193350 aggregating record, 80ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.113892","indexInSet":8}
+2020-03-22T22:45:22.214562 handling record, 29ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.185645","indexInSet":0}
+2020-03-22T22:45:22.237531 merging
+2020-03-22T22:45:22.238911 aggregating record, 88ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.150575","indexInSet":9}
+2020-03-22T22:45:22.259398 merging
+2020-03-22T22:45:22.260904 aggregating record, 75ms after it was created: {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.185645","indexInSet":0}
+2020-03-22T22:45:45.384035 grouped and windowed in 0ms from 2020-03-22T22:45:15.083 to 2020-03-22T22:45:15.083: key=49e72230-fc2d-43e8-9835-b4118f592e34, value=null
+2020-03-22T22:45:45.386 grouped and windowed in 334ms from 2020-03-22T22:45:15.083 to 2020-03-22T22:45:15.417: key=49e72230-fc2d-43e8-9835-b4118f592e34, value={"id":"49e72230-fc2d-43e8-9835-b4118f592e34","records":[{"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.37942","indexInSet":9},{"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.236068","indexInSet":5},{"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.271721","indexInSet":6},{"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.307941","indexInSet":7},{"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.343634","indexInSet":8},{"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.082902","indexInSet":1},{"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.124827","indexInSet":2},{"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.16423","indexInSet":3},{"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.200032","indexInSet":4},{"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.41702","indexInSet":0}],"windowStart":null,"windowEnd":null,"firstAdded":"2020-03-22T22:45:15.141759","lastAdded":"2020-03-22T22:45:15.557825","earliestCreated":"2020-03-22T22:45:15.082902","latestCreated":"2020-03-22T22:45:15.41702","numRecordsProcessed":10}
+2020-03-22T22:45:45.389260 grouped and windowed in 344ms from 2020-03-22T22:45:18.452 to 2020-03-22T22:45:18.796: key=0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69, value={"id":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","records":[{"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.723934","indexInSet":8},{"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.759861","indexInSet":9},{"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.492502","indexInSet":2},{"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.528727","indexInSet":3},{"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.796012","indexInSet":0},{"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.452082","indexInSet":1},{"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.652531","indexInSet":6},{"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.689025","indexInSet":7},{"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.565943","indexInSet":4},{"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.617221","indexInSet":5}],"windowStart":null,"windowEnd":null,"firstAdded":"2020-03-22T22:45:18.511085","lastAdded":"2020-03-22T22:45:18.859077","earliestCreated":"2020-03-22T22:45:18.452082","latestCreated":"2020-03-22T22:45:18.796012","numRecordsProcessed":10}
+2020-03-22T22:45:45.391744 grouped and windowed in 352ms from 2020-03-22T22:45:21.833 to 2020-03-22T22:45:22.185: key=915d5b49-240a-423f-a7f8-aa3ca6f8081d, value={"id":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","records":[{"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.83286","indexInSet":1},{"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.185645","indexInSet":0},{"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.908975","indexInSet":3},{"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.871517","indexInSet":2},{"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.986708","indexInSet":5},{"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.949835","indexInSet":4},{"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.079006","indexInSet":7},{"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.027555","indexInSet":6},{"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.150575","indexInSet":9},{"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.113892","indexInSet":8}],"windowStart":null,"windowEnd":null,"firstAdded":"2020-03-22T22:45:21.89513","lastAdded":"2020-03-22T22:45:22.26061","earliestCreated":"2020-03-22T22:45:21.83286","latestCreated":"2020-03-22T22:45:22.185645","numRecordsProcessed":10}
+
+
+
+
+
+OUTPUT
+
+
+
+
+
+2020-03-22T22:45:08.375191 received source record, processed in 159, avg 0.000000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 121, CreateTime = 1584913508194, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 9c768055-55e7-436c-8553-ee064852cc0e, value = {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:07.905492","indexInSet":1})
+2020-03-22T22:45:08.394298 received source record, processed in 49, avg 0.000000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 122, CreateTime = 1584913508345, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 9c768055-55e7-436c-8553-ee064852cc0e, value = {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.345127","indexInSet":2})
+2020-03-22T22:45:08.415869 received source record, processed in 34, avg 0.000000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 123, CreateTime = 1584913508381, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 9c768055-55e7-436c-8553-ee064852cc0e, value = {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.381411","indexInSet":3})
+2020-03-22T22:45:08.446422 received source record, processed in 29, avg 0.000000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 124, CreateTime = 1584913508417, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 9c768055-55e7-436c-8553-ee064852cc0e, value = {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.416988","indexInSet":4})
+2020-03-22T22:45:08.482612 received source record, processed in 24, avg 0.000000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 125, CreateTime = 1584913508458, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 9c768055-55e7-436c-8553-ee064852cc0e, value = {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.458338","indexInSet":5})
+2020-03-22T22:45:08.522535 received source record, processed in 27, avg 0.000000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 126, CreateTime = 1584913508495, serialized key size = 36, serialized value size = 98, headers = RecordHeaders(headers = [], isReadOnly = false), key = 9c768055-55e7-436c-8553-ee064852cc0e, value = {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.49547","indexInSet":6})
+2020-03-22T22:45:08.561008 received source record, processed in 27, avg 0.000000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 127, CreateTime = 1584913508533, serialized key size = 36, serialized value size = 98, headers = RecordHeaders(headers = [], isReadOnly = false), key = 9c768055-55e7-436c-8553-ee064852cc0e, value = {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.53345","indexInSet":7})
+2020-03-22T22:45:08.601923 received source record, processed in 28, avg 0.000000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 128, CreateTime = 1584913508573, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 9c768055-55e7-436c-8553-ee064852cc0e, value = {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.573237","indexInSet":8})
+2020-03-22T22:45:08.639059 received source record, processed in 26, avg 0.000000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 129, CreateTime = 1584913508613, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 9c768055-55e7-436c-8553-ee064852cc0e, value = {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.613166","indexInSet":9})
+2020-03-22T22:45:08.674520 received source record, processed in 25, avg 0.000000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 130, CreateTime = 1584913508649, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 9c768055-55e7-436c-8553-ee064852cc0e, value = {"txId":"9c768055-55e7-436c-8553-ee064852cc0e","start":"2020-03-22T22:45:08.649331","indexInSet":0})
+2020-03-22T22:45:11.727970 received source record, processed in 38, avg 38.000000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 131, CreateTime = 1584913511689, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 903524c2-79f5-4e88-9854-fc8f39bd17fa, value = {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.688664","indexInSet":1})
+2020-03-22T22:45:11.771332 received source record, processed in 36, avg 37.000000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 132, CreateTime = 1584913511735, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 903524c2-79f5-4e88-9854-fc8f39bd17fa, value = {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.735427","indexInSet":2})
+2020-03-22T22:45:11.810992 received source record, processed in 29, avg 34.333333: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 133, CreateTime = 1584913511781, serialized key size = 36, serialized value size = 98, headers = RecordHeaders(headers = [], isReadOnly = false), key = 903524c2-79f5-4e88-9854-fc8f39bd17fa, value = {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.78109","indexInSet":3})
+2020-03-22T22:45:11.846996 received source record, processed in 24, avg 31.750000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 134, CreateTime = 1584913511822, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 903524c2-79f5-4e88-9854-fc8f39bd17fa, value = {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.822089","indexInSet":4})
+2020-03-22T22:45:11.891571 received source record, processed in 33, avg 32.000000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 135, CreateTime = 1584913511858, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 903524c2-79f5-4e88-9854-fc8f39bd17fa, value = {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.857749","indexInSet":5})
+2020-03-22T22:45:11.923801 received source record, processed in 24, avg 30.666667: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 136, CreateTime = 1584913511899, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 903524c2-79f5-4e88-9854-fc8f39bd17fa, value = {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.896903","indexInSet":6})
+2020-03-22T22:45:11.960391 received source record, processed in 26, avg 30.000000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 137, CreateTime = 1584913511934, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 903524c2-79f5-4e88-9854-fc8f39bd17fa, value = {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.934496","indexInSet":7})
+2020-03-22T22:45:11.996514 received source record, processed in 25, avg 29.375000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 138, CreateTime = 1584913511971, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 903524c2-79f5-4e88-9854-fc8f39bd17fa, value = {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:11.970872","indexInSet":8})
+2020-03-22T22:45:12.035826 received source record, processed in 25, avg 28.888889: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 139, CreateTime = 1584913512010, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 903524c2-79f5-4e88-9854-fc8f39bd17fa, value = {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:12.010048","indexInSet":9})
+2020-03-22T22:45:12.071684 received source record, processed in 25, avg 28.500000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 140, CreateTime = 1584913512046, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 903524c2-79f5-4e88-9854-fc8f39bd17fa, value = {"txId":"903524c2-79f5-4e88-9854-fc8f39bd17fa","start":"2020-03-22T22:45:12.046318","indexInSet":0})
+2020-03-22T22:45:15.112859 received source record, processed in 29, avg 28.545455: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 141, CreateTime = 1584913515083, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 49e72230-fc2d-43e8-9835-b4118f592e34, value = {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.082902","indexInSet":1})
+2020-03-22T22:45:15.155185 received source record, processed in 30, avg 28.666667: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 142, CreateTime = 1584913515125, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 49e72230-fc2d-43e8-9835-b4118f592e34, value = {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.124827","indexInSet":2})
+2020-03-22T22:45:15.189237 received source record, processed in 25, avg 28.384615: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 143, CreateTime = 1584913515164, serialized key size = 36, serialized value size = 98, headers = RecordHeaders(headers = [], isReadOnly = false), key = 49e72230-fc2d-43e8-9835-b4118f592e34, value = {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.16423","indexInSet":3})
+2020-03-22T22:45:15.225433 received source record, processed in 25, avg 28.142857: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 144, CreateTime = 1584913515200, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 49e72230-fc2d-43e8-9835-b4118f592e34, value = {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.200032","indexInSet":4})
+2020-03-22T22:45:15.261122 received source record, processed in 25, avg 27.933333: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 145, CreateTime = 1584913515236, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 49e72230-fc2d-43e8-9835-b4118f592e34, value = {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.236068","indexInSet":5})
+2020-03-22T22:45:15.536207 aggregate was ok for key 9c768055-55e7-436c-8553-ee064852cc0e, processed in 6874 from start, and 6910 from end, avg: 6910.000000
+2020-03-22T22:45:15.540626 received source record, processed in 268, avg 42.937500: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 146, CreateTime = 1584913515272, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 49e72230-fc2d-43e8-9835-b4118f592e34, value = {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.271721","indexInSet":6})
+2020-03-22T22:45:15.548978 aggregate was ok for key 903524c2-79f5-4e88-9854-fc8f39bd17fa, processed in 3502 from start, and 3538 from end, avg: 5224.000000
+2020-03-22T22:45:15.550696 does not contain ten records! ConsumerRecord(topic = throughput-test-aggregated, partition = 0, leaderEpoch = 0, offset = 19, CreateTime = 1584913515083, serialized key size = 36, serialized value size = 434, headers = RecordHeaders(headers = [], isReadOnly = false), key = 49e72230-fc2d-43e8-9835-b4118f592e34, value = {"id":"49e72230-fc2d-43e8-9835-b4118f592e34","records":[{"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.082902","indexInSet":1}],"windowStart":"2020-03-22T22:45:15.083","windowEnd":"2020-03-22T22:45:15.083","firstAdded":"2020-03-22T22:45:15.141759","lastAdded":"2020-03-22T22:45:15.143376","earliestCreated":"2020-03-22T22:45:15.082902","latestCreated":"2020-03-22T22:45:15.082902","numRecordsProcessed":1})
+2020-03-22T22:45:15.562728 received source record, processed in 254, avg 55.352941: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 147, CreateTime = 1584913515308, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 49e72230-fc2d-43e8-9835-b4118f592e34, value = {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.307941","indexInSet":7})
+2020-03-22T22:45:15.563378 received source record, processed in 219, avg 64.444444: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 148, CreateTime = 1584913515344, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 49e72230-fc2d-43e8-9835-b4118f592e34, value = {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.343634","indexInSet":8})
+2020-03-22T22:45:15.564026 received source record, processed in 185, avg 70.789474: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 149, CreateTime = 1584913515379, serialized key size = 36, serialized value size = 98, headers = RecordHeaders(headers = [], isReadOnly = false), key = 49e72230-fc2d-43e8-9835-b4118f592e34, value = {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.37942","indexInSet":9})
+2020-03-22T22:45:15.564516 received source record, processed in 147, avg 74.600000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 150, CreateTime = 1584913515417, serialized key size = 36, serialized value size = 98, headers = RecordHeaders(headers = [], isReadOnly = false), key = 49e72230-fc2d-43e8-9835-b4118f592e34, value = {"txId":"49e72230-fc2d-43e8-9835-b4118f592e34","start":"2020-03-22T22:45:15.41702","indexInSet":0})
+2020-03-22T22:45:18.481851 received source record, processed in 29, avg 74.150000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 151, CreateTime = 1584913518452, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69, value = {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.452082","indexInSet":1})
+2020-03-22T22:45:18.518086 received source record, processed in 26, avg 73.650000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 152, CreateTime = 1584913518492, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69, value = {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.492502","indexInSet":2})
+2020-03-22T22:45:18.556104 received source record, processed in 27, avg 73.550000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 153, CreateTime = 1584913518529, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69, value = {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.528727","indexInSet":3})
+2020-03-22T22:45:18.606768 received source record, processed in 40, avg 74.350000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 154, CreateTime = 1584913518566, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69, value = {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.565943","indexInSet":4})
+2020-03-22T22:45:18.641566 received source record, processed in 24, avg 73.900000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 155, CreateTime = 1584913518617, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69, value = {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.617221","indexInSet":5})
+2020-03-22T22:45:18.679330 received source record, processed in 27, avg 74.050000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 156, CreateTime = 1584913518652, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69, value = {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.652531","indexInSet":6})
+2020-03-22T22:45:18.713768 received source record, processed in 24, avg 73.950000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 157, CreateTime = 1584913518689, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69, value = {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.689025","indexInSet":7})
+2020-03-22T22:45:18.748414 received source record, processed in 24, avg 73.900000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 158, CreateTime = 1584913518724, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69, value = {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.723934","indexInSet":8})
+2020-03-22T22:45:18.789605 received source record, processed in 29, avg 74.100000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 159, CreateTime = 1584913518760, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69, value = {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.759861","indexInSet":9})
+2020-03-22T22:45:18.821727 received source record, processed in 25, avg 74.100000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 160, CreateTime = 1584913518796, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69, value = {"txId":"0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69","start":"2020-03-22T22:45:18.796012","indexInSet":0})
+2020-03-22T22:45:21.862163 received source record, processed in 29, avg 74.100000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 161, CreateTime = 1584913521833, serialized key size = 36, serialized value size = 98, headers = RecordHeaders(headers = [], isReadOnly = false), key = 915d5b49-240a-423f-a7f8-aa3ca6f8081d, value = {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.83286","indexInSet":1})
+2020-03-22T22:45:21.899888 received source record, processed in 28, avg 74.000000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 162, CreateTime = 1584913521871, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 915d5b49-240a-423f-a7f8-aa3ca6f8081d, value = {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.871517","indexInSet":2})
+2020-03-22T22:45:21.939559 received source record, processed in 30, avg 74.250000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 163, CreateTime = 1584913521909, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 915d5b49-240a-423f-a7f8-aa3ca6f8081d, value = {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.908975","indexInSet":3})
+2020-03-22T22:45:21.977156 received source record, processed in 26, avg 74.300000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 164, CreateTime = 1584913521950, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 915d5b49-240a-423f-a7f8-aa3ca6f8081d, value = {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.949835","indexInSet":4})
+2020-03-22T22:45:22.017525 received source record, processed in 31, avg 74.600000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 165, CreateTime = 1584913521986, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 915d5b49-240a-423f-a7f8-aa3ca6f8081d, value = {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:21.986708","indexInSet":5})
+2020-03-22T22:45:22.068500 received source record, processed in 41, avg 63.250000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 166, CreateTime = 1584913522027, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 915d5b49-240a-423f-a7f8-aa3ca6f8081d, value = {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.027555","indexInSet":6})
+2020-03-22T22:45:22.103736 received source record, processed in 24, avg 51.750000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 167, CreateTime = 1584913522079, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 915d5b49-240a-423f-a7f8-aa3ca6f8081d, value = {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.079006","indexInSet":7})
+2020-03-22T22:45:22.141734 received source record, processed in 27, avg 42.150000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 168, CreateTime = 1584913522114, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 915d5b49-240a-423f-a7f8-aa3ca6f8081d, value = {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.113892","indexInSet":8})
+2020-03-22T22:45:22.174807 received source record, processed in 24, avg 34.100000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 169, CreateTime = 1584913522150, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 915d5b49-240a-423f-a7f8-aa3ca6f8081d, value = {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.150575","indexInSet":9})
+2020-03-22T22:45:22.211426 received source record, processed in 26, avg 28.050000: ConsumerRecord(topic = throughput-test-source, partition = 0, leaderEpoch = 0, offset = 170, CreateTime = 1584913522185, serialized key size = 36, serialized value size = 99, headers = RecordHeaders(headers = [], isReadOnly = false), key = 915d5b49-240a-423f-a7f8-aa3ca6f8081d, value = {"txId":"915d5b49-240a-423f-a7f8-aa3ca6f8081d","start":"2020-03-22T22:45:22.185645","indexInSet":0})
+2020-03-22T22:45:45.410005 got null body for record ConsumerRecord(topic = throughput-test-aggregated, partition = 0, leaderEpoch = 0, offset = 20, CreateTime = 1584913515083, serialized key size = 36, serialized value size = -1, headers = RecordHeaders(headers = [], isReadOnly = false), key = 49e72230-fc2d-43e8-9835-b4118f592e34, value = null)
+2020-03-22T22:45:45.438063 aggregate was ok for key 49e72230-fc2d-43e8-9835-b4118f592e34, processed in 30020 from start, and 30058 from end, avg: 13502.000000
+2020-03-22T22:45:45.439719 aggregate was ok for key 0a8b0bf2-4118-4fc2-a7f1-9c0dad1e1e69, processed in 26643 from start, and 26680 from end, avg: 16796.500000
+2020-03-22T22:45:45.442113 aggregate was ok for key 915d5b49-240a-423f-a7f8-aa3ca6f8081d, processed in 23256 from start, and 23291 from end, avg: 18095.400000
