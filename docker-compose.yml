@@ -1,11 +1,11 @@
 version: '3'
 services:
-  zookeeper:
+  kdc-zookeeper:
     image: "maxant/zookeeper"
     container_name: "zookeeper"
     ports:
       - "30000:2181"
-  kafka-1:
+  kdc-kafka-1:
     image: "maxant/kafka"
     container_name: "kafka-1"
     ports:
@@ -16,7 +16,7 @@ services:
       ADVERTISED_LISTENER_HOST_PORT: "maxant.ch:30001"
     depends_on:
       - zookeeper
-  kafka-2:
+  kdc-kafka-2:
     image: "maxant/kafka"
     container_name: "kafka-2"
     ports:
@@ -27,7 +27,7 @@ services:
       ADVERTISED_LISTENER_HOST_PORT: "maxant.ch:30002"
     depends_on:
       - zookeeper
-  kafdrop:
+  kdc-kafdrop:
     image: obsidiandynamics/kafdrop
     container_name: "kafdrop"
     ports:
@@ -45,15 +45,41 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /portainer_data:/data
-  cadvisor:
-    image: google/cadvisor:latest
-    container_name: cadvisor
+#  cadvisor:
+#    image: google/cadvisor:latest
+#    container_name: cadvisor
+#    ports:
+#      - "29998:8080"
+#    volumes:
+#      - /var/lib/docker/:/var/lib/docker:ro
+#      - /sys:/sys:ro
+#      - /var/run:/var/run:rw
+#      - /:/rootfs:ro
+  kdc-mysql:
+    image: "mysql:8.0.19"
+    container_name: "kdc-mysql"
     ports:
-      - "29998:8080"
+      - "30300:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "secret"
     volumes:
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /sys:/sys:ro
-      - /var/run:/var/run:rw
-      - /:/rootfs:ro
-
+      - /home/ant3/kafka-data-consistency/mysql-data:/var/lib/mysql:rw
+  kdc-ksqldb-server:
+    image: confluentinc/ksqldb-server:0.8.1
+    hostname: ksqldb-server
+    container_name: ksqldb-server
+    ports:
+      - "30410:8088"
+    environment:
+      KSQL_LISTENERS: http://0.0.0.0:8088
+      KSQL_BOOTSTRAP_SERVERS: maxant.ch:30001,maxant.ch:30002
+      KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: "true"
+      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: "true"
+  kdc-ksqldb-cli:
+    image: confluentinc/ksqldb-cli:0.8.1
+    container_name: ksqldb-cli
+    depends_on:
+      - ksqldb-server
+    entrypoint: /bin/sh
+    tty: true
 

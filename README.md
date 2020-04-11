@@ -61,7 +61,9 @@ or open http://cadvisor.maxant.ch/
 Open ports like this:
 
     # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092, neo4j:30101:7687, elastic-apm-server:30200:8200,
-    # mysql:30300:3306, ksql-server-1:30401:8088, ksql-server-2:30402:8088, confluent-control-center:30500:9021,
+    # mysql:30300:3306, ksql-server-1:30401:8088, ksql-server-2:30402:8088, 
+    # ksqldb-server-1:30410:8088,
+    # confluent-control-center:30500:9021,
     # kafdrop:30050, portainer: 29999
     firewall-cmd --zone=public --permanent --add-port=30000/tcp
     firewall-cmd --zone=public --permanent --add-port=30001/tcp
@@ -71,6 +73,7 @@ Open ports like this:
     firewall-cmd --zone=public --permanent --add-port=30300/tcp
     firewall-cmd --zone=public --permanent --add-port=30401/tcp
     firewall-cmd --zone=public --permanent --add-port=30402/tcp
+    firewall-cmd --zone=public --permanent --add-port=30410/tcp
     firewall-cmd --zone=public --permanent --add-port=30500/tcp
     firewall-cmd --reload
     firewall-cmd --list-all
@@ -390,7 +393,8 @@ Create elasticsearch indexes:
 
 Create the databases in MySql:
 
-    docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -psecret -e "CREATE DATABASE claims CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+    
+     mysql mysql -h maxant.ch --port 30300 -u root -psecret -e "CREATE DATABASE claims CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 
 Set Java to version 8, because of Payara! (https://blog.payara.fish/java-11-support-in-payara-server-coming-soon)
 
