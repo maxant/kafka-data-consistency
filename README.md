@@ -49,7 +49,8 @@ see `docker-compose.yml`
 Make sure the necessary volume folder exists:
 
     mkdir /portainer_data
-    mkdir confluentinc-kafka-connect-jdbc
+    mkdir confluent-hub-components
+    mkdir confluent-hub-components/confluentinc-kafka-connect-jdbc
     mkdir mysql-data
 
 Access Portainer here: http://portainer.maxant.ch/
@@ -873,11 +874,87 @@ Javascript:
 
 # KSQLDB
 
+## Links
+
+- https://docs.ksqldb.io/en/latest/tutorials/embedded-connect/
+- https://www.confluent.io/blog/kafka-connect-deep-dive-jdbc-source-connector/
+- https://docs.confluent.io/5.4.1/connect/kafka-connect-jdbc/source-connector/index.html
+
+## Example
+
+Install the jdbc connector:
+
+    docker run --rm -v $PWD/confluent-hub-components:/share/confluent-hub-components confluentinc/ksqldb-server:0.8.1 confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:5.4.1
+    docker run -v $PWD/confluent-hub-components:/share/confluent-hub-components confluentinc/ksqldb-server:0.8.1 confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:5.4.1
+
+And add the mysql client jar:
+
+    wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-8.0.19.zip
+    mkdir tmp
+    mv mysql-connector-java-8.0.19.zip tmp
+    cd tmp
+    unzip mysql-connector-java-8.0.19.zip
+    mv mysql-connector-java-8.0.19/mysql-connector-java-8.0.19.jar ../confluent-hub-components/confluentinc-kafka-connect-jdbc/lib/
+    cd ..
+    rm -rf tmp
+
+then bounce ksqldb
+
+    docker-compose rm -fsv kdc-ksqldb-server
+    docker-compose up -d 
+
+create a table
+
+    docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p
+
+    use contracts;
+    create table merkmale (merkmalsname varchar(10) not null, merkmalswert varchar(10), gnr varchar(10) not null, mut timestamp not null default now() );
+    insert into merkmale (merkmalsname, merkmalswert, gnr) values ('beginn', '2020-01-01', '12345678');
+    insert into merkmale (merkmalsname, merkmalswert, gnr) values ('ablauf', '2024-12-31', '12345678');
+    insert into merkmale (merkmalsname, merkmalswert, gnr) values ('vvi', 'NG', '12345678');
+
+    select * from merkmale order by mut desc;
+
+connect to ksqldb-cli and create a connector:
+
     docker exec -it kdc-ksqldb-cli ksql http://maxant.ch:30410
 
-https://docs.ksqldb.io/en/latest/tutorials/embedded-connect/
+    CREATE SOURCE CONNECTOR jdbc_source WITH (
+      'connector.class'          = 'io.confluent.connect.jdbc.JdbcSourceConnector',
+      'connection.url'           = 'jdbc:mysql://maxant.ch:30300/contracts',
+      'connection.user'          = 'root',
+      'connection.password'      = 'secret',
+      'topic.prefix'             = 'jdbc_',
+      'table.whitelist'          = 'merkmale',
+      'mode'                     = 'timestamp',
+      'timestamp.column.name' = 'mut',
+      'key'                      = 'gnr'
+    );
 
-    docker run -v $PWD/confluent-hub-components:/share/confluent-hub-components confluentinc/ksqldb-server:0.8.1 confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:5.4.1
+Mode - see https://github.com/confluentinc/kafka-connect-jdbc/blob/master/src/main/java/io/confluent/connect/jdbc/source/JdbcSourceConnectorConfig.java
+
+TODO      'numeric.mapping'          = 'best_fit',
+      'key.converter'            = 'org.apache.kafka.connect.converters.IntegerConverter');
+
+TODO ksqldb logs:
+KSQL_CONNECT_REST_ADVERTISED_HOST_NAME is required.
+Command [/usr/local/bin/dub ensure KSQL_CONNECT_REST_ADVERTISED_HOST_NAME] FAILED !
+
+
+    insert into merkmale (merkmalsname, merkmalswert, gnr) values ('vvi', 'EG', '12345678');
+    update merkmale set merkmalswert = '2023-12-31', mut = now() where merkmalsname = 'beginn' and gnr = '12345678';
+    
+    select * from merkmale order by mut desc;
+
+## ksqldb-cli
+
+    docker exec -it kdc-ksqldb-cli ksql http://maxant.ch:30410
+
+    show topics;
+    show streams;
+    show connectors;
+
+
 
 # Useful Elasticsearch stuff:
 
