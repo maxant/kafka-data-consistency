@@ -63,7 +63,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: "secret"
     volumes:
-      - /home/ant3/kafka-data-consistency/mysql-data:/var/lib/mysql:rw
+      - ./mysql-data:/var/lib/mysql:rw
   kdc-ksqldb-server:
     image: confluentinc/ksqldb-server:0.8.1
     hostname: ksqldb-server
@@ -78,6 +78,22 @@ services:
       KSQL_BOOTSTRAP_SERVERS: maxant.ch:30001,maxant.ch:30002
       KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: "true"
       KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: "true"
+      KSQL_KSQL_CONNECT_WORKER_CONFIG: "/connect/connect.properties"
+      KSQL_CONNECT_BOOTSTRAP_SERVERS: "maxant.ch:30001,maxant.ch:30002"
+      KSQL_CONNECT_GROUP_ID: "ksql-connect-cluster"
+      KSQL_CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.storage.StringConverter"
+      KSQL_CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      KSQL_CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      KSQL_CONNECT_CONFIG_STORAGE_TOPIC: "ksql-connect-configs"
+      KSQL_CONNECT_OFFSET_STORAGE_TOPIC: "ksql-connect-offsets"
+      KSQL_CONNECT_STATUS_STORAGE_TOPIC: "ksql-connect-statuses"
+      KSQL_CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 2
+      KSQL_CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 2
+      KSQL_CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 2
+      KSQL_CONNECT_PLUGIN_PATH: "/usr/share/kafka/plugins"
+    volumes:
+      - ./confluentinc-kafka-connect-jdbc:/usr/share/kafka/plugins/jdbc:rw
+
   kdc-ksqldb-cli:
     image: confluentinc/ksqldb-cli:0.8.1
     container_name: kdc-ksqldb-cli

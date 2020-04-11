@@ -46,11 +46,22 @@ Kafka needs to be present to build a suitable docker image.
 
 see `docker-compose.yml`
 
-Make sure the portainer folder exists:
+Make sure the necessary volume folder exists:
 
     mkdir /portainer_data
+    mkdir confluentinc-kafka-connect-jdbc
+    mkdir mysql-data
 
 Access Portainer here: http://portainer.maxant.ch/
+
+    # start everything
+    docker-compose up -d 
+
+    # undeploy and entirely remove just one of the services
+    docker-compose rm -fsv kdc-ksqldb-server
+
+    # redeploy just missing services
+    docker-compose up -d 
 
 Monitor docker CPU/Memory with:
 
@@ -394,7 +405,11 @@ Create elasticsearch indexes:
 Create the databases in MySql:
 
     
-     mysql mysql -h maxant.ch --port 30300 -u root -psecret -e "CREATE DATABASE claims CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+    # mysql mysql -h maxant.ch --port 30300 -u root -psecret -e "CREATE DATABASE claims CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+
+    docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p -e "CREATE DATABASE claims CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+    docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p -e "CREATE DATABASE contracts CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+    docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p
 
 Set Java to version 8, because of Payara! (https://blog.payara.fish/java-11-support-in-payara-server-coming-soon)
 
@@ -577,7 +592,7 @@ Write some test data to a topic:
 
     kafka_2.11-2.4.1/bin/kafka-console-producer.sh --broker-list maxant.ch:30001,maxant.ch:30002 --topic ksql-test-cud-partners
 
-# KSQL
+# KSQL - DEPRECATED - See KSQLDB
 
 Run the partner generator: `PartnerGenerator#main` => it generates new random partner data, a record every few seconds. 
 
@@ -855,6 +870,14 @@ Javascript:
 - Kafka Connect - JDBC Deep Dive: https://www.confluent.io/blog/kafka-connect-deep-dive-jdbc-source-connector
 - Cook Book: https://www.confluent.io/product/ksql/stream-processing-cookbook
 - Example docker compose content: https://github.com/confluentinc/cp-docker-images/blob/5.3.0-post/examples/cp-all-in-one/docker-compose.yml
+
+# KSQLDB
+
+    docker exec -it kdc-ksqldb-cli ksql http://maxant.ch:30410
+
+https://docs.ksqldb.io/en/latest/tutorials/embedded-connect/
+
+
 
 # Useful Elasticsearch stuff:
 
