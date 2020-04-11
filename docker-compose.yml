@@ -92,7 +92,7 @@ services:
       KSQL_CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 2
       KSQL_CONNECT_PLUGIN_PATH: "/usr/share/kafka/plugins"
     volumes:
-      - ./confluentinc-kafka-connect-jdbc:/usr/share/kafka/plugins/jdbc:rw
+      - ./confluent-hub-components/confluentinc-kafka-connect-jdbc:/usr/share/kafka/plugins/jdbc:rw
 
   kdc-ksqldb-cli:
     image: confluentinc/ksqldb-cli:0.8.1

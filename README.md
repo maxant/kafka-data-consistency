@@ -877,7 +877,7 @@ Javascript:
 
 https://docs.ksqldb.io/en/latest/tutorials/embedded-connect/
 
-
+    docker run -v $PWD/confluent-hub-components:/share/confluent-hub-components confluentinc/ksqldb-server:0.8.1 confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:5.4.1
 
 # Useful Elasticsearch stuff:
 
