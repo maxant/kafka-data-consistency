@@ -2,12 +2,12 @@ version: '3'
 services:
   kdc-zookeeper:
     image: "maxant/zookeeper"
-    container_name: "zookeeper"
+    container_name: "kdc-zookeeper"
     ports:
       - "30000:2181"
   kdc-kafka-1:
     image: "maxant/kafka"
-    container_name: "kafka-1"
+    container_name: "kdc-kafka-1"
     ports:
       - "30001:9092"
     environment:
@@ -18,7 +18,7 @@ services:
       - kdc-zookeeper
   kdc-kafka-2:
     image: "maxant/kafka"
-    container_name: "kafka-2"
+    container_name: "kdc-kafka-2"
     ports:
       - "30002:9092"
     environment:
@@ -29,7 +29,7 @@ services:
       - kdc-zookeeper
   kdc-kafdrop:
     image: obsidiandynamics/kafdrop
-    container_name: "kafdrop"
+    container_name: "kdc-kafdrop"
     ports:
       - "30050:9000"
     environment:
@@ -38,8 +38,8 @@ services:
       - kdc-kafka-1
       - kdc-kafka-2
   portainer:
-    image: portainer/portainer
-    container_name: portainer
+    image: "portainer/portainer"
+    container_name: "portainer"
     ports:
       - "29999:9000"
     volumes:
@@ -67,7 +67,7 @@ services:
   kdc-ksqldb-server:
     image: confluentinc/ksqldb-server:0.8.1
     hostname: ksqldb-server
-    container_name: ksqldb-server
+    container_name: kdc-ksqldb-server
     depends_on:
       - kdc-kafka-1
       - kdc-kafka-2
@@ -80,7 +80,7 @@ services:
       KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: "true"
   kdc-ksqldb-cli:
     image: confluentinc/ksqldb-cli:0.8.1
-    container_name: ksqldb-cli
+    container_name: kdc-ksqldb-cli
     depends_on:
       - kdc-ksqldb-server
     entrypoint: /bin/sh
