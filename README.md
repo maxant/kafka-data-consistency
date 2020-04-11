@@ -593,7 +593,7 @@ Write some test data to a topic:
 
     kafka_2.11-2.4.1/bin/kafka-console-producer.sh --broker-list maxant.ch:30001,maxant.ch:30002 --topic ksql-test-cud-partners
 
-# KSQL - DEPRECATED - See KSQLDB
+# KSQL - DEPRECATED - See ksqlDB
 
 Run the partner generator: `PartnerGenerator#main` => it generates new random partner data, a record every few seconds. 
 
@@ -872,7 +872,7 @@ Javascript:
 - Cook Book: https://www.confluent.io/product/ksql/stream-processing-cookbook
 - Example docker compose content: https://github.com/confluentinc/cp-docker-images/blob/5.3.0-post/examples/cp-all-in-one/docker-compose.yml
 
-# KSQLDB
+# ksqlDB
 
 ## Links
 
@@ -898,7 +898,7 @@ And add the mysql client jar:
     cd ..
     rm -rf tmp
 
-then bounce ksqldb
+then bounce ksqldb-server
 
     docker-compose rm -fsv kdc-ksqldb-server
     docker-compose up -d 
@@ -927,24 +927,132 @@ connect to ksqldb-cli and create a connector:
       'topic.prefix'             = 'jdbc_',
       'table.whitelist'          = 'merkmale',
       'mode'                     = 'timestamp',
-      'timestamp.column.name' = 'mut',
+      'timestamp.column.name'    = 'mut',
+      'poll.interval.ms'         = 3000,
       'key'                      = 'gnr'
     );
 
-Mode - see https://github.com/confluentinc/kafka-connect-jdbc/blob/master/src/main/java/io/confluent/connect/jdbc/source/JdbcSourceConnectorConfig.java
+Mode - see https://docs.confluent.io/current/connect/kafka-connect-jdbc/source-connector/source_config_options.html#mode
+or https://github.com/confluentinc/kafka-connect-jdbc/blob/master/src/main/java/io/confluent/connect/jdbc/source/JdbcSourceConnectorConfig.java
 
-TODO      'numeric.mapping'          = 'best_fit',
-      'key.converter'            = 'org.apache.kafka.connect.converters.IntegerConverter');
+Watch a topic:
 
-TODO ksqldb logs:
-KSQL_CONNECT_REST_ADVERTISED_HOST_NAME is required.
-Command [/usr/local/bin/dub ensure KSQL_CONNECT_REST_ADVERTISED_HOST_NAME] FAILED !
+    PRINT 'jdbc_merkmale';
+
+Get all info off topic:
+
+    PRINT 'jdbc_merkmale' FROM BEGINNING;
+
+Create a stream to wrap the topic, as we need it as the basis for future stuff in KSQL:
+
+    CREATE STREAM s_merkmale_raw (
+        rowkey STRING KEY,
+        gnr STRING,
+        merkmalsname STRING,
+        merkmalswert STRING,
+        mut BIGINT
+    )
+    WITH (kafka_topic='jdbc_merkmale', value_format='JSON');
+
+Read all the data on the stream:
+
+    SET 'auto.offset.reset'='earliest';
+    select * from s_merkmale_raw emit changes;
+    ctrl+c
+    SET 'auto.offset.reset'='latest';
+
+Create a new stream, but note that we need a unique key in order to create tables on top of it.
+Currently our stream doesn't have a **unique** key because we can have many merkmal per gnr.
+See also https://www.confluent.io/stream-processing-cookbook/ksql-recipes/creating-composite-key/
+At the same time, let's filter on only VVIs. Note that we need to set the offset to earliest, so that
+all data in the existing stream is consumed.
+We also do this in two steps because it doesn't seem possible to create the composite key AND use it, in one statement.
+
+    SET 'auto.offset.reset' = 'earliest';
+
+    DROP STREAM IF EXISTS s_vvis_raw DELETE TOPIC;
+    CREATE STREAM s_vvis_raw AS 
+        SELECT *, 
+               gnr + '::' + merkmalsname + '::' + CAST(mut AS STRING) AS VVI_KEY  -- creates a composite key
+        FROM s_merkmale_raw
+        WHERE merkmalsname = 'vvi';
+
+    DROP STREAM IF EXISTS s_vvis DELETE TOPIC;
+    CREATE STREAM s_vvis AS 
+        SELECT *
+        FROM s_vvis_raw
+        PARTITION BY VVI_KEY;
+
+Now we do the same for beginn/ablauf:
+
+    SET 'auto.offset.reset' = 'earliest';
+
+    DROP STREAM IF EXISTS s_bda_raw DELETE TOPIC;
+    CREATE STREAM s_bda_raw AS 
+        SELECT *, 
+               gnr + '::' + merkmalsname AS BDA_KEY  -- creates a composite key - BEGIN should also be part of this key
+        FROM s_merkmale_raw
+        WHERE merkmalsname = 'beginn' OR merkmalsname = 'ablauf';
+
+    DROP STREAM IF EXISTS s_bda DELETE TOPIC;
+    CREATE STREAM s_bda AS 
+        SELECT *
+        FROM s_bda_raw
+        PARTITION BY BDA_KEY;
+
+Now create a materialized VVI view:
+
+    DROP TABLE IF EXISTS v_vvi DELETE TOPIC;
+    CREATE TABLE v_vvi AS
+        SELECT
+            latest_by_offset(gnr) as gnr,
+            collect_list(merkmalswert) as werte
+        FROM s_vvis
+        GROUP BY GNR
+    EMIT CHANGES;
+
+    select * from v_vvi where ROWKEY = '12345678';
+
+    curl -X POST "http://maxant.ch:30410/query" -H 'Content-Type: application/vnd.ksql.v1+json' -d '
+    {
+      "ksql": "select * from v_vvi where ROWKEY = '\''12345678'\'';"
+    }' \
+    | jq '.[1].row.columns[3]'
+
+    => ["NG","EG"]
+
+Now create a materialized BDA view:
+
+    DROP TABLE IF EXISTS v_bda DELETE TOPIC;
+    CREATE TABLE v_bda AS
+        SELECT
+            latest_by_offset(gnr) as gnr,
+            latest_by_offset(merkmalswert) as wert
+        FROM s_bda
+        GROUP BY BDA_KEY
+    EMIT CHANGES;
+
+    select * from v_bda where ROWKEY = '12345678::beginn';
+
+    curl -X POST "http://maxant.ch:30410/query" -H 'Content-Type: application/vnd.ksql.v1+json' -d '
+    {
+      "ksql": "select * from v_bda where ROWKEY = '\''12345678::beginn'\'';"
+    }' \
+    | jq '.[1].row.columns[3]'
+
+
+
+
 
 
     insert into merkmale (merkmalsname, merkmalswert, gnr) values ('vvi', 'EG', '12345678');
-    update merkmale set merkmalswert = '2023-12-31', mut = now() where merkmalsname = 'beginn' and gnr = '12345678';
+    update merkmale set merkmalswert = '2024-12-31', mut = now() where merkmalsname = 'beginn' and gnr = '12345678';
     
     select * from merkmale order by mut desc;
+
+TODO v_vvi => how could we make a list of pairs, so that we have the MUT for each one?
+TODO join streams to get a contract view
+TODO more useful stuff with ksqldb? like queries on other columns without own streams?
 
 ## ksqldb-cli
 
@@ -953,7 +1061,8 @@ Command [/usr/local/bin/dub ensure KSQL_CONNECT_REST_ADVERTISED_HOST_NAME] FAILE
     show topics;
     show streams;
     show connectors;
-
+    show queries;
+    DESCRIBE CONNECTOR JDBC_SOURCE;
 
 
 # Useful Elasticsearch stuff:
