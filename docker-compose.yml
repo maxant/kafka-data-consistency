@@ -15,7 +15,7 @@ services:
       ZOOKEEPER_HOST_PORT: "zookeeper:2181"
       ADVERTISED_LISTENER_HOST_PORT: "maxant.ch:30001"
     depends_on:
-      - zookeeper
+      - kdc-zookeeper
   kdc-kafka-2:
     image: "maxant/kafka"
     container_name: "kafka-2"
@@ -26,7 +26,7 @@ services:
       ZOOKEEPER_HOST_PORT: "zookeeper:2181"
       ADVERTISED_LISTENER_HOST_PORT: "maxant.ch:30002"
     depends_on:
-      - zookeeper
+      - kdc-zookeeper
   kdc-kafdrop:
     image: obsidiandynamics/kafdrop
     container_name: "kafdrop"
@@ -35,8 +35,8 @@ services:
     environment:
       KAFKA_BROKERCONNECT: "maxant.ch:30001,maxant.ch:30002"
     depends_on:
-      - kafka-1
-      - kafka-2
+      - kdc-kafka-1
+      - kdc-kafka-2
   portainer:
     image: portainer/portainer
     container_name: portainer
@@ -68,6 +68,9 @@ services:
     image: confluentinc/ksqldb-server:0.8.1
     hostname: ksqldb-server
     container_name: ksqldb-server
+    depends_on:
+      - kdc-kafka-1
+      - kdc-kafka-2
     ports:
       - "30410:8088"
     environment:
@@ -79,7 +82,7 @@ services:
     image: confluentinc/ksqldb-cli:0.8.1
     container_name: ksqldb-cli
     depends_on:
-      - ksqldb-server
+      - kdc-ksqldb-server
     entrypoint: /bin/sh
     tty: true
 
