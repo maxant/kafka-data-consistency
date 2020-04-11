@@ -12,7 +12,7 @@ services:
       - "30001:9092"
     environment:
       ID: 1
-      ZOOKEEPER_HOST_PORT: "zookeeper:2181"
+      ZOOKEEPER_HOST_PORT: "kdc-zookeeper:2181"
       ADVERTISED_LISTENER_HOST_PORT: "maxant.ch:30001"
     depends_on:
       - kdc-zookeeper
@@ -23,7 +23,7 @@ services:
       - "30002:9092"
     environment:
       ID: 2
-      ZOOKEEPER_HOST_PORT: "zookeeper:2181"
+      ZOOKEEPER_HOST_PORT: "kdc-zookeeper:2181"
       ADVERTISED_LISTENER_HOST_PORT: "maxant.ch:30002"
     depends_on:
       - kdc-zookeeper
