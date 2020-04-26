@@ -56,13 +56,13 @@ Make sure the necessary volume folder exists:
 Access Portainer here: http://portainer.maxant.ch/
 
     # start everything
-    docker-compose up -d 
+    docker-compose -f dc-base.yml up -d 
 
     # undeploy and entirely remove just one of the services
-    docker-compose rm -fsv kdc-ksqldb-server
+    docker-compose -f dc-ksqldb.yml rm -fsv kdc-ksqldb-server
 
     # redeploy just missing services
-    docker-compose up -d 
+    docker-compose -f ... up -d 
 
 Monitor docker CPU/Memory with:
 
@@ -73,10 +73,10 @@ or open http://cadvisor.maxant.ch/
 Open ports like this:
 
     # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092, neo4j:30101:7687, elastic-apm-server:30200:8200,
-    # mysql:30300:3306, ksql-server-1:30401:8088, ksql-server-2:30402:8088, 
-    # ksqldb-server-1:30410:8088,
+    # mysql:30300:3306, ksql-server-1:30401:8088, ksql-server-2:30402:8088, elastic:30050:9200, kibana:30150:5601
+    # ksqldb-server-1:30410:8088, kafka-rest-proxy:30030:8082
     # confluent-control-center:30500:9021,
-    # kafdrop:30050, portainer: 29999
+    # kafdrop:30060, portainer: 29999:9000, schemaregistry: 30550:8085, schemaregistry-ui:30555:8000
     firewall-cmd --zone=public --permanent --add-port=30000/tcp
     firewall-cmd --zone=public --permanent --add-port=30001/tcp
     firewall-cmd --zone=public --permanent --add-port=30002/tcp
@@ -89,6 +89,7 @@ Open ports like this:
     firewall-cmd --zone=public --permanent --add-port=30500/tcp
     firewall-cmd --reload
     firewall-cmd --list-all
+    firewall-cmd --zone=public --permanent --remove-port=30550/tcp
 
 Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-consistency.conf):
 
@@ -151,7 +152,6 @@ Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-co
       # ############################################################
       # portainer.maxant.ch - dashboard
       # ############################################################
-
       server {
         listen 80;
 
@@ -162,17 +162,57 @@ Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-co
       }
 
       # ############################################################
-      # kafdrop.maxant.ch - kafka dashboard
+      # kdc.kafdrop.maxant.ch - kafka dashboard
       # ############################################################
-    
+
       server {
         listen 80;
     
-        server_name kafdrop.maxant.ch;
+        server_name kdc.kafdrop.maxant.ch;
         location / {
             proxy_pass http://localhost:30050/;
         }
       }
+
+      # ############################################################
+      # kdc.schemaregistry.maxant.ch
+      # ############################################################
+
+      server {
+        listen 80;
+    
+        server_name kdc.schemaregistry.maxant.ch;
+        location / {
+            proxy_pass http://localhost:30550/;
+        }
+      }
+
+      # ############################################################
+      # kdc.schemaregistry-ui.maxant.ch
+      # ############################################################
+
+      server {
+        listen 80;
+    
+        server_name kdc.schemaregistry-ui.maxant.ch;
+        location / {
+            proxy_pass http://localhost:30555/;
+        }
+      }
+
+      # ############################################################
+      # kdc.kafka-rest-proxy.maxant.ch
+      # ############################################################
+
+      server {
+        listen 80;
+    
+        server_name kdc.schemaregistry-ui.maxant.ch;
+        location / {
+            proxy_pass http://localhost:30030/;
+        }
+      }
+
       # ############################################################
       # ksql.maxant.ch - to enable cors
       # ############################################################
@@ -908,10 +948,6 @@ create a table
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p
 
     use contracts;
-    create table merkmale (merkmalsname varchar(10) not null, merkmalswert varchar(10), gnr varchar(10) not null, mut timestamp not null default now() );
-    insert into merkmale (merkmalsname, merkmalswert, gnr) values ('beginn', '2020-01-01', '12345678');
-    insert into merkmale (merkmalsname, merkmalswert, gnr) values ('ablauf', '2024-12-31', '12345678');
-    insert into merkmale (merkmalsname, merkmalswert, gnr) values ('vvi', 'NG', '12345678');
 
     select * from merkmale order by mut desc;
 
@@ -929,7 +965,7 @@ connect to ksqldb-cli and create a connector:
       'mode'                     = 'timestamp',
       'timestamp.column.name'    = 'mut',
       'poll.interval.ms'         = 3000,
-      'key'                      = 'gnr'
+      'key'                      = 'CONTRACT_ID'
     );
 
 Mode - see https://docs.confluent.io/current/connect/kafka-connect-jdbc/source-connector/source_config_options.html#mode
@@ -937,122 +973,137 @@ or https://github.com/confluentinc/kafka-connect-jdbc/blob/master/src/main/java/
 
 Watch a topic:
 
-    PRINT 'jdbc_merkmale';
+    PRINT 'myTopicName';
 
 Get all info off topic:
 
-    PRINT 'jdbc_merkmale' FROM BEGINNING;
+    PRINT 'myTopicName' FROM BEGINNING;
 
 Create a stream to wrap the topic, as we need it as the basis for future stuff in KSQL:
 
-    CREATE STREAM s_merkmale_raw (
+    CREATE STREAM s_myTopicName (
         rowkey STRING KEY,
-        gnr STRING,
-        merkmalsname STRING,
-        merkmalswert STRING,
-        mut BIGINT
+        contractNumber STRING
     )
-    WITH (kafka_topic='jdbc_merkmale', value_format='JSON');
+    WITH (kafka_topic='myTopicName', value_format='JSON');
 
 Read all the data on the stream:
 
     SET 'auto.offset.reset'='earliest';
-    select * from s_merkmale_raw emit changes;
+    select * from s_myTopicName emit changes;
     ctrl+c
     SET 'auto.offset.reset'='latest';
 
 Create a new stream, but note that we need a unique key in order to create tables on top of it.
-Currently our stream doesn't have a **unique** key because we can have many merkmal per gnr.
+Currently our stream doesn't have a **unique** key because we can have many events per contract number.
 See also https://www.confluent.io/stream-processing-cookbook/ksql-recipes/creating-composite-key/
-At the same time, let's filter on only VVIs. Note that we need to set the offset to earliest, so that
+At the same time, let's filter on only interesting events. Note that we need to set the offset to earliest, so that
 all data in the existing stream is consumed.
 We also do this in two steps because it doesn't seem possible to create the composite key AND use it, in one statement.
 
     SET 'auto.offset.reset' = 'earliest';
 
-    DROP STREAM IF EXISTS s_vvis_raw DELETE TOPIC;
-    CREATE STREAM s_vvis_raw AS 
+    DROP STREAM IF EXISTS s_contractinstances_raw DELETE TOPIC;
+    CREATE STREAM s_contractinstances_raw AS 
         SELECT *, 
-               gnr + '::' + merkmalsname + '::' + CAST(mut AS STRING) AS VVI_KEY  -- creates a composite key
-        FROM s_merkmale_raw
-        WHERE merkmalsname = 'vvi';
+               contract_number + '::' + CAST(mut AS STRING) AS COMPOSITE_KEY  -- creates a composite key
+        FROM s_myTopicName
+        WHERE someColumn = 'aSpecificValue';
 
-    DROP STREAM IF EXISTS s_vvis DELETE TOPIC;
-    CREATE STREAM s_vvis AS 
+    DROP STREAM IF EXISTS s_contractinstances DELETE TOPIC;
+    CREATE STREAM s_contractinstances AS 
         SELECT *
-        FROM s_vvis_raw
-        PARTITION BY VVI_KEY;
+        FROM s_contractinstances_raw
+        PARTITION BY COMPOSITE_KEY;
 
 Now we do the same for beginn/ablauf:
 
     SET 'auto.offset.reset' = 'earliest';
 
-    DROP STREAM IF EXISTS s_bda_raw DELETE TOPIC;
-    CREATE STREAM s_bda_raw AS 
-        SELECT *, 
-               gnr + '::' + merkmalsname AS BDA_KEY  -- creates a composite key - BEGIN should also be part of this key
-        FROM s_merkmale_raw
-        WHERE merkmalsname = 'beginn' OR merkmalsname = 'ablauf';
+Now create a materialized contract view:
 
-    DROP STREAM IF EXISTS s_bda DELETE TOPIC;
-    CREATE STREAM s_bda AS 
-        SELECT *
-        FROM s_bda_raw
-        PARTITION BY BDA_KEY;
-
-Now create a materialized VVI view:
-
-    DROP TABLE IF EXISTS v_vvi DELETE TOPIC;
-    CREATE TABLE v_vvi AS
+    DROP TABLE IF EXISTS v_contracts DELETE TOPIC;
+    CREATE TABLE v_contracts AS
         SELECT
-            latest_by_offset(gnr) as gnr,
+            latest_by_offset(contractNumber) as contractNumber,
             collect_list(merkmalswert) as werte
-        FROM s_vvis
-        GROUP BY GNR
+        FROM s_contracts
+        GROUP BY CONTRACT_NUMBER
     EMIT CHANGES;
 
-    select * from v_vvi where ROWKEY = '12345678';
+    select * from V_CONTRACTS where ROWKEY = '123456';
 
     curl -X POST "http://maxant.ch:30410/query" -H 'Content-Type: application/vnd.ksql.v1+json' -d '
     {
-      "ksql": "select * from v_vvi where ROWKEY = '\''12345678'\'';"
+      "ksql": "select * from V_CONTRACTS where ROWKEY = '\''123456'\'';"
     }' \
     | jq '.[1].row.columns[3]'
 
-    => ["NG","EG"]
+Or, in order to get the change timestamp for each of those, let's first create a map field, 
+see https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-reference/scalar-functions/#map:
 
-Now create a materialized BDA view:
+    DROP STREAM IF EXISTS S_CONTRACTS2 DELETE TOPIC;
+    CREATE STREAM S_CONTRACTS2 AS 
+        SELECT *,
+               map('val' := val, 'changed' := CAST(changed AS STRING) ) as changed_value
+        FROM S_CONTRACTS_RAW
+        WHERE ... = '...'
+        PARTITION BY CONTRACT_NUMBER;
 
-    DROP TABLE IF EXISTS v_bda DELETE TOPIC;
-    CREATE TABLE v_bda AS
+    DROP TABLE IF EXISTS V_CONTRACTS2 DELETE TOPIC;
+    CREATE TABLE V_CONTRACTS2 AS
         SELECT
-            latest_by_offset(gnr) as gnr,
-            latest_by_offset(merkmalswert) as wert
-        FROM s_bda
-        GROUP BY BDA_KEY
+            latest_by_offset(CONTRACT_NUMBER) as CONTRACT_NUMBER,
+            collect_list(CHANGED) as CHANGES
+        FROM S_CONTRACTS2
+        GROUP BY CONTRACT_NUMBER
     EMIT CHANGES;
 
-    select * from v_bda where ROWKEY = '12345678::beginn';
+=> fails with `Function 'collect_list' does not accept parameters (MAP<STRING, STRING>)` :-(
+
+Let's try with json instead:
+
+    DROP STREAM IF EXISTS S_CONTRACTS3 DELETE TOPIC;
+    CREATE STREAM S_CONTRACTS3 AS 
+        SELECT *,
+               ('{"value":"' + ... + '", "changed":"' + CAST(changed AS STRING) + '"}' ) as changed_value
+        FROM s_values_raw
+        WHERE ... = '...'
+        PARTITION BY CONTRACT_NUMBER;
+
+    DROP TABLE IF EXISTS V_CONTRACTS3 DELETE TOPIC;
+    CREATE TABLE V_CONTRACTS3 AS
+        SELECT
+            latest_by_offset(CONTRACT_NUMBER) as CONTRACT_NUMBER,
+            collect_list(value_changed) as values
+        FROM S_CONTRACTS3
+        GROUP BY CONTRACT_NUMBER
+    EMIT CHANGES;
+
+Kinda works:
 
     curl -X POST "http://maxant.ch:30410/query" -H 'Content-Type: application/vnd.ksql.v1+json' -d '
     {
-      "ksql": "select * from v_bda where ROWKEY = '\''12345678::beginn'\'';"
-    }' \
-    | jq '.[1].row.columns[3]'
+      "ksql": "select * from V_CONTRACTS3 where ROWKEY = '\''123456'\'';"
+    }' | jq '.[1].row.columns[3][] | fromjson'
 
+Returns json, although not quite in an array: 
 
+    {
+      "value": "A",
+      "changed": "1586617501000"
+    }
+    {
+      "value": "B",
+      "changed": "1586617641000"
+    }
 
-
-
-
-    insert into merkmale (merkmalsname, merkmalswert, gnr) values ('vvi', 'EG', '12345678');
-    update merkmale set merkmalswert = '2024-12-31', mut = now() where merkmalsname = 'beginn' and gnr = '12345678';
+    insert into values (valuename, value, contract_number) values ('a', 'b', '123456');
+    update values set value = '2024-12-31', changed = now() where valuename = 'begin' and contract_number = '123456';
     
-    select * from merkmale order by mut desc;
+    select * from values order by changed desc;
 
-TODO v_vvi => how could we make a list of pairs, so that we have the MUT for each one?
 TODO join streams to get a contract view
-TODO more useful stuff with ksqldb? like queries on other columns without own streams?
 
 ## ksqldb-cli
 

@@ -1,0 +1,153 @@
+# ##############################################################################################
+# see also https://github.com/simplesteph/kafka-stack-docker-compose/blob/master/full-stack.yml
+# ##############################################################################################
+version: '3'
+services:
+
+  kdc-zookeeper:
+    image: "confluentinc/cp-zookeeper:5.5.0"
+    container_name: "kdc-zookeeper"
+    ports:
+      - "30000:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    #volumes:
+    #  - ./full-stack/zoo1/data:/data
+    #  - ./full-stack/zoo1/datalog:/datalog
+
+  kdc-kafka-1:
+    image: "confluentinc/cp-kafka:5.5.0"
+    container_name: "kdc-kafka-1"
+    ports:
+      - "30001:9092"
+    depends_on:
+      - kdc-zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'kdc-zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kdc-kafka-1:9092,PLAINTEXT_HOST://maxant.ch:30001
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
+      KAFKA_DELETE_TOPIC_ENABLE: 'true'
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: https://kdc-schemaregistry:8085
+    volumes:
+      - ./full-stack/kafka1/data:/var/lib/kafka/data
+
+  kdc-kafdrop:
+    image: obsidiandynamics/kafdrop
+    container_name: "kdc-kafdrop"
+    ports:
+      - "30060:9000"
+    depends_on:
+      - kdc-kafka-1
+      #- kdc-kafka-2
+    environment:
+      KAFKA_BROKERCONNECT: "maxant.ch:30001,maxant.ch:30002"
+
+  portainer:
+    image: "portainer/portainer"
+    container_name: "portainer"
+    ports:
+      - "29999:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /portainer_data:/data
+
+#  cadvisor:
+#    image: google/cadvisor:latest
+#    container_name: cadvisor
+#    ports:
+#      - "29998:8080"
+#    volumes:
+#      - /var/lib/docker/:/var/lib/docker:ro
+#      - /sys:/sys:ro
+#      - /var/run:/var/run:rw
+#      - /:/rootfs:ro
+
+  kdc-mysql:
+    image: "mysql:8.0.19"
+    container_name: "kdc-mysql"
+    ports:
+      - "30300:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "secret"
+    volumes:
+      - ./mysql-data:/var/lib/mysql:rw
+
+  kdc-schemaregistry:
+    image: localhost:5000/confluentinc/cp-schema-registry:5.5.0
+    container_name: kdc-schemaregistry
+    ports:
+      - 30550:8085
+    depends_on:
+      - zookeeper
+      - broker
+    environment:
+      CUB_CLASSPATH: '/etc/confluent/docker/docker-utils.jar:/usr/share/java/confluent-security/schema-registry/*:/usr/share/java/schema-registry/*'
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kdc-kafka-1:9092
+      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: kdc-zookeeper:2181
+      SCHEMA_REGISTRY_HOST_NAME: kdc-schemaregistry
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8085
+      SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL: INFO
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
+      SCHEMA_REGISTRY_DEBUG: 'true'
+      SCHEMA_REGISTRY_CONFLUENT_METADATA_BOOTSTRAP_SERVER_URLS: http://kdc-kafka-1:9092
+
+  kdc-schemaregistry-ui:
+    image: landoop/schema-registry-ui:0.9.4
+    hostname: kdc-schemaregistry-ui
+    ports:
+      - "30555:8000"
+    depends_on:
+      - kdc-schemaregistry
+    environment:
+      SCHEMAREGISTRY_URL: http://kdc.schemaregistry.maxant.ch/
+      PROXY: "true"
+
+  kdc-kafka-rest-proxy:
+    image: confluentinc/cp-kafka-rest:5.5.0
+    hostname: kdc-kafka-rest-proxy
+    ports:
+      - "30030:8082"
+    depends_on:
+      - kdc-zookeeper
+      - kdc-kafka-1
+      - kdc-schemaregistry
+    environment:
+      # KAFKA_REST_ZOOKEEPER_CONNECT: zoo1:2181
+      KAFKA_REST_LISTENERS: http://0.0.0.0:8082/
+      KAFKA_REST_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8081/
+      KAFKA_REST_HOST_NAME: kdc-kafka-rest-proxy
+      KAFKA_REST_BOOTSTRAP_SERVERS: PLAINTEXT://kdc-kafka-1:9092 #,PLAINTEXT://kdc-kafka-2:9092
+
+  kdc-elasticsearch:
+    image: elasticsearch:7.6.2
+    container_name: "elasticsearch"
+    ports:
+      - "30050:9200"
+      - "30051:9300"
+    environment:
+      "discovery.type": "single-node"
+
+  kibana:
+    image: kibana:7.6.2
+    container_name: "kibana"
+    ports:
+      - "30150:5601"
+      #environment:
+      # https://www.elastic.co/guide/en/kibana/current/settings.html
+      #"ELASTICSEARCH_HOSTS": "http://maxant.ch:30050"
+      #"XPACK_SECURITY_ENABLED": "false"
+      # seems to work out of the box, when we name ES "elasticsearch"
+    #https://www.elastic.co/guide/en/kibana/current/docker.html
+    #volumes:
+    #  - ./kibana.yml:/usr/share/kibana/config/kibana.yml
+    depends_on:
+      - elasticsearch
+

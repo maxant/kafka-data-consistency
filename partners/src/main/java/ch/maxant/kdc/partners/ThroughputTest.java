@@ -10,16 +10,15 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
-import java.util.Properties;
-import java.util.Queue;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Future;
 
 import static org.apache.kafka.clients.producer.ProducerConfig.ACKS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.BOOTSTRAP_SERVERS_CONFIG;
 
 public class ThroughputTest {
+
+    public static final String THROUGHPUT_TEST_SOURCE = "throughput-test-source";
 
     public static void main(String[] args) throws Exception {
 
@@ -45,7 +44,7 @@ public class ThroughputTest {
             long start = System.currentTimeMillis();
             ThroughputInitialRecord data = new ThroughputInitialRecord(id.toString(), LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME), i % 10);
             String json = om.writeValueAsString(data);
-            ProducerRecord<String, String> record = new ProducerRecord<>("throughput-test-source", null, id.toString(), json);
+            ProducerRecord<String, String> record = new ProducerRecord<>(THROUGHPUT_TEST_SOURCE, id.toString(), json);
             Future<RecordMetadata> f = producer.send(record);
             RecordMetadata recordMetadata = f.get(); // <=== BLOCKS!
             long duration = System.currentTimeMillis() - start;
@@ -63,7 +62,7 @@ public class ThroughputTest {
             if (i % 10 == 0) {
                 id = UUID.randomUUID();
                 System.out.println("started new transaction: " + id);
-                Thread.sleep(3000);
+                Thread.sleep(5000);
             }
         }
     }

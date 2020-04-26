@@ -1,0 +1,24 @@
+{
+  "realm": "tullia",
+  "auth-server-url": "https://tullia.maxant.ch/auth/",
+  "ssl-required": "external",
+  "resource": "policytest",
+  "verify-token-audience": true,
+  "credentials": {
+    "secret": "TODO"
+  },
+  "confidential-port": 0,
+  "policy-enforcer": {
+    "paths": [
+      {
+        "path": "/protected/resource",
+        "claim-information-point": {
+          "ant": {
+            "asdf": "sdfg"
+          }
+        }
+      }
+    ]
+
+  }
+}

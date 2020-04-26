@@ -14,6 +14,7 @@ import java.util.TreeSet;
 public class ThroughputAggregateRecord {
 
     private String id;
+    private String txId;
     private Set<ThroughputInitialRecord> records = initialiseThroughputInitialRecords();
     private String windowStart;
     private String windowEnd;
@@ -30,6 +31,7 @@ public class ThroughputAggregateRecord {
     private String lastAdded = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
     public ThroughputInitialRecord addRecord(ThroughputInitialRecord r) {
+        setTxId(r.getTxId());
         records.add(r);
         lastAdded = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         return r;
@@ -49,6 +51,14 @@ public class ThroughputAggregateRecord {
         } else {
             this.id = id;
         }
+    }
+
+    public void setTxId(String txId) {
+        this.txId = txId;
+    }
+
+    public String getTxId() {
+        return txId;
     }
 
     public String getEarliestCreated() {
@@ -164,4 +174,5 @@ public class ThroughputAggregateRecord {
             return "unable to get string: " + e.getMessage();
         }
     }
+
 }

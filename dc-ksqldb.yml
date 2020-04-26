@@ -1,0 +1,54 @@
+version: '3'
+services:
+
+  kdc-ksqldb-server:
+    image: confluentinc/ksqldb-server:0.8.1
+    container_name: kdc-ksqldb-server
+    ports:
+      - "30410:8088"
+      - "30411:8787"
+    environment:
+      KSQL_LISTENERS: http://0.0.0.0:8088
+      KSQL_BOOTSTRAP_SERVERS: maxant.ch:30001 #,maxant.ch:30002
+      KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: "true"
+      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: "true"
+      KSQL_KSQL_CONNECT_WORKER_CONFIG: "/connect/connect.properties"
+      KSQL_KSQL_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8085
+      KSQL_KSQL_EXTENSION_DIR: "/ksqlextensions"
+      KSQL_CONNECT_BOOTSTRAP_SERVERS: "maxant.ch:30001" #,maxant.ch:30002"
+      KSQL_CONNECT_GROUP_ID: "ksql-connect-cluster"
+      KSQL_CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      KSQL_CONNECT_CONFIG_STORAGE_TOPIC: "ksql-connect-configs"
+      KSQL_CONNECT_OFFSET_STORAGE_TOPIC: "ksql-connect-offsets"
+      KSQL_CONNECT_STATUS_STORAGE_TOPIC: "ksql-connect-statuses"
+      KSQL_CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      KSQL_CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      KSQL_CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      KSQL_CONNECT_PLUGIN_PATH: "/usr/share/kafka/plugins"
+      #KSQL_CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.storage.StringConverter"
+      #KSQL_CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      # see https://github.com/confluentinc/demo-scene/blob/master/connect-jdbc/docker-compose.yml the following makes it use avro!
+      KSQL_CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+      KSQL_CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: 'http://kdc-schemaregistry:8085'
+      KSQL_CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      KSQL_CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: 'http://kdc-schemaregistry:8085'
+      KSQL_CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      KSQL_CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      # end
+      KSQL_KSQL_QUERIES_FILE: /ksql/queries.ksql
+      KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
+      # debugging if required:
+      KSQL_OPTS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787"
+    volumes:
+      - ./confluent-hub-components/confluentinc-kafka-connect-jdbc:/usr/share/kafka/plugins/jdbc:rw
+      - ./confluent-hub-components/confluentinc-kafka-connect-elasticsearch:/usr/share/kafka/plugins/elasticsearch:rw
+      - ./ksqldb/extensions:/ksqlextensions:rw
+      - ./ksqldb/queries:/ksql:rw
+
+  kdc-ksqldb-cli:
+    image: confluentinc/ksqldb-cli:0.8.1
+    container_name: kdc-ksqldb-cli
+    depends_on:
+      - kdc-ksqldb-server
+    entrypoint: /bin/sh
+    tty: true

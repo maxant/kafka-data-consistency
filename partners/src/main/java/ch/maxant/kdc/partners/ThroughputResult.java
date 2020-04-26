@@ -15,6 +15,7 @@ import java.util.Properties;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static ch.maxant.kdc.partners.ThroughputTestStream.SYNTHETIC;
 import static ch.maxant.kdc.partners.ThroughputTestStream.fromJson;
 import static java.util.Arrays.asList;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.*;
@@ -47,13 +48,18 @@ public class ThroughputResult {
             ConsumerRecords<String, String> records = consumer.poll(Duration.of(10, ChronoUnit.SECONDS));
             records.iterator().forEachRemaining(r -> {
                 if("throughput-test-source".equals(r.topic())) {
-                    long duration = System.currentTimeMillis() - r.timestamp();
-                    if(i.incrementAndGet() > 10) lastSourceProcessTimes.add(duration);
-                    System.out.printf("%s received source record, processed in %d, avg %f: %s\r\n", LocalDateTime.now(), duration,
-                            lastSourceProcessTimes.stream().mapToDouble(Long::doubleValue).average().orElse(0), r);
+/*                    if(r.value() != null && !SYNTHETIC.equals(r.value())) {
+                        long duration = System.currentTimeMillis() - r.timestamp();
+                        if(i.incrementAndGet() > 10) lastSourceProcessTimes.add(duration);
+                        System.out.printf("%s received source record, processed in %d, avg %f: %s\r\n", LocalDateTime.now(), duration,
+                                lastSourceProcessTimes.stream().mapToDouble(Long::doubleValue).average().orElse(0), r);
+                    }
+*/
                 } else if(r.value() != null) {
                     ThroughputAggregateRecord record = fromJson(om, r.value(), ThroughputAggregateRecord.class);
-                    if(record.getNumRecordsProcessed() != 10) {
+                    if(SYNTHETIC.equals(record.getTxId())) {
+                        System.out.println("SHOULDNT GET SYNTHETIC EVENTS HERE!");
+                    } else if(record.getNumRecordsProcessed() != 10) {
                         System.out.printf("%s does not contain ten records! %s\r\n", LocalDateTime.now(), r);
                     } else {
                         long now = System.currentTimeMillis();
