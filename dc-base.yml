@@ -159,9 +159,7 @@ services:
       - "29996:9090/tcp"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    build:
-      context: .
-      network: host
+    network_mode: "host" # used to let prometheus call the host in order to get docker metrics. see prometheus.yml
 
 
 #  grafana:

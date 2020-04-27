@@ -30,5 +30,5 @@ scrape_configs:
       # metrics_path defaults to '/metrics'
     # scheme defaults to 'http'.
 
-    static_configs:
+    static_configs: # note that localhost is the docker host - see network_mode in docker-compose file
       - targets: ['localhost:9323']
