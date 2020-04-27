@@ -24,11 +24,11 @@ scrape_configs:
     # scheme defaults to 'http'.
 
     static_configs:
-      - targets: ['prometheus:9090']
+      - targets: ['localhost:9090']
 
   - job_name: 'docker'
       # metrics_path defaults to '/metrics'
     # scheme defaults to 'http'.
 
-    static_configs: # note that localhost is the docker host - see network_mode in docker-compose file
-      - targets: ['localhost:9323']
+    static_configs:
+      - targets: ['dockerstats.maxant.ch']

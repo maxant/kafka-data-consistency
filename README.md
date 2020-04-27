@@ -256,6 +256,14 @@ Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-co
         }
       }
 
+      server {
+        listen 80;
+        server_name dockerstats.maxant.ch;
+        location / {
+            proxy_pass http://localhost:9323/;
+        }
+      }
+
       # ############################################################
       # ksql.maxant.ch - to enable cors
       # ############################################################
