@@ -81,7 +81,7 @@ services:
       - ./mysql-data:/var/lib/mysql:rw
 
   kdc-schemaregistry:
-    image: localhost:5000/confluentinc/cp-schema-registry:5.5.0
+    image: confluentinc/cp-schema-registry:5.5.0
     container_name: kdc-schemaregistry
     ports:
       - 30550:8085
