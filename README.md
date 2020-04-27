@@ -186,7 +186,7 @@ Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-co
     
         server_name kdc.kafdrop.maxant.ch;
         location / {
-            proxy_pass http://localhost:30050/;
+            proxy_pass http://localhost:30060/;
         }
       }
 
@@ -959,7 +959,21 @@ then bounce ksqldb-server
     docker-compose rm -fsv kdc-ksqldb-server
     docker-compose up -d 
 
-create a table
+## create a schema:
+
+https://www.confluent.io/blog/kafka-connect-deep-dive-jdbc-source-connector/
+
+if you need to delete old schemas:
+
+    curl -X DELETE http://kdc.schemaregistry.maxant.ch/subjects/mytopicname-value/versions/1
+
+get existing versions using paths within this tree:
+
+    curl -X GET http://kdc.schemaregistry.maxant.ch/subjects/
+    curl -X GET http://kdc.schemaregistry.maxant.ch/subjects/mytopicname-value/versions
+    curl -X GET http://kdc.schemaregistry.maxant.ch/subjects/mytopicname-value/versions/1
+
+## create a table
 
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p
 
