@@ -86,8 +86,9 @@ services:
     ports:
       - 30550:8085
     depends_on:
-      - zookeeper
-      - broker
+      - kdc-zookeeper
+      - kdc-kafka-1
+      #- kdc-kafka-2
     environment:
       CUB_CLASSPATH: '/etc/confluent/docker/docker-utils.jar:/usr/share/java/confluent-security/schema-registry/*:/usr/share/java/schema-registry/*'
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kdc-kafka-1:9092
