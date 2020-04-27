@@ -158,7 +158,7 @@ services:
     ports:
       - "29996:9000/tcp"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
 
 
 #  grafana:
@@ -171,3 +171,11 @@ services:
 #      - prometheus
 
 # TODO https://docs.docker.com/compose/compose-file/#healthcheck
+# TODO https://docs.docker.com/compose/compose-file/#restart
+# TODO add kafka to prometheus
+# TODO add quarkus app to prometheus
+# TODO add a docker registry to my machine?
+# test schema reg ui
+# build a stream app and deploy using quarkus and integrate metrics - see also https://quarkus.io/guides/microprofile-metrics
+# add grafana
+# use kafka-rest to add topics at deployment. whats this? https://docs.docker.com/compose/compose-file/compose-file-v2/#init
