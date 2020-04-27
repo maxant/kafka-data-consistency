@@ -159,6 +159,9 @@ services:
       - "29996:9090/tcp"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    build:
+      context: .
+      network: host
 
 
 #  grafana:

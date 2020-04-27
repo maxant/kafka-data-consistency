@@ -59,6 +59,7 @@ Access Portainer here: http://portainer.maxant.ch/
     docker-compose -f dc-base.yml up -d 
 
     # undeploy and entirely remove just one of the services
+    docker-compose -f dc-base.yml rm -fsv kdc-ksqldb-server
     docker-compose -f dc-ksqldb.yml rm -fsv kdc-ksqldb-server
 
     # redeploy just missing services
@@ -226,6 +227,32 @@ Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-co
         server_name kdc.schemaregistry-ui.maxant.ch;
         location / {
             proxy_pass http://localhost:30030/;
+        }
+      }
+
+      # ############################################################
+      # kdc.prometheus.maxant.ch
+      # ############################################################
+
+      server {
+        listen 80;
+    
+        server_name kdc.prometheus.maxant.ch;
+        location / {
+            proxy_pass http://localhost:29996/;
+        }
+      }
+
+      # ############################################################
+      # kdc.grafana.maxant.ch
+      # ############################################################
+
+      server {
+        listen 80;
+    
+        server_name kdc.grafana.maxant.ch;
+        location / {
+            proxy_pass http://localhost:29993/;
         }
       }
 
