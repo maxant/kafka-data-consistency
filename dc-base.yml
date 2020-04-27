@@ -129,16 +129,16 @@ services:
 
   kdc-elasticsearch:
     image: elasticsearch:7.6.2
-    container_name: "elasticsearch"
+    container_name: "kdc-elasticsearch"
     ports:
       - "30050:9200"
       - "30051:9300"
     environment:
       "discovery.type": "single-node"
 
-  kibana:
+  kdc-kibana:
     image: kibana:7.6.2
-    container_name: "kibana"
+    container_name: "kdc-kibana"
     ports:
       - "30150:5601"
       #environment:
@@ -150,7 +150,7 @@ services:
     #volumes:
     #  - ./kibana.yml:/usr/share/kibana/config/kibana.yml
     depends_on:
-      - elasticsearch
+      - kdc-elasticsearch
 
   prometheus:
     image: "prom/prometheus"
@@ -167,6 +167,7 @@ services:
 #      - 29993:3000
 #    volumes:
 #      - ./grafanadata:/var/lib/grafana
-
+#    depends_on:
+#      - prometheus
 
 # TODO https://docs.docker.com/compose/compose-file/#healthcheck
