@@ -151,3 +151,24 @@ services:
     depends_on:
       - elasticsearch
 
+  prometheus:
+    image: "prom/prometheus"
+    container_name: "prometheus"
+    ports:
+      - target: 29996
+        published: 9000
+        protocol: tcp
+        mode: host
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+
+#  grafana:
+#    image: grafana/grafana:5.1.0
+#    ports:
+#      - 29993:3000
+#    volumes:
+#      - ./grafanadata:/var/lib/grafana
+
+
+# TODO https://docs.docker.com/compose/compose-file/#healthcheck

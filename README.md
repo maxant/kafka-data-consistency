@@ -72,11 +72,27 @@ or open http://cadvisor.maxant.ch/
 
 Open ports like this:
 
-    # zookeeper:30000:2181, kafka_1:30001:9092, kafka_2:30002:9092, neo4j:30101:7687, elastic-apm-server:30200:8200,
-    # mysql:30300:3306, ksql-server-1:30401:8088, ksql-server-2:30402:8088, elastic:30050:9200, kibana:30150:5601
-    # ksqldb-server-1:30410:8088, kafka-rest-proxy:30030:8082
-    # confluent-control-center:30500:9021,
-    # kafdrop:30060, portainer: 29999:9000, schemaregistry: 30550:8085, schemaregistry-ui:30555:8000
+    # port list: not everything is exposed!
+    # =======================================
+    #                    grafana:29993:3000
+    #                 prometheus:29996:9000
+    #                  portainer:29999:9000
+    #                  zookeeper:30000:2181
+    #                    kafka_1:30001:9092
+    #                    kafka_2:30002:9092
+    #           kafka-rest-proxy:30030:8082
+    #                    elastic:30050:9200
+    #                    kafdrop:30060:9000
+    #                      neo4j:30101:7687
+    #                     kibana:30150:5601
+    #         elastic-apm-server:30200:8200
+    #                      mysql:30300:3306
+    #              ksql-server-1:30401:8088
+    #              ksql-server-2:30402:8088
+    #            ksqldb-server-1:30410:8088
+    #   confluent-control-center:30500:9021
+    #            schemaregistry: 30550:8085
+    #          schemaregistry-ui:30555:8000
     firewall-cmd --zone=public --permanent --add-port=30000/tcp
     firewall-cmd --zone=public --permanent --add-port=30001/tcp
     firewall-cmd --zone=public --permanent --add-port=30002/tcp
@@ -1723,3 +1739,23 @@ So change that design and encapsulate Neo4J behind a component named "graphs", a
 claim component which creates a command record in Kafka to add the claim to the analytical component, and a command record to create the location.
 The location component will create a command record to create the location in the analytical component at some time after the claim command record was created
 and because both records use the claim ID as the key, the timing problem is automatically solved.
+
+# Grafana
+
+https://grafana.com/docs/grafana/latest/installation/configure-docker/
+
+Add the following to `/etc/docker/daemon.json` config, in order to track docker:
+
+    {
+      "metrics-addr" : "127.0.0.1:9323",
+      "experimental" : true
+    }
+
+Using bind mounts and resolving user problems:
+
+    mkdir data # creates a folder for your data
+    ID=$(id -u) # saves your user id in the ID variable
+    
+    # starts grafana with your user id and using the data folder
+    docker run -d --user $ID --volume "$PWD/data:/var/lib/grafana" -p 3000:3000 grafana/grafana:5.1.0
+
