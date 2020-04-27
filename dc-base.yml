@@ -36,8 +36,8 @@ services:
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: https://kdc-schemaregistry:8085
-    volumes:
-      - ./full-stack/kafka1/data:/var/lib/kafka/data
+    #volumes:
+    #  - ./full-stack/kafka1/data:/var/lib/kafka/data
 
   kdc-kafdrop:
     image: obsidiandynamics/kafdrop
