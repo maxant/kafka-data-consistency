@@ -160,14 +160,14 @@ services:
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
 
-#  grafana:
-#    image: grafana/grafana:5.1.0
-#    ports:
-#      - 29993:3000
-#    volumes:
-#      - ./grafanadata:/var/lib/grafana
-#    depends_on:
-#      - prometheus
+  grafana:
+    image: grafana/grafana
+    ports:
+      - 29993:3000
+    volumes:
+      - ./grafanadata:/var/lib/grafana
+    depends_on:
+      - prometheus
 
 # TODO https://docs.docker.com/compose/compose-file/#healthcheck
 # TODO https://docs.docker.com/compose/compose-file/#restart
