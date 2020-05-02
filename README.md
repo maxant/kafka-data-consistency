@@ -224,7 +224,7 @@ Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-co
       server {
         listen 80;
     
-        server_name kdc.schemaregistry-ui.maxant.ch;
+        server_name kdc.kafka-rest-proxy.maxant.ch;
         location / {
             proxy_pass http://localhost:30030/;
         }

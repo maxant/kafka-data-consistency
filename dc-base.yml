@@ -172,11 +172,13 @@ services:
     container_name: "kdc-kibana"
     ports:
       - "30150:5601"
+    link:
+      - "kdc-elasticsearch:elasticsearch"
     depends_on:
       - kdc-elasticsearch
       #environment:
       # https://www.elastic.co/guide/en/kibana/current/settings.html
-      #"ELASTICSEARCH_HOSTS": "http://maxant.ch:30050"
+      #"ELASTICSEARCH_HOSTS": "http://maxant.ch:30050" => doesnt work entirely because somehow it still cannot connect. maybe to 9300 instead of 9200?
       #"XPACK_SECURITY_ENABLED": "false"
       # seems to work out of the box, when we name ES "elasticsearch"
     #https://www.elastic.co/guide/en/kibana/current/docker.html
@@ -201,12 +203,10 @@ services:
     volumes:
       - ./grafanadata:/var/lib/grafana
 
-# does grafana config survive a restart?
 # TODO https://docs.docker.com/compose/compose-file/#healthcheck
 # TODO https://docs.docker.com/compose/compose-file/#restart
 # TODO add kafka to prometheus
 # TODO add quarkus app to prometheus
-# TODO add a docker registry to my machine?
-# test schema reg ui
+# TODO add a docker registry to maxant.ch?
 # build a stream app and deploy using quarkus and integrate metrics - see also https://quarkus.io/guides/microprofile-metrics
 # use kafka-rest to add topics at deployment. whats this? https://docs.docker.com/compose/compose-file/compose-file-v2/#init
