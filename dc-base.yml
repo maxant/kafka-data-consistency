@@ -35,7 +35,7 @@ services:
       KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
-      KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: https://kdc-schemaregistry:8085
+      KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8085
     #volumes:
     #  - ./full-stack/kafka1/data:/var/lib/kafka/data
 
@@ -58,7 +58,7 @@ services:
       KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
-      KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: https://kdc-schemaregistry:8085
+      KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8085
     #volumes:
     #  - ./full-stack/kafka1/data:/var/lib/kafka/data
 
@@ -146,7 +146,7 @@ services:
     environment:
       # KAFKA_REST_ZOOKEEPER_CONNECT: zoo1:2181
       KAFKA_REST_LISTENERS: http://0.0.0.0:8082/
-      KAFKA_REST_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8081/
+      KAFKA_REST_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8085/
       KAFKA_REST_HOST_NAME: kdc-kafka-rest-proxy
       KAFKA_REST_BOOTSTRAP_SERVERS: PLAINTEXT://maxant.ch:30001,PLAINTEXT://maxant.ch:30002
 
