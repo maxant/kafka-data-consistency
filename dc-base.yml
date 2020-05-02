@@ -26,27 +26,17 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'kdc-zookeeper:2181'
-      # tried to get this working with multiple listeners, as documented here: https://rmoff.net/2018/08/02/kafka-listeners-explained/
-      # instead of "INTERNAL" we use "PLAINTEXT" as the name, so that schemaregistry and kafka-rest can connect. see: https://github.com/confluentinc/schema-registry/issues/648
-      # advertised is what clients use so it needs to be external. inter broker listener also needs to be in advertised list.
-      # according to rmoff the client should get an address based on the port. it doesnt work tho, and even tho it uses
-      # maxant.ch:30001 we are supplied with kdc-kafka-1:9092 :-\
-      # so trying to use just one listener for all :-(
-      # even that doesnt work => revert to just one broker :-(
-      #KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
-      #KAFKA_ADVERTISED_LISTENERS: EXTERNAL://maxant.ch:30001,PLAINTEXT://kdc-kafka-1:9092
-      #KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,EXTERNAL://0.0.0.0:30001
-      #KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      # see: https://rmoff.net/2018/08/02/kafka-listeners-explained/
+      # note that we MUST use "PLAINTEXT" as the name, so that schemaregistry and kafka-rest can connect.
+      # see: https://github.com/confluentinc/schema-registry/issues/648
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://maxant.ch:30001
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:30001
+      KAFKA_LISTENERS: PLAINTEXT://kdc-kafka-1:9092
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      #KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      # KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 2
       KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
@@ -54,31 +44,31 @@ services:
     #volumes:
     #  - ./full-stack/kafka1/data:/var/lib/kafka/data
 
-#  kdc-kafka-2:
-#    image: "confluentinc/cp-kafka:5.5.0"
-#    container_name: "kdc-kafka-2"
-#    ports:
-#      - "30002:9092"
-#    depends_on:
-#      - kdc-kafka-1
-#    environment:
-#      KAFKA_BROKER_ID: 2
-#      KAFKA_ZOOKEEPER_CONNECT: 'kdc-zookeeper:2181'
-#      # see notes for broker #1
-#      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-#      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://maxant.ch:30002
-#      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:30002
-#      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-#      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
-#      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-#      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-#      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 2
-#      KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
-#      KAFKA_DELETE_TOPIC_ENABLE: 'true'
-#      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
-#      KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8085
-#    #volumes:
-#    #  - ./full-stack/kafka1/data:/var/lib/kafka/data
+  kdc-kafka-2:
+    image: "confluentinc/cp-kafka:5.5.0"
+    container_name: "kdc-kafka-2"
+    ports:
+      - "30002:9092"
+    depends_on:
+      - kdc-kafka-1
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: 'kdc-zookeeper:2181'
+      # see notes for broker #1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://maxant.ch:30002
+      KAFKA_LISTENERS: PLAINTEXT://kdc-kafka-2:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 2
+      KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
+      KAFKA_DELETE_TOPIC_ENABLE: 'true'
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8085
+    #volumes:
+    #  - ./full-stack/kafka1/data:/var/lib/kafka/data
 
   kdc-kafdrop:
     image: obsidiandynamics/kafdrop

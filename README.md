@@ -992,7 +992,7 @@ And add the mysql client jar:
 then bounce ksqldb-server
 
     docker-compose -f dc-base.yml rm -fsv kdc-kafka-1
-    docker-compose up -d 
+    docker-compose -f dc-base.yml up -d 
 
 ## create a schema:
 

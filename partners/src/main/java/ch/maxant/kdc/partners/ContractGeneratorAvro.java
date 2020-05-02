@@ -31,7 +31,7 @@ public class ContractGeneratorAvro {
 
         final Random random = new Random();
         final Properties props = new Properties();
-        props.put("bootstrap.servers", "maxant.ch:30001"); //,maxant.ch:30002");
+        props.put("bootstrap.servers", "maxant.ch:30001,maxant.ch:30002");
         props.put("acks", "all");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class.getName());
