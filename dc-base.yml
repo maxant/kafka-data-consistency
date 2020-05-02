@@ -172,7 +172,7 @@ services:
     container_name: "kdc-kibana"
     ports:
       - "30150:5601"
-    link:
+    links:
       - "kdc-elasticsearch:elasticsearch"
     depends_on:
       - kdc-elasticsearch
