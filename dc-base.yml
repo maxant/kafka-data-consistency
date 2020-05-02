@@ -30,7 +30,7 @@ services:
       # instead of "INTERNAL" we use "PLAINTEXT" as the name, so that schemaregistry and kafka-rest can connect. see: https://github.com/confluentinc/schema-registry/issues/648
       # advertised is what clients use so it needs to be external
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: EXTERNAL://maxant.ch:30001
+      KAFKA_ADVERTISED_LISTENERS: EXTERNAL://maxant.ch:30001,PLAINTEXT://kdc-kafka-1:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,EXTERNAL://0.0.0.0:30001
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
@@ -58,7 +58,7 @@ services:
       # instead of "INTERNAL" we use "PLAINTEXT" as the name, so that schemaregistry and kafka-rest can connect. see: https://github.com/confluentinc/schema-registry/issues/648
       # advertised is what clients use so it needs to be external
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: EXTERNAL://maxant.ch:30002
+      KAFKA_ADVERTISED_LISTENERS: EXTERNAL://maxant.ch:30002,PLAINTEXT://kdc-kafka-2:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,EXTERNAL://0.0.0.0:30002
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
