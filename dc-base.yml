@@ -77,10 +77,11 @@ services:
       - "30060:9000"
     depends_on:
       - kdc-kafka-1
-      #- kdc-kafka-2
+      - kdc-kafka-2
+      - kdc-schemaregistry
     environment:
-      KAFKA_BROKERCONNECT: "kdc-kafka-1:9092" #,kdc-kafka-2:9092"
-
+      KAFKA_BROKERCONNECT: "kdc-kafka-1:9092,kdc-kafka-2:9092"
+      SCHEMA_REGISTRY_URL: "http://kdc-schemaregistry:8085"
   portainer:
     image: "portainer/portainer"
     container_name: "portainer"
@@ -130,7 +131,7 @@ services:
       SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
       SCHEMA_REGISTRY_DEBUG: 'true'
       # Used by Schema Registry to connect to MDS to authenticate and authorize clients:
-      SCHEMA_REGISTRY_CONFLUENT_METADATA_BOOTSTRAP_SERVER_URLS: http://kdc-kafka-1:9092 #,http://kdc-kafka-2:9092
+      SCHEMA_REGISTRY_CONFLUENT_METADATA_BOOTSTRAP_SERVER_URLS: http://kdc-kafka-1:9092,http://kdc-kafka-2:9092
 
   kdc-schemaregistry-ui:
     image: "landoop/schema-registry-ui:0.9.4"
@@ -155,7 +156,7 @@ services:
       KAFKA_REST_LISTENERS: http://0.0.0.0:8082/
       KAFKA_REST_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8085/
       KAFKA_REST_HOST_NAME: kdc-kafka-rest-proxy
-      KAFKA_REST_BOOTSTRAP_SERVERS: PLAINTEXT://kdc-kafka-1:9092 #,PLAINTEXT://kdc-kafka-2:9092
+      KAFKA_REST_BOOTSTRAP_SERVERS: PLAINTEXT://kdc-kafka-1:9092,PLAINTEXT://kdc-kafka-2:9092
 
   kdc-elasticsearch:
     image: elasticsearch:7.6.2
