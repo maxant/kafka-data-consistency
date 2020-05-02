@@ -1,0 +1,15 @@
+{
+   "type": "record",
+   "name": "ch.maxant.kdc.contracts.Contract",
+   "fields":
+     [
+       { "type": "string", "name": "CONTRACT_ID"},
+       { "type": "string", "name": "NETWORK_ID"},
+       { "type": "string", "name": "BEGIN"},
+       { "type": "string", "name": "END"},
+       { "type": { "type":"long", "logicalType":"timestamp-millis" }, "name": "BEGIN_TS"},
+       { "type": { "type":"long", "logicalType":"timestamp-millis" }, "name": "END_TS"},
+       { "type": "int", "name": "CONTRACT_NUMBER"},
+       { "type": "string", "name": "SYSTEM"}
+     ]
+ }

@@ -27,11 +27,34 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'kdc-zookeeper:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kdc-kafka-1:9092,PLAINTEXT_HOST://maxant.ch:30001
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://maxant.ch:30001,PLAINTEXT_HOST://maxant.ch:30002
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 2
+      KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
+      KAFKA_DELETE_TOPIC_ENABLE: 'true'
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: https://kdc-schemaregistry:8085
+    #volumes:
+    #  - ./full-stack/kafka1/data:/var/lib/kafka/data
+
+  kdc-kafka-2:
+    image: "confluentinc/cp-kafka:5.5.0"
+    container_name: "kdc-kafka-2"
+    ports:
+      - "30002:9092"
+    depends_on:
+      - kdc-zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'kdc-zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://maxant.ch:30001,PLAINTEXT_HOST://maxant.ch:30002
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 2
       KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
@@ -91,14 +114,14 @@ services:
       #- kdc-kafka-2
     environment:
       CUB_CLASSPATH: '/etc/confluent/docker/docker-utils.jar:/usr/share/java/confluent-security/schema-registry/*:/usr/share/java/schema-registry/*'
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kdc-kafka-1:9092
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: maxant.ch:30001,maxant.ch:30002
       SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: kdc-zookeeper:2181
       SCHEMA_REGISTRY_HOST_NAME: kdc-schemaregistry
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8085
       SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL: INFO
       SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
       SCHEMA_REGISTRY_DEBUG: 'true'
-      SCHEMA_REGISTRY_CONFLUENT_METADATA_BOOTSTRAP_SERVER_URLS: http://kdc-kafka-1:9092
+      SCHEMA_REGISTRY_CONFLUENT_METADATA_BOOTSTRAP_SERVER_URLS: http://maxant.ch:30001,http://maxant.ch:30002
 
   kdc-schemaregistry-ui:
     image: "landoop/schema-registry-ui:0.9.4"
@@ -125,7 +148,7 @@ services:
       KAFKA_REST_LISTENERS: http://0.0.0.0:8082/
       KAFKA_REST_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8081/
       KAFKA_REST_HOST_NAME: kdc-kafka-rest-proxy
-      KAFKA_REST_BOOTSTRAP_SERVERS: PLAINTEXT://kdc-kafka-1:9092 #,PLAINTEXT://kdc-kafka-2:9092
+      KAFKA_REST_BOOTSTRAP_SERVERS: PLAINTEXT://maxant.ch:30001,PLAINTEXT://maxant.ch:30002
 
   kdc-elasticsearch:
     image: elasticsearch:7.6.2
@@ -170,6 +193,7 @@ services:
     volumes:
       - ./grafanadata:/var/lib/grafana
 
+# does grafana config survive a restart?
 # TODO https://docs.docker.com/compose/compose-file/#healthcheck
 # TODO https://docs.docker.com/compose/compose-file/#restart
 # TODO add kafka to prometheus
@@ -177,5 +201,4 @@ services:
 # TODO add a docker registry to my machine?
 # test schema reg ui
 # build a stream app and deploy using quarkus and integrate metrics - see also https://quarkus.io/guides/microprofile-metrics
-# add grafana
 # use kafka-rest to add topics at deployment. whats this? https://docs.docker.com/compose/compose-file/compose-file-v2/#init
