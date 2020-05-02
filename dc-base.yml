@@ -47,7 +47,7 @@ services:
     depends_on:
       - kdc-zookeeper
     environment:
-      KAFKA_BROKER_ID: 1
+      KAFKA_BROKER_ID: 2
       KAFKA_ZOOKEEPER_CONNECT: 'kdc-zookeeper:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://maxant.ch:30001,PLAINTEXT_HOST://maxant.ch:30002
