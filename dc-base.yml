@@ -39,7 +39,6 @@ services:
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8085
-      #KAFKA_REPLICA_SOCKET_RECEIVE_BUFFER_BYTES: 262144
     #volumes:
     #  - ./full-stack/kafka1/data:/var/lib/kafka/data
 
@@ -67,7 +66,6 @@ services:
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8085
-      #KAFKA_REPLICA_SOCKET_RECEIVE_BUFFER_BYTES: 262144
     #volumes:
     #  - ./full-stack/kafka1/data:/var/lib/kafka/data
 
@@ -112,6 +110,7 @@ services:
     volumes:
       - ./mysql-data:/var/lib/mysql:rw
 
+  # https://github.com/confluentinc/cp-demo/blob/5.5.0-post/docker-compose.yml
   kdc-schemaregistry:
     image: "confluentinc/cp-schema-registry:5.5.0"
     container_name: "kdc-schemaregistry"
@@ -123,14 +122,15 @@ services:
       - kdc-kafka-2
     environment:
       CUB_CLASSPATH: '/etc/confluent/docker/docker-utils.jar:/usr/share/java/confluent-security/schema-registry/*:/usr/share/java/schema-registry/*'
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: maxant.ch:30001,maxant.ch:30002
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kdc-kafka-1:9092,kdc-kafka-2:9092
       SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: kdc-zookeeper:2181
       SCHEMA_REGISTRY_HOST_NAME: kdc-schemaregistry
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8085
       SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL: INFO
       SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
       SCHEMA_REGISTRY_DEBUG: 'true'
-      SCHEMA_REGISTRY_CONFLUENT_METADATA_BOOTSTRAP_SERVER_URLS: http://maxant.ch:30001,http://maxant.ch:30002
+      # Used by Schema Registry to connect to MDS to authenticate and authorize clients:
+      SCHEMA_REGISTRY_CONFLUENT_METADATA_BOOTSTRAP_SERVER_URLS: http://kdc-kafka-1:9092,http://kdc-kafka-2:9092
 
   kdc-schemaregistry-ui:
     image: "landoop/schema-registry-ui:0.9.4"
