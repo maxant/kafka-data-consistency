@@ -17,7 +17,7 @@ services:
     #  - ./full-stack/zoo1/datalog:/datalog
 
   kdc-kafka-1:
-    image: "confluentinc/cp-kafka:5.4.1" # staying on lower version to avoid IOException
+    image: "confluentinc/cp-kafka:5.5.0"
     container_name: "kdc-kafka-1"
     ports:
       - "30001:9092"
@@ -26,8 +26,11 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'kdc-zookeeper:2181'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://maxant.ch:30001
+      #https://rmoff.net/2018/08/02/kafka-listeners-explained/
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kdc-kafka-1:9092,EXTERNAL://maxant.ch:30001
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:30001
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
@@ -41,7 +44,7 @@ services:
     #  - ./full-stack/kafka1/data:/var/lib/kafka/data
 
   kdc-kafka-2:
-    image: "confluentinc/cp-kafka:5.4.1" # staying on lower version to avoid IOException
+    image: "confluentinc/cp-kafka:5.5.0"
     container_name: "kdc-kafka-2"
     ports:
       - "30002:9092"
@@ -51,8 +54,11 @@ services:
     environment:
       KAFKA_BROKER_ID: 2
       KAFKA_ZOOKEEPER_CONNECT: 'kdc-zookeeper:2181'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://maxant.ch:30002
+      #https://rmoff.net/2018/08/02/kafka-listeners-explained/
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kdc-kafka-2:9092,EXTERNAL://maxant.ch:30002
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:30002
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
