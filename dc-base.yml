@@ -17,7 +17,7 @@ services:
     #  - ./full-stack/zoo1/datalog:/datalog
 
   kdc-kafka-1:
-    image: "confluentinc/cp-kafka:5.5.0"
+    image: "confluentinc/cp-kafka:5.4.1" # staying on lower version to avoid IOException
     container_name: "kdc-kafka-1"
     ports:
       - "30001:9092"
@@ -36,12 +36,12 @@ services:
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8085
-      KAFKA_REPLICA_SOCKET_RECEIVE_BUFFER_BYTES: 262144
+      #KAFKA_REPLICA_SOCKET_RECEIVE_BUFFER_BYTES: 262144
     #volumes:
     #  - ./full-stack/kafka1/data:/var/lib/kafka/data
 
   kdc-kafka-2:
-    image: "confluentinc/cp-kafka:5.5.0"
+    image: "confluentinc/cp-kafka:5.4.1" # staying on lower version to avoid IOException
     container_name: "kdc-kafka-2"
     ports:
       - "30002:9092"
@@ -61,7 +61,7 @@ services:
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8085
-      KAFKA_REPLICA_SOCKET_RECEIVE_BUFFER_BYTES: 262144
+      #KAFKA_REPLICA_SOCKET_RECEIVE_BUFFER_BYTES: 262144
     #volumes:
     #  - ./full-stack/kafka1/data:/var/lib/kafka/data
 
