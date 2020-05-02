@@ -11,7 +11,7 @@ services:
       - "30000:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 3000
+      ZOOKEEPER_TICK_TIME: 2000
     #volumes:
     #  - ./full-stack/zoo1/data:/data
     #  - ./full-stack/zoo1/datalog:/datalog
@@ -32,6 +32,7 @@ services:
       # according to rmoff the client should get an address based on the port. it doesnt work tho, and even tho it uses
       # maxant.ch:30001 we are supplied with kdc-kafka-1:9092 :-\
       # so trying to use just one listener for all :-(
+      # even that doesnt work => revert to just one broker :-(
       #KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
       #KAFKA_ADVERTISED_LISTENERS: EXTERNAL://maxant.ch:30001,PLAINTEXT://kdc-kafka-1:9092
       #KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,EXTERNAL://0.0.0.0:30001
@@ -40,10 +41,12 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://maxant.ch:30001
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:30001
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      #KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      # KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 2
       KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
@@ -51,31 +54,31 @@ services:
     #volumes:
     #  - ./full-stack/kafka1/data:/var/lib/kafka/data
 
-  kdc-kafka-2:
-    image: "confluentinc/cp-kafka:5.5.0"
-    container_name: "kdc-kafka-2"
-    ports:
-      - "30002:9092"
-    depends_on:
-      - kdc-kafka-1
-    environment:
-      KAFKA_BROKER_ID: 2
-      KAFKA_ZOOKEEPER_CONNECT: 'kdc-zookeeper:2181'
-      # see notes for broker #1
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://maxant.ch:30002
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:30002
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 2
-      KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
-      KAFKA_DELETE_TOPIC_ENABLE: 'true'
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
-      KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8085
-    #volumes:
-    #  - ./full-stack/kafka1/data:/var/lib/kafka/data
+#  kdc-kafka-2:
+#    image: "confluentinc/cp-kafka:5.5.0"
+#    container_name: "kdc-kafka-2"
+#    ports:
+#      - "30002:9092"
+#    depends_on:
+#      - kdc-kafka-1
+#    environment:
+#      KAFKA_BROKER_ID: 2
+#      KAFKA_ZOOKEEPER_CONNECT: 'kdc-zookeeper:2181'
+#      # see notes for broker #1
+#      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+#      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://maxant.ch:30002
+#      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:30002
+#      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+#      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+#      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+#      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+#      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 2
+#      KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
+#      KAFKA_DELETE_TOPIC_ENABLE: 'true'
+#      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+#      KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8085
+#    #volumes:
+#    #  - ./full-stack/kafka1/data:/var/lib/kafka/data
 
   kdc-kafdrop:
     image: obsidiandynamics/kafdrop
@@ -84,9 +87,9 @@ services:
       - "30060:9000"
     depends_on:
       - kdc-kafka-1
-      - kdc-kafka-2
+      #- kdc-kafka-2
     environment:
-      KAFKA_BROKERCONNECT: "kdc-kafka-1:9092,kdc-kafka-2:9092"
+      KAFKA_BROKERCONNECT: "kdc-kafka-1:9092" #,kdc-kafka-2:9092"
 
   portainer:
     image: "portainer/portainer"
@@ -126,10 +129,10 @@ services:
       - 30550:8085
     depends_on:
       - kdc-kafka-1
-      - kdc-kafka-2
+      #- kdc-kafka-2
     environment:
       CUB_CLASSPATH: '/etc/confluent/docker/docker-utils.jar:/usr/share/java/confluent-security/schema-registry/*:/usr/share/java/schema-registry/*'
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kdc-kafka-1:9092,kdc-kafka-2:9092
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kdc-kafka-1:9092 #,kdc-kafka-2:9092
       SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: kdc-zookeeper:2181
       SCHEMA_REGISTRY_HOST_NAME: kdc-schemaregistry
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8085
@@ -137,7 +140,7 @@ services:
       SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
       SCHEMA_REGISTRY_DEBUG: 'true'
       # Used by Schema Registry to connect to MDS to authenticate and authorize clients:
-      SCHEMA_REGISTRY_CONFLUENT_METADATA_BOOTSTRAP_SERVER_URLS: http://kdc-kafka-1:9092,http://kdc-kafka-2:9092
+      SCHEMA_REGISTRY_CONFLUENT_METADATA_BOOTSTRAP_SERVER_URLS: http://kdc-kafka-1:9092 #,http://kdc-kafka-2:9092
 
   kdc-schemaregistry-ui:
     image: "landoop/schema-registry-ui:0.9.4"
@@ -162,7 +165,7 @@ services:
       KAFKA_REST_LISTENERS: http://0.0.0.0:8082/
       KAFKA_REST_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8085/
       KAFKA_REST_HOST_NAME: kdc-kafka-rest-proxy
-      KAFKA_REST_BOOTSTRAP_SERVERS: PLAINTEXT://kdc-kafka-1:9092,PLAINTEXT://kdc-kafka-2:9092
+      KAFKA_REST_BOOTSTRAP_SERVERS: PLAINTEXT://kdc-kafka-1:9092 #,PLAINTEXT://kdc-kafka-2:9092
 
   kdc-elasticsearch:
     image: elasticsearch:7.6.2
