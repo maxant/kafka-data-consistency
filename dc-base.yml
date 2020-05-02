@@ -36,6 +36,7 @@ services:
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8085
+      KAFKA_REPLICA_SOCKET_RECEIVE_BUFFER_BYTES: 262144
     #volumes:
     #  - ./full-stack/kafka1/data:/var/lib/kafka/data
 
@@ -46,6 +47,7 @@ services:
       - "30002:9092"
     depends_on:
       - kdc-zookeeper
+      - kdc-kafka-1
     environment:
       KAFKA_BROKER_ID: 2
       KAFKA_ZOOKEEPER_CONNECT: 'kdc-zookeeper:2181'
@@ -59,6 +61,7 @@ services:
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8085
+      KAFKA_REPLICA_SOCKET_RECEIVE_BUFFER_BYTES: 262144
     #volumes:
     #  - ./full-stack/kafka1/data:/var/lib/kafka/data
 
@@ -69,7 +72,7 @@ services:
       - "30060:9000"
     depends_on:
       - kdc-kafka-1
-      #- kdc-kafka-2
+      - kdc-kafka-2
     environment:
       KAFKA_BROKERCONNECT: "maxant.ch:30001,maxant.ch:30002"
 
@@ -111,7 +114,7 @@ services:
     depends_on:
       - kdc-zookeeper
       - kdc-kafka-1
-      #- kdc-kafka-2
+      - kdc-kafka-2
     environment:
       CUB_CLASSPATH: '/etc/confluent/docker/docker-utils.jar:/usr/share/java/confluent-security/schema-registry/*:/usr/share/java/schema-registry/*'
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: maxant.ch:30001,maxant.ch:30002
@@ -142,6 +145,7 @@ services:
     depends_on:
       - kdc-zookeeper
       - kdc-kafka-1
+      - kdc-kafka-2
       - kdc-schemaregistry
     environment:
       # KAFKA_REST_ZOOKEEPER_CONNECT: zoo1:2181
