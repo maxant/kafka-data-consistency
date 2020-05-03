@@ -60,6 +60,7 @@ Access Portainer here: http://portainer.maxant.ch/
 
     # undeploy and entirely remove just one of the services
     docker-compose -f dc-base.yml rm -fsv kdc-ksqldb-server
+    docker-compose -f dc-base.yml rm -fsv kdc-kafka-1
     docker-compose -f dc-ksqldb.yml rm -fsv kdc-ksqldb-server
 
     # redeploy just missing services
