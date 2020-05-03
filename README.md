@@ -71,6 +71,13 @@ Monitor docker CPU/Memory with:
     
 or open http://cadvisor.maxant.ch/
 
+`socat` can be useful for port-forwarding to docker containers.
+
+export DC_IPA=$(docker inspect kdc-kafka-1 | jq '.[0]["NetworkSettings"]["Networks"]["kafka-data-consistency_default"]["IPAddress"]')
+DC_IPA="${DC_IPA%\"}"
+DC_IPA="${DC_IPA#\"}"
+socat TCP-LISTEN:30401,fork TCP:$DC_IPA:9876 &
+
 Open ports like this:
 
     # port list: not everything is exposed!

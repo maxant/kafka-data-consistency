@@ -32,3 +32,10 @@ scrape_configs:
 
     static_configs:
       - targets: ['dockerstats.maxant.ch']
+
+  - job_name: 'kafka-server'
+    static_configs:
+      — targets: ['kdc-kafka-1:9876']
+#— job_name: ‘kafka-consumer’ static_configs: — targets: [‘127.0.0.1:7072’]
+#— job_name: ‘kafka-producer’ static_configs: — targets: [‘127.0.0.1:7073’]
+#— job_name: ‘telegraf’ static_configs: — targets: [‘127.0.0.1:9200’]
