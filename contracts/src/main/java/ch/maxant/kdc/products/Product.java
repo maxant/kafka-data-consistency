@@ -1,6 +1,6 @@
 package ch.maxant.kdc.products;
 
-import ch.maxant.kdc.contracts.Contract;
+import ch.maxant.kdc.contracts.entity.Contract;
 import org.hibernate.annotations.Type;
 import org.hibernate.envers.Audited;
 

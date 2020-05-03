@@ -1,5 +1,6 @@
 package ch.maxant.kdc.contracts;
 
+import ch.maxant.kdc.contracts.entity.Contract;
 import ch.maxant.kdc.products.BuildingInsurance;
 import ch.maxant.kdc.products.Product;
 import ch.maxant.kdc.products.WithIndexValue;
