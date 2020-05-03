@@ -12,6 +12,9 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+      KAFKA_JMX_PORT: 9876
+      KAFKA_JMX_OPTS: "-Djava.rmi.server.hostname=127.0.0.1 -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.authenticate=false  -Dcom.sun.management.jmxremote.ssl=false"
+      KAFKA_JMX_HOSTNAME: kdc-zookeeper
     #volumes:
     #  - ./full-stack/zoo1/data:/data
     #  - ./full-stack/zoo1/datalog:/datalog
@@ -41,6 +44,9 @@ services:
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8085
+      KAFKA_JMX_PORT: 9876
+      KAFKA_JMX_OPTS: "-Djava.rmi.server.hostname=127.0.0.1 -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.authenticate=false  -Dcom.sun.management.jmxremote.ssl=false"
+      KAFKA_JMX_HOSTNAME: kdc-kafka-1
     #volumes:
     #  - ./full-stack/kafka1/data:/var/lib/kafka/data
 
@@ -120,10 +126,10 @@ services:
       - 30550:8085
     depends_on:
       - kdc-kafka-1
-      #- kdc-kafka-2
+      - kdc-kafka-2
     environment:
       CUB_CLASSPATH: '/etc/confluent/docker/docker-utils.jar:/usr/share/java/confluent-security/schema-registry/*:/usr/share/java/schema-registry/*'
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kdc-kafka-1:9092 #,kdc-kafka-2:9092
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kdc-kafka-1:9092,kdc-kafka-2:9092
       SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: kdc-zookeeper:2181
       SCHEMA_REGISTRY_HOST_NAME: kdc-schemaregistry
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8085
@@ -208,5 +214,6 @@ services:
 # TODO add kafka to prometheus
 # TODO add quarkus app to prometheus
 # TODO add a docker registry to maxant.ch?
+# TODO JMX for other confluent components: https://docs.confluent.io/current/installation/docker/operations/monitoring.html#configure-other-cp-components
 # build a stream app and deploy using quarkus and integrate metrics - see also https://quarkus.io/guides/microprofile-metrics
 # use kafka-rest to add topics at deployment. whats this? https://docs.docker.com/compose/compose-file/compose-file-v2/#init
