@@ -36,7 +36,15 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-mutiny</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-mutiny</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-context-propagation</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -97,20 +105,12 @@
         </dependency>
 -->
 
-        <!--
-        quarkus docs advise to use this, but it seems to cause this error:
-WARNING: An illegal reflective access operation has occurred
-WARNING: Illegal reflective access by org.eclipse.yasson.internal.ReflectionUtils (jar:file:/home/ant/.m2/repository/org/eclipse/yasson/1.0.7/yasson-1.0.7.jar!/) to constructor java.util.AbstractCollection()
-WARNING: Please consider reporting this to the maintainers of org.eclipse.yasson.internal.ReflectionUtils
-WARNING: Use - -illegal-access=warn to enable warnings of further illegal reflective access operations
-WARNING: All illegal access operations will be denied in a future release
-
+        <!-- quarkus docs advise to use this: https://quarkus.io/guides/vertx -->
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-native-epoll</artifactId>
             <classifier>linux-x86_64</classifier>
         </dependency>
-        -->
 
     </dependencies>
     <build>
