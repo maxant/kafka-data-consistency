@@ -49,6 +49,13 @@ when the completion stage completes so that the transaction is committed.
 
 I wonder how rollbacks are handled? I guess similarly, when processing failed completion completable futures.
 
+So it looks like you can use JPA with all it's dependencies on TLS, in a reactive environment, but you need to 
+add some unsexy code to do the propagation. I guess the other problem is that Hibernate uses jdbc under the hood 
+and so it isn't entirely reactive, because the DB access will be blocking.
+
+The alternative is to use a reactive DB connection, but then you have to handle transactions manually rather than 
+declaratively with annotations.
+
 See https://quarkus.io/guides/context-propagation
 
 # TODO
