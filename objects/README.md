@@ -36,3 +36,6 @@ Notice how the logging is done on a different thread than the one that accepts t
 - add call to other rest service
 - upgrade to quarkus 1.5 and see if we can get the mutiny version of the mysql pool to work and replace the completable future
                                            
+# Further Reading
+
+- https://lordofthejars.github.io/quarkus-cheat-sheet/
