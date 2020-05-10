@@ -31,11 +31,15 @@ Notice how the logging is done on a different thread than the one that accepts t
 
 # TODO
 
+- add ping/pong to SSE because we don't clean up until we emit, as quarkus doesn't find out about the closed socket until it tries to write.
+  - see https://github.com/quarkusio/quarkus/issues/9194
+- use visualvm to checkout thread usage
+- add mettrics to prometheus/grafana - https://quarkus.io/guides/microprofile-metrics
 - use the objects table - and add an api to add some objects!
 - add pub/sub kafka
 - add call to other rest service
 - upgrade to quarkus 1.5 and see if we can get the mutiny version of the mysql pool to work and replace the completable future
-                                           
+
 # Further Reading
 
 - https://lordofthejars.github.io/quarkus-cheat-sheet/
