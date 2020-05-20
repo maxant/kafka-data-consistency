@@ -1,0 +1,8 @@
+version: '3'
+services:
+
+  kdc-objects:
+    image: maxant/objects
+    container_name: kdc-objects
+    ports:
+      - "30601:8086"

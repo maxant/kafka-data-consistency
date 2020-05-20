@@ -112,6 +112,10 @@
             <classifier>linux-x86_64</classifier>
         </dependency>
 
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-metrics</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

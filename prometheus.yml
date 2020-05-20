@@ -36,3 +36,7 @@ scrape_configs:
   - job_name: 'kdc-kafka-1'
     static_configs:
       - targets: ['kdc-kafka-1:9876']
+
+  - job_name: 'objects'
+    static_configs:
+      - targets: ['kdc-objects:30601']

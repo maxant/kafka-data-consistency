@@ -102,6 +102,7 @@ Open ports like this:
     #   confluent-control-center:30500:9021
     #            schemaregistry: 30550:8085
     #          schemaregistry-ui:30555:8000
+    #                kdc-objects:30601:8086
     firewall-cmd --zone=public --permanent --add-port=30000/tcp
     firewall-cmd --zone=public --permanent --add-port=30001/tcp
     firewall-cmd --zone=public --permanent --add-port=30002/tcp
