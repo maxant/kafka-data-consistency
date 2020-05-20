@@ -2,7 +2,7 @@
 # builds a base image with the jdk, maven and some tools
 #########################################################
 # docker build -f DockerfileJdkMvn -t maxant/jdkmvn .
-# docker run --rm -it -v ${pwd}:/project maxant/jdkmvn mvn --version
+# docker run --rm -it -v $(pwd):/project maxant/jdkmvn mvn --version
 
 FROM openjdk:11.0.7-slim-buster
 
@@ -23,8 +23,9 @@ ENV M2_HOME=/usr/local/apache-maven
 ENV MAVEN_HOME=/usr/local/apache-maven
 ENV PATH=${M2_HOME}/bin:${PATH}
 
-RUN mkdir /project
+RUN alias la='ls -la'
 
+RUN mkdir /project
 WORKDIR /project
 
 CMD /bin/bash
