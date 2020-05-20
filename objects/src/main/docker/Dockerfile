@@ -11,4 +11,4 @@ COPY target/*-runner.jar /deployments/app.jar
 # TODO jmx port EXPOSE 8086
 EXPOSE 8086
 
-CMD java -jar app.jar
+CMD java -jar /deployments/app.jar
