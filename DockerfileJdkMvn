@@ -2,8 +2,6 @@
 # builds a base image with the jdk, maven and some tools
 #########################################################
 # docker build -f DockerfileJdkMvn -t maxant/jdkmvn .
-# docker run --rm -it -v $(pwd):/project maxant/jdkmvn mvn --version
-# docker run --rm -it -v objects:/project maxant/jdkmvn mvn clean install
 
 FROM openjdk:11.0.7-slim-buster
 
