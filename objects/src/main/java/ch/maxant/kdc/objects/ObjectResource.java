@@ -10,8 +10,6 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.reactivex.mysqlclient.MySQLPool;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.context.ThreadContext;
-import org.eclipse.microprofile.metrics.annotation.Counted;
-import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.jboss.resteasy.annotations.SseElementType;
 
 import javax.annotation.PostConstruct;
@@ -66,8 +64,8 @@ public class ObjectResource {
     @GET
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    @Counted
-    @Timed
+    //@Counted
+    //@Timed
     public Uni<Response> get(@PathParam("id") UUID id) {
         long start = System.currentTimeMillis();
         logger.info("starting request for id " + id);
