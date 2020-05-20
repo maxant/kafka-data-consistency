@@ -2,6 +2,7 @@
 # builds a base image with the jdk, maven and some tools
 #########################################################
 # docker build -f DockerfileJdkMvn -t maxant/jdkmvn .
+# docker run --rm -it -v ${pwd}:/project maxant/jdkmvn mvn --version
 
 FROM openjdk:11.0.7-slim-buster
 
@@ -13,7 +14,7 @@ RUN apt install -y less
 
 # doesnt work for some reason: RUN apt install -y maven
 # therefore: https://tecadmin.net/install-apache-maven-on-debian/
-RUN cd /usr/local
+WORKDIR /usr/local
 RUN wget http://www-eu.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
 RUN tar xzf apache-maven-3.6.3-bin.tar.gz
 RUN ln -s apache-maven-3.6.3 apache-maven
