@@ -8,7 +8,6 @@ FROM openjdk:11.0.7-slim-buster
 COPY target/lib/* /deployments/lib/
 COPY target/*-runner.jar /deployments/app.jar
 
-# TODO jmx port EXPOSE 8086
 EXPOSE 8086
 
 CMD java -jar /deployments/app.jar
