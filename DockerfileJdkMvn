@@ -1,7 +1,7 @@
 #########################################################
 # builds a base image with the jdk, maven and some tools
 #########################################################
-# docker build -f DockerJdkMvn -t maxant/jdkmvn .
+# docker build -f DockerfileJdkMvn -t maxant/jdkmvn .
 
 FROM openjdk:11.0.7-slim-buster
 
@@ -17,10 +17,10 @@ RUN cd /usr/local
 RUN wget http://www-eu.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
 RUN tar xzf apache-maven-3.6.3-bin.tar.gz
 RUN ln -s apache-maven-3.6.3 apache-maven
-RUN export JAVA_HOME=/usr/local/openjdk-11
-RUN export M2_HOME=/usr/local/apache-maven
-RUN export MAVEN_HOME=/usr/local/apache-maven
-RUN export PATH=${M2_HOME}/bin:${PATH}
+ENV JAVA_HOME=/usr/local/openjdk-11
+ENV M2_HOME=/usr/local/apache-maven
+ENV MAVEN_HOME=/usr/local/apache-maven
+ENV PATH=${M2_HOME}/bin:${PATH}
 
 RUN mkdir /project
 
