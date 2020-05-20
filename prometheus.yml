@@ -39,4 +39,4 @@ scrape_configs:
 
   - job_name: 'objects'
     static_configs:
-      - targets: ['kdc-objects:30601']
+      - targets: ['kdc-objects:8086']
