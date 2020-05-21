@@ -20,8 +20,10 @@ public class ContextPropagationSVT {
 
     @BeforeAll
     public static void setup() {
-        RestAssured.baseURI = "http://localhost";
-        RestAssured.port = 8086;
+        //RestAssured.baseURI = "http://localhost";
+        RestAssured.baseURI = "http://kdc.objects.maxant.ch";
+        //RestAssured.port = 8086;
+        RestAssured.port = 80;
     }
 
     @Test

@@ -113,6 +113,7 @@ Open ports like this:
     firewall-cmd --zone=public --permanent --add-port=30402/tcp
     firewall-cmd --zone=public --permanent --add-port=30410/tcp
     firewall-cmd --zone=public --permanent --add-port=30500/tcp
+    firewall-cmd --zone=public --permanent --add-port=30601/tcp
     firewall-cmd --reload
     firewall-cmd --list-all
     firewall-cmd --zone=public --permanent --remove-port=30550/tcp
@@ -262,6 +263,19 @@ Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-co
         server_name kdc.grafana.maxant.ch;
         location / {
             proxy_pass http://localhost:29993/;
+        }
+      }
+
+      # ############################################################
+      # kdc.objects.maxant.ch
+      # ############################################################
+
+      server {
+        listen 80;
+    
+        server_name kdc.objects.maxant.ch;
+        location / {
+            proxy_pass http://localhost:30601/;
         }
       }
 

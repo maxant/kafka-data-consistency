@@ -10,6 +10,9 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.reactivex.mysqlclient.MySQLPool;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.context.ThreadContext;
+import org.eclipse.microprofile.metrics.MetricUnits;
+import org.eclipse.microprofile.metrics.annotation.Counted;
+import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.jboss.resteasy.annotations.SseElementType;
 
 import javax.annotation.PostConstruct;
@@ -64,9 +67,9 @@ public class ObjectResource {
     @GET
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    //@Counted
-    //@Timed
-    public Uni<Response> get(@PathParam("id") UUID id) {
+    @Counted(name = "countGetObject", description = "Counts how many times the getObject method has been invoked")
+    @Timed(name = "timeGetObject", description = "Times how long it takes to invoke the getObject  method", unit = MetricUnits.MILLISECONDS)
+    public Uni<Response> getObject(@PathParam("id") UUID id) {
         long start = System.currentTimeMillis();
         logger.info("starting request for id " + id);
 
@@ -95,6 +98,8 @@ public class ObjectResource {
 
     @PUT
     @Produces(MediaType.APPLICATION_JSON)
+    @Counted(name = "countPutObject")
+    @Timed(name = "timePutObject", unit = MetricUnits.MILLISECONDS)
     public CompletionStage<Response> put(@Context HttpHeaders headers, AnObject objectToUpsert) {
 
         myContext.setUsername(headers.getHeaderString("x-username"));
@@ -120,6 +125,7 @@ public class ObjectResource {
     @Path("/changes/{subscriberId}")
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @SseElementType(MediaType.APPLICATION_JSON)
+    @Counted(name = "countSubscribeChanges")
     public Multi<JsonObject> changes(@PathParam("subscriberId") String subscriberId, @QueryParam("type") List<String> type) {
         SubscriberModel subscriberModel = SUBSCRIBERS.computeIfAbsent(subscriberId, k -> new SubscriberModel());
         subscriberModel.setId(subscriberId);
@@ -144,6 +150,8 @@ public class ObjectResource {
     @GET
     @Path("/emit")
     @Produces(MediaType.APPLICATION_JSON)
+    @Counted(name = "countEmit")
+    @Timed(name = "timeEmit", unit = MetricUnits.MILLISECONDS)
     public Uni<Response> emit() {
         logger.info("handling emit request...");
 
