@@ -32,6 +32,9 @@ RUN tar xzf graalvm-ce-java11-linux-amd64-19.3.2.tar.gz
 RUN ./graalvm-ce-java11-19.3.2/bin/gu install native-image
 ENV GRAALVM_HOME=/usr/local/graalvm-ce-java11-19.3.2
 
+# docker, since quarkus build needs it
+RUN apt-get install -y docker
+
 RUN echo "alias ll='ls -la'" >> ~/.bashrc
 
 RUN mkdir /project
