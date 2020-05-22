@@ -12,10 +12,11 @@ FROM debian:buster-slim
 
 #COPY target/lib/* /deployments/lib/
 #COPY target/*-runner.jar /deployments/app.jar
-COPY target/*-runner /deployments/app
+# named with a unique name so that we can see it on the docker host when using top
+COPY target/*-runner /deployments/kdc-objects
 
 EXPOSE 8086
 
 #CMD java -jar /deployments/app.jar
-CMD ["/deployments/app", "-Dquarkus.http.host=0.0.0.0", "-Xmx32m"]
+CMD ["/deployments/kdc-objects", "-Dquarkus.http.host=0.0.0.0", "-Xmx32m"]
 # -Dquarkus.profile=dev -Dquarkus.http.port=8086

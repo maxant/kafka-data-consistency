@@ -7,7 +7,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.restassured.RestAssured.given;
@@ -16,30 +18,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class ContextPropagationSVT {
 
     private static final Random RANDOM = new Random();
-    private static final AtomicInteger PENDING_CALLS = new AtomicInteger();
     private static final AtomicInteger TOTAL_CALLS = new AtomicInteger();
 
     @BeforeAll
     public static void setup() {
-        RestAssured.baseURI = "http://localhost";
-        //RestAssured.baseURI = "http://kdc.objects.maxant.ch";
-        RestAssured.port = 8086;
-        //RestAssured.port = 80;
+        //RestAssured.baseURI = "http://localhost";
+        RestAssured.baseURI = "http://kdc.objects.maxant.ch";
+        //RestAssured.port = 8086;
+        RestAssured.port = 80;
     }
 
     @Test
-    public void testContextPropagation() throws InterruptedException {
-        ExecutorService executorService = Executors.newFixedThreadPool(10);
+    public void testContextPropagation() {
+        ExecutorService executorService = new ThreadPoolExecutor(10, 10, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue(10), new ThreadPoolExecutor.CallerRunsPolicy());
         while (true) {
-            while(PENDING_CALLS.get() > 100) {
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
             executorService.submit(() -> {
-                PENDING_CALLS.incrementAndGet();
                 _testContextPropagation();
             });
         }
@@ -65,16 +58,12 @@ public class ContextPropagationSVT {
                     .statusCode(200)
                     .extract()
                     .response();
-        System.out.println("result in " + (System.currentTimeMillis() - start) + "ms");
+        System.out.println(TOTAL_CALLS.incrementAndGet() + " - result in " + (System.currentTimeMillis() - start) + "ms");
         String responseText = response.asString();
         String[] split = responseText.split(":");
         assertEquals(xUsername, split[0]);
         if(!split[1].equals(split[2])) {
             System.out.println("got one with differing threads! " + responseText);
-        }
-        PENDING_CALLS.decrementAndGet();
-        if(TOTAL_CALLS.incrementAndGet() % 100 == 0) {
-            System.out.println("calls made: " + TOTAL_CALLS.get());
         }
     }
 }
