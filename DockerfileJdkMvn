@@ -29,10 +29,10 @@ RUN apt-get install -y build-essential libz-dev zlib1g-dev
 # graal - https://github.com/graalvm/graalvm-ce-builds/releases
 RUN wget https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-19.3.2/graalvm-ce-java11-linux-amd64-19.3.2.tar.gz
 RUN tar xzf graalvm-ce-java11-linux-amd64-19.3.2.tar.gz
-ENV GRAALVM_HOME=/usr/local/graalvm-ce-java11-19.3.2
 RUN ./graalvm-ce-java11-19.3.2/bin/gu install native-image
+ENV GRAALVM_HOME=/usr/local/graalvm-ce-java11-19.3.2
 
-RUN echo "alias la='ls -la'" >> ~/.bashrc
+RUN echo "alias ll='ls -la'" >> ~/.bashrc
 
 RUN mkdir /project
 WORKDIR /project
