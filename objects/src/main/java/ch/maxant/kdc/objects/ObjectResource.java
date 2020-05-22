@@ -60,8 +60,8 @@ public class ObjectResource {
     @PostConstruct
     void init() {
         this.webClient = WebClient.create(vertx,
-                new WebClientOptions().setDefaultHost("fruityvice.com")
-                        .setDefaultPort(443).setSsl(true).setTrustAll(true));
+                new WebClientOptions().setDefaultHost("localhost")
+                        .setDefaultPort(8086).setSsl(false).setTrustAll(true));
     }
 
     @GET
@@ -108,12 +108,12 @@ public class ObjectResource {
         logger.info("processing request for user " + myContext.getUsername());
 
         return threadContext.withContextCapture(webClient
-                .get("/api/fruit/Apple")
-                //.putHeader("x-username", myContext.getUsername())
+                .get("/objects/1987bb7d-e02c-4691-a0b3-0dfbaab990be")
+                .putHeader("x-token", myContext.getUsername())
                 .send()
                 .subscribeAsCompletionStage())
             .thenApplyAsync(response -> {
-                logger.info("got response for fruit and have username " + myContext.getUsername());
+                logger.info("got response and have username " + myContext.getUsername());
                 return Response.ok(myContext.getUsername() + ":" + myContext.getThread1() + ":" + Thread.currentThread().getName()).build();
             }, managedExecutor);
     }

@@ -46,6 +46,14 @@ This component uses quarkus with vertx and attempts to be entirely reactive (non
     docker build -f src/main/docker/Dockerfile -t maxant/kdc-objects .
     docker run -it --rm -p 8086:8086 maxant/kdc-objects
 
+old stuff, that didnt work because the docker image doesnt contain docker which quarkus build uses:
+
+    # build jar: docker run --name jdkmvn -it --rm -v  $(pwd):/project -v /root/.m2/repository:/root/.m2/repository maxant/jdkmvn mvn clean package
+    # test jar: docker run -it --rm -p 8086:8086 -v $(pwd):/app openjdk:11.0.7-slim-buster java -jar /app/target/objects-1.0-SNAPSHOT-runner.jar
+    # build exe: docker run --name jdkmvn -it --rm -v  $(pwd):/project -v /root/.m2/repository:/root/.m2/repository maxant/jdkmvn mvn clean package -Pnative -Dquarkus.native.container-build=true
+    # test exe: docker run -it --rm -p 8086:8086 -v $(pwd):/app openjdk:11.0.7-slim-buster ./objects-1.0-SNAPSHOT-runner
+
+
 # Take Aways
 
 Notice how the logging is done on a different thread than the one that accepts the request:
