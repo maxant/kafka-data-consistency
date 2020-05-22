@@ -23,5 +23,5 @@ COPY target/*-runner /deployments/app
 EXPOSE 8086
 
 #CMD java -jar /deployments/app.jar
-CMD ["./app", "-Dquarkus.http.host=0.0.0.0", "-Xmx32m"]
+CMD ["./deployments/app", "-Dquarkus.http.host=0.0.0.0", "-Xmx32m"]
 # -Dquarkus.profile=dev -Dquarkus.http.port=8086
