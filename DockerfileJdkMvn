@@ -1,6 +1,6 @@
-#########################################################
-# builds a base image with the jdk, maven and some tools
-#########################################################
+##################################################################
+# builds a base image with the jdk, graal, maven and some tools
+##################################################################
 # docker build -f DockerfileJdkMvn -t maxant/jdkmvn .
 
 FROM openjdk:11.0.7-slim-buster
@@ -11,9 +11,11 @@ RUN apt install -y curl
 RUN apt install -y wget
 RUN apt install -y less
 
+WORKDIR /usr/local
+
+# maven
 # doesnt work for some reason: RUN apt install -y maven
 # therefore: https://tecadmin.net/install-apache-maven-on-debian/
-WORKDIR /usr/local
 RUN wget http://www-eu.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
 RUN tar xzf apache-maven-3.6.3-bin.tar.gz
 RUN ln -s apache-maven-3.6.3 apache-maven
@@ -21,6 +23,14 @@ ENV JAVA_HOME=/usr/local/openjdk-11
 ENV M2_HOME=/usr/local/apache-maven
 ENV MAVEN_HOME=/usr/local/apache-maven
 ENV PATH=${M2_HOME}/bin:${PATH}
+
+# graal prerequisites - https://quarkus.io/quarkus-workshops/super-heroes/
+RUN apt-get install -y build-essential libz-dev zlib1g-dev
+# graal - https://github.com/graalvm/graalvm-ce-builds/releases
+RUN wget https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-19.3.2/graalvm-ce-java11-linux-amd64-19.3.2.tar.gz
+RUN tar xzf graalvm-ce-java11-linux-amd64-19.3.2.tar.gz
+ENV GRAALVM_HOME=${PWD}/graalvm-ce-java11-19.3.2
+RUN $GRAALVM_HOME/bin/gu install native-image
 
 RUN echo "alias la='ls -la'" >> ~/.bashrc
 
