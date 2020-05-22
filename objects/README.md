@@ -13,6 +13,18 @@ The database must exist in order to get flyway to work:
 
 This component uses quarkus with vertx and attempts to be entirely reactive (non-blocking).
 
+# Installing graalvm and maven
+
+    cd /usr/local/
+    wget https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-19.3.2/graalvm-ce-java11-linux-amd64-19.3.2.tar.gz
+    tar xzf graalvm-ce-java11-linux-amd64-19.3.2.tar.gz
+    wget https://downloads.apache.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.zip
+    unzip apache-maven-3.6.3-bin.zip
+
+    export JAVA_HOME=/usr/local/graalvm-ce-java11-19.3.2
+    export GRAALVM_HOME=/usr/local/graalvm-ce-java11-19.3.2/
+    export PATH=/usr/local/apache-maven-3.6.3/bin:$PATH
+
 # Development
 
     mvn compile quarkus:dev
@@ -20,6 +32,19 @@ This component uses quarkus with vertx and attempts to be entirely reactive (non
     curl -v -X GET localhost:8086/objects/2098aa6c-f13b-4691-a0b3-0dfbaab990be | jq
 
     http://localhost:8086/index.html
+
+# Production
+
+    cd objects
+    export JAVA_HOME=/usr/local/graalvm-ce-java11-19.3.2
+    export GRAALVM_HOME=/usr/local/graalvm-ce-java11-19.3.2/
+    export PATH=/usr/local/apache-maven-3.6.3/bin:$PATH
+    mvn clean package -Pnative -Dquarkus.native.container-build=true
+
+    ./target/objects-1.0-SNAPSHOT-runner -Xmx32m -Dquarkus.profile=dev -Dquarkus.http.port=8086
+
+    docker build -f src/main/docker/Dockerfile -t maxant/kdc-objects .
+    docker run -it --rm -p 8086:8086 maxant/kdc-objects
 
 # Take Aways
 
