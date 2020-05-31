@@ -45,6 +45,8 @@ This component uses quarkus with vertx and attempts to be entirely reactive (non
 
     docker build -f src/main/docker/Dockerfile -t maxant/kdc-objects .
     docker run -it --rm -p 8086:8086 maxant/kdc-objects
+    cd ..
+    docker-compose -f dc-services.yml up -d
 
 old stuff, that didnt work because the docker image doesnt contain docker which quarkus build uses:
 
@@ -93,14 +95,15 @@ See https://quarkus.io/guides/context-propagation
 
 # TODO
 
+- kafka monitoring + consumer lag in grafana
 - add ping/pong to SSE because we don't clean up until we emit, as quarkus doesn't find out about the closed socket until it tries to write.
   - see https://github.com/quarkusio/quarkus/issues/9194
-- use visualvm to checkout thread usage
-- add mettrics to prometheus/grafana - https://quarkus.io/guides/microprofile-metrics
 - use the objects table - and add an api to add some objects!
-- add pub/sub kafka
 - add call to other rest service
 - upgrade to quarkus 1.5 and see if we can get the mutiny version of the mysql pool to work and replace the completable future
+- add fallback and timeout https://quarkus.io/quarkus-workshops/super-heroes/#fault-tolerance-fallbacks, https://quarkus.io/quarkus-workshops/super-heroes/#fault-tolerance-timeout
+- add liveness / readiness https://quarkus.io/quarkus-workshops/super-heroes/#_adding_liveness / https://quarkus.io/quarkus-workshops/super-heroes/#_adding_readiness and add monitoring
+- kafka integration: https://quarkus.io/quarkus-workshops/super-heroes/#messaging
 
 # Further Reading
 

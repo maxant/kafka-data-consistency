@@ -22,15 +22,15 @@ public class ContextPropagationSVT {
 
     @BeforeAll
     public static void setup() {
-        //RestAssured.baseURI = "http://localhost";
-        RestAssured.baseURI = "http://kdc.objects.maxant.ch";
-        //RestAssured.port = 8086;
-        RestAssured.port = 80;
+        RestAssured.baseURI = "http://localhost";
+        //RestAssured.baseURI = "http://kdc.objects.maxant.ch";
+        RestAssured.port = 8086;
+        //RestAssured.port = 80;
     }
 
     @Test
     public void testContextPropagation() {
-        ExecutorService executorService = new ThreadPoolExecutor(10, 10, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue(10), new ThreadPoolExecutor.CallerRunsPolicy());
+        ExecutorService executorService = new ThreadPoolExecutor(50, 50, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue(10), new ThreadPoolExecutor.CallerRunsPolicy());
         while (true) {
             executorService.submit(() -> {
                 _testContextPropagation();
@@ -51,7 +51,7 @@ public class ContextPropagationSVT {
                     //.log()
                     //.all()
                 .when()
-                    .put("/objects")
+                    .put("/objects/v2")
                 .then()
                     //.log()
                     //.all()

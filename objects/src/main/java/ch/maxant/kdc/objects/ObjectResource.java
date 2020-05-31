@@ -16,6 +16,7 @@ import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.jboss.resteasy.annotations.SseElementType;
 
 import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
@@ -34,6 +35,7 @@ import java.util.logging.Logger;
 import static java.util.Collections.singletonList;
 
 @Path("objects")
+@ApplicationScoped
 public class ObjectResource {
 
     private static final Map<String, SubscriberModel> SUBSCRIBERS = new ConcurrentHashMap<>();
@@ -55,7 +57,10 @@ public class ObjectResource {
     ManagedExecutor managedExecutor;
 
     @Inject
-    MyContext myContext;
+    MyService myService;
+
+    @Inject
+    MyService2 myService2;
 
     @PostConstruct
     void init() {
@@ -102,19 +107,58 @@ public class ObjectResource {
     @Timed(name = "timePutObject", unit = MetricUnits.MILLISECONDS)
     public CompletionStage<Response> put(@Context HttpHeaders headers, AnObject objectToUpsert) {
 
-        myContext.setUsername(headers.getHeaderString("x-username"));
-        myContext.setThread1(Thread.currentThread().getName());
+        // myContext is a RequestScoped bean. below we handle the response on a different thread using the managedExecutor
+        // but it still works, because of the call to the threadContext.withContextCapture
+        String username = headers.getHeaderString("x-username");
+        username = username == null ? "<anonymous>" : username;
+        myService2.fillMyContext(username);
 
-        logger.info("processing request for user " + myContext.getUsername());
+        logger.info("processing request for user " + myService2.getUsername());
 
         return threadContext.withContextCapture(webClient
                 .get("/objects/1987bb7d-e02c-4691-a0b3-0dfbaab990be")
-                .putHeader("x-token", myContext.getUsername())
+                .putHeader("x-token", myService2.getUsername())
                 .send()
                 .subscribeAsCompletionStage())
             .thenApplyAsync(response -> {
-                logger.info("got response and have username " + myContext.getUsername());
-                return Response.ok(myContext.getUsername() + ":" + myContext.getThread1() + ":" + Thread.currentThread().getName()).build();
+                logger.info("got response and have username " + myService2.getUsername());
+                return Response.ok(myService2.getUsername() + ":" + myService2.getThread1() + ":" + Thread.currentThread().getName()).build();
+            }, managedExecutor); // we have to provide the executor, because the docs of withContextCapture tell us that the result no longer knows who should execute the given function
+    }
+
+    /** using an annotation and interceptor to hide the magic with the thread context */
+    @PUT
+    @Path("/v2")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Counted(name = "countPutObjectV2")
+    @Timed(name = "timePutObjectV2", unit = MetricUnits.MILLISECONDS)
+    public CompletionStage<Response> putV2(@Context HttpHeaders headers) {
+
+        System.out.println("========================================");
+
+        // myContext is a RequestScoped bean. below we handle the response on a different thread using the managedExecutor
+        // but it still works, because the method is annotated as ContextAware - which is an interceptor which
+        // pushes the context using the call to the threadContext.withContextCapture, so that we don't need to
+        // explicitly do it
+        String username = headers.getHeaderString("x-username");
+        username = username == null ? "<anonymous>" : username;
+        myService2.fillMyContext(username);
+
+        logger.info("processing request for user " + myService2.getUsername() + " on thread " + Thread.currentThread().getName());
+
+        final String usernamef = username;
+        return myService
+            .makeAsyncCall()
+            .thenApplyAsync(response -> {
+                if(!myService2.getThread1().equals(Thread.currentThread().getName())) {
+                    logger.info("DIFFERENT THREADS: got response and have username " + myService2.getUsername() + " on thread " + Thread.currentThread().getName());
+                } else {
+                    logger.info("got response and have username " + myService2.getUsername() + " on thread " + Thread.currentThread().getName());
+                }
+                if(!usernamef.equals(myService2.getUsername())) {
+                    logger.warning("USERNAME CHANGED!!");
+                }
+                return Response.ok(myService2.getUsername() + ":" + myService2.getThread1() + ":" + Thread.currentThread().getName()).build();
             }, managedExecutor);
     }
 
@@ -156,7 +200,8 @@ public class ObjectResource {
         logger.info("handling emit request...");
 
         // an example of calling a downstream service with rest, reactively, non blockingly
-        return webClient.get("/api/fruit/Apple")
+        return webClient
+                .get("/objects/1987bb7d-e02c-4691-a0b3-0dfbaab990be")
                 .send()
                 .onItem().apply(resp -> {
                     logger.info("got response from downstream service " + resp.bodyAsString());
@@ -165,14 +210,13 @@ public class ObjectResource {
                     } else {
                         return new JsonObject()
                                 .put("code", resp.statusCode())
-                                .put("message", resp.bodyAsString())
-                                .put("family", "error");
+                                .put("message", resp.bodyAsString());
                     }
                 })
                 .onItem().invoke(json -> {
                     logger.info("emitting to " + SUBSCRIBERS.size() + " subscribers");
                     SUBSCRIBERS.values().forEach(sm ->
-                        sm.emit(JsonObject.mapFrom(new AnObject(UUID.randomUUID(), json.getString("family"))))
+                        sm.emit(JsonObject.mapFrom(new AnObject(UUID.randomUUID(), json.getString("message"))))
                     );
                 }).map(json -> Response.ok(json).build());
     }
