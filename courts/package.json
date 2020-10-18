@@ -1,0 +1,14 @@
+{
+  "name": "courts",
+  "version": "1.0.0",
+  "description": "see readme",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ant",
+  "license": "ISC",
+  "dependencies": {
+    "vue": "^3.0.0"
+  }
+}

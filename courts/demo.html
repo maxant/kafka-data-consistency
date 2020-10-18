@@ -1,0 +1,87 @@
+<html>
+<head>
+    <script src="https://unpkg.com/vue@next"></script>
+</head>
+<body onload="onload">
+<div id="app">
+    <todo-list :items="todoModel" @item-clicked="itemClicked"></todo-list>
+    <notification :messages="messages"></notification>
+</div>
+
+<script>
+
+const app = Vue.createApp({
+    data: function(){
+        return {
+            todoModel: [{id: 1, text: "a", armed: false}],
+            messages: []
+        }
+    },
+    methods: {
+        itemClicked(item) {
+            this.messages.push("you clicked " + item.id)
+        }
+    }
+});
+app.component(
+    'todo-item', {
+    props: ['item'],
+    template:
+        `<li v-if="item.armed">{{item.text}}</li>
+        <input v-else name="item" value="item.text" />
+        `
+    }
+);
+
+app.component(
+    'todo-list',
+    {
+        props: ['items'],
+        emits: ['item-clicked'],
+        methods: {
+            addMessage(item) {
+                this.$emit('item-clicked', item);
+            },
+            addItem() {
+                this.items.push({ id: this.items.length+1, text: "<new>", armed :false })
+            }
+        },
+        template: `
+            <ol>
+                <todo-item
+                    v-for="item in items"
+                    :item="item"
+                    :key="item.id"
+                    @click="addMessage(item)"
+                >
+                </todo-item>
+            </ol>
+            <button @click="addItem()">add item</button>
+        `
+    }
+);
+
+app.component(
+    'notification',
+    {
+        props: ['messages'],
+        computed: {
+            messagesReversed() {
+                // reverse method mutates original! => take a copy
+                return [...this.messages].reverse().slice(0,5)
+            }
+        },
+        template: `
+            <div v-for="msg in messagesReversed">
+                {{ msg }}
+            </div>
+        `
+    }
+);
+
+app.mount("#app")
+
+</script>
+</body>
+</html>
+

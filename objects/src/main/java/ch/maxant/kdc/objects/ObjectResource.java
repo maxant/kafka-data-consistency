@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -143,7 +144,7 @@ public class ObjectResource {
         String username = headers.getHeaderString("x-username");
         username = username == null ? "<anonymous>" : username;
         myService2.fillMyContext(username);
-
+//TODO this can only work if the requested scoped bean isnt actually request scoped, but then it still cant work because each call uses a different username!
         logger.info("processing request for user " + myService2.getUsername() + " on thread " + Thread.currentThread().getName());
 
         final String usernamef = username;
@@ -159,7 +160,7 @@ public class ObjectResource {
                     logger.warning("USERNAME CHANGED!!");
                 }
                 return Response.ok(myService2.getUsername() + ":" + myService2.getThread1() + ":" + Thread.currentThread().getName()).build();
-            }, managedExecutor);
+            }, Executors.newSingleThreadExecutor());
     }
 
     /**
