@@ -29,3 +29,17 @@ you can run the native executable build in a container using:
 `./mvnw package -Pnative -Dquarkus.native.container-build=true`.
 
 You can then execute your native executable with: `./target/contracts-1.0-SNAPSHOT-runner`
+
+## TODO
+
+- add status to contract - draft, offered, accepted, approved, running, cancelled, expired, terminated
+- add duration, day in year to bill, billing frequency => make customer pay for first period until next billing period according to config
+- add component defs
+- create an offer - including persistence, in offers component, which uses contracts and components in order to create the offer
+- create contract based on offer
+- add billing component
+- billing needs to be integrated into the process
+- use kafka as bus for entire application but use public topic for publishing billing, which is only losely coupled
+- billing publishes event to world to inform contract component that the contract is active?
+- UI reacts to each event
+- add daily billing job
