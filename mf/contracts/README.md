@@ -43,3 +43,4 @@ You can then execute your native executable with: `./target/contracts-1.0-SNAPSH
 - billing publishes event to world to inform contract component that the contract is active?
 - UI reacts to each event
 - add daily billing job
+- send a useful model around
