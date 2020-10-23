@@ -30,12 +30,16 @@ you can run the native executable build in a container using:
 
 You can then execute your native executable with: `./target/contracts-1.0-SNAPSHOT-runner`
 
+## Swagger-UI
+
+    http://localhost:8080/swagger-ui
+
 ## TODO
 
-- add status to contract - draft, offered, accepted, approved, running, cancelled, expired, terminated
+- create an offer - including persistence, which uses contracts and components in order to create the offer
+- add a structure rule, to ensure there is always a bottle or container in a milk product
 - add duration, day in year to bill, billing frequency => make customer pay for first period until next billing period according to config
 - add component defs
-- create an offer - including persistence, in offers component, which uses contracts and components in order to create the offer
 - create contract based on offer
 - add billing component
 - billing needs to be integrated into the process

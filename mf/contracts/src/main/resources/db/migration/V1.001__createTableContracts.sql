@@ -1,8 +1,9 @@
 CREATE TABLE T_CONTRACTS (
   ID            VARCHAR(36),
-  PRODUCT_ID    VARCHAR(100), -- eg 'milk choco shake'
+  PRODUCT_ID    VARCHAR(100),   -- eg 'milk choco shake'
   STARTTIME     DATETIME(3),    -- valid from, inclusive
   ENDTIME       DATETIME(3),    -- valid to, inclusive
+  STATUS        VARCHAR(30),
   PRIMARY KEY(ID)
 )
 ;

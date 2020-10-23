@@ -1,6 +1,6 @@
 package ch.maxant.kdc.mf.contracts.boundary
 
-import ch.maxant.kdc.mf.contracts.entity.Contract
+import ch.maxant.kdc.mf.contracts.entity.ContractEntity
 import java.net.URI
 import java.util.*
 import javax.inject.Inject
@@ -21,12 +21,13 @@ class ContractResource(
     @GET
     @Path("/{id}")
     fun getById(@PathParam("id") id: UUID) =
-        Response.ok(em.find(Contract::class.java, id)).build()
+        Response.ok(em.find(ContractEntity::class.java, id)).build()
 
     @POST
     @Transactional
-    fun create(contract: Contract): Response {
-        em.persist(contract)
-        return Response.created(URI.create("/${contract.id}")).entity(contract).build()
+    fun create(contractEntity: ContractEntity): Response {
+        em.persist(contractEntity)
+        return Response.created(URI.create("/${contractEntity.id}")).entity(contractEntity).build()
     }
+
 }

@@ -10,7 +10,7 @@ import javax.persistence.Table
 
 @Entity
 @Table(name = "T_COMPONENTS")
-open class Component( // add open, rather than rely on maven plugin, because @QuarkusTest running in IntelliJ seems to think its final
+open class ComponentEntity( // add open, rather than rely on maven plugin, because @QuarkusTest running in IntelliJ seems to think its final
 
     @Id
     @Column(name = "ID")
