@@ -4,48 +4,78 @@ import java.math.BigDecimal
 import java.time.LocalDate
 
 abstract class Configuration<T> (
-        open val name: ConfigurableParameter,
-        open val value: T,
+        val name: ConfigurableParameter,
+        val value: T,
+        val units: Units,
         val type: Class<T>
-)
+) {
+    init {
+        assert(name != null)
+        assert(value != null)
+        assert(units != null)
+        assert(type != null)
+
+        assert(!name.equals(ConfigurableParameter.VOLUME) || listOf(Units.MILLILITRES).contains(units))
+        assert(!name.equals(ConfigurableParameter.QUANTITY) || listOf(Units.PIECES).contains(units))
+        assert(!name.equals(ConfigurableParameter.WEIGHT) || listOf(Units.GRAMS).contains(units))
+        assert(!name.equals(ConfigurableParameter.MATERIAL) || listOf(Units.NONE).contains(units))
+        assert(!name.equals(ConfigurableParameter.FAT_CONTENT) || listOf(Units.PERCENT).contains(units))
+        assert(!name.equals(ConfigurableParameter.SPACES) || listOf(Units.NONE).contains(units))
+
+        if(type == Int::class.java) {
+            assert(Integer.valueOf(0).compareTo((value as Integer).toInt()) <= 0)
+        } else {
+            when (type) {
+                BigDecimal::class.java -> assert(BigDecimal.ZERO.compareTo(value as BigDecimal) <= 0)
+                Material::class.java -> assert(Material.values().contains(value as Material))
+                else -> throw AssertionError("unknown type " + type)
+            }
+        }
+    }
+}
 
 enum class Material {
-    MILK, SUGAR, EGGS, GLASS
+    MILK, SUGAR, EGGS, GLASS, FLOUR, BUTTER, CARDBOARD, WOOD
+}
+
+enum class Units {
+    GRAMS, MILLILITRES, PERCENT, NONE, PIECES
 }
 
 enum class ConfigurableParameter {
-    WEIGHT_IN_GRAMS, QUANTITY, FAT_CONTENT, MATERIAL
+    QUANTITY, FAT_CONTENT, MATERIAL, WEIGHT, VOLUME, SPACES
 }
 
 class DateConfiguration (
-        override val name: ConfigurableParameter,
-        override val value: LocalDate
-) : Configuration<LocalDate>(name, value, LocalDate::class.java)
+        name: ConfigurableParameter,
+        value: LocalDate
+) : Configuration<LocalDate>(name, value, Units.NONE, LocalDate::class.java)
 
 class StringConfiguration (
-        override val name: ConfigurableParameter,
-        override val value: String
-) : Configuration<String>(name, value, String::class.java)
+        name: ConfigurableParameter,
+        value: String
+) : Configuration<String>(name, value, Units.NONE, String::class.java)
 
 class BigDecimalConfiguration (
-        override val name: ConfigurableParameter,
-        override val value: BigDecimal
-) : Configuration<BigDecimal>(name, value, BigDecimal::class.java)
+        name: ConfigurableParameter,
+        value: BigDecimal,
+        units: Units
+) : Configuration<BigDecimal>(name, value, units, BigDecimal::class.java)
 
 class IntConfiguration (
-        override val name: ConfigurableParameter,
-        override val value: Int
-) : Configuration<Int>(name, value, Int::class.java)
+        name: ConfigurableParameter,
+        value: Int,
+        units: Units
+) : Configuration<Int>(name, value, units, Int::class.java)
 
 class PercentConfiguration (
-        override val name: ConfigurableParameter,
-        override val value: BigDecimal
-) : Configuration<BigDecimal>(name, value, BigDecimal::class.java)
-
-
+        name: ConfigurableParameter,
+        value: BigDecimal
+) : Configuration<BigDecimal>(name, value, Units.PERCENT, BigDecimal::class.java)
 
 class MaterialConfiguration (
-        override val value: Configuration<*>,
-        val material: Material
-) : Configuration<Configuration<*>>(ConfigurableParameter.MATERIAL, value, Configuration::class.java)
+        name: ConfigurableParameter,
+        value: Material
+) : Configuration<Material>(name, value, Units.NONE, Material::class.java)
+
 

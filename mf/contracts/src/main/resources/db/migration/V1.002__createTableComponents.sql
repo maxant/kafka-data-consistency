@@ -1,8 +1,9 @@
 CREATE TABLE T_COMPONENTS (
   ID                    VARCHAR(36), -- pk
-  PARENT_ID             VARCHAR(36), -- id of parent in tree
-  PRODUCTCOMPONENT_ID   VARCHAR(50), -- id of defining class
-  CONTRACT_ID           VARCHAR(36), -- to which contract does this component belong?
+  PARENT_ID             VARCHAR(36) NOT NULL, -- id of parent in tree
+  CONTRACT_ID           VARCHAR(36) NOT NULL, -- to which contract does this component belong?
+  PRODUCTCOMPONENT_ID   VARCHAR(99) NOT NULL, -- id of defining class
+  PRODUCT_ID            VARCHAR(99), -- optional name of the product containing this component
   CONFIGURATION         JSON,        -- variable, depending on defining class
   PRIMARY KEY(ID)
 )

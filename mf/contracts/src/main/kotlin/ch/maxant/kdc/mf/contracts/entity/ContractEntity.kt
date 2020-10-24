@@ -17,18 +17,16 @@ open class ContractEntity( // add open, rather than rely on maven plugin, becaus
         @Type(type = "uuid-char")
         open var id: UUID,
 
-        @Column(name = "PRODUCT_ID")
-        open var productId: ProductId,
-
-        @Column(name = "STARTTIME")
+        @Column(name = "STARTTIME", nullable = false)
         open var start: LocalDateTime,
 
-        @Column(name = "ENDTIME")
+        @Column(name = "ENDTIME", nullable = false)
         open var end: LocalDateTime,
 
-        @Column(name = "STATUS")
+        @Column(name = "STATUS", nullable = false)
         open var status: Status
 
 ) {
-    constructor() : this(UUID.randomUUID(), ProductId.CHOCOLATE_BASIC, LocalDateTime.MIN, LocalDateTime.MAX, Status.DRAFT)
+    // for hibernate
+    constructor() : this(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, Status.DRAFT)
 }

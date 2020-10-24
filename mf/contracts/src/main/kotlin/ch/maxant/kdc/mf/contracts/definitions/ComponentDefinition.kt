@@ -1,56 +1,92 @@
 package ch.maxant.kdc.mf.contracts.definitions
 
-import ch.maxant.kdc.mf.contracts.entity.ProductId
-import java.lang.RuntimeException
 import java.math.BigDecimal
 
-class ComponentDefinition(
+abstract class ComponentDefinition(
         val configs: List<Configuration<*>>,
         val children: List<ComponentDefinition>
 ) {
+    val className = this.javaClass.simpleName
+}
 
-    companion object {
+/** like a marker interface to show that this is packaging */
+abstract class Packaging(configs: List<Configuration<*>>,
+                       children: List<ComponentDefinition>
+) : ComponentDefinition(configs, children)
 
-        fun grams(material: Material, grams: Int): ComponentDefinition =
-            ComponentDefinition(
-                    listOf(
-                            MaterialConfiguration(
-                                    IntConfiguration(ConfigurableParameter.WEIGHT_IN_GRAMS, grams),
-                                    material)),
-                    emptyList())
+class Milk(quantityMl: Int, fatContentPercent: BigDecimal) : ComponentDefinition(
+        listOf(
+                IntConfiguration(ConfigurableParameter.VOLUME, quantityMl, Units.MILLILITRES),
+                PercentConfiguration(ConfigurableParameter.FAT_CONTENT, fatContentPercent),
+                MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.MILK)
+        ), emptyList())
 
-        fun quantity(material: Material, quantity: Int): ComponentDefinition =
-            ComponentDefinition(
-                    listOf(
-                            MaterialConfiguration(
-                                    IntConfiguration(ConfigurableParameter.QUANTITY, quantity),
-                                    material)),
-                    emptyList())
+class Eggs(number: Int) : ComponentDefinition(
+        listOf(
+                IntConfiguration(ConfigurableParameter.QUANTITY, number, Units.PIECES),
+                MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.EGGS)
+        ), emptyList())
 
-        val oneHundredGramsSugar = grams(Material.SUGAR, 100)
-        val threeEggs = quantity(Material.EGGS, 3)
-        val cookies = ComponentDefinition(emptyList(), listOf(oneHundredGramsSugar, threeEggs))
+class Flour(quantityGr: Int) : ComponentDefinition(
+        listOf(
+                IntConfiguration(ConfigurableParameter.WEIGHT, quantityGr, Units.GRAMS),
+                MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.FLOUR)
+        ), emptyList())
 
-        val glassBottle = StringConfiguration(ConfigurableParameter.MATERIAL, "Glass")
-        val fatContentSixPercent = PercentConfiguration(ConfigurableParameter.FAT_CONTENT, BigDecimal("6.00"))
-        val tenGrams = BigDecimalConfiguration(ConfigurableParameter.WEIGHT, BigDecimal("10"))
-        val sugar = ComponentDefinition(listOf(tenGrams), emptyList())
-        val chocolateCookies = ComponentDefinition(listOf(tenGrams), listOf(sugar, eggs))
-        val bottle = ComponentDefinition(listOf(glassBottle), emptyList())
-        val cookiesMilkshake = ComponentDefinition(emptyList(), listOf(
-                ComponentDefinition(listOf(fatContentSixPercent), emptyList()), // milk
+class Sugar(quantityGr: Int) : ComponentDefinition(
+        listOf(
+                IntConfiguration(ConfigurableParameter.WEIGHT, quantityGr, Units.GRAMS),
+                MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.SUGAR)
+        ), emptyList())
 
-                milk, bottle, chocolateCookies))
+class Butter(quantityGr: Int) : ComponentDefinition(
+        listOf(
+                IntConfiguration(ConfigurableParameter.WEIGHT, quantityGr, Units.GRAMS),
+                MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.BUTTER)
+        ), emptyList())
 
-        private val definitions: List<ComponentDefinition> = listOf(
-                cookiesMilkshake
-        )
+class Cookies(quantityGr: Int) : ComponentDefinition(
+        listOf(
+                IntConfiguration(ConfigurableParameter.WEIGHT, quantityGr, Units.GRAMS)
+        ), listOf(
+        Butter(quantityGr / 3),
+        Sugar(quantityGr / 3),
+        Flour(quantityGr / 3)
+)
+)
 
-        fun find(productId: ProductId) =
-                definitions.stream()
-                        .filter {
-                                it.productId.equals(productId)
-                        }.findFirst()
-                        .orElseThrow { RuntimeException("No matching contract definition - try a different date") }
+class GlassBottle(volumeMl: Int) : ComponentDefinition(
+        listOf(
+                IntConfiguration(ConfigurableParameter.VOLUME, volumeMl, Units.MILLILITRES),
+                MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.GLASS)
+        ), emptyList())
+
+class CardboardBox(space: CardboardBoxSize, quantity: Int, contents: Product) : Packaging(
+        listOf(
+                IntConfiguration(ConfigurableParameter.SPACES, space.size, Units.NONE),
+                IntConfiguration(ConfigurableParameter.QUANTITY, quantity, Units.PIECES),
+                MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.CARDBOARD)
+        ), listOf(contents)) {
+    init {
+        assert(space.size >= quantity)
+    }
+
+    enum class CardboardBoxSize(val size: Int) {
+        TEN(10)
+    }
+}
+
+class Pallet(space: PalletSize, quantity: Int, contents: Packaging) : ComponentDefinition(
+        listOf(
+                IntConfiguration(ConfigurableParameter.SPACES, space.size, Units.NONE),
+                IntConfiguration(ConfigurableParameter.QUANTITY, quantity, Units.PIECES),
+                MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.WOOD)
+        ), listOf(contents)) {
+    init {
+        assert(space.size >= quantity)
+    }
+
+    enum class PalletSize(val size: Int) {
+        ONE_HUNDRED(100)
     }
 }

@@ -1,6 +1,10 @@
 package ch.maxant.kdc.mf.contracts.boundary
 
 import ch.maxant.kdc.mf.contracts.definitions.ContractDefinition
+import ch.maxant.kdc.mf.contracts.definitions.Products
+import ch.maxant.kdc.mf.contracts.definitions.Profile
+import ch.maxant.kdc.mf.contracts.definitions.Profiles
+import ch.maxant.kdc.mf.contracts.dto.Offer
 import ch.maxant.kdc.mf.contracts.dto.OfferRequest
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
 import ch.maxant.kdc.mf.contracts.entity.Status
@@ -35,12 +39,17 @@ class OffersResource(
         val contractDefinition = ContractDefinition.find(offerRequest.productId, start)
         val end = start.plusDays(contractDefinition.defaultDurationDays)
 
-        val contract = ContractEntity(UUID.randomUUID(), offerRequest.productId, start, end, Status.DRAFT)
+        val contract = ContractEntity(UUID.randomUUID(), start, end, Status.DRAFT)
         em.persist(contract)
 
+        val profile: Profile = Profiles.find()
 
+        val product = Products.find(offerRequest.productId, profile.quantityMl)
 
-        return Response.created(URI.create("/${contract.id}")).entity(contract).build()
+        // TODO persist the product
+        // TODO ensure product json is good - prolly ok here - but serialise it nicely for db
+
+        return Response.created(URI.create("/${contract.id}")).entity(Offer(contract, product)).build()
     }
 
 }

@@ -1,12 +1,10 @@
 package ch.maxant.kdc.mf.contracts.entity
 
+import ch.maxant.kdc.mf.contracts.definitions.ProductId
 import org.hibernate.annotations.Type
 import java.time.LocalDateTime
 import java.util.*
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.Id
-import javax.persistence.Table
+import javax.persistence.*
 
 @Entity
 @Table(name = "T_COMPONENTS")
@@ -15,20 +13,26 @@ open class ComponentEntity( // add open, rather than rely on maven plugin, becau
     @Id
     @Column(name = "ID")
     @Type(type = "uuid-char")
-    private var id: UUID,
+    var id: UUID,
 
-    @Column(name = "PARENT_ID")
-    private var parentId: UUID,
+    @Column(name = "PARENT_ID", nullable = false, updatable = false)
+    var parentId: UUID,
 
-    @Column(name = "PRODUCTCOMPONENT_ID")
-    private var productComponentId: String,
+    @Column(name = "CONTRACT_ID", nullable = false, updatable = false)
+    var contractId: UUID,
 
-    @Column(name = "CONTRACT_ID")
-    private var contractId: UUID,
+    @Column(name = "CONFIGURATION", nullable = false)
+    var configuration: String,
 
-    @Column(name = "CONFIGURATION")
-    private var configuration: String
+    @Column(name = "PRODUCTCOMPONENT_ID", nullable = false)
+    var productComponentId: String
 
 ) {
-    constructor() : this(UUID.randomUUID(), UUID.randomUUID(), "", UUID.randomUUID(), "")
+
+    constructor() : this(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "{}", "Milkshake")
+
+    @Column(name = "PRODUCT_ID")
+    @Enumerated(EnumType.STRING)
+    var productId: ProductId? = null
+
 }
