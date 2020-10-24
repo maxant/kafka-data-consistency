@@ -3,10 +3,7 @@ package ch.maxant.kdc.mf.contracts.entity
 import org.hibernate.annotations.Type
 import java.time.LocalDateTime
 import java.util.*
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.Id
-import javax.persistence.Table
+import javax.persistence.*
 
 @Entity
 @Table(name = "T_CONTRACTS")
@@ -24,6 +21,7 @@ open class ContractEntity( // add open, rather than rely on maven plugin, becaus
         open var end: LocalDateTime,
 
         @Column(name = "STATUS", nullable = false)
+        @Enumerated(EnumType.STRING)
         open var status: Status
 
 ) {
