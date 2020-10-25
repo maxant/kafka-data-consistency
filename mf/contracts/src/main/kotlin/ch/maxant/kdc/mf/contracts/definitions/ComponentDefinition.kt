@@ -9,11 +9,6 @@ abstract class ComponentDefinition(
     val className = this.javaClass.simpleName
 }
 
-/** like a marker interface to show that this is packaging */
-abstract class Packaging(configs: List<Configuration<*>>,
-                       children: List<ComponentDefinition>
-) : ComponentDefinition(configs, children)
-
 class Milk(quantityMl: Int, fatContentPercent: BigDecimal) : ComponentDefinition(
         listOf(
                 IntConfiguration(ConfigurableParameter.VOLUME, quantityMl, Units.MILLILITRES),
@@ -61,32 +56,3 @@ class GlassBottle(volumeMl: Int) : ComponentDefinition(
                 MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.GLASS)
         ), emptyList())
 
-class CardboardBox(space: CardboardBoxSize, quantity: Int, contents: Product) : Packaging(
-        listOf(
-                IntConfiguration(ConfigurableParameter.SPACES, space.size, Units.NONE),
-                IntConfiguration(ConfigurableParameter.QUANTITY, quantity, Units.PIECES),
-                MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.CARDBOARD)
-        ), listOf(contents)) {
-    init {
-        assert(space.size >= quantity)
-    }
-
-    enum class CardboardBoxSize(val size: Int) {
-        TEN(10)
-    }
-}
-
-class Pallet(space: PalletSize, quantity: Int, contents: Packaging) : ComponentDefinition(
-        listOf(
-                IntConfiguration(ConfigurableParameter.SPACES, space.size, Units.NONE),
-                IntConfiguration(ConfigurableParameter.QUANTITY, quantity, Units.PIECES),
-                MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.WOOD)
-        ), listOf(contents)) {
-    init {
-        assert(space.size >= quantity)
-    }
-
-    enum class PalletSize(val size: Int) {
-        ONE_HUNDRED(100)
-    }
-}

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import io.quarkus.jackson.ObjectMapperCustomizer
 import javax.inject.Singleton
 
@@ -21,9 +22,7 @@ public open class JacksonConfig : ObjectMapperCustomizer {
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
-        // register kotlin module for data classes
-        // cant find this in maven yet: mapper.registerModule(KotlinModule())
-
+        mapper.registerModule(KotlinModule())
         mapper.registerModule(Jdk8Module())
         mapper.registerModule(JavaTimeModule())
     }

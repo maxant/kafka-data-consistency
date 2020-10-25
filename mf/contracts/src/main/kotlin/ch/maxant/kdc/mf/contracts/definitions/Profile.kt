@@ -1,10 +1,12 @@
 package ch.maxant.kdc.mf.contracts.definitions
 
-class Profile(val quantityMl: Int) {
-}
+class Profile(
+    val quantityMlOfProduct: Int,
+    val quantityOfProducts: Int
+)
 
 object Profiles {
-    val standard = Profile(1000)
+    val standard = Profile(1000, 50)
 
     // TODO select based on what we know about the customer
     fun find(): Profile {

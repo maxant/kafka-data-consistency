@@ -11,6 +11,4 @@ data class OfferRequest (
 
     @field:NotNull
     var productId: ProductId
-) {
-    constructor() : this(LocalDate.now(), ProductId.COOKIES_MILKSHAKE)
-}
+)

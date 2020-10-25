@@ -39,8 +39,8 @@ You can then execute your native executable with: `./target/contracts-1.0-SNAPSH
 - create an offer - including persistence, which uses contracts and components in order to create the offer
 - add a structure rule, to ensure there is always a bottle or container in a milk product
 - add duration, day in year to bill, billing frequency => make customer pay for first period until next billing period according to config
-- add component defs
-- create contract based on offer
+- add pricing
+- add changing config and recalculating price
 - add billing component
 - billing needs to be integrated into the process
 - use kafka as bus for entire application but use public topic for publishing billing, which is only losely coupled
