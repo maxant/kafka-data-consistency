@@ -19,7 +19,13 @@ class Milkshake(productId: ProductId, quantityMl: Int, recipe: (Int)-> List<Comp
 )
 
 enum class ProductId {
-    COOKIES_MILKSHAKE
+    COOKIES_MILKSHAKE,
+
+    /**
+     * used for testing only as it contains every possible complexity so that we can test them all live.
+     * isn't valid in prod
+     */
+    TEST_PRODUCT
 }
 
 class UnknownProductException(productId: ProductId) : RuntimeException(productId.toString())

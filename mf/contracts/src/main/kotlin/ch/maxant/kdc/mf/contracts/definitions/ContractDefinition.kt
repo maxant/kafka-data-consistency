@@ -1,9 +1,9 @@
 package ch.maxant.kdc.mf.contracts.definitions
 
-import java.lang.RuntimeException
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import javax.validation.ValidationException
 
 class ContractDefinition(
         val sellableFrom: LocalDateTime,
@@ -22,8 +22,8 @@ class ContractDefinition(
                         LocalDate.of(10000, 1, 1).atTime(LocalTime.MIDNIGHT),
                         ProductId.COOKIES_MILKSHAKE,
                         720
-                        // TODO components definition
-                        // TODO conditions definition
+                        // TODO components definition release number
+                        // TODO conditions definition release number
                 )
         )
 
@@ -36,6 +36,6 @@ class ContractDefinition(
                                     it.startTo.isAfter(start) &&
                                     it.productId == productId
                         }.findFirst()
-                        .orElseThrow { RuntimeException("No matching contract definition - try a different date") }
+                        .orElseThrow { ValidationException("No matching contract definition - try a different date or product") }
     }
 }
