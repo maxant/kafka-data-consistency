@@ -42,9 +42,9 @@ class Pallet(space: PalletSize, quantity: Int, contents: Packaging) : Packaging(
 object Packagings {
     fun pack(quantity: Int, product: Product): Packaging {
         val maxOrderSize = Pallet.PalletSize.ONE_HUNDRED.size * CardboardBox.CardboardBoxSize.TEN.size
-        return if(quantity < CardboardBox.CardboardBoxSize.TEN.size) {
+        return if(quantity <= CardboardBox.CardboardBoxSize.TEN.size) {
             CardboardBox(CardboardBox.CardboardBoxSize.TEN, quantity, product)
-        } else if(quantity < maxOrderSize) {
+        } else if(quantity <= maxOrderSize) {
             TODO()
             /*
             val numPallets = BigDecimal(quantity).divide(BigDecimal(CardboardBox.CardboardBoxSize.TEN.size)).round(MathContext(0, RoundingMode.UP)).intValueExact()

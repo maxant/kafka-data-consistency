@@ -6,7 +6,7 @@ class Profile(
 )
 
 object Profiles {
-    val standard = Profile(1000, 50)
+    val standard = Profile(1000, 10)
 
     // TODO select based on what we know about the customer
     fun find(): Profile {

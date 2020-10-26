@@ -1,7 +1,9 @@
 package ch.maxant.kdc.mf.contracts.boundary
 
 import ch.maxant.kdc.mf.contracts.control.ComponentsRepo
-import ch.maxant.kdc.mf.contracts.control.PricingAdapter
+import ch.maxant.kdc.mf.contracts.control.EventBus
+import ch.maxant.kdc.mf.contracts.control.Events
+import ch.maxant.kdc.mf.contracts.control.OfferEvent
 import ch.maxant.kdc.mf.contracts.definitions.*
 import ch.maxant.kdc.mf.contracts.dto.Offer
 import ch.maxant.kdc.mf.contracts.dto.OfferRequest
@@ -22,6 +24,8 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
+import org.eclipse.microprofile.reactive.messaging.Channel
+import org.eclipse.microprofile.reactive.messaging.Emitter
 import java.util.*
 import javax.validation.Valid
 
@@ -31,14 +35,14 @@ import javax.validation.Valid
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 class OffersResource(
-        @Inject
+    @Inject
     public var em: EntityManager, // TODO public in an attempt to avoid quarkus warning during startup
 
-        @Inject
+    @Inject
     var componentsRepo: ComponentsRepo,
 
-        @Inject
-    var pricingAdapter: PricingAdapter
+    @Inject
+    var eventBus: EventBus
 ) {
 
 
@@ -68,13 +72,16 @@ class OffersResource(
         val pack = Packagings.pack(profile.quantityOfProducts, product)
         componentsRepo.saveInitialOffer(contract.id, pack)
 
-        val pricing = pricingAdapter.updatePrice(contract.id)
+        val offer = Offer(contract, pack)
 
-        // TODO ensure product json is good - prolly ok here - but serialise it nicely for db
+        // it's ok to publish this model, because it's no different than getting pricing to
+        // go fetch all this data, or us giving it to them. the dependency exists and is tightly
+        // coupled. at least we don't need to know anything about pricing here!
+        eventBus.publish(OfferEvent(offer))
 
         Response
                 .created(URI.create("/${contract.id}"))
-                .entity(Offer(contract, product, pricing))
+                .entity(offer)
                 .build()
     }
 }

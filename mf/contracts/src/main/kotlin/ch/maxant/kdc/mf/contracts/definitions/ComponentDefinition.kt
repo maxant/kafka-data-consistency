@@ -6,7 +6,7 @@ abstract class ComponentDefinition(
         val configs: List<Configuration<*>>,
         val children: List<ComponentDefinition>
 ) {
-    val className = this.javaClass.simpleName
+    val componentDefinitionId = this.javaClass.simpleName
 }
 
 class Milk(quantityMl: Int, fatContentPercent: BigDecimal) : ComponentDefinition(

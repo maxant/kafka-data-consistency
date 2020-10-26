@@ -16,20 +16,21 @@ open class ComponentEntity( // add open, rather than rely on maven plugin, becau
     var id: UUID = UUID.randomUUID(),
 
     @Column(name = "PARENT_ID", nullable = true, updatable = false)
+    @Type(type = "uuid-char")
     var parentId: UUID?,
 
     @Column(name = "CONTRACT_ID", nullable = false, updatable = false)
+    @Type(type = "uuid-char")
     var contractId: UUID,
 
     @Column(name = "CONFIGURATION", nullable = false)
     var configuration: String,
 
-    @Column(name = "PRODUCTCOMPONENT_ID", nullable = false)
-    var productComponentId: String
+    @Column(name = "COMPONENTDEFINITION_ID", nullable = false)
+    var componentDefinitionId: String
 
 ) {
 
-    // TODO can we remove these, now that we added the kotlin jackson module?
     constructor() : this(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "{}", "Milkshake")
 
     @Column(name = "PRODUCT_ID")
