@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.contracts.definitions
 
+import org.apache.commons.lang3.Validate.isTrue
 import java.math.BigDecimal
 import java.time.LocalDate
 
@@ -10,24 +11,19 @@ abstract class Configuration<T> (
         val type: Class<T>
 ) {
     init {
-        assert(name != null)
-        assert(value != null)
-        assert(units != null)
-        assert(type != null)
-
-        assert(!name.equals(ConfigurableParameter.VOLUME) || listOf(Units.MILLILITRES).contains(units))
-        assert(!name.equals(ConfigurableParameter.QUANTITY) || listOf(Units.PIECES).contains(units))
-        assert(!name.equals(ConfigurableParameter.WEIGHT) || listOf(Units.GRAMS).contains(units))
-        assert(!name.equals(ConfigurableParameter.MATERIAL) || listOf(Units.NONE).contains(units))
-        assert(!name.equals(ConfigurableParameter.FAT_CONTENT) || listOf(Units.PERCENT).contains(units))
-        assert(!name.equals(ConfigurableParameter.SPACES) || listOf(Units.NONE).contains(units))
+        isTrue(!name.equals(ConfigurableParameter.VOLUME) || listOf(Units.MILLILITRES).contains(units))
+        isTrue(!name.equals(ConfigurableParameter.QUANTITY) || listOf(Units.PIECES).contains(units))
+        isTrue(!name.equals(ConfigurableParameter.WEIGHT) || listOf(Units.GRAMS).contains(units))
+        isTrue(!name.equals(ConfigurableParameter.MATERIAL) || listOf(Units.NONE).contains(units))
+        isTrue(!name.equals(ConfigurableParameter.FAT_CONTENT) || listOf(Units.PERCENT).contains(units))
+        isTrue(!name.equals(ConfigurableParameter.SPACES) || listOf(Units.NONE).contains(units))
 
         if(type == Int::class.java) {
-            assert(Integer.valueOf(0).compareTo((value as Integer).toInt()) <= 0)
+            isTrue(Integer.valueOf(0).compareTo((value as Integer).toInt()) <= 0)
         } else {
             when (type) {
-                BigDecimal::class.java -> assert(BigDecimal.ZERO.compareTo(value as BigDecimal) <= 0)
-                Material::class.java -> assert(Material.values().contains(value as Material))
+                BigDecimal::class.java -> isTrue(BigDecimal.ZERO.compareTo(value as BigDecimal) <= 0)
+                Material::class.java -> isTrue(Material.values().contains(value as Material))
                 else -> throw AssertionError("unknown type " + type)
             }
         }

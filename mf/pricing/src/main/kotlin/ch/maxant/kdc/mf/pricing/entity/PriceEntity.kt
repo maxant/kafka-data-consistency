@@ -27,11 +27,10 @@ open class PriceEntity( // add open, rather than rely on maven plugin, because @
 
     @Column(name = "COMPONENT_ID", nullable = false, updatable = false)
     @Type(type = "uuid-char")
-    var parentId: UUID,
+    var componentId: UUID,
 
     @Column(name = "PRICING_ID", nullable = false, updatable = false)
-    @Type(type = "uuid-char")
-    var pricingId: UUID,
+    var pricingId: String,
 
     @Column(name = "PRICE", nullable = false)
     var price: BigDecimal,
@@ -39,5 +38,5 @@ open class PriceEntity( // add open, rather than rely on maven plugin, because @
     @Column(name = "TAX", nullable = false)
     var tax: BigDecimal
 ) {
-    constructor() : this(UUID.randomUUID(), UUID.randomUUID(), LocalDateTime.now(), LocalDateTime.now().plusDays(300), UUID.randomUUID(), UUID.randomUUID(), BigDecimal.TEN, BigDecimal.ONE)
+    constructor() : this(UUID.randomUUID(), UUID.randomUUID(), LocalDateTime.now(), LocalDateTime.now().plusDays(300), UUID.randomUUID(), "", BigDecimal.TEN, BigDecimal.ONE)
 }

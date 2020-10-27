@@ -30,6 +30,6 @@ enum class Events {
     OFFER_CREATED
 }
 
-abstract class Event<T>(event: Events, value: T)
+abstract class Event<T>(val event: Events, open val value: T)
 
-data class OfferEvent(val offer: Offer) : Event<Offer>(Events.OFFER_CREATED, offer)
+data class OfferEvent(override val value: Offer) : Event<Offer>(Events.OFFER_CREATED, value)

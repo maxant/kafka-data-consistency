@@ -26,6 +26,7 @@ class ComponentsRepo(
         val config = om.writeValueAsString(component.configs)
         val e = ComponentEntity(UUID.randomUUID(), parentId, contractId, config.toString(), component.componentDefinitionId)
         if(component is Product) e.productId = component.productId
+        component.componentId = e.id
         em.persist(e)
         component.children.forEach { saveInitialOffer(contractId, e.id, it) }
     }

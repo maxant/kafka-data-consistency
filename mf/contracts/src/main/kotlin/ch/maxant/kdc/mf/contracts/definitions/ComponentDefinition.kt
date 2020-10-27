@@ -1,12 +1,14 @@
 package ch.maxant.kdc.mf.contracts.definitions
 
 import java.math.BigDecimal
+import java.util.*
 
 abstract class ComponentDefinition(
         val configs: List<Configuration<*>>,
         val children: List<ComponentDefinition>
 ) {
     val componentDefinitionId = this.javaClass.simpleName
+    var componentId: UUID? = null
 }
 
 class Milk(quantityMl: Int, fatContentPercent: BigDecimal) : ComponentDefinition(
