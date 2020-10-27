@@ -36,15 +36,22 @@ You can then execute your native executable with: `./target/contracts-1.0-SNAPSH
 
 ## TODO
 
-- create an offer - including persistence, which uses contracts and components in order to create the offer
+- add ui to display offer
+- UI reacts to each event - need to add filtering in that component
+- add changing config and recalculating price
+- add purchase, which causes billing to run
+- add billing component
+- billing publishes event to world to inform contract component that the contract is active?
 - add a structure rule, to ensure there is always a bottle or container in a milk product
 - add duration, day in year to bill, billing frequency => make customer pay for first period until next billing period according to config
-- add pricing
-- add changing config and recalculating price
-- add billing component
-- billing needs to be integrated into the process
 - use kafka as bus for entire application but use public topic for publishing billing, which is only losely coupled
-- billing publishes event to world to inform contract component that the contract is active?
-- UI reacts to each event
 - add daily billing job
-- send a useful model around
+
+## Blog
+
+- sends a useful model around on the event bus, so that we have guaranteed order
+- ui only uses event source for updating - we only update relevant part of ui
+- MVC but with microservices
+- error handling - timeouts? anything else?
+- kafka interfaces are analagous to rest interfaces.
+  - security? check jwt on incoming message?
