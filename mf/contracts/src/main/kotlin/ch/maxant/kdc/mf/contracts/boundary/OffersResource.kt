@@ -2,21 +2,13 @@ package ch.maxant.kdc.mf.contracts.boundary
 
 import ch.maxant.kdc.mf.contracts.control.ComponentsRepo
 import ch.maxant.kdc.mf.contracts.control.EventBus
-import ch.maxant.kdc.mf.contracts.control.Events
 import ch.maxant.kdc.mf.contracts.control.OfferEvent
 import ch.maxant.kdc.mf.contracts.definitions.*
 import ch.maxant.kdc.mf.contracts.dto.Offer
 import ch.maxant.kdc.mf.contracts.dto.OfferRequest
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
 import ch.maxant.kdc.mf.contracts.entity.Status
-import ch.maxant.kdc.mf.contracts.library.doByHandlingValidationExceptions
-import java.net.URI
-import javax.inject.Inject
-import javax.persistence.EntityManager
-import javax.transaction.Transactional
-import javax.ws.rs.*
-import javax.ws.rs.core.MediaType
-import javax.ws.rs.core.Response
+import ch.maxant.kdc.mf.library.doByHandlingValidationExceptions
 import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.media.Content
 import org.eclipse.microprofile.openapi.annotations.media.Schema
@@ -24,10 +16,18 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
-import org.eclipse.microprofile.reactive.messaging.Channel
-import org.eclipse.microprofile.reactive.messaging.Emitter
+import java.net.URI
 import java.util.*
+import javax.inject.Inject
+import javax.persistence.EntityManager
+import javax.transaction.Transactional
 import javax.validation.Valid
+import javax.ws.rs.Consumes
+import javax.ws.rs.POST
+import javax.ws.rs.Path
+import javax.ws.rs.Produces
+import javax.ws.rs.core.MediaType
+import javax.ws.rs.core.Response
 
 
 @Path("/offers")
@@ -65,7 +65,7 @@ class OffersResource(
         val contractDefinition = ContractDefinition.find(offerRequest.productId, start)
         val end = start.plusDays(contractDefinition.defaultDurationDays)
 
-        val contract = ContractEntity(UUID.randomUUID(), start, end, Status.DRAFT)
+        val contract = ContractEntity(offerRequest.contractId, start, end, Status.DRAFT)
         em.persist(contract)
 
         val product = Products.find(offerRequest.productId, profile.quantityMlOfProduct)

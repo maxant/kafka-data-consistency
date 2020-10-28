@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>The Milk Factory</title>
+    </head>
+    <body>
+    <div class="container">
+        <div class="row">
+            <p>The last price is <strong><span id="content">N/A</span>&nbsp;</strong>.</p>
+        </div>
+    </div>
+    </body>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script>
+// https://stackoverflow.com/a/2117523/458370
+function uuidv4() {
+  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+  );
+}
+
+const body = {
+  "productId": "COOKIES_MILKSHAKE",
+  "start": new Date().toISOString().substr(0,10),
+  "contractId": uuidv4()
+}
+
+// subscribe immediately, to ensure we receive ALL of the events
+var source = new EventSource("/infra/stream/" + body.contractId);
+source.onmessage = function (event) {
+    console.log(event);
+    document.getElementById("content").innerHTML = event.data;
+};
+
+fetch("http://localhost:8080/offers",
+      {"method": "POST", body: JSON.stringify(body), "headers": {"Content-Type": "application/json"}})
+      .then(r => r.json())
+      .then(r => {
+        console.log("got contract with id " + r.contract.id + ", created using " + body.contractId);
+      });
+</script>
+</html>

@@ -1,4 +1,4 @@
-package ch.maxant.kdc.mf.contracts.library
+package ch.maxant.kdc.mf.library
 
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.json.JsonWriteFeature

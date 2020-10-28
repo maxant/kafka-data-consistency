@@ -53,9 +53,7 @@ class OffersSink(
                 val root = om.readValue(pack, Component::class.java)
 
                 priceOffer(contractId, start, end, root)
-            } else {
-                log.info("ignoring message of type ${event}")
-            }
+            } // else ignore other message types
         }catch (e: Exception) {
             log.error("failed to process message $msg", e) // TODO replace with DLT and suitable error processing
         }
@@ -93,7 +91,7 @@ class OffersSink(
             }
         })
 
-        eventBus.send(om.writeValueAsString(PublishedPrice(value = prices)))
+        eventBus.send(om.writeValueAsString(PublishedPrice(value = prices, contractId = contractId.toString())))
 
         /*
 {"offer":
@@ -115,4 +113,4 @@ class OffersSink(
 }
 
 
-private data class PublishedPrice(val event: String = "UPDATED_PRICES", val value: Map<UUID, Price>)
+private data class PublishedPrice(val event: String = "UPDATED_PRICES", val contractId: String, val value: Map<UUID, Price>)

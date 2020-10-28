@@ -1,4 +1,4 @@
-package ch.maxant.kdc.mf.contracts.library
+package ch.maxant.kdc.mf.library
 
 import javax.validation.ValidationException
 import javax.ws.rs.core.Response

@@ -1,4 +1,4 @@
-package ch.maxant.kdc.mf.pricing.library
+package ch.maxant.kdc.mf.library
 
 import com.fasterxml.jackson.core.json.JsonWriteFeature
 import com.fasterxml.jackson.databind.DeserializationFeature
