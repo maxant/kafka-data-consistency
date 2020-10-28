@@ -32,14 +32,13 @@ class InfraResource {
     fun process(event: String) {
         try {
             val root = om.readTree(event)
-            val model = root.get("value").toString()
 
             val sendToSubscribers: (String) -> Unit = {
                 val id = it
                 subscriptions.entries.forEach {
                     if(it.key == id) {
                         if(!it.value.isCancelled) {
-                            it.value.emit(model)
+                            it.value.emit(event)
                         }
                     }
                 }

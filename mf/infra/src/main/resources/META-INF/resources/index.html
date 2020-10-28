@@ -1,18 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>The Milk Factory</title>
-    </head>
-    <body>
-    <div class="container">
-        <div class="row">
-            <p>The last price is <strong><span id="content">N/A</span>&nbsp;</strong>.</p>
-        </div>
-    </div>
-    </body>
-    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
-    <script>
+<head>
+    <meta charset="UTF-8">
+    <title>The Milk Factory</title>
+</head>
+<body>
+    <div id="contract"></div>
+    <div id="components"></div>
+    <div id="prices"></div>
+</body>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script>
 // https://stackoverflow.com/a/2117523/458370
 function uuidv4() {
   return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
@@ -30,7 +28,13 @@ const body = {
 var source = new EventSource("/infra/stream/" + body.contractId);
 source.onmessage = function (event) {
     console.log(event);
-    document.getElementById("content").innerHTML = event.data;
+    let msg = JSON.parse(event.data);
+    if(msg.event == "OFFER_CREATED") {
+        document.getElementById("contract").innerHTML = JSON.stringify(msg.value.contract);
+        document.getElementById("components").innerHTML = JSON.stringify(msg.value.pack);
+    } else if(msg.event == "UPDATED_PRICES") {
+        document.getElementById("prices").innerHTML = JSON.stringify(msg.value);
+    }
 };
 
 fetch("http://localhost:8080/offers",
