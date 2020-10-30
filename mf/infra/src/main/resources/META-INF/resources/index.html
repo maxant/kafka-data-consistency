@@ -3,11 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <title>The Milk Factory</title>
+    <script src="https://unpkg.com/vue@next"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.20/lodash.min.js"></script>
 </head>
-<body>
-    <div id="contract"></div>
-    <div id="components"></div>
-    <div id="prices"></div>
+<body style="background-image: url(https://hips.hearstapps.com/del.h-cdn.co/assets/15/24/1600x800/landscape-1433889344-del-milkshakes-index.jpg); background-color: rgba(255, 255, 255, 0.85); background-blend-mode: overlay;">
+    <h2>The Milk Factory</h2>
+    <div id="app">
+        <div>
+            <button @click="newOffer()">get new offer</button>
+        </div>
+        <div style="font-size: small;">
+            Offered in {{ timeTaken }}ms
+        </div>
+        <div v-if="_.get(model, 'offer.contract')">
+            Contract ID: {{ model.offer.contract.id }}
+        </div>
+        <div v-if="!!_.get(model, 'offer.pack.price')">
+            Product: {{ model.offer.pack.children[0].productId }} {{ model.offer.pack.price.total }} CHF ({{ model.offer.pack.price.tax }} CHF VAT)
+        </div>
+        <div v-if="!!_.get(model, 'offer.pack.price')">
+            <ul>
+                <li v-for="child in model.offer.pack.children">
+                    {{ child.componentDefinitionId }}: {{ child.price.total }} CHF
+                    <ul v-if="_.get(child, 'children.length') > 0">
+                        <li v-for="child2 in child.children">
+                            {{ child2.componentDefinitionId }}: {{ child2.price.total }} CHF
+                            <ul v-if="_.get(child2, 'children.length') > 0">
+                                <li v-for="child3 in child2.children">
+                                    {{ child3.componentDefinitionId }}: {{ child3.price.total }} CHF
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+        </div>
+    </div>
+    <hr>
 </body>
 <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
 <script>
@@ -18,30 +51,75 @@ function uuidv4() {
   );
 }
 
-const body = {
-  "productId": "COOKIES_MILKSHAKE",
-  "start": new Date().toISOString().substr(0,10),
-  "contractId": uuidv4()
-}
+var start;
 
-// subscribe immediately, to ensure we receive ALL of the events
-var source = new EventSource("/infra/stream/" + body.contractId);
-source.onmessage = function (event) {
-    console.log(event);
-    let msg = JSON.parse(event.data);
-    if(msg.event == "OFFER_CREATED") {
-        document.getElementById("contract").innerHTML = JSON.stringify(msg.value.contract);
-        document.getElementById("components").innerHTML = JSON.stringify(msg.value.pack);
-    } else if(msg.event == "UPDATED_PRICES") {
-        document.getElementById("prices").innerHTML = JSON.stringify(msg.value);
+const App = {
+  data() {
+    return {
+      model: {"offer": {"msg": "21", "contract": {}, "pack": {}, "prices": {}}},
+      start: 0,
+      timeTaken: 0,
+      source: null
     }
-};
+  },
+  mounted() {
+    this.newOffer();
+    window.model = this.model;
+  },
+  methods: {
+    newOffer() {
+        this.start = new Date().getTime();
+        let body = {
+          "productId": "COOKIES_MILKSHAKE",
+          "start": new Date(new Date().getTime() + 24*3600000).toISOString().substr(0,10),
+          "contractId": uuidv4()
+        }
 
-fetch("http://localhost:8080/offers",
-      {"method": "POST", body: JSON.stringify(body), "headers": {"Content-Type": "application/json"}})
-      .then(r => r.json())
-      .then(r => {
-        console.log("got contract with id " + r.contract.id + ", created using " + body.contractId);
-      });
+        // subscribe immediately, to ensure we receive ALL of the events
+        this.sse(body.contractId);
+
+        //fetch("http://localhost:8080/offers",
+        fetch("http://178.199.206.170/offers",
+              {"method": "POST", body: JSON.stringify(body), "headers": {"Content-Type": "application/json"}})
+              .then(r => r.json())
+              .then(r => {
+                console.log("got contract with id " + r.contract.id + ", created using " + body.contractId);
+              });
+    },
+    sse(contractId) {
+        let self = this;
+        if(this.source && this.source.readyState != EventSource.CLOSED) this.source.close();
+        this.source = new EventSource("/infra/stream/" + contractId);
+        this.source.onmessage = function (event) {
+            console.log(event);
+            let msg = JSON.parse(event.data);
+            if(msg.event == "OFFER_CREATED") {
+                self.model.offer.contract = msg.value.contract;
+                self.model.offer.pack = msg.value.pack;
+            } else if(msg.event == "UPDATED_PRICES") {
+                self.model.offer.prices = msg.value;
+                _.forEach(msg.value, (v,k) => {
+                    addPrice(self.model.offer.pack, k, v);
+                });
+                self.timeTaken = new Date().getTime() - self.start;
+            }
+        };
+        this.source.onerror = function (event) {
+            console.log("sse error " + event);
+            if(this.source && this.source.readyState != EventSource.CLOSED) this.source.close();
+            this.source = null;
+        };
+    }
+  }
+}
+Vue.createApp(App).mount("#app")
+
+function addPrice(component, id, price) {
+    if(component.componentId == id) {
+        component.price = price
+    } else {
+        _.forEach(component.children, child => addPrice(child, id, price))
+    }
+}
 </script>
 </html>

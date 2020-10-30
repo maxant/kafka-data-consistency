@@ -16,3 +16,22 @@ With a subscription you pay for say 10 per year and you can claim them when you 
 
 Depending upon the product, there are certain specialities, like our index based products which 
 become more expensive year on year, depending upon raw product costs.
+
+## Raspberry Pi
+
+    ssh pi@ipaddress
+    sudo apt update
+    sudo apt install default-jdk
+    java -version
+    
+see https://github.com/oracle/graal/tree/master/compiler
+
+    git clone https://github.com/graalvm/mx.git
+    export PATH=$PWD/mx:$PATH
+    export JAVA_HOME=/usr/lib/jvm/default-java
+
+    git clone https://github.com/oracle/graal.git
+    cd graal/compiler
+    mx build
+    mx vm
+    

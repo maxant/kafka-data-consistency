@@ -6,8 +6,11 @@ import ch.maxant.kdc.mf.pricing.dto.Configuration
 import org.apache.commons.lang3.Validate.isTrue
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.util.*
 import javax.validation.ValidationException
 
+
+private val RANDOM = Random()
 private val TAX = BigDecimal(0.077)
 
 data class Price(val total: BigDecimal, val tax: BigDecimal) {
@@ -54,9 +57,10 @@ private val milk = fun(component: Component): Price {
     val volumeConfig = getConfig(component, "VOLUME", "MILLILITRES")
     val fatConfig = getConfig(component, "FAT_CONTENT", "PERCENT")
 
-    // 4 bucks a litre plus 10 cents per fat content percent point
+    // 4 bucks a litre plus 10 cents per fat content percentage point + random part
     val net = BigDecimal(4).times(BigDecimal(volumeConfig.value)).divide(BigDecimal(1000))
                            .plus(BigDecimal(0.1).times(BigDecimal(fatConfig.value)))
+                           .plus(BigDecimal(RANDOM.nextInt(10)).divide(BigDecimal(100)))
     return roundAddTaxAndMakePrice(net)
 }
 
