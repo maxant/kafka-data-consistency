@@ -38,6 +38,8 @@ become more expensive year on year, depending upon raw product costs.
 
 - add a task based on a business rule and allow the user to do it
 - add action to execute when task is completed or started (ie open UI, or do something)
+- partners
+- addinfo
 - discounts
 - billing
 - output
@@ -46,7 +48,6 @@ become more expensive year on year, depending upon raw product costs.
 - ability to change a config in the offer, which recals discounts and price
 - fix offer => create pdf
 - accept offer => event to billing
-- partners
 - additional info - to hang stuff external to the offer onto components
 - billing publishes event to world to inform contract component that the contract is active?
 - add a structure rule to components, to ensure there is always a bottle or container in a milk product
