@@ -11,11 +11,4 @@
     </parent>
     <artifactId>contracts</artifactId>
     <packaging>jar</packaging>
-    <dependencies>
-        <dependency>
-            <!-- in order to use servlet api -->
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-undertow</artifactId>
-        </dependency>
-    </dependencies>
 </project>

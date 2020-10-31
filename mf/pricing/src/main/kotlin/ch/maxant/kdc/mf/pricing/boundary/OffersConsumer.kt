@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.pricing.boundary
 
+import ch.maxant.kdc.mf.library.ErrorHandler
 import ch.maxant.kdc.mf.pricing.definitions.Price
 import ch.maxant.kdc.mf.pricing.definitions.Prices
 import ch.maxant.kdc.mf.pricing.dto.Component
@@ -20,9 +21,12 @@ import javax.transaction.Transactional
 import kotlin.collections.HashMap
 
 @ApplicationScoped
-class OffersSink(
+class OffersConsumer(
         @Inject
         var em: EntityManager,
+
+        @Inject
+        var errorHandler: ErrorHandler,
 
         @Inject
         var om: ObjectMapper
@@ -39,13 +43,14 @@ class OffersSink(
     //TODO how to access the kafka record?
     // fun process(msg: Message<String>): CompletionStage<*> {
     fun process(msg: String) {
+        var contractId: UUID? = null
         try {
             val event = om.readTree(msg)
             val name = event.get("event")
             if("OFFER_CREATED" == name.asText()) {
                 val value = event.get("value")
+                contractId = UUID.fromString(value.get("contract").get("id").asText())
                 val pack = value.get("pack").toString()
-                val contractId = UUID.fromString(value.get("contract").get("id").asText())
                 val start = LocalDateTime.parse(value.get("contract").get("start").asText())
                 val end = LocalDateTime.parse(value.get("contract").get("end").asText())
                 log.info("\r\nPricing an offer $contractId: ${value}")
@@ -55,7 +60,8 @@ class OffersSink(
                 priceOffer(contractId, start, end, root)
             } // else ignore other message types
         }catch (e: Exception) {
-            log.error("failed to process message $msg", e) // TODO replace with DLT and suitable error processing
+            log.error("failed to process message $msg - sending it to the DLT", e)
+            errorHandler.dlt(contractId?.toString(), e, msg)
         }
         /*
         println("GOT ONE: ${msg.payload}")

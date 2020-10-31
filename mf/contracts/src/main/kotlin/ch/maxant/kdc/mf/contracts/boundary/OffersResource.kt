@@ -1,6 +1,7 @@
 package ch.maxant.kdc.mf.contracts.boundary
 
 import ch.maxant.kdc.mf.contracts.control.ComponentsRepo
+import ch.maxant.kdc.mf.contracts.control.CreateCaseCommand
 import ch.maxant.kdc.mf.contracts.control.EventBus
 import ch.maxant.kdc.mf.contracts.control.OfferEvent
 import ch.maxant.kdc.mf.contracts.definitions.*
@@ -16,6 +17,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
+import org.jboss.logging.Logger
 import java.net.URI
 import java.util.*
 import javax.inject.Inject
@@ -45,6 +47,7 @@ class OffersResource(
     var eventBus: EventBus
 ) {
 
+    val log = Logger.getLogger(this.javaClass)
 
     @Operation(summary = "Create an offer", description = "descr")
     @APIResponses(
@@ -59,7 +62,10 @@ class OffersResource(
             @Valid
             offerRequest: OfferRequest): Response = doByHandlingValidationExceptions {
 
+        log.info("creating offer $offerRequest")
+
         val profile: Profile = Profiles.find()
+        log.info("using profile ${profile.id}")
 
         val start = offerRequest.start.atStartOfDay()
         val contractDefinition = ContractDefinition.find(offerRequest.productId, start)
@@ -67,10 +73,12 @@ class OffersResource(
 
         val contract = ContractEntity(offerRequest.contractId, start, end, Status.DRAFT)
         em.persist(contract)
+        log.info("added contract ${contract.id}")
 
         val product = Products.find(offerRequest.productId, profile.quantityMlOfProduct)
         val pack = Packagings.pack(profile.quantityOfProducts, product)
         componentsRepo.saveInitialOffer(contract.id, pack)
+        log.info("packaged ${contract.id}")
 
         val offer = Offer(contract, pack)
 
@@ -78,10 +86,14 @@ class OffersResource(
         // go fetch all this data, or us giving it to them. the dependency exists and is tightly
         // coupled. at least we don't need to know anything about pricing here!
         eventBus.publish(OfferEvent(offer))
+        log.info("published ${contract.id}")
 
-        Response
-                .created(URI.create("/${contract.id}"))
+        eventBus.publish(CreateCaseCommand(contract.id))
+        log.info("sent case command ${contract.id}")
+
+        Response.created(URI.create("/${contract.id}"))
                 .entity(offer)
                 .build()
     }
 }
+

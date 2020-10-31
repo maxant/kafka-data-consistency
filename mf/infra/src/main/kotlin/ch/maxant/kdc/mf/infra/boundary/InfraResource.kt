@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.infra.boundary
 
+import ch.maxant.kdc.mf.library.ErrorHandler
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.subscription.MultiEmitter
@@ -23,33 +24,64 @@ class InfraResource {
     @Inject
     lateinit var om: ObjectMapper
 
+    @Inject
+    lateinit var errorHandler: ErrorHandler
+
     val log: Logger = Logger.getLogger(this.javaClass)
 
     // TODO tidy these up when they are no longer in use!
     val subscriptions: HashMap<String, MultiEmitter<in String?>> = HashMap()
 
+    fun sendToSubscribers(id: String, event: String) {
+        subscriptions.entries.forEach {
+            if(it.key == id) {
+                if(!it.value.isCancelled) {
+                    it.value.emit(event)
+                }
+            }
+        }
+    }
+
     @Incoming("event-bus-in")
-    fun process(event: String) {
+    fun processEventBus(event: String) {
+        var referenceId: String? = null
         try {
             val root = om.readTree(event)
 
-            val sendToSubscribers: (String) -> Unit = {
-                val id = it
-                subscriptions.entries.forEach {
-                    if(it.key == id) {
-                        if(!it.value.isCancelled) {
-                            it.value.emit(event)
-                        }
-                    }
+            when(root.get("event").asText()) {
+                "OFFER_CREATED" -> {
+// TODO make lib extension method to get stuff out of ObjectNodes easier
+                    referenceId = root.get("value").get("contract").get("id").asText()
+                    sendToSubscribers(referenceId, event)
+                }
+                "UPDATED_PRICES" -> {
+                    referenceId = root.get("contractId").asText()
+                    sendToSubscribers(referenceId, event)
                 }
             }
-
-            when(root.get("event").asText()) {
-                "OFFER_CREATED" -> sendToSubscribers(root.get("value").get("contract").get("id").asText())
-                "UPDATED_PRICES" -> sendToSubscribers(root.get("contractId").asText())
-            }
         } catch (e: Exception) {
-            log.error("failed to process message $event", e) // TODO error handling / DLT
+            log.error("failed to process message $event - sending it to the DLT", e)
+            errorHandler.dlt(referenceId, e, event)
+        }
+    }
+
+    @Incoming("errors-in")
+    fun processErrors(event: String) {
+        try {
+            val root = om.readTree(event)
+            sendToSubscribers(root.get("referenceId").asText(), event)
+        } catch (e: Exception) {
+            log.error("DLT_FAILED: message $event", e) // TODO this is kinda terminal, coz we're already handling the DLT
+        }
+    }
+
+    @Incoming("cases-in")
+    fun processCases(event: String) {
+        try {
+            val root = om.readTree(event)
+            sendToSubscribers(root.get("referenceId").asText(), event)
+        } catch (e: Exception) {
+            log.error("DLT_FAILED: message $event", e) // TODO this is kinda terminal, coz we're already handling the DLT
         }
     }
 
@@ -58,8 +90,6 @@ class InfraResource {
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @SseElementType(MediaType.APPLICATION_JSON)
     fun stream(@PathParam("subscribeToId") subscribeToId: String): Multi<String?>? =
-//        Broadcast
-//        Multi.createFrom().e
         Multi.createFrom()
                 .emitter { e: MultiEmitter<in String?> ->
                     subscriptions.put(subscribeToId, e)

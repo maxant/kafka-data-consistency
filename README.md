@@ -526,6 +526,10 @@ Create the databases in MySql:
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p -e "CREATE DATABASE contracts CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p -e "CREATE DATABASE mfcontracts CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p -e "CREATE DATABASE mfpricing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+    docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p -e "CREATE DATABASE mfoutput CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+    docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p -e "CREATE DATABASE mfcases CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+    docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p -e "CREATE DATABASE mfbilling CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+    docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p -e "CREATE DATABASE mfdiscounts CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p
 
 Set Java to version 8, because of Payara! (https://blog.payara.fish/java-11-support-in-payara-server-coming-soon)

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>The Milk Factory</title>
-    <script src="https://unpkg.com/vue@next"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.20/lodash.min.js"></script>
+    <script src="https://unpkg.com/vue@next"></script>
 </head>
 <body style="background-image: url(https://hips.hearstapps.com/del.h-cdn.co/assets/15/24/1600x800/landscape-1433889344-del-milkshakes-index.jpg); background-color: rgba(255, 255, 255, 0.85); background-blend-mode: overlay;">
     <h2>The Milk Factory</h2>
@@ -15,20 +15,20 @@
         <div style="font-size: small;">
             Offered in {{ timeTaken }}ms
         </div>
-        <div v-if="_.get(model, 'offer.contract')">
+        <div v-if="get(model, 'offer.contract')">
             Contract ID: {{ model.offer.contract.id }}
         </div>
-        <div v-if="!!_.get(model, 'offer.pack.price')">
+        <div v-if="!!get(model, 'offer.pack.price')">
             Product: {{ model.offer.pack.children[0].productId }} {{ model.offer.pack.price.total }} CHF ({{ model.offer.pack.price.tax }} CHF VAT)
         </div>
-        <div v-if="!!_.get(model, 'offer.pack.price')">
+        <div v-if="!!get(model, 'offer.pack.price')">
             <ul>
                 <li v-for="child in model.offer.pack.children">
                     {{ child.componentDefinitionId }}: {{ child.price.total }} CHF
-                    <ul v-if="_.get(child, 'children.length') > 0">
+                    <ul v-if="get(child, 'children.length') > 0">
                         <li v-for="child2 in child.children">
                             {{ child2.componentDefinitionId }}: {{ child2.price.total }} CHF
-                            <ul v-if="_.get(child2, 'children.length') > 0">
+                            <ul v-if="get(child2, 'children.length') > 0">
                                 <li v-for="child3 in child2.children">
                                     {{ child3.componentDefinitionId }}: {{ child3.price.total }} CHF
                                 </li>
@@ -75,40 +75,20 @@ const App = {
           "contractId": uuidv4()
         }
 
-        // subscribe immediately, to ensure we receive ALL of the events
-        this.sse(body.contractId);
+        // subscribe immediately, to ensure we receive ALL of the events, and any errors
+        sse(body.contractId, this);
 
-        //fetch("http://localhost:8080/offers",
-        fetch("http://178.199.206.170/offers",
+        fetch("http://localhost:8080/offers",
+        //fetch("http://178.199.206.170/offers",
               {"method": "POST", body: JSON.stringify(body), "headers": {"Content-Type": "application/json"}})
               .then(r => r.json())
               .then(r => {
                 console.log("got contract with id " + r.contract.id + ", created using " + body.contractId);
               });
     },
-    sse(contractId) {
-        let self = this;
-        if(this.source && this.source.readyState != EventSource.CLOSED) this.source.close();
-        this.source = new EventSource("/infra/stream/" + contractId);
-        this.source.onmessage = function (event) {
-            console.log(event);
-            let msg = JSON.parse(event.data);
-            if(msg.event == "OFFER_CREATED") {
-                self.model.offer.contract = msg.value.contract;
-                self.model.offer.pack = msg.value.pack;
-            } else if(msg.event == "UPDATED_PRICES") {
-                self.model.offer.prices = msg.value;
-                _.forEach(msg.value, (v,k) => {
-                    addPrice(self.model.offer.pack, k, v);
-                });
-                self.timeTaken = new Date().getTime() - self.start;
-            }
-        };
-        this.source.onerror = function (event) {
-            console.log("sse error " + event);
-            if(this.source && this.source.readyState != EventSource.CLOSED) this.source.close();
-            this.source = null;
-        };
+    get(obj, path) {
+        // vue3 doesnt like seeing underscores in attribute values => so lets create an alias with this method
+        return _.get(obj, path);
     }
   }
 }
@@ -120,6 +100,50 @@ function addPrice(component, id, price) {
     } else {
         _.forEach(component.children, child => addPrice(child, id, price))
     }
+}
+
+function sse(contractId, self) {
+    if(self.source && self.source.readyState != EventSource.CLOSED) self.source.close();
+    self.source = new EventSource("/infra/stream/" + contractId);
+    self.source.onmessage = function (event) {
+        console.log(event);
+        let msg = JSON.parse(event.data);
+        if(msg.event == "OFFER_CREATED") {
+            self.model.offer.contract = msg.value.contract;
+            self.model.offer.pack = msg.value.pack;
+        } else if(msg.event == "UPDATED_PRICES") {
+            self.model.offer.prices = msg.value;
+            _.forEach(msg.value, (v,k) => {
+                addPrice(self.model.offer.pack, k, v);
+            });
+            self.timeTaken = new Date().getTime() - self.start;
+        } else if(msg.event == "CASE_CHANGED") {
+            if(msg.command == "CREATE_TASK" || msg.command == "UPDATE_TASK") {
+                // TODO refresh area that show tasks related to this sales case
+            }
+        } else if(msg.event == "ERROR") {
+            console.error("received error: " + JSON.stringify(msg));
+            alert("an error occurred - see the console");
+        } else {
+            console.error("received unexpected event: " + JSON.stringify(event));
+        }
+    };
+    self.source.onerror = function (event) {
+        console.log("sse error " + event);
+        if(self.source && self.source.readyState != EventSource.CLOSED) self.source.close();
+        self.source = null;
+    }
+}
+
+// cases each quarkus uService to reload, since it doesnt do that when a kafka event arrives
+function pingAll() {
+    fetch("http://loocalhost:8080/ping",
+          {"method": "POST", body: JSON.stringify(body), "headers": {"Content-Type": "application/json"}})
+              .then(r => r.json())
+              .then(r => {
+                console.log("got contract with id " + r.contract.id + ", created using " + body.contractId);
+              });
+
 }
 </script>
 </html>
