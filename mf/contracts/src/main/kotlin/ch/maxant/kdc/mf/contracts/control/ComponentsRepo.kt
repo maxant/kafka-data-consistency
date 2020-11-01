@@ -18,16 +18,16 @@ class ComponentsRepo(
         @Inject
         var om: ObjectMapper
 ){
-    fun saveInitialOffer(contractId: UUID, pack: Packaging) {
-        saveInitialOffer(contractId, null, pack)
+    fun saveInitialDraft(contractId: UUID, pack: Packaging) {
+        saveInitialDraft(contractId, null, pack)
     }
 
-    private fun saveInitialOffer(contractId: UUID, parentId: UUID?, component: ComponentDefinition) {
+    private fun saveInitialDraft(contractId: UUID, parentId: UUID?, component: ComponentDefinition) {
         val config = om.writeValueAsString(component.configs)
         val e = ComponentEntity(UUID.randomUUID(), parentId, contractId, config.toString(), component.componentDefinitionId)
         if(component is Product) e.productId = component.productId
         component.componentId = e.id
         em.persist(e)
-        component.children.forEach { saveInitialOffer(contractId, e.id, it) }
+        component.children.forEach { saveInitialDraft(contractId, e.id, it) }
     }
 }

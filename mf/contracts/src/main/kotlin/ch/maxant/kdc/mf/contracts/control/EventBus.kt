@@ -1,12 +1,11 @@
 package ch.maxant.kdc.mf.contracts.control
 
-import ch.maxant.kdc.mf.contracts.dto.Offer
+import ch.maxant.kdc.mf.contracts.dto.Draft
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import java.util.*
 import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.context.Dependent
 import javax.inject.Inject
 
 @ApplicationScoped
@@ -38,14 +37,16 @@ class EventBus {
 }
 
 enum class Events {
-    OFFER_CREATED
+    DRAFT_CREATED
 }
 
-abstract class Event<T>(val event: Events, open val value: T)
+abstract class Event<T>(open val requestId: UUID, val event: Events, open val value: T)
 
-data class OfferEvent(override val value: Offer) : Event<Offer>(Events.OFFER_CREATED, value)
+data class DraftEvent(override val requestId: UUID, override val value: Draft) :
+        Event<Draft>(requestId, Events.DRAFT_CREATED, value)
 
 data class CreateCaseCommand (
+        val requestId: UUID,
         val referenceId: UUID,
         val command: String = "CREATE_CASE",
         val caseType: String = "SALES"

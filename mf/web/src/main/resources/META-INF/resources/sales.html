@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>The Milk Factory</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.20/lodash.min.js"></script>
+    <script src="https://unpkg.com/vue@next"></script>
+    <script>
+// cases each quarkus uService to reload, since it doesnt do that when a kafka event arrives
+const CONTRACTS_BASE_URL = "http://localhost:8080"; // http://178.199.206.170
+const PRICING_BASE_URL   = "http://localhost:8081";
+const WEB_BASE_URL       = "http://localhost:8082";
+const PARTNERS_BASE_URL  = "http://localhost:8083";
+const CASES_BASE_URL     = "http://localhost:8084";
+
+function pingAll() {
+    fetch(CONTRACTS_BASE_URL + "/ping").then(r => r.text());
+    fetch(PRICING_BASE_URL   + "/ping").then(r => r.text());
+    fetch(WEB_BASE_URL       + "/ping").then(r => r.text());
+    fetch(PARTNERS_BASE_URL  + "/ping").then(r => r.text());
+    fetch(CASES_BASE_URL     + "/ping").then(r => r.text());
+}
+    </script>
+</head>
+<body style="background-image: url(https://hips.hearstapps.com/del.h-cdn.co/assets/15/24/1600x800/landscape-1433889344-del-milkshakes-index.jpg); background-color: rgba(255, 255, 255, 0.85); background-blend-mode: overlay;">
+    <div style="width: 100%; text-align: right; font-size: small;"><button onclick="pingAll()">reload all microservices</button></div>
+    <h2>The Milk Factory</h2>
+    <div id="app">
+        <div>
+            <button @click="newDraft()">get new draft</button>
+        </div>
+        <div style="font-size: small;">
+            Drafted in {{ timeTaken }}ms
+        </div>
+        <div v-if="get(model, 'draft.contract')">
+            Contract ID: {{ model.draft.contract.id }}
+        </div>
+        <div v-if="!!get(model, 'draft.pack.price')">
+            Product: {{ model.draft.pack.children[0].productId }} {{ model.draft.pack.price.total }} CHF ({{ model.draft.pack.price.tax }} CHF VAT)
+        </div>
+        <div v-if="!!get(model, 'draft.pack.price')">
+            <ul>
+                <li v-for="child in model.draft.pack.children">
+                    {{ child.componentDefinitionId }}: {{ child.price.total }} CHF
+                    <ul v-if="get(child, 'children.length') > 0">
+                        <li v-for="child2 in child.children">
+                            {{ child2.componentDefinitionId }}: {{ child2.price.total }} CHF
+                            <ul v-if="get(child2, 'children.length') > 0">
+                                <li v-for="child3 in child2.children">
+                                    {{ child3.componentDefinitionId }}: {{ child3.price.total }} CHF
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+        </div>
+    </div>
+    <hr>
+</body>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script>
+// https://stackoverflow.com/a/2117523/458370
+function uuidv4() {
+  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+  );
+}
+
+var start;
+
+const App = {
+  data() {
+    return {
+      model: {"draft": {"contract": {}, "pack": {}, "prices": {}}},
+      start: 0,
+      timeTaken: 0,
+      source: null
+    }
+  },
+  mounted() {
+    this.newDraft();
+    window.model = this.model;
+  },
+  methods: {
+    newDraft() {
+        this.start = new Date().getTime();
+        let body = {
+          "productId": "COOKIES_MILKSHAKE",
+          "start": new Date(new Date().getTime() + 24*3600000).toISOString().substr(0,10),
+          "requestId": uuidv4()
+        }
+
+        // subscribe immediately, to ensure we receive ALL of the events, and any errors
+        sse(body.requestId, this);
+
+        fetch(CONTRACTS_BASE_URL + "/drafts",
+              {"method": "POST", body: JSON.stringify(body), "headers": {"Content-Type": "application/json"}})
+              .then(r => r.json())
+              .then(r => {
+                console.log("got contract with id " + r.contract.id + ", for requestId " + body.requestId);
+              });
+    },
+    get(obj, path) {
+        // vue3 doesnt like seeing underscores in attribute values => so lets create an alias with this method
+        return _.get(obj, path);
+    }
+  }
+}
+Vue.createApp(App).mount("#app")
+
+function addPrice(component, id, price) {
+    if(component.componentId == id) {
+        component.price = price
+    } else {
+        _.forEach(component.children, child => addPrice(child, id, price))
+    }
+}
+
+function sse(requestId, self) {
+    if(self.source && self.source.readyState != EventSource.CLOSED) self.source.close();
+    self.source = new EventSource("/web/stream/" + requestId);
+    self.source.onmessage = function (event) {
+        console.log(event);
+        let msg = JSON.parse(event.data);
+        if(msg.event == "DRAFT_CREATED") {
+            self.model.draft.contract = msg.value.contract;
+            self.model.draft.pack = msg.value.pack;
+        } else if(msg.event == "UPDATED_PRICES") {
+            self.model.draft.prices = msg.value;
+            _.forEach(msg.value, (v,k) => {
+                addPrice(self.model.draft.pack, k, v);
+            });
+            self.timeTaken = new Date().getTime() - self.start;
+        } else if(msg.event == "CASE_CHANGED") {
+            if(msg.command == "CREATE_TASK" || msg.command == "UPDATE_TASK") {
+                // TODO refresh area that show tasks related to this sales case
+            }
+        } else if(msg.event == "ERROR") {
+            console.error("received error: " + JSON.stringify(msg));
+            alert("an error occurred - see the console");
+        } else {
+            console.error("received unexpected event: " + JSON.stringify(event));
+        }
+    };
+    self.source.onerror = function (event) {
+        console.log("sse error " + event);
+        if(self.source && self.source.readyState != EventSource.CLOSED) self.source.close();
+        self.source = null;
+    }
+}
+</script>
+</html>

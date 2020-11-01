@@ -15,7 +15,7 @@ CREATE TABLE T_TASKS (
   USER_ID     VARCHAR(36)     NOT NULL,    -- id of user who this task is assigned to
   TITLE       VARCHAR(200)    NOT NULL,    -- title of the case
   DESCRIPTION VARCHAR(4000)   NOT NULL,    -- what the user needs to do
-  STATUS      VARCHAR(40)     NOT NULL,    -- open, done, etc
+  STATE       VARCHAR(40)     NOT NULL,    -- open, done, etc
   PRIMARY KEY(ID)
 )
 ;

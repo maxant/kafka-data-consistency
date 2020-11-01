@@ -2,9 +2,9 @@ package ch.maxant.kdc.mf.cases.boundary
 
 import ch.maxant.kdc.mf.cases.entity.CaseEntity
 import ch.maxant.kdc.mf.cases.entity.CaseType
-import ch.maxant.kdc.mf.cases.entity.Status
+import ch.maxant.kdc.mf.cases.entity.State
 import ch.maxant.kdc.mf.cases.entity.TaskEntity
-import ch.maxant.kdc.mf.library.ErrorHandler
+import ch.maxant.kdc.mf.library.ErrorsHandled
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.smallrye.reactive.messaging.annotations.Blocking
 import org.eclipse.microprofile.reactive.messaging.Channel
@@ -23,33 +23,26 @@ class CasesConsumer(
         var em: EntityManager,
 
         @Inject
-        var errorHandler: ErrorHandler,
-
-        @Inject
         var om: ObjectMapper
 ) {
     @Inject // this doesnt appear to work in the constructor
     @Channel("cases-out")
     lateinit var eventBus: Emitter<String>
 
-    val log = Logger.getLogger(this.javaClass)
+    private val log = Logger.getLogger(this.javaClass)
 
     @Incoming("cases-in")
     @Blocking
     @Transactional
+    @ErrorsHandled
     fun process(msg: String) {
         val event = om.readTree(msg)
-        try {
-            val command = Command.valueOf(event.get("command").textValue())
-            when {
-                Command.CREATE_CASE == command -> { createCase(msg, command) }
-                Command.CREATE_TASK == command -> { createTask(msg, command) }
-                Command.UPDATE_TASK == command -> { updateTask(msg, command) }
-                else -> { throw RuntimeException("unexpected command $command: $msg") }
-            }
-        } catch (e: Exception) {
-            log.error("failed to process message $msg", e) // TODO replace with DLT and suitable error processing
-            errorHandler.dlt(event.get("referenceId")?.asText(), e, msg)
+        val command = Command.valueOf(event.get("command").textValue())
+        when {
+            Command.CREATE_CASE == command -> { createCase(msg, command) }
+            Command.CREATE_TASK == command -> { createTask(msg, command) }
+            Command.UPDATE_TASK == command -> { updateTask(msg, command) }
+            else -> { throw RuntimeException("unexpected command $command: $msg") }
         }
     }
 
@@ -62,7 +55,7 @@ class CasesConsumer(
         em.persist(case)
 
         eventBus.send(om.writeValueAsString(
-                CaseChangedEvent(case.id, case.referenceId, case.type, command, emptyList())))
+                CaseChangedEvent(caseRequest.requestId, case.id, case.referenceId, case.type, command, emptyList())))
     }
 
     private fun createTask(msg: String, command: Command) {
@@ -71,8 +64,8 @@ class CasesConsumer(
 
         val case = CaseEntity.Queries.selectByReferenceId(em, taskRequest.referenceId)
 
-        val task = TaskEntity(UUID.randomUUID(), taskRequest.caseId, taskRequest.userId,
-                taskRequest.title, taskRequest.description, Status.OPEN)
+        val task = TaskEntity(UUID.randomUUID(), case.id, taskRequest.userId,
+                taskRequest.title, taskRequest.description, State.OPEN)
 
         em.persist(task)
 
@@ -80,7 +73,7 @@ class CasesConsumer(
         tasks.add(task)
 
         eventBus.send(om.writeValueAsString(
-                CaseChangedEvent(case.id, case.referenceId, case.type, command, tasks.map { TaskDto(it) })))
+                CaseChangedEvent(taskRequest.requestId, case.id, case.referenceId, case.type, command, tasks.map { TaskDto(it) })))
     }
 
     private fun updateTask(msg: String, command: Command) {
@@ -91,14 +84,14 @@ class CasesConsumer(
         task.description = taskRequest.description
         task.userId = taskRequest.userId
         task.title = taskRequest.title
-        task.status = taskRequest.status
+        task.state = taskRequest.state
 
         val case = CaseEntity.Queries.selectByCaseId(em, task.caseId)
 
         val tasks = TaskEntity.Queries.selectByCaseId(em, case.id)
 
         eventBus.send(om.writeValueAsString(
-                CaseChangedEvent(case.id, case.referenceId, case.type, command, tasks.map { TaskDto(it) })))
+                CaseChangedEvent(taskRequest.requestId, case.id, case.referenceId, case.type, command, tasks.map { TaskDto(it) })))
     }
 }
 
@@ -109,29 +102,31 @@ enum class Command {
 }
 
 data class CreateCaseCommand(
+        val requestId: UUID,
         val referenceId: UUID,
         val caseType: CaseType
 )
 
 /** one of caseId or referenceId is required. all others are required */
 data class CreateTaskCommand(
-        var caseId: UUID,
-        val referenceId: UUID,
+        val requestId: UUID,
+        val referenceId: UUID, // used to locate the case
         val userId: String,
         val title: String,
         val description: String
 )
 
 data class UpdateTaskCommand(
-        val referenceId: UUID,
-        val taskId: UUID,
+        val requestId: UUID,
+        val taskId: UUID, // used to locate the task, and load the case
         val userId: String,
         val title: String,
         val description: String,
-        val status: Status
+        val state: State
 )
 
 data class CaseChangedEvent(
+        val requestId: UUID,
         val caseId: UUID,
         val referenceId: UUID,
         val type: CaseType,
@@ -145,7 +140,7 @@ data class TaskDto(
         val userId: String,
         val title: String,
         val description: String,
-        val status: Status
+        val state: State
 ) {
-    constructor(task: TaskEntity) : this(task.id, task.userId, task.title, task.description, task.status)
+    constructor(task: TaskEntity) : this(task.id, task.userId, task.title, task.description, task.state)
 }

@@ -1,8 +1,6 @@
 package ch.maxant.kdc.mf.cases.entity
 
 import org.hibernate.annotations.Type
-import java.math.BigDecimal
-import java.time.LocalDateTime
 import java.util.*
 import javax.persistence.*
 
@@ -28,12 +26,12 @@ class TaskEntity(
     @Column(name = "DESCRIPTION", nullable = false)
     var description: String,
 
-    @Column(name = "Status", nullable = false)
+    @Column(name = "STATE", nullable = false)
     @Enumerated(EnumType.STRING)
-    var status: Status
+    var state: State
 
 ) {
-    constructor() : this(UUID.randomUUID(), UUID.randomUUID(), "", "", "", Status.OPEN)
+    constructor() : this(UUID.randomUUID(), UUID.randomUUID(), "", "", "", State.OPEN)
 
     object NqSelectByCaseId {
         const val name = "selectByCaseId"
@@ -55,7 +53,7 @@ class TaskEntity(
 
 }
 
-enum class Status {
+enum class State {
     OPEN,
 
     DONE

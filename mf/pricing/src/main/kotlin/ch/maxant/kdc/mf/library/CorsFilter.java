@@ -9,7 +9,6 @@ import java.io.IOException;
 @WebFilter(urlPatterns = {"/*"})
 public class CorsFilter implements Filter {
 
-
     //https://stackoverflow.com/questions/10636611/how-does-access-control-allow-origin-header-work/10636765#10636765
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
