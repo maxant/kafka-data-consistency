@@ -7,9 +7,12 @@ import ch.maxant.kdc.mf.cases.entity.TaskEntity
 import ch.maxant.kdc.mf.library.ErrorsHandled
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.smallrye.reactive.messaging.annotations.Blocking
+import io.smallrye.reactive.messaging.kafka.OutgoingKafkaRecordMetadata
+import org.apache.kafka.common.header.internals.RecordHeader
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.eclipse.microprofile.reactive.messaging.Incoming
+import org.eclipse.microprofile.reactive.messaging.Message
 import org.jboss.logging.Logger
 import java.util.*
 import javax.enterprise.context.ApplicationScoped
@@ -18,6 +21,7 @@ import javax.persistence.EntityManager
 import javax.transaction.Transactional
 
 @ApplicationScoped
+@SuppressWarnings("unused")
 class CasesConsumer(
         @Inject
         var em: EntityManager,
@@ -35,6 +39,7 @@ class CasesConsumer(
     @Blocking
     @Transactional
     @ErrorsHandled
+    @SuppressWarnings("unused")
     fun process(msg: String) {
         val event = om.readTree(msg)
         val command = Command.valueOf(event.get("command").textValue())
@@ -54,8 +59,7 @@ class CasesConsumer(
 
         em.persist(case)
 
-        eventBus.send(om.writeValueAsString(
-                CaseChangedEvent(caseRequest.requestId, case.id, case.referenceId, case.type, command, emptyList())))
+        sendCaseChangedEvent(caseRequest.requestId, case, command, emptyList())
     }
 
     private fun createTask(msg: String, command: Command) {
@@ -72,8 +76,7 @@ class CasesConsumer(
         val tasks = TaskEntity.Queries.selectByCaseId(em, case.id)
         tasks.add(task)
 
-        eventBus.send(om.writeValueAsString(
-                CaseChangedEvent(taskRequest.requestId, case.id, case.referenceId, case.type, command, tasks.map { TaskDto(it) })))
+        sendCaseChangedEvent(taskRequest.requestId, case, command, tasks)
     }
 
     private fun updateTask(msg: String, command: Command) {
@@ -90,8 +93,18 @@ class CasesConsumer(
 
         val tasks = TaskEntity.Queries.selectByCaseId(em, case.id)
 
-        eventBus.send(om.writeValueAsString(
-                CaseChangedEvent(taskRequest.requestId, case.id, case.referenceId, case.type, command, tasks.map { TaskDto(it) })))
+        sendCaseChangedEvent(taskRequest.requestId, case, command, tasks)
+    }
+
+    private fun sendCaseChangedEvent(requestId: UUID, case: CaseEntity, command: Command, tasks: List<TaskEntity>) {
+        val metadata = OutgoingKafkaRecordMetadata.builder<Any>()
+                .withKey(case.referenceId.toString())
+                .withHeaders(listOf(RecordHeader("requestId", requestId.toString().toByteArray())))
+                .build()
+
+        val cce = CaseChangedEvent(requestId, case.id, case.referenceId, case.type, command, tasks.map { TaskDto(it) })
+
+        eventBus.send(Message.of(om.writeValueAsString(cce)).addMetadata(metadata))
     }
 }
 
@@ -130,7 +143,7 @@ data class CaseChangedEvent(
         val caseId: UUID,
         val referenceId: UUID,
         val type: CaseType,
-        val command: Command,
+        val originalCommand: Command,
         val tasks: List<TaskDto>,
         val event: String = "CASE_CHANGED"
 )

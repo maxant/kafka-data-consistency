@@ -8,9 +8,12 @@ import ch.maxant.kdc.mf.pricing.dto.Visitor
 import ch.maxant.kdc.mf.pricing.entity.PriceEntity
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.smallrye.reactive.messaging.annotations.Blocking
+import io.smallrye.reactive.messaging.kafka.OutgoingKafkaRecordMetadata
+import org.apache.kafka.common.header.internals.RecordHeader
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.eclipse.microprofile.reactive.messaging.Incoming
+import org.eclipse.microprofile.reactive.messaging.Message
 import org.jboss.logging.Logger
 import java.time.LocalDateTime
 import java.util.*
@@ -34,20 +37,46 @@ class DraftsConsumer(
 
     private val log = Logger.getLogger(this.javaClass)
 
+    /* FIXME
+    I'd like to have the requestId in a Kakfa Record Header, but I can't get the APIs to work nicely.
+    If I use his method as follows, I cannot use @Blocking and have to hand the JPA part off using
+    managedExecutor and threadContext, and I end up with this Hibernate warning and the whole thing freezes:
+    2020-11-03 23:05:21,924 WARN  [org.hib.res.tra.bac.jta.int.syn.SynchronizationCallbackCoordinatorTrackingImpl]
+        (executor-thread-2) HHH000451: Transaction afterCompletion called by a background thread; delaying
+        afterCompletion processing until the original thread can handle it. [status=4]
+
     @Incoming("event-bus-in")
-    @Blocking
     @Transactional
     @ErrorsHandled
-    //TODO how to access the kafka record?
-    // fun process(msg: Message<String>): CompletionStage<*> {
+    fun process(msg: Message<String>): CompletionStage<Void>? {
+        val r: ()->Unit = {
+            try {
+                _price(msg)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        return managedExecutor.runAsync(threadContext.contextualRunnable(r))
+        .thenComposeAsync(Function<Void, CompletionStage<Void>> {
+            msg.ack()
+        }, managedExecutor)
+    }
+    */
+
+    @Incoming("event-bus-in")
+    @Transactional
+    @Blocking
+    @ErrorsHandled
     fun process(msg: String) {
         val event = om.readTree(msg)
-        val name = event.get("event")
-        if("DRAFT_CREATED" == name.asText()) {
+        val requestId = event.get("requestId").textValue()
+        val name = event.get("event").asText()
+        if("DRAFT_CREATED" == name) {
+            log.info("HERE3a")
             // TODO add extension method to make this fetchable via a path => ur use JsonPath?
             val value = event.get("value")
             val contractId = UUID.fromString(value.get("contract").get("id").asText())
-            val requestId = event.get("requestId").asText()
             val pack = value.get("pack").toString()
             val start = LocalDateTime.parse(value.get("contract").get("start").asText())
             val end = LocalDateTime.parse(value.get("contract").get("end").asText())
@@ -55,22 +84,21 @@ class DraftsConsumer(
 
             val root = om.readValue(pack, Component::class.java)
 
-            price(requestId, contractId, start, end, root)
-        } // else ignore other message types
-        /*
-        println("GOT ONE: ${msg.payload}")
-        val metadata = msg.getMetadata(IncomingKafkaRecordMetadata::class.java)
-        if(metadata.isPresent) {
-            println("metadata: ofset: ${metadata.get().offset} / key: ${metadata.get().key} / topic: ${metadata.get().topic} / partition: ${metadata.get().partition}")
-        } else {
-            println("no metadata")
-        }
+            val prices = price(contractId, start, end, root)
 
-        return msg.ack()
-         */
+            sendEvent(PublishedPricesEvent(requestId, contractId.toString(), prices))
+        } // else ignore other message types
     }
 
-    private fun price(requestId: String, contractId: UUID, start: LocalDateTime, end: LocalDateTime, root: Component) {
+    private fun sendEvent(event: PublishedPricesEvent) {
+        val metadata = OutgoingKafkaRecordMetadata.builder<Any>()
+                .withKey(event.contractId)
+                .withHeaders(listOf(RecordHeader("requestId", event.requestId.toByteArray())))
+                .build()
+        eventBus.send(Message.of(om.writeValueAsString(event)).addMetadata(metadata))
+    }
+
+    private fun price(contractId: UUID, start: LocalDateTime, end: LocalDateTime, root: Component): Map<UUID, Price> {
         val prices = HashMap<UUID, Price>()
         root.accept(object: Visitor {
             override fun visit(component: Component) {
@@ -90,8 +118,7 @@ class DraftsConsumer(
                 em.persist(pe)
             }
         })
-
-        eventBus.send(om.writeValueAsString(PublishedPricesEvent(requestId, contractId.toString(), prices)))
+        return prices
 
         /*
 {"draft":
@@ -111,7 +138,6 @@ class DraftsConsumer(
     }
 
 }
-
 
 private data class PublishedPricesEvent(
         val requestId: String,

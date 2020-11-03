@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.subscription.MultiEmitter
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
+import org.eclipse.microprofile.reactive.messaging.Acknowledgment
 import org.eclipse.microprofile.reactive.messaging.Incoming
+import org.jboss.logging.Logger
 import org.jboss.resteasy.annotations.SseElementType
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
@@ -23,6 +25,9 @@ class WebResource {
     @Inject
     lateinit var om: ObjectMapper
 
+    @Inject
+    lateinit var log: Logger
+
     // TODO tidy the entries up when they are no longer in use!
     val subscriptions: HashMap<String, MultiEmitter<in String?>> = HashMap()
 
@@ -32,6 +37,7 @@ class WebResource {
                 .filter { it.key == requestId }
                 .filter { !it.value.isCancelled }
                 .forEach {
+                    log.info("emitting request $requestId")
                     it.value.emit(event)
                 }
     }
@@ -57,6 +63,7 @@ class WebResource {
     private fun process(event: String) {
         val root = om.readTree(event)
         val requestId = root.get("requestId").asText()
+        log.info("handling request $requestId")
         sendToSubscribers(requestId, event)
     }
 

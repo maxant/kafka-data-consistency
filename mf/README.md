@@ -106,15 +106,19 @@ Also known as entry points, process components or UIs.
 
 ## Topcs, Command, Events
 
+Note that every Kafka record has a `requestId` attribute for tracking a request through the landscape.
+It also has either an "event" or a "command" attribute describing what kind of record it is. Events may
+also contain the "originalCommand" attribute which lead to their publication.
+
 - Topics
   - event-bus (generic for all closely-coupled components)
   - cases-commands
   - cases-events
   - errors (for error propagation back to the client)
 - Commands (all have the attribute "command" at root level)
- - CREATE_CASE (cases-commands)
- - CREATE_TASK (cases-commands)
- - UPDATE_TASK (cases-commands)
+  - CREATE_CASE (cases-commands)
+  - CREATE_TASK (cases-commands)
+  - UPDATE_TASK (cases-commands)
 - Events (all have the attribute "event" at root level)
   - ERROR (errors)
   - CASE_CHANGED (cases-events)
