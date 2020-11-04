@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import javax.interceptor.InvocationContext
 
-class ErrorHandlerTest {
+class PimpedAndWithDltAndAckTest {
 
     lateinit var log: Logger
     lateinit var errorHandler: ErrorHandler
@@ -33,8 +33,11 @@ class ErrorHandlerTest {
             on { parameters } doReturn (arrayOf("asdf")) // <--- NOT JSON
             on { method } doReturn (TestConsumerSendToDlt::class.java.getMethod("process", String::class.java))
         }
+        val ei = PimpedAndWithDltAndAckInterceptor(errorHandler, ObjectMapper())
+        ei.log = log
+
         // when
-        ErrorsInterceptor(errorHandler, log, ObjectMapper()).dealWithException(Exception(), ic)
+        ei.dealWithException(Exception(), ic)
 
         // then
         verify(log).error(eq("EH006a failed to process message asdf - this message is being dumped here"), any<JsonParseException>())
@@ -49,7 +52,11 @@ class ErrorHandlerTest {
         }
 
         // when
-        ErrorsInterceptor(errorHandler, log, ObjectMapper()).dealWithException(Exception(), ic)
+        val ei = PimpedAndWithDltAndAckInterceptor(errorHandler, ObjectMapper())
+        ei.log = log
+
+        // when
+        ei.dealWithException(Exception(), ic)
 
         // then
         verify(log).error(eq("EH003 failed to process message {} " +
@@ -66,13 +73,15 @@ class ErrorHandlerTest {
             on { method } doReturn(TestConsumerSendToDlt::class.java.getMethod("process", String::class.java)) // <--- SEND TO DLT
         }
         val e = Exception()
+        val ei = PimpedAndWithDltAndAckInterceptor(errorHandler, ObjectMapper())
+        ei.log = log
 
         // when
-        ErrorsInterceptor(errorHandler, log, ObjectMapper()).dealWithException(e, ic)
+        ei.dealWithException(e, ic)
 
         // then
         verify(log).warn(eq("""EH004 failed to process message { "requestId": "1" } - sending it to the DLT with requestId "1""""), any<Exception>())
-        verify(errorHandler).dlt(eq("1"), eq(e), eq("""{ "requestId": "1" }"""))
+        verify(errorHandler).dlt(eq("1"), anyOrNull(), eq(e), eq("""{ "requestId": "1" }"""))
     }
 
     @Test
@@ -81,13 +90,15 @@ class ErrorHandlerTest {
             on { parameters } doReturn(arrayOf("""{ "requestId": "1" }""")) // <--- WITH requestId
             on { method } doReturn(TestConsumerDontSendToDlt::class.java.getMethod("process", String::class.java)) // <--- DONT SEND TO DLT
         }
+        val ei = PimpedAndWithDltAndAckInterceptor(errorHandler, ObjectMapper())
+        ei.log = log
 
         // when
-        ErrorsInterceptor(errorHandler, log, ObjectMapper()).dealWithException(Exception(), ic)
+        ei.dealWithException(Exception(), ic)
 
         // then
         verify(log).error(eq("EH005 failed to process message { \"requestId\": \"1\" } " +
-                "- NOT sending it to the DLT because @ErrorsHandled is configured with 'sendToDlt = false' " +
+                "- NOT sending it to the DLT because @PimpedWithDlt is configured with 'sendToDlt = false' " +
                 "- this message is being dumped here"), any<Exception>())
     }
 
@@ -101,7 +112,7 @@ class ErrorHandlerTest {
 
         // when + then
         assertEquals("EH001 @ErrorHandled on method java.lang.Class::process must contain exactly one parameter",
-                assertThrows<IllegalArgumentException> { ErrorsInterceptor(errorHandler, log, ObjectMapper()).handleErrors(ic) }.message)
+                assertThrows<IllegalArgumentException> { PimpedAndWithDltAndAckInterceptor(errorHandler, ObjectMapper()).invoke(ic) }.message)
     }
 
     @Test
@@ -114,29 +125,29 @@ class ErrorHandlerTest {
 
         // when + then
         assertEquals("EH002 @ErrorHandled on method java.lang.Class::process must contain one string parameter",
-                assertThrows<IllegalArgumentException> { ErrorsInterceptor(errorHandler, log, ObjectMapper()).handleErrors(ic) }.message)
+                assertThrows<IllegalArgumentException> { PimpedAndWithDltAndAckInterceptor(errorHandler, ObjectMapper()).invoke(ic) }.message)
     }
 }
 
 class TestConsumerSendToDlt {
     @SuppressWarnings("unused")
-    @ErrorsHandled()
+    @PimpedAndWithDltAndAck()
     fun process(s: String) = Unit
 }
 
 class TestConsumerDontSendToDlt {
     @SuppressWarnings("unused")
-    @ErrorsHandled(false)
+    @PimpedAndWithDltAndAck(false)
     fun process(s: String) = Unit
 }
 
 class TestConsumerWrongNumParams {
-    @ErrorsHandled(false)
+    @PimpedAndWithDltAndAck(false)
     fun process() = Unit
 }
 
 class TestConsumerWrongParamType {
     @SuppressWarnings("unused")
-    @ErrorsHandled(false)
+    @PimpedAndWithDltAndAck(false)
     fun process(i: Int) = Unit
 }

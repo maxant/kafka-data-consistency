@@ -1,6 +1,5 @@
 package ch.maxant.kdc.mf.library
 
-import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.json.JsonWriteFeature
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper

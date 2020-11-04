@@ -136,10 +136,15 @@ also contain the "originalCommand" attribute which lead to their publication.
 
 ## TODO
 
-- add log interceptor which logs all incoming kafka messages requestIds as well as outgoing ones?
+- move "event" into headers too
+- change notes above about requiring requestId and event
+- other stuff into header too?
+- copy libray to other uServices and change them to use Message rather than String
+- add annotation to get outgoing kafka logged too
+- add APM too
+
 - ok, we want pricing to listen to draft, and we dont want to orchestrate that from the UI. or do we?
 - prices: update rather than just insert
-- components diff for warning user after changing to a different product release
 - add a task based on a business rule and allow the user to do it
 - add action to execute when task is completed or started (ie open UI, or do something)
 - addinfo
@@ -153,6 +158,7 @@ also contain the "originalCommand" attribute which lead to their publication.
 - ability to change a config in the draft, which recalcs discounts and price
 - create create pdf
 - accept offer => event to billing
+- components diff for warning user after changing to a different product release
 - additional info - to hang stuff external to the contract onto components
 - billing publishes event to world to inform contract component that the contract is active?
 - add a structure rule to components, to ensure there is always a bottle or container in a milk product

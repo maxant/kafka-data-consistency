@@ -92,7 +92,7 @@ const App = {
           "requestId": uuidv4()
         }
 
-        // subscribe immediately, to ensure we receive ALL of the events, and any errors
+        // subscribe before sending request to server, to ensure we receive ALL of the events, and any errors
         sse(body.requestId, this);
 
         fetch(CONTRACTS_BASE_URL + "/drafts",
