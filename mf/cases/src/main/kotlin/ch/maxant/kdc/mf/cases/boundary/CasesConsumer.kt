@@ -4,11 +4,10 @@ import ch.maxant.kdc.mf.cases.entity.CaseEntity
 import ch.maxant.kdc.mf.cases.entity.CaseType
 import ch.maxant.kdc.mf.cases.entity.State
 import ch.maxant.kdc.mf.cases.entity.TaskEntity
-import ch.maxant.kdc.mf.library.ErrorsHandled
+import ch.maxant.kdc.mf.library.Context
+import ch.maxant.kdc.mf.library.MessageBuilder
+import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.smallrye.reactive.messaging.annotations.Blocking
-import io.smallrye.reactive.messaging.kafka.OutgoingKafkaRecordMetadata
-import org.apache.kafka.common.header.internals.RecordHeader
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.eclipse.microprofile.reactive.messaging.Incoming
@@ -27,7 +26,13 @@ class CasesConsumer(
         var em: EntityManager,
 
         @Inject
-        var om: ObjectMapper
+        var om: ObjectMapper,
+
+        @Inject
+        var messageBuilder: MessageBuilder,
+
+        @Inject
+        var context: Context
 ) {
     @Inject // this doesnt appear to work in the constructor
     @Channel("cases-out")
@@ -36,22 +41,20 @@ class CasesConsumer(
     private val log = Logger.getLogger(this.javaClass)
 
     @Incoming("cases-in")
-    @Blocking
     @Transactional
-    @ErrorsHandled
+    @PimpedAndWithDltAndAck
     @SuppressWarnings("unused")
-    fun process(msg: String) {
-        val event = om.readTree(msg)
-        val command = Command.valueOf(event.get("command").textValue())
+    fun process(msg: Message<String>) {
+        val command = Command.valueOf(context.command!!)
         when {
-            Command.CREATE_CASE == command -> { createCase(msg, command) }
-            Command.CREATE_TASK == command -> { createTask(msg, command) }
-            Command.UPDATE_TASK == command -> { updateTask(msg, command) }
+            Command.CREATE_CASE == command -> { createCase(msg.payload) }
+            Command.CREATE_TASK == command -> { createTask(msg.payload) }
+            Command.UPDATE_TASK == command -> { updateTask(msg.payload) }
             else -> { throw RuntimeException("unexpected command $command: $msg") }
         }
     }
 
-    private fun createCase(msg: String, command: Command) {
+    private fun createCase(msg: String) {
         val caseRequest = om.readValue(msg, CreateCaseCommand::class.java)
         log.info("creating a case: $caseRequest")
 
@@ -59,10 +62,10 @@ class CasesConsumer(
 
         em.persist(case)
 
-        sendCaseChangedEvent(caseRequest.requestId, case, command, emptyList())
+        sendCaseChangedEvent(case, emptyList())
     }
 
-    private fun createTask(msg: String, command: Command) {
+    private fun createTask(msg: String) {
         val taskRequest = om.readValue(msg, CreateTaskCommand::class.java)
         log.info("creating a task: $taskRequest")
 
@@ -76,10 +79,10 @@ class CasesConsumer(
         val tasks = TaskEntity.Queries.selectByCaseId(em, case.id)
         tasks.add(task)
 
-        sendCaseChangedEvent(taskRequest.requestId, case, command, tasks)
+        sendCaseChangedEvent(case, tasks)
     }
 
-    private fun updateTask(msg: String, command: Command) {
+    private fun updateTask(msg: String) {
         val taskRequest = om.readValue(msg, UpdateTaskCommand::class.java)
         log.info("updating a task: $taskRequest")
 
@@ -93,18 +96,13 @@ class CasesConsumer(
 
         val tasks = TaskEntity.Queries.selectByCaseId(em, case.id)
 
-        sendCaseChangedEvent(taskRequest.requestId, case, command, tasks)
+        sendCaseChangedEvent(case, tasks)
     }
 
-    private fun sendCaseChangedEvent(requestId: UUID, case: CaseEntity, command: Command, tasks: List<TaskEntity>) {
-        val metadata = OutgoingKafkaRecordMetadata.builder<Any>()
-                .withKey(case.referenceId.toString())
-                .withHeaders(listOf(RecordHeader("requestId", requestId.toString().toByteArray())))
-                .build()
-
-        val cce = CaseChangedEvent(requestId, case.id, case.referenceId, case.type, command, tasks.map { TaskDto(it) })
-
-        eventBus.send(Message.of(om.writeValueAsString(cce)).addMetadata(metadata))
+    private fun sendCaseChangedEvent(case: CaseEntity, tasks: List<TaskEntity>) {
+        val cce = CaseChangedEvent(case.id, case.referenceId, case.type, tasks.map { TaskDto(it) })
+        val msg = messageBuilder.build(case.referenceId, cce, event = "CASE_CHANGED")
+        eventBus.send(msg)
     }
 }
 
@@ -115,14 +113,12 @@ enum class Command {
 }
 
 data class CreateCaseCommand(
-        val requestId: UUID,
         val referenceId: UUID,
         val caseType: CaseType
 )
 
 /** one of caseId or referenceId is required. all others are required */
 data class CreateTaskCommand(
-        val requestId: UUID,
         val referenceId: UUID, // used to locate the case
         val userId: String,
         val title: String,
@@ -130,7 +126,6 @@ data class CreateTaskCommand(
 )
 
 data class UpdateTaskCommand(
-        val requestId: UUID,
         val taskId: UUID, // used to locate the task, and load the case
         val userId: String,
         val title: String,
@@ -139,13 +134,10 @@ data class UpdateTaskCommand(
 )
 
 data class CaseChangedEvent(
-        val requestId: UUID,
         val caseId: UUID,
         val referenceId: UUID,
         val type: CaseType,
-        val originalCommand: Command,
-        val tasks: List<TaskDto>,
-        val event: String = "CASE_CHANGED"
+        val tasks: List<TaskDto>
 )
 
 data class TaskDto(

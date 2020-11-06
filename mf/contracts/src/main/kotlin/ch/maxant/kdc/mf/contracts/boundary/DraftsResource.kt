@@ -3,12 +3,12 @@ package ch.maxant.kdc.mf.contracts.boundary
 import ch.maxant.kdc.mf.contracts.control.ComponentsRepo
 import ch.maxant.kdc.mf.contracts.control.CreateCaseCommand
 import ch.maxant.kdc.mf.contracts.control.EventBus
-import ch.maxant.kdc.mf.contracts.control.DraftEvent
 import ch.maxant.kdc.mf.contracts.definitions.*
 import ch.maxant.kdc.mf.contracts.dto.Draft
 import ch.maxant.kdc.mf.contracts.dto.DraftRequest
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractState
+import ch.maxant.kdc.mf.library.Context
 import ch.maxant.kdc.mf.library.doByHandlingValidationExceptions
 import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.media.Content
@@ -36,17 +36,21 @@ import javax.ws.rs.core.Response
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 class DraftsResource(
+    // TODO address quarkus warning during startup
     @Inject
-    public var em: EntityManager, // TODO public in an attempt to avoid quarkus warning during startup
+    var em: EntityManager,
 
     @Inject
     var componentsRepo: ComponentsRepo,
 
     @Inject
-    var eventBus: EventBus
+    var eventBus: EventBus,
+
+    @Inject
+    var context: Context
 ) {
 
-    val log = Logger.getLogger(this.javaClass)
+    val log: Logger = Logger.getLogger(this.javaClass)
 
     @Operation(summary = "Create a draft", description = "descr")
     @APIResponses(
@@ -61,7 +65,7 @@ class DraftsResource(
             @Valid
             draftRequest: DraftRequest): Response = doByHandlingValidationExceptions {
 
-        log.info("creating draft $draftRequest")
+        log.info("creating draft $draftRequest for requestId ${context.requestId}")
 
         val profile: Profile = Profiles.find()
         log.info("using profile ${profile.id}")
@@ -85,10 +89,10 @@ class DraftsResource(
         // go fetch all this data, or us giving it to them. the dependency exists and is tightly
         // coupled. at least we don't need to know anything about pricing here! and passing it to them is
         // more efficient than them coming to read it afterwards
-        eventBus.publish(DraftEvent(draftRequest.requestId, draft))
+        eventBus.publish(draft)
         log.info("published ${contract.id}")
 
-        eventBus.publish(CreateCaseCommand(draftRequest.requestId, contract.id))
+        eventBus.publish(CreateCaseCommand(contract.id))
         log.info("sent case command ${contract.id}")
 
         Response.created(URI.create("/${contract.id}"))

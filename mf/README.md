@@ -104,12 +104,12 @@ Also known as entry points, process components or UIs.
   - My Account - an overview of a customers contracts and requisition orders
   - Sales - purchasing new products or making changes to existing contracts by replacing them
 
-## Topcs, Command, Events
+## Headers, Topcs, Command, Events
 
-Note that every Kafka record has a `requestId` attribute for tracking a request through the landscape.
-It also has either an "event" or a "command" attribute describing what kind of record it is. Events may
-also contain the "originalCommand" attribute which lead to their publication.
-
+- Headers
+  - `requestId` for tracking a request through the landscape
+  - either `event` or `command` describing what kind of record it is. Events may 
+    also contain the `originalCommand` attribute which led to their publication.
 - Topics
   - event-bus (generic for all closely-coupled components)
   - cases-commands
@@ -136,11 +136,9 @@ also contain the "originalCommand" attribute which lead to their publication.
 
 ## TODO
 
-- move "event" into headers too
-- change notes above about requiring requestId and event
-- other stuff into header too?
-- copy libray to other uServices and change them to use Message rather than String
-- add annotation to get outgoing kafka logged too
+- test cases
+- use requires
+- use noArgs for jpa
 - add APM too
 
 - ok, we want pricing to listen to draft, and we dont want to orchestrate that from the UI. or do we?

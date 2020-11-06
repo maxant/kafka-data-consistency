@@ -1,14 +1,13 @@
 package ch.maxant.kdc.mf.contracts.control
 
 import ch.maxant.kdc.mf.contracts.dto.Draft
-import com.fasterxml.jackson.databind.ObjectMapper
-import io.smallrye.reactive.messaging.kafka.OutgoingKafkaRecordMetadata
-import org.apache.kafka.common.header.internals.RecordHeader
+import ch.maxant.kdc.mf.library.MessageBuilder
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
-import org.eclipse.microprofile.reactive.messaging.Message
 import java.util.*
 import javax.enterprise.context.ApplicationScoped
+import javax.enterprise.event.Observes
+import javax.enterprise.event.TransactionPhase
 import javax.inject.Inject
 
 
@@ -25,42 +24,39 @@ class EventBus {
     lateinit var cases: Emitter<String>
 
     @Inject
-    lateinit var om: ObjectMapper
+    lateinit var messageBuilder: MessageBuilder
 
-    fun publish(event: Event<*>) {
-        val referenceId = when(event) {
-            is DraftEvent -> event.value.contract.id
-            else -> throw TODO("unexpected event type ${event.javaClass}")
-        }
-        send(eventBus, event.requestId, referenceId, event)
+    @Inject
+    private lateinit var somethingToSendEvent: javax.enterprise.event.Event<SomethingToSend>
+
+    fun publish(draft: Draft) {
+
+        send(eventBus, draft.contract.id, draft, event = "DRAFT_CREATED")
     }
 
     fun publish(createCaseCommand: CreateCaseCommand) {
-        send(cases, createCaseCommand.requestId, createCaseCommand.referenceId, createCaseCommand)
+        send(cases, createCaseCommand.referenceId, createCaseCommand, command = "CREATE_CASE")
     }
 
-    private fun send(emitter: Emitter<String>, requestId: UUID, referenceId: UUID, value: Any) {
-        // TODO transactional outbox
-        val metadata = OutgoingKafkaRecordMetadata.builder<Any>()
-                .withKey(referenceId.toString()) // normally contractId
-                .withHeaders(listOf(RecordHeader("requestId", requestId.toString().toByteArray())))
-                .build()
-        emitter.send(Message.of(om.writeValueAsString(value)).addMetadata(metadata))
+    private fun send(emitter: Emitter<String>, key: Any, value: Any, command: String? = null, event: String? = null) {
+        somethingToSendEvent.fire(SomethingToSend(emitter, key, value, command, event))
+    }
+
+    // TODO use transactional outbox
+    @SuppressWarnings("unused")
+    private fun send(@Observes(during = TransactionPhase.AFTER_SUCCESS) sts: SomethingToSend) {
+        sts.emitter.send(messageBuilder.build(sts.key, sts.value, sts.command, sts.event))
     }
 }
 
-enum class Events {
-    DRAFT_CREATED
-}
-
-abstract class Event<T>(open val requestId: UUID, val event: Events, open val value: T)
-
-data class DraftEvent(override val requestId: UUID, override val value: Draft) :
-        Event<Draft>(requestId, Events.DRAFT_CREATED, value)
+// TODO move this to the lib, near the messageBuilder
+private data class SomethingToSend(val emitter: Emitter<String>,
+                                   val key: Any,
+                                   val value: Any,
+                                   val command: String?,
+                                   val event: String?)
 
 data class CreateCaseCommand(
-        val requestId: UUID,
         val referenceId: UUID,
-        val command: String = "CREATE_CASE",
         val caseType: String = "SALES"
 )

@@ -1,13 +1,13 @@
 package ch.maxant.kdc.mf.library
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.smallrye.reactive.messaging.kafka.OutgoingKafkaRecordMetadata
+import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecordMetadata
 import org.apache.commons.lang3.exception.ExceptionUtils
-import org.apache.kafka.common.header.internals.RecordHeader
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.eclipse.microprofile.reactive.messaging.Message
 import javax.enterprise.context.ApplicationScoped
+import javax.enterprise.context.RequestScoped
 import javax.inject.Inject
 
 @ApplicationScoped
@@ -16,6 +16,9 @@ class ErrorHandler {
     @Inject
     @Channel("errors-out")
     lateinit var errors: Emitter<String>
+
+    @Inject
+    lateinit var context: Context
 
     @Inject
     lateinit var om: ObjectMapper
@@ -32,24 +35,34 @@ class ErrorHandler {
      * goes and fetches the current application state using REST once such an error is received, because in a
      * microservice environment it could well be inconsistent and need repairing.
      *
-     * @param requestId originates from the service which started the process step, so that they can get feedback about this error
-     * @param key from the original message, or null if unknown
      * @param t the exception which resulted
-     * @param originalEvent the event which lead to this problem
+     * @param originalMessage the message which lead to this problem
      */
-    // TODO take the original message, rather than the string - that way we have the request Id too
-    fun dlt(requestId: String?, key: String?, t: Throwable, originalEvent: String) {
-        val metadata = OutgoingKafkaRecordMetadata.builder<Any>()
-                .withKey(key)
-                .withHeaders(listOf(RecordHeader(REQUEST_ID, requestId.toString().toByteArray())))
-                .build()
-        val payload = om.writeValueAsString(Error(requestId, t, originalEvent))
-        errors.send(Message.of(payload).addMetadata(metadata))
+    fun dlt(originalMessage: Any, t: Throwable) {
+        val value = when(originalMessage) {
+            is String -> om.writeValueAsString(Error(t, originalMessage))
+            is Message<*> -> om.writeValueAsString(Error(t, originalMessage.payload as String))
+            else -> throw RuntimeException("unexpected type: ${originalMessage.javaClass.name}")
+        }
+        val key = when(originalMessage) {
+            is String -> null
+            is Message<*> -> getKey(originalMessage)
+            else -> throw RuntimeException("unexpected type: ${originalMessage.javaClass.name}")
+        }
+
+        val msg = messageWithMetadata(key, value, Headers(
+                    context,
+                    event = "ERROR"
+            ))
+        errors.send(msg)
     }
+
+    private fun getKey(m: Message<*>) =
+            m.getMetadata(IncomingKafkaRecordMetadata::class.java).get().key?.toString()
 }
 
-private data class Error(val requestId: String?, val errorClass: String, val errorMessage: String?, val stackTrace: String, val originalEvent: String, val event: String = "ERROR") {
-    constructor(requestId: String?, t: Throwable, originalEvent: String) : this(
-            requestId, t.javaClass.name, t.message, ExceptionUtils.getStackTrace(t), originalEvent
+private data class Error(val errorClass: String, val errorMessage: String?, val stackTrace: String, val originalEvent: String, val event: String = "ERROR") {
+    constructor(t: Throwable, originalEvent: String) : this(
+            t.javaClass.name, t.message, ExceptionUtils.getStackTrace(t), originalEvent
     )
 }

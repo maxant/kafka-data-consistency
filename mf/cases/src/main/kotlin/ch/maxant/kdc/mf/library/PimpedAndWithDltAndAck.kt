@@ -141,13 +141,13 @@ fun getHeader(om: ObjectMapper, firstParam: Any, header: String): String = when 
     }
     is Message<*> ->
         String(firstParam
-            .getMetadata(IncomingKafkaRecordMetadata::class.java)
-            .get()
-            .headers
-            .find { it.key() == header }
-            ?.value()
-            ?: byteArrayOf(),
-        Charsets.UTF_8)
+                .getMetadata(IncomingKafkaRecordMetadata::class.java)
+                .get()
+                .headers
+                .find { it.key() == header }
+                ?.value()
+                ?: byteArrayOf(),
+                Charsets.UTF_8)
 
     else -> throw RuntimeException("unexpected first parameter type")
 }

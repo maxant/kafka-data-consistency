@@ -1,8 +1,6 @@
 package ch.maxant.kdc.mf.pricing.boundary
 
-import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
-import ch.maxant.kdc.mf.library.REQUEST_ID
-import ch.maxant.kdc.mf.library.getRequestId
+import ch.maxant.kdc.mf.library.*
 import ch.maxant.kdc.mf.pricing.control.PricingResult
 import ch.maxant.kdc.mf.pricing.control.PricingService
 import ch.maxant.kdc.mf.pricing.definitions.Price
@@ -28,7 +26,13 @@ class DraftsConsumer(
         var om: ObjectMapper,
 
         @Inject
-        var pricingService: PricingService
+        var pricingService: PricingService,
+
+        @Inject
+        var context: Context,
+
+        @Inject
+        var messageBuilder: MessageBuilder
 ) {
     @Inject
     @Channel("event-bus-out")
@@ -40,37 +44,22 @@ class DraftsConsumer(
     @Transactional
     @PimpedAndWithDltAndAck
     fun process(msg: Message<String>): CompletionStage<*> {
-        val event = om.readTree(msg.payload)
-        val name = event.get("event").asText()
-        return when (name) {
+        val draft = om.readTree(msg.payload)
+        return when (context.event) {
             "DRAFT_CREATED" -> {
                 log.info("pricing draft")
                 pricingService
-                    .priceDraft(event)
+                    .priceDraft(draft)
                     .thenApply {
-                        sendEvent(PublishedPricesEvent(getRequestId(msg), it))
+                        sendEvent(it)
                     }
             }
-            else -> completedFuture(Unit) // ignore other message types
+            else -> completedFuture(Unit) // ignore other messages
         }
     }
 
-    private fun sendEvent(event: PublishedPricesEvent) {
-        val metadata = OutgoingKafkaRecordMetadata.builder<Any>()
-                .withKey(event.contractId)
-                .withHeaders(listOf(RecordHeader(REQUEST_ID, event.requestId.toByteArray())))
-                .build()
-        eventBus.send(Message.of(om.writeValueAsString(event)).addMetadata(metadata))
+    private fun sendEvent(prices: PricingResult) {
+        eventBus.send(messageBuilder.build(prices.contractId, prices, event = "UPDATED_PRICES"))
     }
 
-}
-
-private data class PublishedPricesEvent(
-        val requestId: String,
-        val contractId: String,
-        val value: Map<UUID, Price>,
-        val event: String = "UPDATED_PRICES"
-) {
-    constructor(requestId: String, priceResult: PricingResult) :
-            this(requestId, priceResult.contractId.toString(), priceResult.prices)
 }

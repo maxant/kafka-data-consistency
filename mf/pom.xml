@@ -209,6 +209,8 @@
                     <pluginOptions>
                         <option>all-open:annotation=javax.ws.rs.Path</option>
                         <option>all-open:annotation=javax.enterprise.context.ApplicationScoped</option>
+                        <option>all-open:annotation=javax.enterprise.context.Dependent</option>
+                        <option>all-open:annotation=javax.enterprise.context.RequestScoped</option>
                         <option>all-open:annotation=javax.persistence.Entity</option>
                         <option>all-open:annotation=io.quarkus.test.junit.QuarkusTest</option>
                     </pluginOptions>

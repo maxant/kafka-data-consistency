@@ -30,21 +30,21 @@ class PricingService(
     private val log = Logger.getLogger(this.javaClass)
 
     @AsyncContextAware
-    fun priceDraft(event: JsonNode): CompletionStage<PricingResult> {
+    fun priceDraft(draft: JsonNode): CompletionStage<PricingResult> {
         // TODO add extension method to make this fetchable via a path => ur use JsonPath?
         // TODO replace with DTO
-        val value = event.get("value")
-        val contractId = UUID.fromString(value.get("contract").get("id").asText())
-        val pack = value.get("pack").toString()
-        val start = LocalDateTime.parse(value.get("contract").get("start").asText())
-        val end = LocalDateTime.parse(value.get("contract").get("end").asText())
+        val contract = draft.get("contract")
+        val contractId = UUID.fromString(contract.get("id").asText())
+        val pack = draft.get("pack").toString()
+        val start = LocalDateTime.parse(contract.get("start").asText())
+        val end = LocalDateTime.parse(contract.get("end").asText())
         val root = om.readValue(pack, Component::class.java)
 
         return completedFuture(price(contractId, start, end, root))
     }
 
     private fun price(contractId: UUID, start: LocalDateTime, end: LocalDateTime, root: Component): PricingResult {
-        log.info("starting to price individual components...")
+        log.info("starting to price individual components for contract $contractId...")
         val prices = HashMap<UUID, Price>()
         root.accept(object: Visitor {
             override fun visit(component: Component) {
@@ -86,5 +86,5 @@ class PricingService(
 
 data class PricingResult(
         val contractId: UUID,
-        val prices: Map<UUID, Price>
+        val priceByComponentId: Map<UUID, Price>
 )

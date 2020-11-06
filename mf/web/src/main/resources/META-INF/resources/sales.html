@@ -88,19 +88,23 @@ const App = {
         this.start = new Date().getTime();
         let body = {
           "productId": "COOKIES_MILKSHAKE",
-          "start": new Date(new Date().getTime() + 24*3600000).toISOString().substr(0,10),
-          "requestId": uuidv4()
+          "start": new Date(new Date().getTime() + 24*3600000).toISOString().substr(0,10)
         }
+        let requestId = uuidv4()
 
         // subscribe before sending request to server, to ensure we receive ALL of the events, and any errors
-        sse(body.requestId, this);
+        sse(requestId, this);
 
         fetch(CONTRACTS_BASE_URL + "/drafts",
-              {"method": "POST", body: JSON.stringify(body), "headers": {"Content-Type": "application/json"}})
-              .then(r => r.json())
-              .then(r => {
-                console.log("got contract with id " + r.contract.id + ", for requestId " + body.requestId);
-              });
+              { "method": "POST",
+                body: JSON.stringify(body),
+                "headers": {"Content-Type": "application/json", "requestId": requestId}
+              }
+        )
+        .then(r => r.json())
+        .then(r => {
+            console.log("got contract with id " + r.contract.id + ", for requestId " + requestId);
+        });
     },
     get(obj, path) {
         // vue3 doesnt like seeing underscores in attribute values => so lets create an alias with this method
@@ -125,11 +129,11 @@ function sse(requestId, self) {
         console.log(event);
         let msg = JSON.parse(event.data);
         if(msg.event == "DRAFT_CREATED") {
-            self.model.draft.contract = msg.value.contract;
-            self.model.draft.pack = msg.value.pack;
+            self.model.draft.contract = msg.payload.contract;
+            self.model.draft.pack = msg.payload.pack;
         } else if(msg.event == "UPDATED_PRICES") {
-            self.model.draft.prices = msg.value;
-            _.forEach(msg.value, (v,k) => {
+            self.model.draft.prices = msg.payload.priceByComponentId;
+            _.forEach(self.model.draft.prices, (v,k) => {
                 addPrice(self.model.draft.pack, k, v);
             });
             self.timeTaken = new Date().getTime() - self.start;

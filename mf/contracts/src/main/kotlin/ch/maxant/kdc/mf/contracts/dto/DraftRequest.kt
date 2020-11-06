@@ -8,10 +8,6 @@ import javax.validation.constraints.NotNull
 
 data class DraftRequest (
 
-    /** propagated to all downstream processes so that events can be correlated upstream */
-    @field:NotNull
-    var requestId: UUID,
-
     @field:NotNull @field:FutureOrPresent
     var start: LocalDate,
 
