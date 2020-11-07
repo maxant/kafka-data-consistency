@@ -4,16 +4,16 @@ A component for dealing with customers contracts, rather than purchasing contrac
 
 Contracts are based on a product. We create one contract per customer per product.
 
-
-
 A Product defines the configurable parameters. When we create a contract we instantiate 
 the product and set the parameters that are configured, saving each contract a as a row in our 
 database. Parameters are stored using JSON.
 
 ## Running in dev mode
 
+From inside the contracts folder, so that changes to the library are also hot deployed:
+
 ```
-mvn quarkus:dev
+mvn -f ../parent/pom.xml -pl ../contracts clean quarkus:dev
 ```
 
 ## Packaging and running the application

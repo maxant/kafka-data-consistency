@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.cases.boundary
 
+import ch.maxant.kdc.mf.cases.control.CasesService
 import ch.maxant.kdc.mf.cases.entity.CaseEntity
 import ch.maxant.kdc.mf.cases.entity.CaseType
 import ch.maxant.kdc.mf.cases.entity.State
@@ -14,6 +15,8 @@ import org.eclipse.microprofile.reactive.messaging.Incoming
 import org.eclipse.microprofile.reactive.messaging.Message
 import org.jboss.logging.Logger
 import java.util.*
+import java.util.concurrent.CompletableFuture.completedFuture
+import java.util.concurrent.CompletionStage
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
 import javax.persistence.EntityManager
@@ -23,86 +26,29 @@ import javax.transaction.Transactional
 @SuppressWarnings("unused")
 class CasesConsumer(
         @Inject
-        var em: EntityManager,
-
-        @Inject
         var om: ObjectMapper,
 
         @Inject
-        var messageBuilder: MessageBuilder,
+        var context: Context,
 
         @Inject
-        var context: Context
+        var casesService: CasesService
 ) {
-    @Inject // this doesnt appear to work in the constructor
-    @Channel("cases-out")
-    lateinit var eventBus: Emitter<String>
-
-    private val log = Logger.getLogger(this.javaClass)
-
     @Incoming("cases-in")
     @Transactional
     @PimpedAndWithDltAndAck
     @SuppressWarnings("unused")
-    fun process(msg: Message<String>) {
+    fun process(msg: Message<String>): CompletionStage<*> {
         val command = Command.valueOf(context.command!!)
-        when {
-            Command.CREATE_CASE == command -> { createCase(msg.payload) }
-            Command.CREATE_TASK == command -> { createTask(msg.payload) }
-            Command.UPDATE_TASK == command -> { updateTask(msg.payload) }
-            else -> { throw RuntimeException("unexpected command $command: $msg") }
+        return when {
+            Command.CREATE_CASE == command ->
+                casesService.createCase(om.readValue(msg.payload, CreateCaseCommand::class.java))
+            Command.CREATE_TASK == command ->
+                casesService.createTask(om.readValue(msg.payload, CreateTaskCommand::class.java))
+            Command.UPDATE_TASK == command ->
+                casesService.updateTask(om.readValue(msg.payload, UpdateTaskCommand::class.java))
+            else -> throw RuntimeException("unexpected command $command: $msg")
         }
-    }
-
-    private fun createCase(msg: String) {
-        val caseRequest = om.readValue(msg, CreateCaseCommand::class.java)
-        log.info("creating a case: $caseRequest")
-
-        val case = CaseEntity(UUID.randomUUID(), caseRequest.referenceId, caseRequest.caseType)
-
-        em.persist(case)
-
-        sendCaseChangedEvent(case, emptyList())
-    }
-
-    private fun createTask(msg: String) {
-        val taskRequest = om.readValue(msg, CreateTaskCommand::class.java)
-        log.info("creating a task: $taskRequest")
-
-        val case = CaseEntity.Queries.selectByReferenceId(em, taskRequest.referenceId)
-
-        val task = TaskEntity(UUID.randomUUID(), case.id, taskRequest.userId,
-                taskRequest.title, taskRequest.description, State.OPEN)
-
-        em.persist(task)
-
-        val tasks = TaskEntity.Queries.selectByCaseId(em, case.id)
-        tasks.add(task)
-
-        sendCaseChangedEvent(case, tasks)
-    }
-
-    private fun updateTask(msg: String) {
-        val taskRequest = om.readValue(msg, UpdateTaskCommand::class.java)
-        log.info("updating a task: $taskRequest")
-
-        val task = TaskEntity.Queries.selectByTaskId(em, taskRequest.taskId)
-        task.description = taskRequest.description
-        task.userId = taskRequest.userId
-        task.title = taskRequest.title
-        task.state = taskRequest.state
-
-        val case = CaseEntity.Queries.selectByCaseId(em, task.caseId)
-
-        val tasks = TaskEntity.Queries.selectByCaseId(em, case.id)
-
-        sendCaseChangedEvent(case, tasks)
-    }
-
-    private fun sendCaseChangedEvent(case: CaseEntity, tasks: List<TaskEntity>) {
-        val cce = CaseChangedEvent(case.id, case.referenceId, case.type, tasks.map { TaskDto(it) })
-        val msg = messageBuilder.build(case.referenceId, cce, event = "CASE_CHANGED")
-        eventBus.send(msg)
     }
 }
 

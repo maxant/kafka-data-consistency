@@ -5,8 +5,10 @@ downstream microservices.
 
 ## Running in dev mode
 
+From inside the web folder, so that changes to the library are also hot deployed:
+
 ```
-mvn quarkus:dev
+mvn -f ../parent/pom.xml -pl ../web clean quarkus:dev
 ```
 
 ## Packaging and running the application

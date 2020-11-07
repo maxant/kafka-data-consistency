@@ -1,7 +1,6 @@
 package ch.maxant.kdc.mf.web.boundary
 
 import ch.maxant.kdc.mf.library.*
-import com.fasterxml.jackson.databind.ObjectMapper
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.subscription.MultiEmitter
 import org.eclipse.microprofile.openapi.annotations.tags.Tag

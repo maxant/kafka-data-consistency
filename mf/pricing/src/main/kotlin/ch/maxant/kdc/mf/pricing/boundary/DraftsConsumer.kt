@@ -1,18 +1,17 @@
 package ch.maxant.kdc.mf.pricing.boundary
 
-import ch.maxant.kdc.mf.library.*
+import ch.maxant.kdc.mf.library.Context
+import ch.maxant.kdc.mf.library.MessageBuilder
+import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
 import ch.maxant.kdc.mf.pricing.control.PricingResult
 import ch.maxant.kdc.mf.pricing.control.PricingService
-import ch.maxant.kdc.mf.pricing.definitions.Price
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.smallrye.reactive.messaging.kafka.OutgoingKafkaRecordMetadata
-import org.apache.kafka.common.header.internals.RecordHeader
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.eclipse.microprofile.reactive.messaging.Incoming
 import org.eclipse.microprofile.reactive.messaging.Message
 import org.jboss.logging.Logger
-import java.util.*
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletableFuture.completedFuture
 import java.util.concurrent.CompletionStage
 import javax.enterprise.context.ApplicationScoped
@@ -50,7 +49,7 @@ class DraftsConsumer(
                 log.info("pricing draft")
                 pricingService
                     .priceDraft(draft)
-                    .thenApply {
+                    .thenCompose {
                         sendEvent(it)
                     }
             }
@@ -58,8 +57,10 @@ class DraftsConsumer(
         }
     }
 
-    private fun sendEvent(prices: PricingResult) {
-        eventBus.send(messageBuilder.build(prices.contractId, prices, event = "UPDATED_PRICES"))
+    private fun sendEvent(prices: PricingResult): CompletableFuture<Unit> {
+        val ack = CompletableFuture<Unit>()
+        eventBus.send(messageBuilder.build(prices.contractId, prices, ack, event = "UPDATED_PRICES"))
+        return ack
     }
 
 }

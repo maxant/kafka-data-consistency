@@ -52,6 +52,9 @@ not just for the UI, rather for the entire landscape.
   - The sales UI is a SPA with orchestation and state in the browser
   - The recurring billing process is modelled with a backend orchestator which keeps its state in a global KTable, rather
     than say rocksdb or mysql
+- Reading via REST is ok, but writing should always occur via Kafka to ensure no writes are ever lost
+- All writes should be done idempotently, e.g. by updating rather than blindly inserting, and not failing if 
+  something is already deleted
 
 ## Applications & Microservices
 
@@ -138,7 +141,7 @@ Also known as entry points, process components or UIs.
 
 - test cases
 - use requires
-- use noArgs for jpa
+- use noArgs for jpa => and remove the unnecessary constructors
 - add APM too
 
 - ok, we want pricing to listen to draft, and we dont want to orchestrate that from the UI. or do we?

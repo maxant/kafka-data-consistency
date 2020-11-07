@@ -5,6 +5,7 @@ import ch.maxant.kdc.mf.library.MessageBuilder
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import java.util.*
+import java.util.concurrent.CompletableFuture
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.event.Observes
 import javax.enterprise.event.TransactionPhase
@@ -45,7 +46,9 @@ class EventBus {
     // TODO use transactional outbox
     @SuppressWarnings("unused")
     private fun send(@Observes(during = TransactionPhase.AFTER_SUCCESS) sts: SomethingToSend) {
-        sts.emitter.send(messageBuilder.build(sts.key, sts.value, sts.command, sts.event))
+        // since this is happening async after the transaction, and we don't return anything,
+        // we just pass a new CompletableFuture and don't care what happens with it
+        sts.emitter.send(messageBuilder.build(sts.key, sts.value, CompletableFuture(), sts.command, sts.event))
     }
 }
 
