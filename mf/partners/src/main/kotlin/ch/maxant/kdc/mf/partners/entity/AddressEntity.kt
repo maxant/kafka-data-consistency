@@ -1,8 +1,6 @@
 package ch.maxant.kdc.mf.partners.entity
 
 import org.hibernate.annotations.Type
-import java.math.BigDecimal
-import java.time.LocalDateTime
 import java.util.*
 import javax.persistence.*
 

@@ -8,7 +8,6 @@ import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.eclipse.microprofile.reactive.messaging.Message
 import java.util.concurrent.CompletableFuture
 import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.context.RequestScoped
 import javax.inject.Inject
 
 @ApplicationScoped

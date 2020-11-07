@@ -2,7 +2,6 @@ package ch.maxant.kdc.mf.contracts.entity
 
 import ch.maxant.kdc.mf.contracts.definitions.ProductId
 import org.hibernate.annotations.Type
-import java.time.LocalDateTime
 import java.util.*
 import javax.persistence.*
 

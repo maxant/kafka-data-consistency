@@ -1,25 +1,18 @@
 package ch.maxant.kdc.mf.cases.boundary
 
 import ch.maxant.kdc.mf.cases.control.CasesService
-import ch.maxant.kdc.mf.cases.entity.CaseEntity
 import ch.maxant.kdc.mf.cases.entity.CaseType
 import ch.maxant.kdc.mf.cases.entity.State
 import ch.maxant.kdc.mf.cases.entity.TaskEntity
 import ch.maxant.kdc.mf.library.Context
-import ch.maxant.kdc.mf.library.MessageBuilder
 import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.eclipse.microprofile.reactive.messaging.Channel
-import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.eclipse.microprofile.reactive.messaging.Incoming
 import org.eclipse.microprofile.reactive.messaging.Message
-import org.jboss.logging.Logger
 import java.util.*
-import java.util.concurrent.CompletableFuture.completedFuture
 import java.util.concurrent.CompletionStage
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
-import javax.persistence.EntityManager
 import javax.transaction.Transactional
 
 @ApplicationScoped

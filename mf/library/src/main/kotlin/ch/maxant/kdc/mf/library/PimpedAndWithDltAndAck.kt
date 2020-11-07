@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecordMetadata
 import io.smallrye.reactive.messaging.kafka.OutgoingKafkaRecordMetadata
 import org.apache.commons.lang3.StringUtils.isNotEmpty
-import org.apache.commons.lang3.Validate.isTrue
 import org.apache.kafka.common.header.internals.RecordHeader
 import org.eclipse.microprofile.reactive.messaging.Message
 import org.jboss.logging.Logger
@@ -50,49 +49,44 @@ class PimpedAndWithDltAndAckInterceptor(
 
     @AroundInvoke
     fun invoke(ctx: InvocationContext): Any? {
-        isTrue(ctx.parameters.size == 1,
-                "EH001 @ErrorHandled on method ${ctx.target.javaClass.name}::${ctx.method.name} must contain exactly one parameter")
+        require(ctx.parameters.size == 1) { "EH001 @ErrorHandled on method ${ctx.target.javaClass.name}::${ctx.method.name} must contain exactly one parameter" }
         val firstParam = ctx.parameters[0]
-        isTrue((firstParam is String) || (firstParam is Message<*>),
-                "EH002 @ErrorHandled on method ${ctx.target.javaClass.name}::${ctx.method.name} must contain one String/Message parameter")
+        require((firstParam is String) || (firstParam is Message<*>)) { "EH002 @ErrorHandled on method ${ctx.target.javaClass.name}::${ctx.method.name} must contain one String/Message parameter" }
 
+        // set context into request scoped bean, so downstream can use it. also works with quarkus context propogation
+        setContext(firstParam)
+
+        // take a copy, in order to fill MDC before logging in callbacks
+        val copyOfContext = Context.of(context)
+
+        // set/clear MDC for this thread and proceed into intercepted code
+        return withMdcSet(context) {
+            proceed(copyOfContext, ctx, firstParam)
+        }
+    }
+
+    private data class ResultAndError(val result: Any?, val throwable: Throwable?)
+
+    fun proceed(copyOfContext: Context, ctx: InvocationContext, firstParam: Any?): Any? {
         try {
-            setContext(firstParam)
-
-            // take a copy, in order to fill MDC before logging in callbacks
-            val copyOfContext = Context.of(context)
-
-            // set MDC for this thread
-            setMdc(context)
             log.debug("processing incoming message")
 
-            val ret = withMdcSet(copyOfContext) { ctx.proceed() }
+            val ret = ctx.proceed()
 
             return if (ret is CompletionStage<*>) {
-                ret.handle { _, t ->
-                    if (t != null) {
-                        withMdcSet(copyOfContext) {
-                            dealWithException(t, ctx)
-                        }
-                    } else {
-                        completedFuture(null)
-                    }
-                }.handle { _, _ -> // errors are handled in dealWithException above, so we dont need to deal with them here
-                    (firstParam as Message<*>)
-                            .ack()
-                            .thenRun {
-                                withMdcSet(copyOfContext) { log.debug("kafka acked message") }
-                            }
-                }
+                ret.handle { s, t -> ResultAndError(s, t) }
+                   .thenCompose { rae -> dealWithExceptionIfNecessary(rae.throwable, ctx, copyOfContext) }
+                   .thenCompose { (firstParam as Message<*>).ack() }
+                   .thenRun { withMdcSet(copyOfContext) { log.debug("kafka acked message") } }
             } else {
                 // quarkus will ack for us
                 ret
             }
         } catch (e: Exception) {
-            val cf1 = dealWithException(e, ctx)
+            val cf1 = dealWithExceptionIfNecessary(e, ctx, copyOfContext)
             return when (firstParam) {
-                is String -> Unit // quarkus will ack for us
-                is Message<*> -> cf1.thenCombine(firstParam.ack(), { _,_ -> null })
+                is String -> cf1.get() // we have no choice but to block, or skip, (since we can't return a CS) but if downstream fails, we should too; quarkus will ack the incoming message for us as the interface is string base
+                is Message<*> -> cf1.thenCompose { firstParam.ack() }.thenRun { log.debug("kafka acked message") }
                 else -> throw java.lang.RuntimeException("EH007 unexpected parameter type should have been caught on method entry")
             }
         }
@@ -105,31 +99,36 @@ class PimpedAndWithDltAndAckInterceptor(
         context.event = getEvent(om, firstParam)
     }
 
-    fun dealWithException(t: Throwable, ctx: InvocationContext): CompletionStage<Unit> {
-        var ret: CompletionStage<Unit> = completedFuture(null)
-        val firstParam = ctx.parameters[0]
-        try {
-            when {
-                context.requestId.isEmpty -> {
-                    log.error("EH003 failed to process message ${asString(firstParam)} " +
-                            "- unknown requestId so not sending it to the DLT " +
-                            "- this message is being dumped here " +
-                            "- this is an error in the program " +
-                            "- every message MUST have a requestId header or attribute at the root", t)
+    fun dealWithExceptionIfNecessary(t: Throwable?, ctx: InvocationContext, copyOfContext: Context): CompletableFuture<Unit> {
+        var ret: CompletableFuture<Unit> = completedFuture(null)
+        if(t == null) {
+            return ret
+        }
+        withMdcSet(copyOfContext) {
+            val firstParam = ctx.parameters[0]
+            try {
+                when {
+                    copyOfContext.requestId.isEmpty -> {
+                        log.error("EH003 failed to process message ${asString(firstParam)} " +
+                                "- unknown requestId so not sending it to the DLT " +
+                                "- this message is being dumped here " +
+                                "- this is an error in the program " +
+                                "- every message MUST have a requestId header or attribute at the root", t)
+                    }
+                    ctx.method.getAnnotation(PimpedAndWithDltAndAck::class.java).sendToDlt -> {
+                        log.warn("EH004 failed to process message ${asString(firstParam)} - sending it to the DLT with requestId ${copyOfContext.requestId}", t)
+                        ret = errorHandler.dlt(firstParam, t)
+                    }
+                    else -> {
+                        log.error("EH005 failed to process message ${asString(firstParam)} " +
+                                "- NOT sending it to the DLT because @PimpedWithDlt is configured with 'sendToDlt = false' " +
+                                "- this message is being dumped here", t)
+                    }
                 }
-                ctx.method.getAnnotation(PimpedAndWithDltAndAck::class.java).sendToDlt -> {
-                    log.warn("EH004 failed to process message $firstParam - sending it to the DLT with requestId ${context.requestId}", t)
-                    ret = errorHandler.dlt(firstParam, t)
-                }
-                else -> {
-                    log.error("EH005 failed to process message ${asString(firstParam)} " +
-                            "- NOT sending it to the DLT because @PimpedWithDlt is configured with 'sendToDlt = false' " +
-                            "- this message is being dumped here", t)
-                }
+            } catch (e2: Exception) {
+                log.error("EH006a failed to process message ${asString(firstParam)} - this message is being dumped here", e2)
+                log.error("EH006b original exception was", t)
             }
-        } catch (e2: Exception) {
-            log.error("EH006a failed to process message $firstParam - this message is being dumped here", e2)
-            log.error("EH006b original exception was", t)
         }
         return ret
     }
@@ -160,9 +159,9 @@ fun getHeader(om: ObjectMapper, firstParam: Any, header: String): String = when 
     is Message<*> ->
         String(firstParam
                 .getMetadata(IncomingKafkaRecordMetadata::class.java)
-                .get()
-                .headers
-                .find { it.key() == header }
+                .orElse(null)
+                ?.headers
+                ?.find { it.key() == header }
                 ?.value()
                 ?: byteArrayOf(),
                 Charsets.UTF_8)

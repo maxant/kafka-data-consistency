@@ -1,16 +1,8 @@
 package ch.maxant.kdc.mf.library
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecordMetadata
-import org.apache.commons.lang3.exception.ExceptionUtils
-import org.eclipse.microprofile.reactive.messaging.Channel
-import org.eclipse.microprofile.reactive.messaging.Emitter
-import org.eclipse.microprofile.reactive.messaging.Message
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletableFuture.completedFuture
-import java.util.concurrent.CompletionStage
 import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.context.RequestScoped
 import javax.inject.Inject
 
 @ApplicationScoped

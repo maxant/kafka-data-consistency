@@ -3,6 +3,8 @@ package ch.maxant
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.util.function.BiFunction
+import java.util.function.Function
 
 class KotlinExperiments {
 
@@ -85,6 +87,26 @@ class KotlinExperiments {
         val c = DatabaseConnection()
         assertThrows<RuntimeException> { doInTx(c) { it.get(3) } }
         assertEquals("got 2", doInTx(c) { it.get(2) })
+    }
+
+    @Test
+    fun func() {
+        fun takesAFunc(f: Function<Int, String>): String {
+            return f.apply(2)
+        }
+
+        val func2 = Function<Int, String> { "$it" }
+        assertEquals("2", takesAFunc(func2))
+    }
+
+    @Test
+    fun bifunc() {
+        fun takesABifunc(b: BiFunction<Long, Int, String>): String {
+            return b.apply(1L, 2)
+        }
+
+        val bifunc = BiFunction<Long, Int, String> { l, i -> "$l$i" }
+        assertEquals("12", takesABifunc(bifunc))
     }
 
 }

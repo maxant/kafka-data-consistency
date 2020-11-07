@@ -2,9 +2,6 @@ package ch.maxant.kdc.mf.contracts.definitions
 
 import org.apache.commons.lang3.Validate
 import org.apache.commons.lang3.Validate.isTrue
-import java.math.BigDecimal
-import java.math.MathContext
-import java.math.RoundingMode
 
 /** like a marker interface to show that this is packaging */
 abstract class Packaging(configs: List<Configuration<*>>,

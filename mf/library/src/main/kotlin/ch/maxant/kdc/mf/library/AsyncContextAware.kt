@@ -2,8 +2,7 @@ package ch.maxant.kdc.mf.library
 
 import org.eclipse.microprofile.context.ManagedExecutor
 import org.eclipse.microprofile.context.ThreadContext
-import java.util.concurrent.CompletableFuture
-import javax.enterprise.context.RequestScoped
+import java.util.concurrent.CompletionStage
 import javax.inject.Inject
 import javax.interceptor.AroundInvoke
 import javax.interceptor.Interceptor
@@ -18,7 +17,7 @@ import javax.interceptor.InvocationContext
  * String, as it requires us to return a CompletionStage rather than Unit. its not compatible with
  * @Blocking either<br>
  * <br>
- * Propagates the requestId too.
+ * Propagates the requestId and MDC (logging) too.
  */
 @InterceptorBinding
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.TYPE, AnnotationTarget.CLASS)
@@ -39,22 +38,17 @@ class AsyncContextAwareInterceptor(
         var context: Context
 ) {
     @AroundInvoke
-    fun invoke(ctx: InvocationContext): Any? {
+    fun invoke(ctx: InvocationContext): Any {
 
-        // copy elements out, as the proxy might not work inside the supplier?
+        // copy elements out, as the proxy might not work inside the supplier, and MDC isnt propagated coz smallrye doesnt know about it
         val copyOfContext = Context.of(context)
 
         return managedExecutor.supplyAsync(threadContext.contextualSupplier {
 
             withMdcSet(copyOfContext) {
-
-                val r = ctx.proceed()
-
-                // get, coz otherwise we end up with a Future<Future<T>> rather than just Future<T>
-                // im assuming Java EE impls do this too where they impl @Async?
-                // fixme is the get right?
-                (r as CompletableFuture<*>).get()
+                ctx.proceed() as CompletionStage<Any>
             }
-        })
+        }).thenCompose { it } // unwrap the nested CS from type CS<CS<Any>> to CS<Any>
+
     }
 }
