@@ -3,7 +3,6 @@ package ch.maxant.kdc.mf.pricing.definitions
 import ch.maxant.kdc.mf.pricing.definitions.Prices.findRule
 import ch.maxant.kdc.mf.pricing.dto.Component
 import ch.maxant.kdc.mf.pricing.dto.Configuration
-import org.apache.commons.lang3.Validate.isTrue
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.util.*
@@ -132,7 +131,7 @@ private val sumChildren = fun(component: Component) =
 
 private fun getConfig(component: Component, name: String, expectedUnits: String): Configuration {
     val config = component.configs.firstOrNull { it.name == name } ?: throw MissingConfigException("component ${component.componentDefinitionId} is missing config for $name")
-    isTrue(config.units == expectedUnits, "$name has unexpected units ${config.units} instead of $expectedUnits")
+    require(config.units == expectedUnits) { "$name has unexpected units ${config.units} instead of $expectedUnits" }
     return config
 }
 

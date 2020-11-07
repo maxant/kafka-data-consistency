@@ -1,8 +1,5 @@
 package ch.maxant.kdc.mf.contracts.definitions
 
-import org.apache.commons.lang3.Validate
-import org.apache.commons.lang3.Validate.isTrue
-
 /** like a marker interface to show that this is packaging */
 abstract class Packaging(configs: List<Configuration<*>>,
                          children: List<ComponentDefinition>
@@ -15,7 +12,7 @@ class CardboardBox(space: CardboardBoxSize, quantity: Int, contents: Product) : 
                 MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.CARDBOARD)
         ), listOf(contents)) {
     init {
-        Validate.isTrue(space.size >= quantity)
+        require(space.size >= quantity)
     }
 
     enum class CardboardBoxSize(val size: Int) {
@@ -30,7 +27,7 @@ class Pallet(space: PalletSize, quantity: Int, contents: Packaging) : Packaging(
                 MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.WOOD)
         ), listOf(contents)) {
     init {
-        isTrue(space.size >= quantity)
+        require(space.size >= quantity)
     }
 
     enum class PalletSize(val size: Int) {

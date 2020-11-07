@@ -7,7 +7,7 @@ A component for dealing with pricing of components in a contract.
 From inside the pricing folder, so that changes to the library are also hot deployed:
 
 ```
-mvn -f ../parent/pom.xml -pl ../pricing clean quarkus:dev
+mvn quarkus:dev
 ```
 
 ## Packaging and running the application

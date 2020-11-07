@@ -7,7 +7,7 @@ A component for dealing with cases, workflow and tasks.
 From inside the cases folder, so that changes to the library are also hot deployed:
 
 ```
-mvn -f ../parent/pom.xml -pl ../cases clean quarkus:dev
+mvn quarkus:dev
 ```
 
 ## Packaging and running the application

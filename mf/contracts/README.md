@@ -13,7 +13,7 @@ database. Parameters are stored using JSON.
 From inside the contracts folder, so that changes to the library are also hot deployed:
 
 ```
-mvn -f ../parent/pom.xml -pl ../contracts clean quarkus:dev
+mvn quarkus:dev
 ```
 
 ## Packaging and running the application

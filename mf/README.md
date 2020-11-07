@@ -139,10 +139,9 @@ Also known as entry points, process components or UIs.
 
 ## TODO
 
-- test cases
-- use requires
-- use noArgs for jpa => and remove the unnecessary constructors
-- add APM too
+- ability to change a config in the draft, which recalcs discounts and price
+- create create pdf
+- accept offer => event to billing
 
 - ok, we want pricing to listen to draft, and we dont want to orchestrate that from the UI. or do we?
 - prices: update rather than just insert
@@ -155,10 +154,8 @@ Also known as entry points, process components or UIs.
 - output
 - requisition orders
 - replace my cors with quarkus cors
+- add APM too
 - make sales ui sexier
-- ability to change a config in the draft, which recalcs discounts and price
-- create create pdf
-- accept offer => event to billing
 - components diff for warning user after changing to a different product release
 - additional info - to hang stuff external to the contract onto components
 - billing publishes event to world to inform contract component that the contract is active?
@@ -168,7 +165,7 @@ Also known as entry points, process components or UIs.
 - add daily billing job
 - error handling - https://github.com/cloudstark/quarkus-zalando-problem-extension
 - https://quarkus.io/guides/rest-data-panache
-- transport requestId via kafka header and request scoped bean?
+- use noArgs for jpa => in pom, but hot deploy doesnt work with mods to entity class
 
 ## Blog
 

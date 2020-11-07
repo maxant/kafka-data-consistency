@@ -7,7 +7,7 @@ A component for dealing with partners
 From inside the partners folder, so that changes to the library are also hot deployed:
 
 ```
-mvn -f ../parent/pom.xml -pl ../partners clean quarkus:dev
+mvn quarkus:dev
 ```
 
 ## Packaging and running the application

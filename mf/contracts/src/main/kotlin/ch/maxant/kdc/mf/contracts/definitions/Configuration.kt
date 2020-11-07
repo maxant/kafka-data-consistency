@@ -1,6 +1,5 @@
 package ch.maxant.kdc.mf.contracts.definitions
 
-import org.apache.commons.lang3.Validate.isTrue
 import java.math.BigDecimal
 import java.time.LocalDate
 
@@ -11,20 +10,20 @@ abstract class Configuration<T> (
         val type: Class<T>
 ) {
     init {
-        isTrue(!name.equals(ConfigurableParameter.VOLUME) || listOf(Units.MILLILITRES).contains(units))
-        isTrue(!name.equals(ConfigurableParameter.QUANTITY) || listOf(Units.PIECES).contains(units))
-        isTrue(!name.equals(ConfigurableParameter.WEIGHT) || listOf(Units.GRAMS).contains(units))
-        isTrue(!name.equals(ConfigurableParameter.MATERIAL) || listOf(Units.NONE).contains(units))
-        isTrue(!name.equals(ConfigurableParameter.FAT_CONTENT) || listOf(Units.PERCENT).contains(units))
-        isTrue(!name.equals(ConfigurableParameter.SPACES) || listOf(Units.NONE).contains(units))
+        require(name != ConfigurableParameter.VOLUME || listOf(Units.MILLILITRES).contains(units))
+        require(name != ConfigurableParameter.QUANTITY || listOf(Units.PIECES).contains(units))
+        require(name != ConfigurableParameter.WEIGHT || listOf(Units.GRAMS).contains(units))
+        require(name != ConfigurableParameter.MATERIAL || listOf(Units.NONE).contains(units))
+        require(name != ConfigurableParameter.FAT_CONTENT || listOf(Units.PERCENT).contains(units))
+        require(name != ConfigurableParameter.SPACES || listOf(Units.NONE).contains(units))
 
         if(type == Int::class.java) {
-            isTrue(Integer.valueOf(0).compareTo((value as Integer).toInt()) <= 0)
+            require(Integer.valueOf(0) <= (value as Integer).toInt())
         } else {
             when (type) {
-                BigDecimal::class.java -> isTrue(BigDecimal.ZERO.compareTo(value as BigDecimal) <= 0)
-                Material::class.java -> isTrue(Material.values().contains(value as Material))
-                else -> throw AssertionError("unknown type " + type)
+                BigDecimal::class.java -> require(BigDecimal.ZERO <= value as BigDecimal)
+                Material::class.java -> require(Material.values().contains(value as Material))
+                else -> throw AssertionError("unknown type $type")
             }
         }
     }

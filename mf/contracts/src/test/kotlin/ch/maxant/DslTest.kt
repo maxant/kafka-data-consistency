@@ -48,11 +48,11 @@ class DslTest {
         }
 
         assertEquals("""
-            {"type":"CookiesMilkshake","VOLUME":"1000","children":[{"type":"Milk","VOLUME":"950","FAT_CONTENT":"6","MATERIAL":"MILK","children":[]},{"type":"Cookies","WEIGHT":"45","children":[{"type":"Butter","WEIGHT":"15","MATERIAL":"BUTTER","children":[]},{"type":"Sugar","WEIGHT":"15","MATERIAL":"SUGAR","children":[]},{"type":"Flour","WEIGHT":"15","MATERIAL":"FLOUR","children":[]}]},{"type":"GlassBottle","VOLUME":"1000","MATERIAL":"GLASS","children":[]}]}
+            {"type":"Milkshake","VOLUME":"1000","children":[{"type":"Milk","VOLUME":"950","FAT_CONTENT":"6","MATERIAL":"MILK","children":[]},{"type":"Cookies","WEIGHT":"45","children":[{"type":"Butter","WEIGHT":"15","MATERIAL":"BUTTER","children":[]},{"type":"Sugar","WEIGHT":"15","MATERIAL":"SUGAR","children":[]},{"type":"Flour","WEIGHT":"15","MATERIAL":"FLOUR","children":[]}]},{"type":"GlassBottle","VOLUME":"1000","MATERIAL":"GLASS","children":[]}]}
         """.trimIndent(), cookiesMilkshake.json())
 
         assertEquals("""
-            {"type":"Pallet","SPACES":"100","QUANTITY":"50","MATERIAL":"WOOD","children":[{"type":"CardboardBox","SPACES":"10","QUANTITY":"10","MATERIAL":"CARDBOARD","children":[{"type":"CookiesMilkshake","VOLUME":"1000","children":[{"type":"Milk","VOLUME":"950","FAT_CONTENT":"6","MATERIAL":"MILK","children":[]},{"type":"Cookies","WEIGHT":"45","children":[{"type":"Butter","WEIGHT":"15","MATERIAL":"BUTTER","children":[]},{"type":"Sugar","WEIGHT":"15","MATERIAL":"SUGAR","children":[]},{"type":"Flour","WEIGHT":"15","MATERIAL":"FLOUR","children":[]}]},{"type":"GlassBottle","VOLUME":"1000","MATERIAL":"GLASS","children":[]}]}]}]}
+            {"type":"Pallet","SPACES":"100","QUANTITY":"50","MATERIAL":"WOOD","children":[{"type":"CardboardBox","SPACES":"10","QUANTITY":"10","MATERIAL":"CARDBOARD","children":[{"type":"Milkshake","VOLUME":"1000","children":[{"type":"Milk","VOLUME":"950","FAT_CONTENT":"6","MATERIAL":"MILK","children":[]},{"type":"Cookies","WEIGHT":"45","children":[{"type":"Butter","WEIGHT":"15","MATERIAL":"BUTTER","children":[]},{"type":"Sugar","WEIGHT":"15","MATERIAL":"SUGAR","children":[]},{"type":"Flour","WEIGHT":"15","MATERIAL":"FLOUR","children":[]}]},{"type":"GlassBottle","VOLUME":"1000","MATERIAL":"GLASS","children":[]}]}]}]}
         """.trimIndent(), pallet.json())
     }
 }
