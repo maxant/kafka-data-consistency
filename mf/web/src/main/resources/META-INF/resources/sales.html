@@ -128,7 +128,7 @@ function sse(requestId, self) {
     self.source.onmessage = function (event) {
         console.log(event);
         let msg = JSON.parse(event.data);
-        if(msg.event == "DRAFT_CREATED") {
+        if(msg.event == "CREATED_DRAFT") {
             self.model.draft.contract = msg.payload.contract;
             self.model.draft.pack = msg.payload.pack;
         } else if(msg.event == "UPDATED_PRICES") {
@@ -137,8 +137,8 @@ function sse(requestId, self) {
                 addPrice(self.model.draft.pack, k, v);
             });
             self.timeTaken = new Date().getTime() - self.start;
-        } else if(msg.event == "CASE_CHANGED") {
-            if(msg.command == "CREATE_TASK" || msg.command == "UPDATE_TASK") {
+        } else if(msg.event == "CHANGED_CASE") {
+            if(msg.originalCommand == "CREATE_TASK" || msg.originalCommand == "UPDATE_TASK") {
                 // TODO refresh area that show tasks related to this sales case
             }
         } else if(msg.event == "ERROR") {

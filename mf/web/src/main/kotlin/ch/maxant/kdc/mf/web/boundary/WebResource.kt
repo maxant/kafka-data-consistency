@@ -6,6 +6,10 @@ import ch.maxant.kdc.mf.library.REQUEST_ID
 import ch.maxant.kdc.mf.library.RequestId
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.subscription.MultiEmitter
+import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecordMetadata
+import org.apache.kafka.common.header.Header
+import org.apache.kafka.common.header.Headers
+import org.apache.kafka.common.header.internals.RecordHeaders
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import org.eclipse.microprofile.reactive.messaging.Incoming
 import org.eclipse.microprofile.reactive.messaging.Message
@@ -60,12 +64,17 @@ class WebResource {
     private fun process(message: Message<String>): CompletionStage<*> {
         log.info("handling message ${context.requestId}")
 
-        val json = """
-            { 
-              "event": "${context.event}",
-              "payload": ${message.payload}
-            }
-        """.trimIndent()
+        var headers = (message
+                .getMetadata(IncomingKafkaRecordMetadata::class.java)
+                .orElse(null)
+                ?.headers?: emptyList<Header>())
+                .toList()
+                .map { """ "${it.key()}": "${String(it.value())}" """ }
+                .joinToString()
+        headers = if(headers.isEmpty()) "" else "$headers,"
+
+
+        val json = """{ $headers "payload": ${message.payload} }"""
 
         sendToSubscribers(context.requestId, json)
         return CompletableFuture.completedFuture(Unit)

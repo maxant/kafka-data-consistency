@@ -124,8 +124,9 @@ Also known as entry points, process components or UIs.
   - UPDATE_TASK (cases-commands)
 - Events (all have the attribute "event" at root level)
   - ERROR (errors)
-  - CASE_CHANGED (cases-events)
-  - DRAFT_CREATED (event-bus)
+  - CHANGED_CASE (cases-events)
+  - CREATED_DRAFT (event-bus)
+  - UPDATED_DRAFT (event-bus)
   - UPDATED_PRICES (event-bus)
 
 ## Links
@@ -140,6 +141,8 @@ Also known as entry points, process components or UIs.
 ## TODO
 
 - ability to change a config in the draft, which recalcs discounts and price
+- validate within limits of product
+- publish product limits with rest
 - create create pdf
 - accept offer => event to billing
 

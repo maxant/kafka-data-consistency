@@ -1,10 +1,10 @@
 package ch.maxant.kdc.mf.contracts.control
 
-import ch.maxant.kdc.mf.contracts.dto.Draft
+import ch.maxant.kdc.mf.contracts.dto.*
 import ch.maxant.kdc.mf.library.MessageBuilder
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
-import java.util.*
+import org.jboss.logging.Logger
 import java.util.concurrent.CompletableFuture
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.event.Observes
@@ -30,9 +30,14 @@ class EventBus {
     @Inject
     private lateinit var somethingToSendEvent: javax.enterprise.event.Event<SomethingToSend>
 
-    fun publish(draft: Draft) {
+    val log: Logger = Logger.getLogger(this.javaClass)
 
-        send(eventBus, draft.contract.id, draft, event = "DRAFT_CREATED")
+    fun publish(draft: Draft) {
+        send(eventBus, draft.contract.id, draft, event = "CREATED_DRAFT")
+    }
+
+    fun publish(updatedDraft: UpdatedDraft) {
+        send(eventBus, updatedDraft.contract.id, updatedDraft, event = "UPDATED_DRAFT")
     }
 
     fun publish(createCaseCommand: CreateCaseCommand) {
@@ -49,6 +54,7 @@ class EventBus {
         // since this is happening async after the transaction, and we don't return anything,
         // we just pass a new CompletableFuture and don't care what happens with it
         sts.emitter.send(messageBuilder.build(sts.key, sts.value, CompletableFuture(), sts.command, sts.event))
+        log.info("published ${sts.command?:sts.event}")
     }
 }
 
@@ -59,7 +65,3 @@ private data class SomethingToSend(val emitter: Emitter<String>,
                                    val command: String?,
                                    val event: String?)
 
-data class CreateCaseCommand(
-        val referenceId: UUID,
-        val caseType: String = "SALES"
-)

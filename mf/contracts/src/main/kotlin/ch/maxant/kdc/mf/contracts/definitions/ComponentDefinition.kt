@@ -7,8 +7,15 @@ abstract class ComponentDefinition(
         val configs: List<Configuration<*>>,
         val children: List<ComponentDefinition>
 ) {
-    val componentDefinitionId = this.javaClass.simpleName
+    val componentDefinitionId: String = this.javaClass.simpleName
     var componentId: UUID? = null
+
+    /** @return a list containing this element and all its children, recursively */
+    fun getThisAndAllChildren(list: MutableList<ComponentDefinition> = mutableListOf()): List<ComponentDefinition> {
+        list.add(this)
+        children.forEach { it.getThisAndAllChildren(list) }
+        return list
+    }
 }
 
 class Milk(quantityMl: Int, fatContentPercent: BigDecimal) : ComponentDefinition(

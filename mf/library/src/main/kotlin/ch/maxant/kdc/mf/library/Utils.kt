@@ -10,5 +10,8 @@ fun doByHandlingValidationExceptions(fn: () -> Response): Response =
         // ResteasyViolationExceptionMapper doesnt handle ValidationException, and we don't want to create
         // some RestEasy*Impl Exception, so lets keep it simple, and do a mapping here like this:
         Response.status(400).entity("""{"class": "${e.javaClass}", "error": "${e.message}"}""").build()
+    } catch (e: IllegalArgumentException) {
+        // comes out of kotlin's require
+        Response.status(400).entity("""{"class": "${e.javaClass}", "error": "${e.message}"}""").build()
     }
 

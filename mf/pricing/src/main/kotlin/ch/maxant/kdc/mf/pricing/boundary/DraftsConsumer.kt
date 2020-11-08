@@ -45,7 +45,7 @@ class DraftsConsumer(
     fun process(msg: Message<String>): CompletionStage<*> {
         val draft = om.readTree(msg.payload)
         return when (context.event) {
-            "DRAFT_CREATED" -> {
+            "CREATED_DRAFT" -> {
                 log.info("pricing draft")
                 pricingService
                     .priceDraft(draft)
