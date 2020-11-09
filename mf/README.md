@@ -142,7 +142,7 @@ Also known as entry points, process components or UIs.
 
 - ability to change a config in the draft, which recalcs discounts and price
 - validate within limits of product
-- publish product limits with rest
+- publish product limits with rest => no instead, we publish them in the initial draft. they are set inside the component definitions
 - create create pdf
 - accept offer => event to billing
 
@@ -179,3 +179,4 @@ Also known as entry points, process components or UIs.
   - error topic - acts as a DLQ, but also one for sending errors back to the client
 - kafka interfaces are analagous to rest interfaces.
   - security? check jwt on incoming message?
+- publish product limits with rest VS we publish them in the initial draft. they are set inside the component definitions

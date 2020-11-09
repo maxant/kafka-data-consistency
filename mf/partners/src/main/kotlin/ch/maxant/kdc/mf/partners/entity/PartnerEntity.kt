@@ -4,12 +4,13 @@ import org.hibernate.annotations.Type
 import java.time.LocalDate
 import java.util.*
 import javax.persistence.*
+import ch.maxant.kdc.mf.partners.entity.PartnerEntity.NqSelectByFirstNameOrLastNameOrDobOrEmailOrPhone as NqSByFNOrLNOrDobOrEOrP
 
 @Entity
 @Table(name = "T_PARTNERS")
 @NamedQueries(
-        NamedQuery(name = PartnerEntity.NqSelectByFirstNameOrLastNameOrDobOrEmailOrPhone.name,
-                query = PartnerEntity.NqSelectByFirstNameOrLastNameOrDobOrEmailOrPhone.query)
+        NamedQuery(name = NqSByFNOrLNOrDobOrEOrP.name,
+                query = NqSByFNOrLNOrDobOrEOrP.query)
 )
 class PartnerEntity(
 
@@ -40,7 +41,7 @@ class PartnerEntity(
     constructor() : this(UUID.randomUUID(), "", "", PersonType.PERSON, LocalDate.now(), "", "")
 
     object NqSelectByFirstNameOrLastNameOrDobOrEmailOrPhone {
-        const val name = "selectByFirstNameOrLastNameOrDobOrEmailOrPhone"
+        const val name = "selectPartnerByFirstNameOrLastNameOrDobOrEmailOrPhone"
         const val firstNameParam = "firstName"
         const val lastNameParam = "lastName"
         const val dobParam = "dob"
@@ -63,12 +64,12 @@ class PartnerEntity(
           dob: LocalDate?,
           email: String?,
           phone: String?): List<PartnerEntity> {
-            return em.createNamedQuery(NqSelectByFirstNameOrLastNameOrDobOrEmailOrPhone.name, PartnerEntity::class.java)
-                    .setParameter(NqSelectByFirstNameOrLastNameOrDobOrEmailOrPhone.firstNameParam, firstName?:"")
-                    .setParameter(NqSelectByFirstNameOrLastNameOrDobOrEmailOrPhone.lastNameParam,  lastName?:"")
-                    .setParameter(NqSelectByFirstNameOrLastNameOrDobOrEmailOrPhone.dobParam,       dob?:LocalDate.now())
-                    .setParameter(NqSelectByFirstNameOrLastNameOrDobOrEmailOrPhone.emailParam, email?:"")
-                    .setParameter(NqSelectByFirstNameOrLastNameOrDobOrEmailOrPhone.phoneParam, phone?:"")
+            return em.createNamedQuery(NqSByFNOrLNOrDobOrEOrP.name, PartnerEntity::class.java)
+                    .setParameter(NqSByFNOrLNOrDobOrEOrP.firstNameParam, firstName?:"")
+                    .setParameter(NqSByFNOrLNOrDobOrEOrP.lastNameParam,  lastName?:"")
+                    .setParameter(NqSByFNOrLNOrDobOrEOrP.dobParam,       dob?:LocalDate.now())
+                    .setParameter(NqSByFNOrLNOrDobOrEOrP.emailParam,     email?:"")
+                    .setParameter(NqSByFNOrLNOrDobOrEOrP.phoneParam,     phone?:"")
                     .resultList
         }
     }

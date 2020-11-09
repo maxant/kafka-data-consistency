@@ -4,13 +4,14 @@ import org.hibernate.annotations.Type
 import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.*
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.Id
-import javax.persistence.Table
+import javax.persistence.*
 
 @Entity
 @Table(name = "T_PRICES")
+@NamedQueries(
+        NamedQuery(name = PriceEntity.NqDeleteByContractId.name,
+                query = PriceEntity.NqDeleteByContractId.query)
+)
 open class PriceEntity( // add open, rather than rely on maven plugin, because @QuarkusTest running in IntelliJ seems to think its final
 
     @Id
@@ -42,4 +43,18 @@ open class PriceEntity( // add open, rather than rely on maven plugin, because @
     var tax: BigDecimal
 ) {
     constructor() : this(UUID.randomUUID(), UUID.randomUUID(), LocalDateTime.now(), LocalDateTime.now().plusDays(300), UUID.randomUUID(), "", BigDecimal.TEN, BigDecimal.ONE)
+
+    object NqDeleteByContractId {
+        const val name = "deletePriceByContractId"
+        const val contractIdParam = "contractId"
+        const val query = "from PriceEntity p where p.contractId = :$contractIdParam"
+    }
+
+    object Queries {
+        fun deleteByContractId(em: EntityManager, contractId: UUID): Int {
+            return em.createNamedQuery(NqDeleteByContractId.name, PriceEntity::class.java)
+                    .setParameter(NqDeleteByContractId.contractIdParam, contractId)
+                    .executeUpdate()
+        }
+    }
 }

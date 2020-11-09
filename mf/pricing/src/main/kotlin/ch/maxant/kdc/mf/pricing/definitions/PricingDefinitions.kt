@@ -1,7 +1,7 @@
 package ch.maxant.kdc.mf.pricing.definitions
 
 import ch.maxant.kdc.mf.pricing.definitions.Prices.findRule
-import ch.maxant.kdc.mf.pricing.dto.Component
+import ch.maxant.kdc.mf.pricing.dto.TreeComponent
 import ch.maxant.kdc.mf.pricing.dto.Configuration
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -16,7 +16,7 @@ data class Price(val total: BigDecimal, val tax: BigDecimal) {
     fun add(p: Price) = Price(this.total.add(p.total), this.tax.add(p.tax))
 }
 
-private val cardboardBox = fun(component: Component): Price {
+private val cardboardBox = fun(component: TreeComponent): Price {
     /*
       {
         "name": "SPACES",
@@ -40,7 +40,7 @@ private val cardboardBox = fun(component: Component): Price {
     } else throw MissingRuleException("unexpected spaces for cardboard box: ${spacesConfig.value}")
 }
 
-private val milk = fun(component: Component): Price {
+private val milk = fun(component: TreeComponent): Price {
     /*
               {
                 "name": "VOLUME",
@@ -63,7 +63,7 @@ private val milk = fun(component: Component): Price {
     return roundAddTaxAndMakePrice(net)
 }
 
-private val butter = fun(component: Component): Price {
+private val butter = fun(component: TreeComponent): Price {
     /*
                  {
                     "name": "WEIGHT",
@@ -78,7 +78,7 @@ private val butter = fun(component: Component): Price {
     return roundAddTaxAndMakePrice(net)
 }
 
-private val sugar = fun(component: Component): Price {
+private val sugar = fun(component: TreeComponent): Price {
     /*
                   {
                     "name": "WEIGHT",
@@ -93,7 +93,7 @@ private val sugar = fun(component: Component): Price {
     return roundAddTaxAndMakePrice(net)
 }
 
-private val flour = fun(component: Component): Price {
+private val flour = fun(component: TreeComponent): Price {
     /*
                 "configs": [
                   {
@@ -109,7 +109,7 @@ private val flour = fun(component: Component): Price {
     return roundAddTaxAndMakePrice(net)
 }
 
-private val glassBottle = fun(component: Component): Price {
+private val glassBottle = fun(component: TreeComponent): Price {
     /*
               {
                 "name": "VOLUME",
@@ -125,11 +125,11 @@ private val glassBottle = fun(component: Component): Price {
     } else throw MissingRuleException("unexpected volume for glass bottle : ${volumeConfig.value}")
 }
 
-private val sumChildren = fun(component: Component) =
+private val sumChildren = fun(component: TreeComponent) =
         component.children.map { findRule(it)(it) }
                 .reduce { acc, price -> acc.add(price) }
 
-private fun getConfig(component: Component, name: String, expectedUnits: String): Configuration {
+private fun getConfig(component: TreeComponent, name: String, expectedUnits: String): Configuration {
     val config = component.configs.firstOrNull { it.name == name } ?: throw MissingConfigException("component ${component.componentDefinitionId} is missing config for $name")
     require(config.units == expectedUnits) { "$name has unexpected units ${config.units} instead of $expectedUnits" }
     return config
@@ -146,7 +146,7 @@ class MissingConfigException(msg: String) : RuntimeException(msg)
 class MissingRuleException(msg: String) : RuntimeException(msg)
 
 object Prices {
-    fun findRule(component: Component): (Component) -> Price {
+    fun findRule(component: TreeComponent): (TreeComponent) -> Price {
         return when (component.componentDefinitionId) {
             "CardboardBox" -> cardboardBox // its not a leaf, but has its own pricing component, as well as that of the children
             "Milk" -> milk

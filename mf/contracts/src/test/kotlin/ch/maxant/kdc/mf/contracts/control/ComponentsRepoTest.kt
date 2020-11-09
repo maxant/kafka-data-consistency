@@ -59,7 +59,18 @@ class ComponentsRepoTest {
             sut.updateConfig(draft.contract.id, milk.componentId!!, ConfigurableParameter.FAT_CONTENT, "7")
         }
 
-        // then
+        // then - check whats in the result
+        val comps = c.filter { it.componentDefinitionId == milk.componentDefinitionId }
+        assertEquals(1, comps.size)
+        assertEquals(milk.componentDefinitionId, comps[0].componentDefinitionId)
+        assertEquals(milk.componentId, comps[0].id)
+        assertEquals(milk.configs.filterNot { it.name == ConfigurableParameter.FAT_CONTENT }, comps[0].configs.filterNot { it.name == ConfigurableParameter.FAT_CONTENT })
+        val newMilk = comps[0].configs.first { it.name == ConfigurableParameter.FAT_CONTENT }
+        assertEquals(BigDecimal("7"), newMilk.value)
+        assertEquals(ConfigurableParameter.FAT_CONTENT, newMilk.name)
+        assertEquals(Units.PERCENT, newMilk.units)
+
+        // then - check whats in the DB
         val component = em.find(ComponentEntity::class.java, milk.componentId)
         val configs = om.readValue<ArrayList<Configuration<*>>>(component.configuration)
         val config = configs.find { it.name == ConfigurableParameter.FAT_CONTENT } !!
@@ -67,10 +78,7 @@ class ComponentsRepoTest {
         assertEquals(BigDecimal::class.java, config.clazz)
         assertEquals(ConfigurableParameter.FAT_CONTENT, config.name)
         assertEquals(Units.PERCENT, config.units)
-        assertEquals(config.clazz, c.clazz)
-        assertEquals(config.name, c.name)
-        assertEquals(config.value, c.value)
-        assertEquals(config.units, c.units)
+        assertEquals(8, c.size)
     }
 
 }

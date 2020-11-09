@@ -28,9 +28,9 @@ class CaseEntity(
     constructor() : this(UUID.randomUUID(), UUID.randomUUID(), CaseType.SALES)
 
     object NqSelectByReferenceId {
-        const val name = "selectByReferenceId"
+        const val name = "selectCaseByReferenceId"
         const val referenceIdParam = "referenceId"
-        const val query = "from CaseEntity c where c.referenceId = :" + referenceIdParam
+        const val query = "from CaseEntity c where c.referenceId = :$referenceIdParam"
     }
 
     object Queries {

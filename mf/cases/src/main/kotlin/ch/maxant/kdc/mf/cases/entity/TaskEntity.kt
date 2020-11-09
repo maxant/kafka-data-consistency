@@ -34,9 +34,9 @@ class TaskEntity(
     constructor() : this(UUID.randomUUID(), UUID.randomUUID(), "", "", "", State.OPEN)
 
     object NqSelectByCaseId {
-        const val name = "selectByCaseId"
+        const val name = "selectTaskByCaseId"
         const val caseIdParam = "caseId"
-        const val query = "from TaskEntity t where t.caseId = :" + caseIdParam
+        const val query = "from TaskEntity t where t.caseId = :$caseIdParam"
     }
 
     object Queries {

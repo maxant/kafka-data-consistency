@@ -7,6 +7,9 @@ import javax.persistence.*
 
 @Entity
 @Table(name = "T_COMPONENTS")
+@NamedQueries(
+        NamedQuery(name = ComponentEntity.NqSelectByContractId.name, query = ComponentEntity.NqSelectByContractId.query)
+)
 open class ComponentEntity( // add open, rather than rely on maven plugin, because @QuarkusTest running in IntelliJ seems to think its final
 
     @Id
@@ -36,4 +39,17 @@ open class ComponentEntity( // add open, rather than rely on maven plugin, becau
     @Enumerated(EnumType.STRING)
     var productId: ProductId? = null
 
+    object NqSelectByContractId {
+        const val name = "selectComponentByContractId"
+        const val contractIdParam = "contractId"
+        const val query = "from ComponentEntity c where c.contractId = :$contractIdParam"
+    }
+
+    object Queries {
+        fun selectByContractId(em: EntityManager, contractId: UUID): List<ComponentEntity> {
+            return em.createNamedQuery(NqSelectByContractId.name, ComponentEntity::class.java)
+                    .setParameter(NqSelectByContractId.contractIdParam, contractId)
+                    .resultList
+        }
+    }
 }

@@ -1,10 +1,12 @@
 package ch.maxant.kdc.mf.pricing.dto;
 
-data class Component(
+import java.util.*
+
+data class TreeComponent(
         val componentId: String,
         val componentDefinitionId: String,
         val configs: List<Configuration>,
-        val children: List<Component>
+        val children: List<TreeComponent>
 ) {
     fun accept(visitor: Visitor) {
         visitor.visit(this)
@@ -13,5 +15,12 @@ data class Component(
 }
 
 interface Visitor {
-    fun visit(component: Component)
+    fun visit(component: TreeComponent)
 }
+
+data class FlatComponent(
+        val id: UUID,
+        val parentId: UUID?,
+        val componentDefinitionId: String,
+        val configs: List<Configuration>
+)

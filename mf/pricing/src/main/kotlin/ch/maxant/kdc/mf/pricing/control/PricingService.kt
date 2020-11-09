@@ -3,12 +3,17 @@ package ch.maxant.kdc.mf.pricing.control
 import ch.maxant.kdc.mf.library.AsyncContextAware
 import ch.maxant.kdc.mf.pricing.definitions.Price
 import ch.maxant.kdc.mf.pricing.definitions.Prices
-import ch.maxant.kdc.mf.pricing.dto.Component
+import ch.maxant.kdc.mf.pricing.dto.Configuration
+import ch.maxant.kdc.mf.pricing.dto.FlatComponent
+import ch.maxant.kdc.mf.pricing.dto.TreeComponent
 import ch.maxant.kdc.mf.pricing.dto.Visitor
 import ch.maxant.kdc.mf.pricing.entity.PriceEntity
+import ch.maxant.kdc.mf.pricing.entity.PriceEntity.Queries.deleteByContractId
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import org.jboss.logging.Logger
+import java.lang.IllegalArgumentException
 import java.time.LocalDateTime
 import java.util.*
 import java.util.concurrent.CompletableFuture.completedFuture
@@ -35,19 +40,55 @@ class PricingService(
         // TODO replace with DTO
         val contract = draft.get("contract")
         val contractId = UUID.fromString(contract.get("id").asText())
-        val pack = draft.get("pack").toString()
         val start = LocalDateTime.parse(contract.get("start").asText())
         val end = LocalDateTime.parse(contract.get("end").asText())
-        val root = om.readValue(pack, Component::class.java)
-
-        return completedFuture(price(contractId, start, end, root))
+        if(draft.has("pack")) {
+            val pack = draft.get("pack").toString()
+            val root = om.readValue(pack, TreeComponent::class.java)
+            return completedFuture(priceDraft(contractId, start, end, root))
+        } else if(draft.has("allComponents")) {
+            val allComponents = draft.get("allComponents").toString()
+            val list = om.readValue<ArrayList<FlatComponent>>(allComponents)
+            return completedFuture(priceDraft(contractId, start, end, toTree(list)))
+        } else {
+            throw IllegalArgumentException("unexpected draft structure")
+        }
     }
 
-    private fun price(contractId: UUID, start: LocalDateTime, end: LocalDateTime, root: Component): PricingResult {
+    fun toTree(list: List<FlatComponent>): TreeComponent {
+
+        data class MutableTreeComponent(
+                val componentId: UUID,
+                val parentId: UUID?,
+                val componentDefinitionId: String,
+                val configs: List<Configuration>,
+                val children: MutableList<MutableTreeComponent> = mutableListOf()
+        )
+
+        // map to temporary structure that contains all info (see class just above)
+        val byId = list.map { MutableTreeComponent(it.id, it.parentId, it.componentDefinitionId, it.configs) }
+                       .map { it.componentId to it }
+                       .toMap()
+
+        // add to kids
+        byId.values.forEach { byId[it.parentId]?.children?.add(it) }
+
+        fun map(node: MutableTreeComponent): TreeComponent {
+            val children = node.children.map { map(it) }
+            return TreeComponent(node.componentId.toString(), node.componentDefinitionId, node.configs, children)
+        }
+
+        return map(byId.values.find { it.parentId == null } !!)
+    }
+
+    private fun priceDraft(contractId: UUID, start: LocalDateTime, end: LocalDateTime, root: TreeComponent): PricingResult {
         log.info("starting to price individual components for contract $contractId...")
+
+        deleteByContractId(em, contractId) // start from scratch
+
         val prices = HashMap<UUID, Price>()
         root.accept(object: Visitor {
-            override fun visit(component: Component) {
+            override fun visit(component: TreeComponent) {
                 val componentId = UUID.fromString(component.componentId)
 
                 val rule = Prices.findRule(component)

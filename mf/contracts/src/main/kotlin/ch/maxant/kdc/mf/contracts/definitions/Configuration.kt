@@ -27,6 +27,31 @@ abstract class Configuration<T> (
             }
         }
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Configuration<*>) return false
+
+        if (name != other.name) return false
+        if (value != other.value) return false
+        if (units != other.units) return false
+        if (clazz != other.clazz) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + (value?.hashCode() ?: 0)
+        result = 31 * result + units.hashCode()
+        result = 31 * result + clazz.hashCode()
+        return result
+    }
+
+    override fun toString(): String {
+        return "Configuration(name=$name, value=$value, units=$units, clazz=$clazz)"
+    }
+
 }
 
 open class ConfigurationDefinition<T>(val units: Units, val clazz: Class<T>) {

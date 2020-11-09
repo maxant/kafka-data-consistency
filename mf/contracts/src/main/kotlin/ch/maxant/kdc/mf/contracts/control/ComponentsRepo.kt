@@ -1,6 +1,7 @@
 package ch.maxant.kdc.mf.contracts.control
 
 import ch.maxant.kdc.mf.contracts.definitions.*
+import ch.maxant.kdc.mf.contracts.dto.Component
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -32,12 +33,14 @@ class ComponentsRepo(
         component.children.forEach { saveInitialDraft(contractId, e.id, it) }
     }
 
-    fun updateConfig(contractId: UUID, componentId: UUID, param: ConfigurableParameter, newValue: String): Configuration<*> {
-        val component = em.find(ComponentEntity::class.java, componentId)
-        require(contractId == component.contractId) { "contract id doens't match" }
+    fun updateConfig(contractId: UUID, componentId: UUID, param: ConfigurableParameter, newValue: String): List<Component> {
+        val components = ComponentEntity.Queries.selectByContractId(em, contractId)
 
+        val component = components.find { it.id == componentId }
+        require(component != null) { "component with id $componentId doens't appear to belong to contract $contractId" }
         val configs = om.readValue<ArrayList<Configuration<*>>>(component.configuration)
-        val config = configs.find { it.name == param } !!
+        val config = configs.find { it.name == param }
+        require(config != null) { "config with name $param doens't appear to belong to component $componentId" }
 
         when {
             DateConfigurationDefinition.matches(config) -> (config as DateConfiguration).value = LocalDate.parse(newValue)
@@ -54,6 +57,6 @@ class ComponentsRepo(
 
         component.configuration = om.writeValueAsString(configs)
 
-        return config
+        return components.map { Component(om, it) }
     }
 }

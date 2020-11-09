@@ -1,6 +1,6 @@
 package ch.maxant.kdc.mf.pricing.definitions
 
-import ch.maxant.kdc.mf.pricing.dto.Component
+import ch.maxant.kdc.mf.pricing.dto.TreeComponent
 import ch.maxant.kdc.mf.pricing.dto.Configuration
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -13,31 +13,31 @@ class PricingDefinitionsTest {
 
     @Test
     fun unknownLeafComponent() {
-        val milk = Component("1", "Parent", emptyList(), listOf(Component(",2", "UnknownChild", emptyList(), emptyList())))
+        val milk = TreeComponent("1", "Parent", emptyList(), listOf(TreeComponent(",2", "UnknownChild", emptyList(), emptyList())))
         assertEquals("no pricing rule found for leaf component UnknownChild", assertThrows<ValidationException> { Prices.findRule(milk)(milk) }.message)
     }
 
     @Test
     fun milkNoVolume() {
-        val milk = Component("1", "Milk", emptyList(), emptyList())
+        val milk = TreeComponent("1", "Milk", emptyList(), emptyList())
         assertEquals("component Milk is missing config for VOLUME", assertThrows<MissingConfigException> { Prices.findRule(milk)(milk) }.message)
     }
 
     @Test
     fun milkVolumeWrongUnits() {
-        val milk = Component("1", "Milk", listOf(Configuration("VOLUME", "100", "ASDF")), emptyList())
+        val milk = TreeComponent("1", "Milk", listOf(Configuration("VOLUME", "100", "ASDF")), emptyList())
         assertEquals("VOLUME has unexpected units ASDF instead of MILLILITRES", assertThrows<IllegalArgumentException> { Prices.findRule(milk)(milk) }.message)
     }
 
     @Test
     fun milkNoFat() {
-        val milk = Component("1", "Milk", listOf(Configuration("VOLUME", "100", "MILLILITRES")), emptyList())
+        val milk = TreeComponent("1", "Milk", listOf(Configuration("VOLUME", "100", "MILLILITRES")), emptyList())
         assertEquals("component Milk is missing config for FAT_CONTENT", assertThrows<MissingConfigException> { Prices.findRule(milk)(milk) }.message)
     }
 
     @Test
     fun milkFatContentWrongUnits() {
-        val milk = Component("1", "Milk", listOf(Configuration("VOLUME", "100", "MILLILITRES"), Configuration("FAT_CONTENT", "6", "ASDF")), emptyList())
+        val milk = TreeComponent("1", "Milk", listOf(Configuration("VOLUME", "100", "MILLILITRES"), Configuration("FAT_CONTENT", "6", "ASDF")), emptyList())
         assertEquals("FAT_CONTENT has unexpected units ASDF instead of PERCENT", assertThrows<IllegalArgumentException> { Prices.findRule(milk)(milk) }.message)
     }
 
@@ -45,7 +45,7 @@ class PricingDefinitionsTest {
     fun milkGood() {
         // 100 ml => 0.40 + 0.1*6 = 1.00 => + tax = 1.08 total
         // + random 10 cents
-        val milk = Component("1", "Milk", listOf(Configuration("VOLUME", "100", "MILLILITRES"), Configuration("FAT_CONTENT", "6", "PERCENT")), emptyList())
+        val milk = TreeComponent("1", "Milk", listOf(Configuration("VOLUME", "100", "MILLILITRES"), Configuration("FAT_CONTENT", "6", "PERCENT")), emptyList())
         val price = Prices.findRule(milk)(milk)
         assertTrue(BigDecimal("1.08").compareTo(price.total) <= 0)
         assertTrue(BigDecimal("1.18").compareTo(price.total) >= 0)

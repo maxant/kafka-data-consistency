@@ -3,10 +3,7 @@ package ch.maxant.kdc.mf.contracts.boundary
 import ch.maxant.kdc.mf.contracts.control.ComponentsRepo
 import ch.maxant.kdc.mf.contracts.control.EventBus
 import ch.maxant.kdc.mf.contracts.definitions.*
-import ch.maxant.kdc.mf.contracts.dto.CreateCaseCommand
-import ch.maxant.kdc.mf.contracts.dto.Draft
-import ch.maxant.kdc.mf.contracts.dto.DraftRequest
-import ch.maxant.kdc.mf.contracts.dto.UpdatedConfigurationResult
+import ch.maxant.kdc.mf.contracts.dto.*
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractState
 import ch.maxant.kdc.mf.library.doByHandlingValidationExceptions
@@ -115,10 +112,11 @@ class DraftsResource(
         val contract = em.find(ContractEntity::class.java, contractId)
         require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
 
-        val updatedconfig = componentsRepo.updateConfig(contractId, componentId, ConfigurableParameter.valueOf(param), newValue)
+        val allComponents = componentsRepo.updateConfig(contractId, componentId, ConfigurableParameter.valueOf(param), newValue)
 
-        // TODO actually we need to provide a list of ALL components, so that it can recalc all prices
-        eventBus.publish(UpdatedConfigurationResult(contractId, componentId, listOf(updatedconfig)))
+        // instead of publishing the initial model based on definitions, which contain extra
+        // info like possible inputs, we publish a simpler model here
+        eventBus.publish(UpdatedDraft(contract, allComponents))
 
         Response.created(URI.create("/${contract.id}"))
                 .entity(contract)
