@@ -1,8 +1,30 @@
 package ch.maxant.kdc.mf.contracts.definitions
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.core.JsonToken
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.SerializerProvider
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer
+import com.fasterxml.jackson.databind.ser.std.StdSerializer
+import java.lang.IllegalArgumentException
+import java.lang.Integer.parseInt
 import java.math.BigDecimal
 import java.time.LocalDate
 
+
+/*
+
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.CLASS,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "c**")
+@JsonSerialize(using = ConfigurationSerializer::class)
+@JsonDeserialize(using = ConfigurationDeserializer::class)
+ */
 abstract class Configuration<T> (
         val name: ConfigurableParameter,
         var value: T,
@@ -52,6 +74,66 @@ abstract class Configuration<T> (
         return "Configuration(name=$name, value=$value, units=$units, clazz=$clazz)"
     }
 
+}
+
+class ConfigurationSerializer: StdSerializer<Configuration<*>>(Configuration::class.java) {
+    override fun serialize(value: Configuration<*>, gen: JsonGenerator, provider: SerializerProvider) {
+        gen.writeStartObject()
+        gen.writeStringField("c**", value.javaClass.simpleName)
+        gen.writeStringField("value", "${value.value}")
+        gen.writeStringField("units", "${value.units}")
+        gen.writeStringField("clazz", "${value.clazz.simpleName}")
+        gen.writeStringField("name", "${value.name}")
+        gen.writeEndObject()
+    }
+}
+
+class ConfigurationDeserializer: StdDeserializer<Configuration<*>>(Configuration::class.java) {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Configuration<*> {
+        if(p.currentToken == JsonToken.START_OBJECT) {
+            var value: String? = null
+            var units: Units? = null
+            var name: ConfigurableParameter? = null
+            var simpleName: String? = null
+            while(true) {
+                val nt = p.nextToken()
+                if(nt == JsonToken.FIELD_NAME) {
+                    val cn = p.currentName
+                    p.nextToken()
+                    val cv = p.text
+                    if(cn == "c**") {
+                        simpleName = cv
+                    } else if(cn == "value") {
+                        value = cv
+                    } else if(cn == "units") {
+                        units = Units.valueOf(cv)
+                    } else if(cn == "name") {
+                        name = ConfigurableParameter.valueOf(cv)
+                    } // else skip it
+                } else if(nt == JsonToken.END_OBJECT) {
+                    break
+                } else {
+                    throw IllegalArgumentException("wrong structure, unexpected token $nt")
+                }
+            }
+            return if(simpleName == DateConfiguration::class.java.simpleName) {
+                DateConfiguration(name!!, LocalDate.parse(value))
+            } else if(simpleName == StringConfiguration::class.java.simpleName) {
+                StringConfiguration(name!!, value!!)
+            } else if(simpleName == BigDecimalConfiguration::class.java.simpleName) {
+                BigDecimalConfiguration(name!!, BigDecimal(value), units!!)
+            } else if(simpleName == IntConfiguration::class.java.simpleName) {
+                IntConfiguration(name!!, parseInt(value), units!!)
+            } else if(simpleName == PercentConfiguration::class.java.simpleName) {
+                PercentConfiguration(name!!, BigDecimal(value))
+            } else if(simpleName == MaterialConfiguration::class.java.simpleName) {
+                MaterialConfiguration(name!!, Material.valueOf(value!!))
+            } else {
+                TODO()
+            }
+        }
+        throw IllegalArgumentException("expected start of object")
+    }
 }
 
 open class ConfigurationDefinition<T>(val units: Units, val clazz: Class<T>) {
@@ -107,5 +189,12 @@ class MaterialConfiguration (
         name: ConfigurableParameter,
         value: Material
 ) : Configuration<Material>(name, value, MaterialConfigurationDefinition.units, MaterialConfigurationDefinition.clazz)
+
+object PercentRangeConfigurationDefinition : ConfigurationDefinition<BigDecimal>(Units.PERCENT, BigDecimal::class.java)
+class PercentRangeConfiguration (
+        name: ConfigurableParameter,
+        minimum: BigDecimal,
+        val maximum: BigDecimal
+) : Configuration<BigDecimal>(name, minimum, PercentRangeConfigurationDefinition.units, PercentRangeConfigurationDefinition.clazz)
 
 

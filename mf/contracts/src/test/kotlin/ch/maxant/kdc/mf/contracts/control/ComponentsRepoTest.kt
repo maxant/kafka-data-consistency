@@ -10,6 +10,8 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import io.quarkus.test.junit.QuarkusTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import java.lang.IllegalArgumentException
 import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.*
@@ -50,13 +52,13 @@ class ComponentsRepoTest {
     }
 
     @Test
-    fun updateConfig() {
+    fun updateConfig_happy() {
         val draft = setup()
         val milk = draft.pack.getThisAndAllChildren().find { it.componentDefinitionId == Milk::class.java.simpleName } !!
 
         // when
         val c = flushed(em) {
-            sut.updateConfig(draft.contract.id, milk.componentId!!, ConfigurableParameter.FAT_CONTENT, "7")
+            sut.updateConfig(draft.contract.id, milk.componentId!!, ConfigurableParameter.FAT_CONTENT, "0.2")
         }
 
         // then - check whats in the result
@@ -66,7 +68,7 @@ class ComponentsRepoTest {
         assertEquals(milk.componentId, comps[0].id)
         assertEquals(milk.configs.filterNot { it.name == ConfigurableParameter.FAT_CONTENT }, comps[0].configs.filterNot { it.name == ConfigurableParameter.FAT_CONTENT })
         val newMilk = comps[0].configs.first { it.name == ConfigurableParameter.FAT_CONTENT }
-        assertEquals(BigDecimal("7"), newMilk.value)
+        assertEquals(BigDecimal("0.2"), newMilk.value)
         assertEquals(ConfigurableParameter.FAT_CONTENT, newMilk.name)
         assertEquals(Units.PERCENT, newMilk.units)
 
@@ -74,11 +76,21 @@ class ComponentsRepoTest {
         val component = em.find(ComponentEntity::class.java, milk.componentId)
         val configs = om.readValue<ArrayList<Configuration<*>>>(component.configuration)
         val config = configs.find { it.name == ConfigurableParameter.FAT_CONTENT } !!
-        assertEquals(BigDecimal("7"), config.value)
+        assertEquals(BigDecimal("0.2"), config.value)
         assertEquals(BigDecimal::class.java, config.clazz)
         assertEquals(ConfigurableParameter.FAT_CONTENT, config.name)
         assertEquals(Units.PERCENT, config.units)
         assertEquals(8, c.size)
+    }
+
+    @Test
+    fun updateConfig_illegalValue() {
+        val draft = setup()
+        val milk = draft.pack.getThisAndAllChildren().find { it.componentDefinitionId == Milk::class.java.simpleName } !!
+
+        // when / then
+        assertEquals("java.lang.IllegalArgumentException: Component configuration value 7 is not in the permitted set of values [0.2, 1.8, 3.5]",
+                assertThrows<IllegalArgumentException> { sut.updateConfig(draft.contract.id, milk.componentId!!, ConfigurableParameter.FAT_CONTENT, "7") }.message)
     }
 
 }

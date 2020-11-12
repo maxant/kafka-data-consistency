@@ -84,7 +84,8 @@ class PricingService(
     private fun priceDraft(contractId: UUID, start: LocalDateTime, end: LocalDateTime, root: TreeComponent): PricingResult {
         log.info("starting to price individual components for contract $contractId...")
 
-        deleteByContractId(em, contractId) // start from scratch
+        val deletedCount = deleteByContractId(em, contractId) // start from scratch
+        log.info("deleted $deletedCount existing price rows for contract $contractId")
 
         val prices = HashMap<UUID, Price>()
         root.accept(object: Visitor {

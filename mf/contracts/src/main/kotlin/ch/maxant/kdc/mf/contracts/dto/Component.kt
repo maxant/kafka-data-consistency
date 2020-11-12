@@ -13,8 +13,10 @@ data class Component(
         val componentDefinitionId: String,
         val configs: List<Configuration<*>>
 ) {
-    constructor(om: ObjectMapper, entity: ComponentEntity): this(
-            entity.id, entity.parentId, entity.componentDefinitionId,
-    om.readValue<ArrayList<Configuration<*>>>(entity.configuration)
-            )
+    constructor(om: ObjectMapper, entity: ComponentEntity) : this(
+            entity.id,
+            entity.parentId,
+            entity.componentDefinitionId,
+            om.readValue<ArrayList<Configuration<*>>>(entity.configuration)
+    )
 }

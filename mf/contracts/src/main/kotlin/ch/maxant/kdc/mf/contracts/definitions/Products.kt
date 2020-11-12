@@ -34,7 +34,7 @@ object Products {
 
     private fun cookiesMilkshake(quantityMl: Int) = Milkshake(ProductId.COOKIES_MILKSHAKE, quantityMl) { qty ->
         listOf(
-                Milk(95 * qty / 100, BigDecimal(6)),
+                Milk(95 * qty / 100, BigDecimal("1.8")),
                 Cookies(45 * (qty / 1000)),
                 GlassBottle(qty)
         )

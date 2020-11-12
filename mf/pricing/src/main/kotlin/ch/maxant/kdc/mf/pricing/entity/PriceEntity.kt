@@ -47,12 +47,12 @@ open class PriceEntity( // add open, rather than rely on maven plugin, because @
     object NqDeleteByContractId {
         const val name = "deletePriceByContractId"
         const val contractIdParam = "contractId"
-        const val query = "from PriceEntity p where p.contractId = :$contractIdParam"
+        const val query = "delete from PriceEntity p where p.contractId = :$contractIdParam"
     }
 
     object Queries {
         fun deleteByContractId(em: EntityManager, contractId: UUID): Int {
-            return em.createNamedQuery(NqDeleteByContractId.name, PriceEntity::class.java)
+            return em.createNamedQuery(NqDeleteByContractId.name)
                     .setParameter(NqDeleteByContractId.contractIdParam, contractId)
                     .executeUpdate()
         }

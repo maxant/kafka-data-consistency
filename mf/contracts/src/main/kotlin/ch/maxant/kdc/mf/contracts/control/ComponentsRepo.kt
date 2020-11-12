@@ -52,11 +52,12 @@ class ComponentsRepo(
             else -> TODO()
         }
 
-        // TODO validate within limits of product
-        // TODO publish product limits with rest
+        getDefinition(component.componentDefinitionId, configs).ensureConfigValueIsPermitted(config)
 
+        // it's valid, so let's update the entity so that the change is persisted
         component.configuration = om.writeValueAsString(configs)
 
         return components.map { Component(om, it) }
     }
+
 }

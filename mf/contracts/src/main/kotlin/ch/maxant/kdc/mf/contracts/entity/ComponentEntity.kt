@@ -10,7 +10,7 @@ import javax.persistence.*
 @NamedQueries(
         NamedQuery(name = ComponentEntity.NqSelectByContractId.name, query = ComponentEntity.NqSelectByContractId.query)
 )
-open class ComponentEntity( // add open, rather than rely on maven plugin, because @QuarkusTest running in IntelliJ seems to think its final
+class ComponentEntity( // add open, rather than rely on maven plugin, because @QuarkusTest running in IntelliJ seems to think its final
 
     @Id
     @Column(name = "ID")

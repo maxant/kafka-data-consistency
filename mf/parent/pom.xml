@@ -170,6 +170,11 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>${quarkus-plugin.version}</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                    <jvmArgs>-Xmx100m</jvmArgs>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>

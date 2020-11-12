@@ -141,6 +141,8 @@ Also known as entry points, process components or UIs.
 ## TODO
 
 - ability to change a config in the draft, which recalcs discounts and price
+- UI should show progress of updating, calcing discounts, caling prices. widget can have knowledge of last one it waits for
+- introduce discounts, which adds an extra event => choreography vs orchestration, whats it say about that above?
 - validate within limits of product
 - publish product limits with rest => no instead, we publish them in the initial draft. they are set inside the component definitions
 - create create pdf
