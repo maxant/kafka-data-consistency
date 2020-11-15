@@ -198,6 +198,7 @@ data class Headers(val requestId: RequestId,
  */
 fun messageWithMetadata(key: String?, value: String, headers: Headers,
                         ack: CompletableFuture<Unit>): Message<String> {
+//println("sending value: $value")
     val headersList = mutableListOf(RecordHeader(REQUEST_ID, headers.requestId.toString().toByteArray()))
     if(isNotEmpty(headers.command)) headersList.add(RecordHeader(COMMAND, headers.command!!.toByteArray()))
     if(isNotEmpty(headers.event)) headersList.add(RecordHeader(EVENT, headers.event!!.toByteArray()))

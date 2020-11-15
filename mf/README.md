@@ -140,20 +140,24 @@ Also known as entry points, process components or UIs.
 
 ## TODO
 
-- ability to change a config in the draft, which recalcs discounts and price
+- when pricing error demo happens, we end up in an inconsistent state
+  - we could save that in the contract. or we could do validation before a specific process step => but how would we do that, since we have prices, theyre just for the old version of the draft. 
+  - SO, we need to either send an event back, so that the state can be updated (which could also fail), or we need to send a 
+    timestamp down to pricing, which needs to be reflected in the pricing data, which can be used to validate later
+  - lets call it a consistencyTimestamp
+  - actually, when the UI sets the value back, it could just then do it by calling the service again... but we dont know what the state in all components is.
+    - whats better? should it try and fix the problem, or just mark it as wrong? or both? it needs to mark it red, so that the user can work out what the problem is, if they continue in the process and we report an error like, prices are not up to date due to consistencyTimestamp
+  - hmmm not everything is always updated, so how would we know that components with an old consistency timestamp are ok?
+- add offering and accepting and do validation of prices at that point. TRANSPORT still with kafka!
 - UI should show progress of updating, calcing discounts, caling prices. widget can have knowledge of last one it waits for
 - introduce discounts, which adds an extra event => choreography vs orchestration, whats it say about that above?
-- validate within limits of product
-- publish product limits with rest => no instead, we publish them in the initial draft. they are set inside the component definitions
 - create create pdf
 - accept offer => event to billing
-
+- calendar to select startTimestamp (rename start to startTimestamp too, coz of conflict in UI)
 - ok, we want pricing to listen to draft, and we dont want to orchestrate that from the UI. or do we?
-- prices: update rather than just insert
-- add a task based on a business rule and allow the user to do it
+- add a task based on a business rule and allow the user to do it - eg sign off on a big order
 - add action to execute when task is completed or started (ie open UI, or do something)
 - addinfo
-- discounts
 - billing
   - billing is an orchestrator which keeps its model in a global ktable and which uses tombstone records and compaction
 - output
@@ -181,4 +185,5 @@ Also known as entry points, process components or UIs.
   - error topic - acts as a DLQ, but also one for sending errors back to the client
 - kafka interfaces are analagous to rest interfaces.
   - security? check jwt on incoming message?
-- publish product limits with rest VS we publish them in the initial draft. they are set inside the component definitions
+- publish product limits with rest versus we publish them in the initial draft. they are set inside the component definitions
+- process step validation of consistency: use a coordinated timestamp to ensure all records are consistent. lets call it a consistencyTimestamp

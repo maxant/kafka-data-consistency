@@ -49,12 +49,15 @@ private val milk = fun(component: TreeComponent): Price {
               },
               {
                 "name": "FAT_CONTENT",
-                "value": 6,
+                "value": "3.5",
                 "units": "PERCENT",
               }...
      */
     val volumeConfig = getConfig(component, "VOLUME", "MILLILITRES")
     val fatConfig = getConfig(component, "FAT_CONTENT", "PERCENT")
+
+    // demo functionality
+    if(fatConfig.value == "6.0") throw ValidationException("demo error: milk that fat doesn't exist!")
 
     // 4 bucks a litre plus 10 cents per fat content percentage point + random part
     val net = BigDecimal(4).times(BigDecimal(volumeConfig.value)).divide(BigDecimal(1000))

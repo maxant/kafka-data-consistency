@@ -25,13 +25,13 @@ public open class JacksonConfig : ObjectMapperCustomizer {
                 .allowIfBaseType("ch.maxant")
                 .allowIfSubType("ch.maxant")
                 .build()
-
+/*
         var typer: TypeResolverBuilder<*> = ObjectMapper.DefaultTypeResolverBuilder.construct(
                 ObjectMapper.DefaultTyping.NON_CONCRETE_AND_ARRAYS, bptv)
         typer = typer.init(JsonTypeInfo.Id.MINIMAL_CLASS, null)
         typer = typer.inclusion(JsonTypeInfo.As.PROPERTY)
         typer = typer.typeProperty("c*c")
-
+*/
         mapper.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT)
                 .enable(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature())
                 .disable(SerializationFeature.INDENT_OUTPUT)
@@ -41,7 +41,7 @@ public open class JacksonConfig : ObjectMapperCustomizer {
                 .registerModule(KotlinModule())
                 .registerModule(Jdk8Module())
                 .registerModule(JavaTimeModule())
-                .setDefaultTyping(typer)
+//                .setDefaultTyping(typer)
 //                .activateDefaultTypingAsProperty(PTV(), ObjectMapper.DefaultTyping.OBJECT_AND_NON_CONCRETE, "@c")
     }
 

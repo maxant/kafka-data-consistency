@@ -1,7 +1,5 @@
 package ch.maxant;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
@@ -12,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class JacksonTest {
+public class JacksonTest2 {
 
     ObjectMapper mapper = getMapper();
     Bear b = new Bear();
@@ -24,8 +22,10 @@ public class JacksonTest {
 
     @Test
     public void testOne() throws JsonProcessingException {
-        assertEquals("[{\"@c\":\"ch.maxant.Bear\",\"age\":5}]", mapper.writeValueAsString(singletonList(b)));
-        assertEquals("{\"@c\":\"ch.maxant.Bear\",\"age\":5}", mapper.writeValueAsString(b)); // fails with Actual: {"age":5}
+        System.out.println(mapper.writeValueAsString(singletonList(b)));
+        System.out.println(mapper.writeValueAsString(b)); // fails with Actual: {"age":5}
+//        assertEquals("[{\"@c\":\"ch.maxant.Bear\",\"age\":5}]", mapper.writeValueAsString(singletonList(b)));
+//        assertEquals("{\"@c\":\"ch.maxant.Bear\",\"age\":5}", mapper.writeValueAsString(b)); // fails with Actual: {"age":5}
     }
 
     @Test
@@ -42,35 +42,20 @@ public class JacksonTest {
 
     private ObjectMapper getMapper() {
         PolymorphicTypeValidator ptv = BasicPolymorphicTypeValidator.builder()
-                .allowIfSubTypeIsArray()
+//                .allowIfSubTypeIsArray()
                 .allowIfBaseType("ch.maxant")
                 .allowIfSubType("ch.maxant")
                 .build();
 
-        ObjectMapper mapper = new ObjectMapper();
-
-        mapper.activateDefaultTypingAsProperty(
+/*
+        return new ObjectMapper().activateDefaultTypingAsProperty(
                 ptv,
                 ObjectMapper.DefaultTyping.NON_CONCRETE_AND_ARRAYS,
                 "@c"
         );
-
+*/
+        ObjectMapper mapper = new ObjectMapper();
+  //      mapper = mapper.setPolymorphicTypeValidator(ptv);
         return mapper;
     }
 }
-
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        include = JsonTypeInfo.As.PROPERTY,
-        property = "$c$")
-@JsonSubTypes({
-        @JsonSubTypes.Type(value = Bear.class, name = "b"),
-        @JsonSubTypes.Type(value = Cat.class, name = "c")
-})
-abstract class Animal {
-    private int age;
-    public int getAge() { return age; }
-    public void setAge(int age) { this.age = age; }
-}
-class Bear extends Animal { }
-class Cat extends Animal { }

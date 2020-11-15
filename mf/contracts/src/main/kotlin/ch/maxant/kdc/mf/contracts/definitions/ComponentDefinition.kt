@@ -1,20 +1,16 @@
 package ch.maxant.kdc.mf.contracts.definitions
 
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.databind.SerializerProvider
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import java.math.BigDecimal
 import java.util.*
 
-/*
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.CLASS,
-    include = JsonTypeInfo.As.PROPERTY,
-    property = "type")
-@JsonSubTypes({
-    @JsonSubTypes.Type(value = Car.class, name = "car"),
-    @Type(value = Truck.class, name = "truck")
-})
- */
+// TODO only works like this at the mo.
+// see https://stackoverflow.com/questions/64812745/jackson-not-generating-subtype-information-when-object-is-not-in-a-list
+@JsonSerialize(using = ComponentSerializer::class)
+// TODO @JsonDeserialize(using = ComponentDeserializer::class)
 abstract class ComponentDefinition(
         val configs: List<Configuration<*>>,
         val children: List<ComponentDefinition>,
@@ -44,6 +40,26 @@ abstract class ComponentDefinition(
     }
 }
 
+class ComponentSerializer: StdSerializer<ComponentDefinition>(ComponentDefinition::class.java) {
+    override fun serialize(value: ComponentDefinition, gen: JsonGenerator, provider: SerializerProvider) {
+        gen.writeStartObject()
+            gen.writeStringField("c**", value.javaClass.simpleName)
+            gen.writeObjectField("configs", value.configs)
+            gen.writeObjectField("children", value.children)
+            gen.writeObjectField("configPossibilities", value.configPossibilities)
+            gen.writeStringField("componentDefinitionId", value.componentDefinitionId)
+            if(value.componentId == null) {
+                gen.writeNullField("componentId")
+            } else {
+                gen.writeStringField("componentId", value.componentId.toString())
+            }
+            if(value is Product) {
+                gen.writeStringField("productId", value.productId.toString())
+            }
+        gen.writeEndObject()
+    }
+}
+
 class Milk(quantityMl: Int, fatContentPercent: BigDecimal) : ComponentDefinition(
         listOf(
                 IntConfiguration(ConfigurableParameter.VOLUME, quantityMl, Units.MILLILITRES),
@@ -54,15 +70,10 @@ class Milk(quantityMl: Int, fatContentPercent: BigDecimal) : ComponentDefinition
         listOf(
                 PercentConfiguration(ConfigurableParameter.FAT_CONTENT, BigDecimal("0.2")),
                 PercentConfiguration(ConfigurableParameter.FAT_CONTENT, BigDecimal("1.8")),
-                PercentConfiguration(ConfigurableParameter.FAT_CONTENT, BigDecimal("3.5"))
+                PercentConfiguration(ConfigurableParameter.FAT_CONTENT, BigDecimal("3.5")),
+                PercentConfiguration(ConfigurableParameter.FAT_CONTENT, BigDecimal("6.0"))
         )
     )
-
-class Eggs(number: Int) : ComponentDefinition(
-        listOf(
-                IntConfiguration(ConfigurableParameter.QUANTITY, number, Units.PIECES),
-                MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.EGGS)
-        ), emptyList())
 
 class Flour(quantityGr: Int) : ComponentDefinition(
         listOf(

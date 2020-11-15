@@ -3,7 +3,10 @@ package ch.maxant.kdc.mf.contracts.boundary
 import ch.maxant.kdc.mf.contracts.control.ComponentsRepo
 import ch.maxant.kdc.mf.contracts.control.EventBus
 import ch.maxant.kdc.mf.contracts.definitions.*
-import ch.maxant.kdc.mf.contracts.dto.*
+import ch.maxant.kdc.mf.contracts.dto.CreateCaseCommand
+import ch.maxant.kdc.mf.contracts.dto.Draft
+import ch.maxant.kdc.mf.contracts.dto.DraftRequest
+import ch.maxant.kdc.mf.contracts.dto.UpdatedDraft
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractState
 import ch.maxant.kdc.mf.library.doByHandlingValidationExceptions

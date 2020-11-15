@@ -16,15 +16,10 @@ import java.math.BigDecimal
 import java.time.LocalDate
 
 
-/*
-
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.CLASS,
-        include = JsonTypeInfo.As.PROPERTY,
-        property = "c**")
+// TODO only works like this at the mo.
+// see https://stackoverflow.com/questions/64812745/jackson-not-generating-subtype-information-when-object-is-not-in-a-list
 @JsonSerialize(using = ConfigurationSerializer::class)
 @JsonDeserialize(using = ConfigurationDeserializer::class)
- */
 abstract class Configuration<T> (
         val name: ConfigurableParameter,
         var value: T,
@@ -141,7 +136,7 @@ open class ConfigurationDefinition<T>(val units: Units, val clazz: Class<T>) {
 }
 
 enum class Material {
-    MILK, SUGAR, EGGS, GLASS, FLOUR, BUTTER, CARDBOARD, WOOD
+    MILK, SUGAR, GLASS, FLOUR, BUTTER, CARDBOARD, WOOD
 }
 
 enum class Units {
