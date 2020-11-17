@@ -140,6 +140,13 @@ Also known as entry points, process components or UIs.
 
 ## TODO
 
+- "Must be processed by time X": in online processes the user willl get a timeout. At that stage u don't want to have to 
+  say, hey no idea whats still going to happen, rather we want to have a determinate state which can be reloaded and 
+  allow the user to restart from there
+- Waiting room for retryable errors: topics where consumer delays. Works because everything in the topic needs to wait 
+  longer than the first one. 10 sec topic has consumers that wait that long and their consumer config allows that. Send
+  to waiting room contains a header so it knows where to send it back to
+- Retryable vs non retryable. Unique constraint, validation, illegal argument are non retryable. Anything else?
 - when pricing error demo happens, we end up in an inconsistent state
   - we could save that in the contract. or we could do validation before a specific process step => but how would we do that, since we have prices, theyre just for the old version of the draft. 
   - SO, we need to either send an event back, so that the state can be updated (which could also fail), or we need to send a 
@@ -187,3 +194,7 @@ Also known as entry points, process components or UIs.
   - security? check jwt on incoming message?
 - publish product limits with rest versus we publish them in the initial draft. they are set inside the component definitions
 - process step validation of consistency: use a coordinated timestamp to ensure all records are consistent. lets call it a consistencyTimestamp
+
+## Running tips
+
+    export MAVEN_OPTS="-Xmx100m"
