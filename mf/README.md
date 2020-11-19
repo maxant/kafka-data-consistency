@@ -140,6 +140,7 @@ Also known as entry points, process components or UIs.
 
 ## TODO
 
+- introduce an input object used to drive errors at specific points of the program
 - "Must be processed by time X": in online processes the user willl get a timeout. At that stage u don't want to have to 
   say, hey no idea whats still going to happen, rather we want to have a determinate state which can be reloaded and 
   allow the user to restart from there

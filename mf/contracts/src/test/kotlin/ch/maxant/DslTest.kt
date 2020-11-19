@@ -21,7 +21,7 @@ class DslTest {
             )
         }
         assertEquals("""
-            {"c**":"Milkshake","configs":[{"c**":"IntConfiguration","value":"1000","units":"MILLILITRES","clazz":"int","name":"VOLUME"}],"children":[{"c**":"Milk","configs":[{"c**":"IntConfiguration","value":"950","units":"MILLILITRES","clazz":"int","name":"VOLUME"},{"c**":"PercentConfiguration","value":"1.8","units":"PERCENT","clazz":"BigDecimal","name":"FAT_CONTENT"},{"c**":"MaterialConfiguration","value":"MILK","units":"NONE","clazz":"Material","name":"MATERIAL"}],"children":[],"configPossibilities":[{"c**":"PercentConfiguration","value":"0.2","units":"PERCENT","clazz":"BigDecimal","name":"FAT_CONTENT"},{"c**":"PercentConfiguration","value":"1.8","units":"PERCENT","clazz":"BigDecimal","name":"FAT_CONTENT"},{"c**":"PercentConfiguration","value":"3.5","units":"PERCENT","clazz":"BigDecimal","name":"FAT_CONTENT"}],"componentDefinitionId":"Milk","componentId":null},{"c**":"Cookies","configs":[{"c**":"IntConfiguration","value":"45","units":"GRAMS","clazz":"int","name":"WEIGHT"}],"children":[{"c**":"Butter","configs":[{"c**":"IntConfiguration","value":"15","units":"GRAMS","clazz":"int","name":"WEIGHT"},{"c**":"MaterialConfiguration","value":"BUTTER","units":"NONE","clazz":"Material","name":"MATERIAL"}],"children":[],"configPossibilities":[],"componentDefinitionId":"Butter","componentId":null},{"c**":"Sugar","configs":[{"c**":"IntConfiguration","value":"15","units":"GRAMS","clazz":"int","name":"WEIGHT"},{"c**":"MaterialConfiguration","value":"SUGAR","units":"NONE","clazz":"Material","name":"MATERIAL"}],"children":[],"configPossibilities":[],"componentDefinitionId":"Sugar","componentId":null},{"c**":"Flour","configs":[{"c**":"IntConfiguration","value":"15","units":"GRAMS","clazz":"int","name":"WEIGHT"},{"c**":"MaterialConfiguration","value":"FLOUR","units":"NONE","clazz":"Material","name":"MATERIAL"}],"children":[],"configPossibilities":[],"componentDefinitionId":"Flour","componentId":null}],"configPossibilities":[],"componentDefinitionId":"Cookies","componentId":null},{"c**":"GlassBottle","configs":[{"c**":"IntConfiguration","value":"1000","units":"MILLILITRES","clazz":"int","name":"VOLUME"},{"c**":"MaterialConfiguration","value":"GLASS","units":"NONE","clazz":"Material","name":"MATERIAL"}],"children":[],"configPossibilities":[],"componentDefinitionId":"GlassBottle","componentId":null}],"configPossibilities":[],"componentDefinitionId":"Milkshake","componentId":null,"productId":"COOKIES_MILKSHAKE"}
+            {"c**":"Milkshake","configs":[{"c**":"IntConfiguration","value":"1000","units":"MILLILITRES","clazz":"int","name":"VOLUME"}],"children":[{"c**":"Milk","configs":[{"c**":"IntConfiguration","value":"950","units":"MILLILITRES","clazz":"int","name":"VOLUME"},{"c**":"PercentConfiguration","value":"1.8","units":"PERCENT","clazz":"BigDecimal","name":"FAT_CONTENT"},{"c**":"MaterialConfiguration","value":"MILK","units":"NONE","clazz":"Material","name":"MATERIAL"}],"children":[],"configPossibilities":[{"c**":"PercentConfiguration","value":"0.2","units":"PERCENT","clazz":"BigDecimal","name":"FAT_CONTENT"},{"c**":"PercentConfiguration","value":"1.8","units":"PERCENT","clazz":"BigDecimal","name":"FAT_CONTENT"},{"c**":"PercentConfiguration","value":"3.5","units":"PERCENT","clazz":"BigDecimal","name":"FAT_CONTENT"},{"c**":"PercentConfiguration","value":"6.0","units":"PERCENT","clazz":"BigDecimal","name":"FAT_CONTENT"}],"componentDefinitionId":"Milk","componentId":null},{"c**":"Cookies","configs":[{"c**":"IntConfiguration","value":"45","units":"GRAMS","clazz":"int","name":"WEIGHT"}],"children":[{"c**":"Butter","configs":[{"c**":"IntConfiguration","value":"15","units":"GRAMS","clazz":"int","name":"WEIGHT"},{"c**":"MaterialConfiguration","value":"BUTTER","units":"NONE","clazz":"Material","name":"MATERIAL"}],"children":[],"configPossibilities":[],"componentDefinitionId":"Butter","componentId":null},{"c**":"Sugar","configs":[{"c**":"IntConfiguration","value":"15","units":"GRAMS","clazz":"int","name":"WEIGHT"},{"c**":"MaterialConfiguration","value":"SUGAR","units":"NONE","clazz":"Material","name":"MATERIAL"}],"children":[],"configPossibilities":[],"componentDefinitionId":"Sugar","componentId":null},{"c**":"Flour","configs":[{"c**":"IntConfiguration","value":"15","units":"GRAMS","clazz":"int","name":"WEIGHT"},{"c**":"MaterialConfiguration","value":"FLOUR","units":"NONE","clazz":"Material","name":"MATERIAL"}],"children":[],"configPossibilities":[],"componentDefinitionId":"Flour","componentId":null}],"configPossibilities":[],"componentDefinitionId":"Cookies","componentId":null},{"c**":"GlassBottle","configs":[{"c**":"IntConfiguration","value":"1000","units":"MILLILITRES","clazz":"int","name":"VOLUME"},{"c**":"MaterialConfiguration","value":"GLASS","units":"NONE","clazz":"Material","name":"MATERIAL"}],"children":[],"configPossibilities":[],"componentDefinitionId":"GlassBottle","componentId":null}],"configPossibilities":[],"componentDefinitionId":"Milkshake","componentId":null,"productId":"COOKIES_MILKSHAKE"}
         """.trimIndent(), JacksonConfig.om.writeValueAsString(cookiesMilkshake))
     }
 
@@ -153,6 +153,13 @@ private val expectedJsonOfPackaging = """
               "units": "PERCENT",
               "clazz": "BigDecimal",
               "name": "FAT_CONTENT"
+            },
+            {
+              "c**": "PercentConfiguration",
+              "value": "6.0",
+              "units": "PERCENT",
+              "clazz": "BigDecimal",
+              "name": "FAT_CONTENT"
             }
           ],
           "componentDefinitionId": "Milk",
@@ -271,7 +278,7 @@ private val expectedJsonOfPackaging = """
       "configPossibilities": [],
       "componentDefinitionId": "Milkshake",
       "componentId": null,
-      "productId":"COOKIES_MILKSHAKE"
+      "productId": "COOKIES_MILKSHAKE"
     }
   ],
   "configPossibilities": [],

@@ -89,7 +89,7 @@ class ComponentsRepoTest {
         val milk = draft.pack.getThisAndAllChildren().find { it.componentDefinitionId == Milk::class.java.simpleName } !!
 
         // when / then
-        assertEquals("java.lang.IllegalArgumentException: Component configuration value 7 is not in the permitted set of values [0.2, 1.8, 3.5]",
+        assertEquals("Component configuration value 7 is not in the permitted set of values [0.2, 1.8, 3.5, 6.0]",
                 assertThrows<IllegalArgumentException> { sut.updateConfig(draft.contract.id, milk.componentId!!, ConfigurableParameter.FAT_CONTENT, "7") }.message)
     }
 
