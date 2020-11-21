@@ -1,6 +1,7 @@
 package ch.maxant.kdc.mf.web.boundary
 
 import ch.maxant.kdc.mf.library.Context
+import ch.maxant.kdc.mf.library.Context.Companion.DEMO_CONTEXT
 import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
 import ch.maxant.kdc.mf.library.RequestId
 import io.smallrye.mutiny.Multi
@@ -18,6 +19,7 @@ import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
 import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
+import javax.ws.rs.core.Response
 
 
 @ApplicationScoped
@@ -59,13 +61,14 @@ class WebResource {
     fun processErrors(message: Message<String>) = process(message)
 
     private fun process(message: Message<String>): CompletionStage<*> {
-        log.info("handling message ${context.requestId}")
+        log.info("handling message for requestId ${context.requestId}")
 
         var headers = (message
                 .getMetadata(IncomingKafkaRecordMetadata::class.java)
                 .orElse(null)
                 ?.headers?: emptyList<Header>())
                 .toList()
+                .filter { it.key() != DEMO_CONTEXT } // coz its a string of json that needs its quotes escaping and isnt useful to the web client, as it came from there
                 .map { """ "${it.key()}": "${String(it.value())}" """ }
                 .joinToString()
         headers = if(headers.isEmpty()) "" else "$headers,"
@@ -91,4 +94,10 @@ class WebResource {
                     }
                 } // TODO if we get memory problems, add a different BackPressureStrategy as a second parameter to the emitter method
 
+    @GET
+    @Path("/stats")
+    fun stats() = Response.ok("""
+        { "subscriptionsCount": ${this.subscriptions.size},
+          "subscriptions": ${this.subscriptions.keys} 
+        }""".trimIndent().replace(" ", "").replace("\r", "").replace("\n", "")).build()
 }

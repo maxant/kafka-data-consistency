@@ -30,8 +30,9 @@ class ContextRequestFilter : ContainerRequestFilter {
         val rId = if (requestId != null && requestId.isNotEmpty())
             requestId[0]
         else {
-            log.info("creating requestId as it is missing in the request")
-            UUID.randomUUID().toString()
+            val n = UUID.randomUUID().toString()
+            log.info("creating new requestId as it is missing in the request: $n")
+            n
         }
         return RequestId(rId)
     }

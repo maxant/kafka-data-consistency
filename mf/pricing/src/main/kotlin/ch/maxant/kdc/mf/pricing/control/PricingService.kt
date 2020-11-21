@@ -87,7 +87,7 @@ class PricingService(
     private fun priceDraft(contractId: UUID, start: LocalDateTime, end: LocalDateTime, root: TreeComponent): PricingResult {
         log.info("starting to price individual components for contract $contractId...")
 
-        context.throwExceptionIfRequiredForDemo()
+        context.throwExceptionInPricingIfRequiredForDemo()
 
         val deletedCount = deleteByContractId(em, contractId) // start from scratch
         log.info("deleted $deletedCount existing price rows for contract $contractId")

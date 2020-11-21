@@ -50,8 +50,9 @@ class ContextWebFilter: Filter {
         val rId = if (requestId != null && requestId.isNotEmpty())
             requestId
         else {
-            log.info("creating requestId as it is missing in the request")
-            UUID.randomUUID().toString()
+            val n = UUID.randomUUID().toString()
+            log.info("creating new requestId as it is missing in the request: $n")
+            n
         }
         return RequestId(rId)
     }

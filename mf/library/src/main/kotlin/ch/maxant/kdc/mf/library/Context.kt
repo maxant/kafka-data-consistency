@@ -37,12 +37,21 @@ class Context {
         }
     }
 
-    fun throwExceptionIfRequiredForDemo() {
+    fun throwExceptionInContractsIfRequiredForDemo() {
         val e = demoContext?.forceError?:DemoContext.ForcibleError.none
         if (e == DemoContext.ForcibleError.businessErrorInContracts) {
             throw ValidationException("demo business exception in contracts")
         } else if (e == DemoContext.ForcibleError.technicalErrorInContracts) {
             throw RuntimeException("demo technical exception in contracts")
+        }
+    }
+
+    fun throwExceptionInPricingIfRequiredForDemo() {
+        val e = demoContext?.forceError?:DemoContext.ForcibleError.none
+        if (e == DemoContext.ForcibleError.businessErrorInPricing) {
+            throw ValidationException("demo business exception in pricing")
+        } else if (e == DemoContext.ForcibleError.technicalErrorInPricing) {
+            throw RuntimeException("demo technical exception in pricing")
         }
     }
 }

@@ -200,4 +200,5 @@ Also known as entry points, process components or UIs.
 
 ## Running tips
 
-    export MAVEN_OPTS="-Xmx100m"
+    export MAVEN_OPTS="-Xmx150m"
+    mvn quarkus:dev -Ddebug=5006

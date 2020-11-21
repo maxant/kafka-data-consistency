@@ -66,6 +66,8 @@ class DraftsResource(
 
         log.info("creating draft $draftRequest")
 
+        context.throwExceptionInContractsIfRequiredForDemo()
+
         val profile: Profile = Profiles.find()
         log.info("using profile ${profile.id}")
 
@@ -121,7 +123,7 @@ class DraftsResource(
 
         val allComponents = componentsRepo.updateConfig(contractId, componentId, ConfigurableParameter.valueOf(param), newValue)
 
-        context.throwExceptionIfRequiredForDemo()
+        context.throwExceptionInContractsIfRequiredForDemo()
 
         // instead of publishing the initial model based on definitions, which contain extra
         // info like possible inputs, we publish a simpler model here

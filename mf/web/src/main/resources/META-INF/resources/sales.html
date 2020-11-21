@@ -17,13 +17,15 @@ const PRICING_BASE_URL   = "http://localhost:8081";
 const WEB_BASE_URL       = "http://localhost:8082";
 const PARTNERS_BASE_URL  = "http://localhost:8083";
 const CASES_BASE_URL     = "http://localhost:8084";
+const WAITINGROOM_BASE_URL     = "http://localhost:8084";
 
 function pingAll() {
-    fetch(CONTRACTS_BASE_URL + "/ping").then(r => r.text());
-    fetch(PRICING_BASE_URL   + "/ping").then(r => r.text());
-    fetch(WEB_BASE_URL       + "/ping").then(r => r.text());
-    fetch(PARTNERS_BASE_URL  + "/ping").then(r => r.text());
-    fetch(CASES_BASE_URL     + "/ping").then(r => r.text());
+    fetch(CONTRACTS_BASE_URL   + "/ping").then(r => r.text());
+    fetch(PRICING_BASE_URL     + "/ping").then(r => r.text());
+    fetch(WEB_BASE_URL         + "/ping").then(r => r.text());
+    fetch(PARTNERS_BASE_URL    + "/ping").then(r => r.text());
+    fetch(CASES_BASE_URL       + "/ping").then(r => r.text());
+    fetch(WAITINGROOM_BASE_URL + "/ping").then(r => r.text());
 }
     </script>
     <style>
@@ -133,7 +135,7 @@ const App = {
         fetch(CONTRACTS_BASE_URL + "/drafts",
               { "method": "POST",
                 body: JSON.stringify(body),
-                "headers": getHeaders(this.getDemoContext)
+                "headers": getHeaders(this.requestId, this.getDemoContext)
               }
         )
         .then(r => r.json())
@@ -166,7 +168,7 @@ const App = {
             this.start = new Date().getTime();
             fetch(CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/" + component.componentId + "/" + paramName + "/" + newValue,
                   { "method": "PUT",
-                    "headers": getHeaders(this.getDemoContext)
+                    "headers": getHeaders(this.requestId, this.getDemoContext)
                   }
             )
             .then(r => {
@@ -200,8 +202,8 @@ function addPrice(component, id, price) {
     }
 }
 
-function getHeaders(getDemoContext) {
-    return {"Content-Type": "application/json", "request-id": this.requestId, "demo-context": getDemoContext() }
+function getHeaders(requestId, getDemoContext) {
+    return {"Content-Type": "application/json", "request-id": requestId, "demo-context": getDemoContext() }
 }
 
 function sse(requestId, self) {
