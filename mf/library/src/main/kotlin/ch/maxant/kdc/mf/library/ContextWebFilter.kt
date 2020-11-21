@@ -35,14 +35,18 @@ class ContextWebFilter: Filter {
         val response = res as HttpServletResponse
 
         context.requestId = getRequestId(request)
+        context.demoContext = readDemoContext(request)
+
         MDC.put(REQUEST_ID, context.requestId)
         MDC.put(COMMAND, "${request.method} ${request.requestURI}")
 
-        context.demoContext = readDemoContext(request)
 
-        filterChain.doFilter(request, response)
-
-        response.setHeader(REQUEST_ID, context.requestId.toString())
+        try {
+            filterChain.doFilter(request, response)
+        } finally {
+            response.setHeader(REQUEST_ID, context.requestId.toString())
+            MDC.clear()
+        }
     }
 
     private fun getRequestId(request: HttpServletRequest): RequestId {

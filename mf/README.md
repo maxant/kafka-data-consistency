@@ -140,26 +140,33 @@ Also known as entry points, process components or UIs.
 
 ## TODO
 
-- config inheritance - but only certain stuff makes sense, the rest doesnt
-- config deviations in cases where the sales team needs to specifically deviate from a normal customisation and it needs to be explicitly mentioned in the contract
-- introduce an input object used to drive errors at specific points of the program
-- "Must be processed by time X": in online processes the user willl get a timeout. At that stage u don't want to have to 
+- add offering and accepting and do validation of prices at that point. TRANSPORT still with kafka!
+- UI should show progress of updating, calcing discounts, caling prices. widget can have knowledge of last one it waits for
+- add timeouts in UI
+- think about error handling - what else is missing?
+  - all seems to be working well
+  - any problem in contracts results in a reset of the UI - do i do that explicitly?
+  - technical problem in pricing is self healed
+  - business problem in pricing is still an issue, because we are no longer consistent! at least the UI shows the prices are unknown. but the backend still has them
+    - **so we need to STOP any further processes what rely on them being consistent!**
+- "Must be processed by time X" as a header on messages, after which they are disposed of, since we know the UI will deal with the timeout: 
+  in online processes the user will get a timeout. At that stage u don't want to have to 
   say, hey no idea whats still going to happen, rather we want to have a determinate state which can be reloaded and 
   allow the user to restart from there
-- Waiting room for retryable errors: topics where consumer delays. Works because everything in the topic needs to wait 
-  longer than the first one. 10 sec topic has consumers that wait that long and their consumer config allows that. Send
-  to waiting room contains a header so it knows where to send it back to
-- Retryable vs non retryable. Unique constraint, validation, illegal argument are non retryable. Anything else?
 - when pricing error demo happens, we end up in an inconsistent state
-  - we could save that in the contract. or we could do validation before a specific process step => but how would we do that, since we have prices, theyre just for the old version of the draft. 
+  - we could save that in the contract. or we could do validation before a specific process step => but how would we do that, 
+    since we have prices, theyre just for the old version of the draft. 
   - SO, we need to either send an event back, so that the state can be updated (which could also fail), or we need to send a 
     timestamp down to pricing, which needs to be reflected in the pricing data, which can be used to validate later
   - lets call it a consistencyTimestamp
   - actually, when the UI sets the value back, it could just then do it by calling the service again... but we dont know what the state in all components is.
-    - whats better? should it try and fix the problem, or just mark it as wrong? or both? it needs to mark it red, so that the user can work out what the problem is, if they continue in the process and we report an error like, prices are not up to date due to consistencyTimestamp
+    - whats better? should it try and fix the problem, or just mark it as wrong? or both? it needs to mark it red, 
+      so that the user can work out what the problem is, if they continue in the process and we report an error like, 
+      prices are not up to date due to consistencyTimestamp
   - hmmm not everything is always updated, so how would we know that components with an old consistency timestamp are ok?
-- add offering and accepting and do validation of prices at that point. TRANSPORT still with kafka!
-- UI should show progress of updating, calcing discounts, caling prices. widget can have knowledge of last one it waits for
+- config inheritance - but only certain stuff makes sense, the rest doesnt
+- config deviations in cases where the sales team needs to specifically deviate from a normal customisation and it needs to be explicitly mentioned in the contract
+- remove support for string messages in the pimp interceptor
 - introduce discounts, which adds an extra event => choreography vs orchestration, whats it say about that above?
 - create create pdf
 - accept offer => event to billing
@@ -197,6 +204,10 @@ Also known as entry points, process components or UIs.
   - security? check jwt on incoming message?
 - publish product limits with rest versus we publish them in the initial draft. they are set inside the component definitions
 - process step validation of consistency: use a coordinated timestamp to ensure all records are consistent. lets call it a consistencyTimestamp
+- Waiting room for retryable errors: topics where consumer delays. Works because everything in the topic needs to wait 
+  longer than the first one. 10 sec topic has consumers that wait that long and their consumer config allows that. Send
+  to waiting room contains a header so it knows where to send it back to
+- Retryable vs non retryable. Unique constraint, validation, illegal argument are non retryable. Anything else?
 
 ## Running tips
 

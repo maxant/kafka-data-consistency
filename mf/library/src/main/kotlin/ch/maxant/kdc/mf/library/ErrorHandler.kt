@@ -3,9 +3,11 @@ package ch.maxant.kdc.mf.library
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecordMetadata
 import org.apache.commons.lang3.exception.ExceptionUtils
+import org.apache.kafka.common.header.internals.RecordHeader
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.eclipse.microprofile.reactive.messaging.Message
+import java.math.BigInteger
 import java.util.concurrent.CompletableFuture
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
@@ -16,6 +18,14 @@ class ErrorHandler {
     @Inject
     @Channel("errors-out")
     lateinit var errors: Emitter<String>
+
+    @Inject
+    @Channel("waitingroom01-out")
+    lateinit var waitingroom01: Emitter<String>
+
+    @Inject
+    @Channel("waitingroom10-out")
+    lateinit var waitingroom10: Emitter<String>
 
     @Inject
     lateinit var context: Context
@@ -42,12 +52,12 @@ class ErrorHandler {
         val value = when(originalMessage) {
             is String -> om.writeValueAsString(Error(t, originalMessage))
             is Message<*> -> om.writeValueAsString(Error(t, originalMessage.payload as String))
-            else -> throw RuntimeException("unexpected type: ${originalMessage.javaClass.name}")
+            else -> throw UnsupportedOperationException("unexpected first parameter type ${originalMessage::class.java.name}")
         }
         val key = when(originalMessage) {
             is String -> null
             is Message<*> -> getKey(originalMessage)
-            else -> throw RuntimeException("unexpected type: ${originalMessage.javaClass.name}")
+            else -> throw UnsupportedOperationException("unexpected first parameter type ${originalMessage::class.java.name}")
         }
 
         val ack = CompletableFuture<Unit>()
@@ -59,8 +69,37 @@ class ErrorHandler {
         return ack
     }
 
+    /**
+     * Sends the message to the waiting room so that it can be sent back for a retry.
+     * If the record has not been retried, it will be retried again in 1 second, otherwise 10.
+     *
+     * @param originalMessage the message which lead to this problem
+     * @param numRetries how often has this message been retried? one less than the number of times it has been processed.
+     */
+    fun waitingroom(originalMessage: Any, numRetries: Int): CompletableFuture<Unit> {
+        if(originalMessage is Message<*>) {
+            val waitShort = numRetries == 0
+            val record = originalMessage.getMetadata(IncomingKafkaRecordMetadata::class.java).get()
+            val rhs = mutableListOf<RecordHeader>()
+            rhs.add(RecordHeader(DELAY_UNTIL, (System.currentTimeMillis() + (if(waitShort) 1_000 else 10_000)).toString().toByteArray()))
+            rhs.add(RecordHeader(ORIGINAL_TOPIC, record.topic.toByteArray()))
+            record.headers.forEach { rhs.add(RecordHeader(it.key(), it.value())) }
+            val ack = CompletableFuture<Unit>()
+            val msg = messageWithMetadata(record.key as String, originalMessage.payload as String, rhs, ack)
+
+            if(waitShort) waitingroom01.send(msg)
+            else waitingroom10.send(msg)
+            return ack
+        } else throw UnsupportedOperationException("unexpected first parameter type ${originalMessage::class.java.name}")
+    }
+
     private fun getKey(m: Message<*>) =
             m.getMetadata(IncomingKafkaRecordMetadata::class.java).get().key?.toString()
+
+    companion object {
+        const val DELAY_UNTIL = "DELAY_UNTIL"
+        const val ORIGINAL_TOPIC = "ORIGINAL_TOPIC"
+    }
 }
 
 private data class Error(val errorClass: String, val errorMessage: String?, val stackTrace: String, val originalEvent: String, val event: String = "ERROR") {

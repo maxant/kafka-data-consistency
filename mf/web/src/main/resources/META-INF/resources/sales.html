@@ -12,12 +12,12 @@
     <script src="https://unpkg.com/primevue/components/dropdown/dropdown.umd.min.js"></script>
     <script>
 // cases each quarkus uService to reload, since it doesnt do that when a kafka event arrives
-const CONTRACTS_BASE_URL = "http://localhost:8080"; // http://178.199.206.170
-const PRICING_BASE_URL   = "http://localhost:8081";
-const WEB_BASE_URL       = "http://localhost:8082";
-const PARTNERS_BASE_URL  = "http://localhost:8083";
-const CASES_BASE_URL     = "http://localhost:8084";
-const WAITINGROOM_BASE_URL     = "http://localhost:8084";
+const CONTRACTS_BASE_URL   = "http://localhost:8080"; // http://178.199.206.170
+const PRICING_BASE_URL     = "http://localhost:8081";
+const WEB_BASE_URL         = "http://localhost:8082";
+const PARTNERS_BASE_URL    = "http://localhost:8083";
+const CASES_BASE_URL       = "http://localhost:8084";
+const WAITINGROOM_BASE_URL = "http://localhost:8085";
 
 function pingAll() {
     fetch(CONTRACTS_BASE_URL   + "/ping").then(r => r.text());
@@ -56,16 +56,16 @@ function pingAll() {
         <div v-if="get(model, 'draft.contract')">
             Contract ID: {{ model.draft.contract.id }}
         </div>
-        <div v-if="!!get(model, 'draft.pack.price')">
-            Product: {{ model.draft.pack.children[0].productId }} {{ model.draft.pack.price.total }} CHF ({{ model.draft.pack.price.tax }} CHF VAT)
+        <div v-if="!!get(model, 'draft.pack.$price')">
+            Product: {{ model.draft.pack.children[0].productId }} {{ model.draft.pack.$price.total }} CHF ({{ model.draft.pack.$price.tax }} CHF VAT)
         </div>
-        <div v-if="!!get(model, 'draft.pack.price')">
+        <div v-if="!!get(model, 'draft.pack.$price')">
             <ul>
                 <li v-for="child in model.draft.pack.children">
-                    {{ child.componentDefinitionId }}: {{ child.price.total }} CHF
+                    {{ child.componentDefinitionId }}: {{ child.$price.total }} CHF
                     <ul v-if="get(child, 'children.length') > 0">
                         <li v-for="child2 in child.children">
-                            {{ child2.componentDefinitionId }}: {{ child2.price.total }} CHF
+                            {{ child2.componentDefinitionId }}: {{ child2.$price.total }} CHF
                             <div v-if="child2.configPossibilities && child2.configPossibilities.length > 0">
                                 <div v-for="paramName in getDistinctParamNames(child2.configPossibilities)">
                                     {{paramName}}: <p-dropdown :options="getParamOptions(paramName, child2)"
@@ -77,7 +77,7 @@ function pingAll() {
                             </div>
                             <ul v-if="get(child2, 'children.length') > 0">
                                 <li v-for="child3 in child2.children">
-                                    {{ child3.componentDefinitionId }}: {{ child3.price.total }} CHF
+                                    {{ child3.componentDefinitionId }}: {{ child3.$price.total }} CHF
                                 </li>
                             </ul>
                         </li>
@@ -99,10 +99,10 @@ function uuidv4() {
 }
 
 const forcibleErrors = [ {label: 'none', value: 'none'},
-                        {label: 'business error in contracts', value: 'businessErrorInContracts'},
-                        {label: 'technical error in contracts', value: 'technicalErrorInContracts'},
-                        {label: 'business error in pricing', value: 'businessErrorInPricing'},
-                        {label: 'technical error in pricing', value: 'technicalErrorInPricing'} ];
+                        {label: 'business error in contracts (REST)', value: 'businessErrorInContracts'},
+                        {label: 'technical error in contracts (REST)', value: 'technicalErrorInContracts'},
+                        {label: 'business error in pricing (Kafka)', value: 'businessErrorInPricing'},
+                        {label: 'technical error in pricing (Kafka)', value: 'technicalErrorInPricing'} ];
 const App = {
   data() {
     return {
@@ -196,7 +196,10 @@ Vue.createApp(App).mount("#app")
 
 function addPrice(component, id, price) {
     if(component.componentId == id) {
-        component.price = price
+        component.$price = price
+        _.forEach(component.$configs, c => {
+            c.waiting = false
+        }) // reset the waiting flag as we're now complete
     } else {
         _.forEach(component.children, child => addPrice(child, id, price))
     }
@@ -271,8 +274,11 @@ function initialiseDraft(component) {
 function updateDraft(newComponents, component){
     let newComponent = _(newComponents).find(c => c.id === component.componentId)
     if(newComponent) {
+        let areWaiting = _(component.$configs).filter(c => c.waiting).map("name").value()
         component.configs = newComponent.configs; // adopt new configs
         _.forEach(component.configs, c => component.$configs[c.name] = _.clone(c)); // also clears waiting (disabled)
+        _.forEach(areWaiting, name => component.$configs[name].waiting = true); // reset so that they remain waiting, until prices are calculated
+        component.$price = {} // reset them as we dont know what they are right now! in the case of an error, they stay empty indicating that there was a problem!
     } else {
         console.error("no component with ID " + component.componentId + " found in response")
     }

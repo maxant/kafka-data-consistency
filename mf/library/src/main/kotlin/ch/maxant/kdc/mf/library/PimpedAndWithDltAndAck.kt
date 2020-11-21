@@ -4,16 +4,19 @@ import ch.maxant.kdc.mf.library.Context.Companion.COMMAND
 import ch.maxant.kdc.mf.library.Context.Companion.DEMO_CONTEXT
 import ch.maxant.kdc.mf.library.Context.Companion.EVENT
 import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
+import ch.maxant.kdc.mf.library.Context.Companion.RETRY_COUNT
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecordMetadata
 import io.smallrye.reactive.messaging.kafka.OutgoingKafkaRecordMetadata
 import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.StringUtils.isNotEmpty
+import org.apache.commons.lang3.exception.ExceptionUtils
 import org.apache.kafka.common.header.internals.RecordHeader
 import org.eclipse.microprofile.reactive.messaging.Message
 import org.jboss.logging.Logger
 import org.jboss.logging.MDC
+import java.lang.UnsupportedOperationException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletableFuture.completedFuture
 import java.util.concurrent.CompletionStage
@@ -22,6 +25,8 @@ import javax.interceptor.AroundInvoke
 import javax.interceptor.Interceptor
 import javax.interceptor.InterceptorBinding
 import javax.interceptor.InvocationContext
+import javax.validation.ConstraintViolationException
+import javax.validation.ValidationException
 
 /**
  * deals with exceptions and acks messages so you don't have to. in the case of an exception, the
@@ -55,9 +60,9 @@ class PimpedAndWithDltAndAckInterceptor(
 
     @AroundInvoke
     fun invoke(ctx: InvocationContext): Any? {
-        require(ctx.parameters.size == 1) { "EH001 @ErrorHandled on method ${ctx.target.javaClass.name}::${ctx.method.name} must contain exactly one parameter" }
+        require(ctx.parameters.size == 1) { "EH001 @PimpedAndWithDltAndAck on method ${ctx.target.javaClass.name}::${ctx.method.name} must contain exactly one parameter" }
         val firstParam = ctx.parameters[0]
-        require((firstParam is String) || (firstParam is Message<*>)) { "EH002 @ErrorHandled on method ${ctx.target.javaClass.name}::${ctx.method.name} must contain one String/Message parameter" }
+        require((firstParam is String) || (firstParam is Message<*>)) { "EH002 @PimpedAndWithDltAndAck on method ${ctx.target.javaClass.name}::${ctx.method.name} must contain one String/Message parameter" }
 
         // set context into request scoped bean, so downstream can use it. also works with quarkus context propogation
         setContext(firstParam)
@@ -101,6 +106,7 @@ class PimpedAndWithDltAndAckInterceptor(
     private fun setContext(firstParam: Any) {
         context.originalMessage = firstParam
         context.requestId = getRequestId(om, firstParam)
+        context.retryCount = getRetryCount(om, firstParam)
         context.demoContext = getDemoContext(om, firstParam)
         context.command = getCommand(om, firstParam)
         context.event = getEvent(om, firstParam)
@@ -123,8 +129,7 @@ class PimpedAndWithDltAndAckInterceptor(
                                 "- every message MUST have a requestId header or attribute at the root", t)
                     }
                     ctx.method.getAnnotation(PimpedAndWithDltAndAck::class.java).sendToDlt -> {
-                        log.warn("EH004 failed to process message ${asString(firstParam)} - sending it to the DLT with requestId ${copyOfContext.requestId}", t)
-                        ret = errorHandler.dlt(firstParam, t)
+                        ret = sendToWaitingroomOrDlt(firstParam, copyOfContext, t)
                     }
                     else -> {
                         log.error("EH005 failed to process message ${asString(firstParam)} " +
@@ -140,6 +145,41 @@ class PimpedAndWithDltAndAckInterceptor(
         return ret
     }
 
+    private fun sendToWaitingroomOrDlt(firstParam: Any, copyOfContext: Context, t: Throwable): CompletableFuture<Unit> =
+        if(isRetryableException(firstParam, t)) {
+            if(copyOfContext.retryCount < 3) {
+                log.info("EH004a failed to process message due to a retryable exception with a retry count of ${copyOfContext.retryCount}. " +
+                        "message was ${asString(firstParam)}" +
+                        " - sending it to the waiting room as it can be retried, with requestId ${copyOfContext.requestId}", t)
+                errorHandler.waitingroom(firstParam, copyOfContext.retryCount)
+            } else {
+                log.warn("EH004b failed to process message due to a retryable exception but with a retry count of ${copyOfContext.retryCount}. " +
+                        "message was ${asString(firstParam)}" +
+                        " - sending it to the DLT with requestId ${copyOfContext.requestId}", t)
+                errorHandler.dlt(firstParam, t)
+            }
+        } else {
+            log.warn("EH004c failed to process message due to a non-retryable exception. " +
+                    "message was ${asString(firstParam)}" +
+                    " - sending it to the DLT with requestId ${copyOfContext.requestId}", t)
+            errorHandler.dlt(firstParam, t)
+        }
+
+    private fun isRetryableException(firstParam: Any, t: Throwable) =
+            when (firstParam) {
+                is String -> false // we have no way of checking how often the message has been retried, so cannot
+                                   // give up => we simply dont support retry when you use basic strings instead of message objects
+                is Message<*> -> {
+                    val throwables = ExceptionUtils.getThrowableList(t).map { it::class.java }
+                    throwables.none {
+                               it == ValidationException::class.java
+                            || it == ConstraintViolationException::class.java
+                            || it == IllegalArgumentException::class.java
+                    }
+                }
+                else -> throw UnsupportedOperationException("unexpected first parameter type ${firstParam::class.java.name}")
+            }
+
     private fun asString(a: Any?): String = when (a) {
         is Message<*> -> a.payload as String
         else -> java.lang.String.valueOf(a)
@@ -147,6 +187,8 @@ class PimpedAndWithDltAndAckInterceptor(
 }
 
 fun getRequestId(om: ObjectMapper, firstParam: Any) = RequestId(getHeader(om, firstParam, REQUEST_ID))
+
+fun getRetryCount(om: ObjectMapper, firstParam: Any) = getHeader(om, firstParam, RETRY_COUNT).toIntOrNull()?:0
 
 fun getDemoContext(om: ObjectMapper, firstParam: Any): DemoContext {
     var raw = getHeader(om, firstParam, DEMO_CONTEXT)
@@ -181,7 +223,7 @@ fun getHeader(om: ObjectMapper, firstParam: Any, header: String): String = when 
                 ?: byteArrayOf(),
                 Charsets.UTF_8)
 
-    else -> throw RuntimeException("unexpected first parameter type")
+    else -> throw UnsupportedOperationException("unexpected first parameter type ${firstParam::class.java.name}")
 }
 
 data class RequestId(val requestId: String) {
@@ -218,9 +260,18 @@ fun messageWithMetadata(key: String?, value: String, headers: Headers,
     if(isNotEmpty(headers.event)) headersList.add(RecordHeader(EVENT, headers.event!!.toByteArray()))
     if(isNotEmpty(headers.originalCommand)) headersList.add(RecordHeader("originalCommand", headers.originalCommand!!.toByteArray()))
     if(isNotEmpty(headers.originalEvent)) headersList.add(RecordHeader("originalEvent", headers.originalEvent!!.toByteArray()))
+    return messageWithMetadata(key, value, headersList, ack)
+}
+
+/**
+ * @param ack a future which will be completed when the message is acked
+ */
+fun messageWithMetadata(key: String?, value: String, headers: List<RecordHeader>,
+                        ack: CompletableFuture<Unit>): Message<String> {
+//println("sending value: $value")
     val metadata = OutgoingKafkaRecordMetadata.builder<Any>()
             .withKey(key)
-            .withHeaders(headersList)
+            .withHeaders(headers)
             .build()
     val ackSupplier: () -> CompletableFuture<Void> = { ack.complete(null); completedFuture(null) }
     return Message.of(value, ackSupplier).addMetadata(metadata)
