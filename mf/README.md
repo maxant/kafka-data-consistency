@@ -140,6 +140,8 @@ Also known as entry points, process components or UIs.
 
 ## TODO
 
+- config inheritance - but only certain stuff makes sense, the rest doesnt
+- config deviations in cases where the sales team needs to specifically deviate from a normal customisation and it needs to be explicitly mentioned in the contract
 - introduce an input object used to drive errors at specific points of the program
 - "Must be processed by time X": in online processes the user willl get a timeout. At that stage u don't want to have to 
   say, hey no idea whats still going to happen, rather we want to have a determinate state which can be reloaded and 

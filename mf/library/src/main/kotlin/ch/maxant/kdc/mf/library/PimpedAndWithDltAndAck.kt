@@ -1,8 +1,14 @@
 package ch.maxant.kdc.mf.library
 
+import ch.maxant.kdc.mf.library.Context.Companion.COMMAND
+import ch.maxant.kdc.mf.library.Context.Companion.DEMO_CONTEXT
+import ch.maxant.kdc.mf.library.Context.Companion.EVENT
+import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecordMetadata
 import io.smallrye.reactive.messaging.kafka.OutgoingKafkaRecordMetadata
+import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.StringUtils.isNotEmpty
 import org.apache.kafka.common.header.internals.RecordHeader
 import org.eclipse.microprofile.reactive.messaging.Message
@@ -25,7 +31,7 @@ import javax.interceptor.InvocationContext
  * <br>
  * can be added to incoming handlers which take a string, or a message. <br>
  * <br>
- * adds the requestId, command and event  from the header/root to the MDC so it can be logged
+ * adds the requestId, command and event from the header/root to the MDC so it can be logged
  */
 @InterceptorBinding
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.TYPE, AnnotationTarget.CLASS)
@@ -95,6 +101,7 @@ class PimpedAndWithDltAndAckInterceptor(
     private fun setContext(firstParam: Any) {
         context.originalMessage = firstParam
         context.requestId = getRequestId(om, firstParam)
+        context.demoContext = getDemoContext(om, firstParam)
         context.command = getCommand(om, firstParam)
         context.event = getEvent(om, firstParam)
     }
@@ -141,6 +148,14 @@ class PimpedAndWithDltAndAckInterceptor(
 
 fun getRequestId(om: ObjectMapper, firstParam: Any) = RequestId(getHeader(om, firstParam, REQUEST_ID))
 
+fun getDemoContext(om: ObjectMapper, firstParam: Any): DemoContext {
+    var raw = getHeader(om, firstParam, DEMO_CONTEXT)
+    raw = if(StringUtils.isEmpty(raw)) "{}" else raw
+    val dc = om.readValue<DemoContext>(raw)
+    dc.json = raw
+    return dc
+}
+
 fun getCommand(om: ObjectMapper, firstParam: Any): String = getHeader(om, firstParam, COMMAND)
 
 fun getEvent(om: ObjectMapper, firstParam: Any): String = getHeader(om, firstParam, EVENT)
@@ -169,16 +184,13 @@ fun getHeader(om: ObjectMapper, firstParam: Any, header: String): String = when 
     else -> throw RuntimeException("unexpected first parameter type")
 }
 
-const val REQUEST_ID = "requestId"
-const val COMMAND = "command"
-const val EVENT = "event"
-
 data class RequestId(val requestId: String) {
     override fun toString(): String = requestId
     val isEmpty = requestId.isEmpty()
 }
 
 data class Headers(val requestId: RequestId,
+                   val demoContext: DemoContext? = null,
                    val command: String? = null,
                    val event: String? = null,
                    val originalCommand: String?,
@@ -187,6 +199,7 @@ data class Headers(val requestId: RequestId,
                 command: String? = null,
                 event: String? = null
     ) : this(context.requestId,
+            context.demoContext,
             command,
             event,
             context.command,
@@ -200,6 +213,7 @@ fun messageWithMetadata(key: String?, value: String, headers: Headers,
                         ack: CompletableFuture<Unit>): Message<String> {
 //println("sending value: $value")
     val headersList = mutableListOf(RecordHeader(REQUEST_ID, headers.requestId.toString().toByteArray()))
+    if(headers.demoContext != null) headersList.add(RecordHeader(DEMO_CONTEXT, (headers.demoContext.json?:"").toByteArray()))
     if(isNotEmpty(headers.command)) headersList.add(RecordHeader(COMMAND, headers.command!!.toByteArray()))
     if(isNotEmpty(headers.event)) headersList.add(RecordHeader(EVENT, headers.event!!.toByteArray()))
     if(isNotEmpty(headers.originalCommand)) headersList.add(RecordHeader("originalCommand", headers.originalCommand!!.toByteArray()))

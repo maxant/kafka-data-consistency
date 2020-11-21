@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.library
 
+import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nhaarman.mockito_kotlin.*

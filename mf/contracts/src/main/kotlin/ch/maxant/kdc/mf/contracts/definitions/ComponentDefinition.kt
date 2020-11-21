@@ -70,8 +70,7 @@ class Milk(quantityMl: Int, fatContentPercent: BigDecimal) : ComponentDefinition
         listOf(
                 PercentConfiguration(ConfigurableParameter.FAT_CONTENT, BigDecimal("0.2")),
                 PercentConfiguration(ConfigurableParameter.FAT_CONTENT, BigDecimal("1.8")),
-                PercentConfiguration(ConfigurableParameter.FAT_CONTENT, BigDecimal("3.5")),
-                PercentConfiguration(ConfigurableParameter.FAT_CONTENT, BigDecimal("6.0"))
+                PercentConfiguration(ConfigurableParameter.FAT_CONTENT, BigDecimal("3.5"))
         )
     )
 

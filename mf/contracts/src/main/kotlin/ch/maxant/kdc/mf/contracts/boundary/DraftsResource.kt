@@ -9,6 +9,7 @@ import ch.maxant.kdc.mf.contracts.dto.DraftRequest
 import ch.maxant.kdc.mf.contracts.dto.UpdatedDraft
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractState
+import ch.maxant.kdc.mf.library.Context
 import ch.maxant.kdc.mf.library.doByHandlingValidationExceptions
 import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.media.Content
@@ -42,7 +43,10 @@ class DraftsResource(
         var componentsRepo: ComponentsRepo,
 
         @Inject
-        var eventBus: EventBus
+        var eventBus: EventBus,
+
+        @Inject
+        var context: Context
 ) {
 
     val log: Logger = Logger.getLogger(this.javaClass)
@@ -117,6 +121,8 @@ class DraftsResource(
 
         val allComponents = componentsRepo.updateConfig(contractId, componentId, ConfigurableParameter.valueOf(param), newValue)
 
+        context.throwExceptionIfRequiredForDemo()
+
         // instead of publishing the initial model based on definitions, which contain extra
         // info like possible inputs, we publish a simpler model here
         eventBus.publish(UpdatedDraft(contract, allComponents))
@@ -125,5 +131,6 @@ class DraftsResource(
                 .entity(contract)
                 .build()
     }
+
 }
 

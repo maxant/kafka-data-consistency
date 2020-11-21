@@ -1,6 +1,7 @@
 package ch.maxant.kdc.mf.pricing.control
 
 import ch.maxant.kdc.mf.library.AsyncContextAware
+import ch.maxant.kdc.mf.library.Context
 import ch.maxant.kdc.mf.pricing.definitions.Price
 import ch.maxant.kdc.mf.pricing.definitions.Prices
 import ch.maxant.kdc.mf.pricing.dto.Configuration
@@ -13,7 +14,6 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.jboss.logging.Logger
-import java.lang.IllegalArgumentException
 import java.time.LocalDateTime
 import java.util.*
 import java.util.concurrent.CompletableFuture.completedFuture
@@ -30,7 +30,10 @@ class PricingService(
         var em: EntityManager,
 
         @Inject
-        var om: ObjectMapper
+        var om: ObjectMapper,
+
+        @Inject
+        var context: Context
 ) {
     private val log = Logger.getLogger(this.javaClass)
 
@@ -83,6 +86,8 @@ class PricingService(
 
     private fun priceDraft(contractId: UUID, start: LocalDateTime, end: LocalDateTime, root: TreeComponent): PricingResult {
         log.info("starting to price individual components for contract $contractId...")
+
+        context.throwExceptionIfRequiredForDemo()
 
         val deletedCount = deleteByContractId(em, contractId) // start from scratch
         log.info("deleted $deletedCount existing price rows for contract $contractId")

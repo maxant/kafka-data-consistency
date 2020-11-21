@@ -19,13 +19,13 @@ public open class JacksonConfig : ObjectMapperCustomizer {
 
     override fun customize(mapper: ObjectMapper) {
 
+/*
         //allow deser of anysubclasses
         val bptv = BasicPolymorphicTypeValidator.builder()
                 //.allowIfSubTypeIsArray()
                 .allowIfBaseType("ch.maxant")
                 .allowIfSubType("ch.maxant")
                 .build()
-/*
         var typer: TypeResolverBuilder<*> = ObjectMapper.DefaultTypeResolverBuilder.construct(
                 ObjectMapper.DefaultTyping.NON_CONCRETE_AND_ARRAYS, bptv)
         typer = typer.init(JsonTypeInfo.Id.MINIMAL_CLASS, null)

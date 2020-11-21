@@ -56,9 +56,6 @@ private val milk = fun(component: TreeComponent): Price {
     val volumeConfig = getConfig(component, "VOLUME", "MILLILITRES")
     val fatConfig = getConfig(component, "FAT_CONTENT", "PERCENT")
 
-    // demo functionality
-    if(fatConfig.value == "6.0") throw ValidationException("demo error: milk that fat doesn't exist!")
-
     // 4 bucks a litre plus 10 cents per fat content percentage point + random part
     val net = BigDecimal(4).times(BigDecimal(volumeConfig.value)).divide(BigDecimal(1000))
                            .plus(BigDecimal(0.1).times(BigDecimal(fatConfig.value)))
@@ -151,7 +148,7 @@ class MissingRuleException(msg: String) : RuntimeException(msg)
 object Prices {
     fun findRule(component: TreeComponent): (TreeComponent) -> Price {
         return when (component.componentDefinitionId) {
-            "CardboardBox" -> cardboardBox // its not a leaf, but has its own pricing component, as well as that of the children
+            "CardboardBox" -> cardboardBox // its not a leaf, but has its own pricing function, as well as that of the children
             "Milk" -> milk
             "Butter" -> butter
             "Sugar" -> sugar

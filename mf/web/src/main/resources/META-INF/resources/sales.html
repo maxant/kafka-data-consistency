@@ -35,9 +35,15 @@ function pingAll() {
     </style>
 </head>
 <body style="background-image: url(https://hips.hearstapps.com/del.h-cdn.co/assets/15/24/1600x800/landscape-1433889344-del-milkshakes-index.jpg); background-color: rgba(255, 255, 255, 0.85); background-blend-mode: overlay;">
-    <div style="width: 100%; text-align: right; font-size: small;"><button onclick="pingAll()">reload all microservices</button></div>
     <h2>The Milk Factory</h2>
     <div id="app">
+        <div style="width: 100%; text-align: right; font-size: small;">
+            <button onclick="pingAll()">reload all microservices</button><br>
+            Force error: <p-dropdown :options="forcibleErrors" v-model="forceError">
+                            <template #option="slotProps">{{slotProps.option.label}}</template>
+                            <template #value="slotProps">{{slotProps.value.label}}</template>
+                        </p-dropdown>
+        </div>
         <div>
             <p-calendar v-model="model.startDate" :showIcon="true" placeholder="Select a date for your order"></p-calendar>
             <button @click="newDraft()">get new draft</button>
@@ -90,6 +96,11 @@ function uuidv4() {
   );
 }
 
+const forcibleErrors = [ {label: 'none', value: 'none'},
+                        {label: 'business error in contracts', value: 'businessErrorInContracts'},
+                        {label: 'technical error in contracts', value: 'technicalErrorInContracts'},
+                        {label: 'business error in pricing', value: 'businessErrorInPricing'},
+                        {label: 'technical error in pricing', value: 'technicalErrorInPricing'} ];
 const App = {
   data() {
     return {
@@ -98,7 +109,9 @@ const App = {
       timeTaken: 0,
       source: null,
       currentAction: null,
-      requestId: uuidv4()
+      requestId: uuidv4(),
+      forcibleErrors,
+      forceError: forcibleErrors[0],
     }
   },
   mounted() {
@@ -120,7 +133,7 @@ const App = {
         fetch(CONTRACTS_BASE_URL + "/drafts",
               { "method": "POST",
                 body: JSON.stringify(body),
-                "headers": {"Content-Type": "application/json", "requestId": this.requestId}
+                "headers": getHeaders(this.getDemoContext)
               }
         )
         .then(r => r.json())
@@ -136,19 +149,14 @@ const App = {
         return _(configPossibilities).map("name").uniq().value()
     },
     getParamOptions(paramName, component) {
-        let vals = _(component.configPossibilities).filter(c => c.name === paramName).map(c => (c.value == "6.0" ? "6.0 - demo exception in pricing" : c.value)).value()
-        vals.push("9.9 - demo exception in contract");
+        let vals = _(component.configPossibilities)
+                    .filter(c => c.name === paramName)
+                    .map("value")
+                    .value()
         return vals;
     },
     changeParam(component, paramName, e) {
-        function sanatizeNewValue(value) {
-            let idx = value.indexOf(" - demo exception in pricing")
-            if(idx >= 0) {
-                value = value.substring(0, idx)
-            }
-            return value
-        }
-        let newValue = sanatizeNewValue(component.$configs[paramName].value)
+        let newValue = component.$configs[paramName].value
         let oldValue = _(component.configs).find(c => c.name === paramName).value
         if(newValue != oldValue) {
             component.$configs[paramName].waiting = true // causes disabled
@@ -158,7 +166,7 @@ const App = {
             this.start = new Date().getTime();
             fetch(CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/" + component.componentId + "/" + paramName + "/" + newValue,
                   { "method": "PUT",
-                    "headers": {"Content-Type": "application/json", "requestId": this.requestId}
+                    "headers": getHeaders(this.getDemoContext)
                   }
             )
             .then(r => {
@@ -172,6 +180,9 @@ const App = {
                 ameliorateCurrentAction(self)
             });
         }
+    },
+    getDemoContext() {
+        return JSON.stringify( { forceError: this.forceError.value } )
     }
   },
   components: {
@@ -187,6 +198,10 @@ function addPrice(component, id, price) {
     } else {
         _.forEach(component.children, child => addPrice(child, id, price))
     }
+}
+
+function getHeaders(getDemoContext) {
+    return {"Content-Type": "application/json", "request-id": this.requestId, "demo-context": getDemoContext() }
 }
 
 function sse(requestId, self) {

@@ -2,14 +2,11 @@ package ch.maxant.kdc.mf.web.boundary
 
 import ch.maxant.kdc.mf.library.Context
 import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
-import ch.maxant.kdc.mf.library.REQUEST_ID
 import ch.maxant.kdc.mf.library.RequestId
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.subscription.MultiEmitter
 import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecordMetadata
 import org.apache.kafka.common.header.Header
-import org.apache.kafka.common.header.Headers
-import org.apache.kafka.common.header.internals.RecordHeaders
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import org.eclipse.microprofile.reactive.messaging.Incoming
 import org.eclipse.microprofile.reactive.messaging.Message
@@ -81,10 +78,10 @@ class WebResource {
     }
 
     @GET
-    @Path("/stream/{$REQUEST_ID}")
+    @Path("/stream/{requestId}")
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @SseElementType(MediaType.APPLICATION_JSON)
-    fun stream(@PathParam(REQUEST_ID) requestId: String): Multi<String?>? =
+    fun stream(@PathParam("requestId") requestId: String): Multi<String?>? =
         Multi.createFrom()
                 .emitter { e: MultiEmitter<in String?> ->
                     subscriptions[requestId] = e
