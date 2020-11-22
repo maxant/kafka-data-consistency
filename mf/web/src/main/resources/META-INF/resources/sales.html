@@ -220,6 +220,8 @@ function sse(requestId, self) {
             initialiseDraft(self.model.draft.pack);
         } else if(msg.event == "UPDATED_DRAFT") {
             updateDraft(msg.payload.allComponents, self.model.draft.pack);
+        } else if(msg.event == "OFFERED_DRAFT") {
+            offeredDraft(msg.payload.contract);
         } else if(msg.event == "UPDATED_PRICES") {
             self.model.draft.prices = msg.payload.priceByComponentId;
             _.forEach(self.model.draft.prices, (v,k) => {

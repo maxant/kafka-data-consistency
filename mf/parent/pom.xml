@@ -49,6 +49,10 @@
             <artifactId>quarkus-resteasy-jackson</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client</artifactId>
+        </dependency>
+        <dependency>
             <!-- in order to use servlet api -->
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-undertow</artifactId>

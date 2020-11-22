@@ -164,6 +164,9 @@ Also known as entry points, process components or UIs.
       so that the user can work out what the problem is, if they continue in the process and we report an error like, 
       prices are not up to date due to consistencyTimestamp
   - hmmm not everything is always updated, so how would we know that components with an old consistency timestamp are ok?
+
+- call the contract validation service when we load the draft, and provide problems to the client
+- do we want the contract service to listen for errors on contracts and keep track of those in the contract as a substate? or is it ok to do it when we load and at given process steps like offering?
 - config inheritance - but only certain stuff makes sense, the rest doesnt
 - config deviations in cases where the sales team needs to specifically deviate from a normal customisation and it needs to be explicitly mentioned in the contract
 - remove support for string messages in the pimp interceptor

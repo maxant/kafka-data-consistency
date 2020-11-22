@@ -2,11 +2,9 @@ package ch.maxant.kdc.mf.contracts.boundary
 
 import ch.maxant.kdc.mf.contracts.control.ComponentsRepo
 import ch.maxant.kdc.mf.contracts.control.EventBus
+import ch.maxant.kdc.mf.contracts.control.ValidationService
 import ch.maxant.kdc.mf.contracts.definitions.*
-import ch.maxant.kdc.mf.contracts.dto.CreateCaseCommand
-import ch.maxant.kdc.mf.contracts.dto.Draft
-import ch.maxant.kdc.mf.contracts.dto.DraftRequest
-import ch.maxant.kdc.mf.contracts.dto.UpdatedDraft
+import ch.maxant.kdc.mf.contracts.dto.*
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractState
 import ch.maxant.kdc.mf.library.Context
@@ -46,6 +44,9 @@ class DraftsResource(
         var eventBus: EventBus,
 
         @Inject
+        var validationService: ValidationService,
+
+        @Inject
         var context: Context
 ) {
 
@@ -75,7 +76,7 @@ class DraftsResource(
         val contractDefinition = ContractDefinition.find(draftRequest.productId, start)
         val end = start.plusDays(contractDefinition.defaultDurationDays)
 
-        val contract = ContractEntity(draftRequest.contractId, start, end, ContractState.DRAFT)
+        val contract = ContractEntity(draftRequest.contractId, start, end, ContractState.DRAFT, System.currentTimeMillis())
         em.persist(contract)
         log.info("added contract ${contract.id} in state ${contract.contractState}")
 
@@ -128,6 +129,39 @@ class DraftsResource(
         // instead of publishing the initial model based on definitions, which contain extra
         // info like possible inputs, we publish a simpler model here
         eventBus.publish(UpdatedDraft(contract, allComponents))
+
+        Response.created(URI.create("/${contract.id}"))
+                .entity(contract)
+                .build()
+    }
+
+    @Operation(summary = "Offer draft", description = "offer a draft which has been configured to the customer needs, to them, in order for it to be accepted")
+    @APIResponses(
+            APIResponse(description = "let's the user update a part of the config", responseCode = "200", content = [
+                Content(mediaType = MediaType.APPLICATION_JSON, schema = Schema(implementation = ContractEntity::class))
+            ])
+    )
+    @PUT
+    @Path("/{contractId}/offer")
+    @Transactional
+    fun offerDraft(
+            @PathParam("contractId") @Parameter(name = "contractId", required = true) contractId: UUID
+    ): Response = doByHandlingValidationExceptions {
+
+        log.info("offering draft $contractId")
+
+        // check draft status
+        val contract = em.find(ContractEntity::class.java, contractId)
+        require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
+        // check all downstream services are in sync, in case there were any errors
+        validationService.validateContractIsInSync(contractId, contract.syncTimestamp)
+
+        // TODO should this be done async? us emutiny to get free context propagation?
+
+        contract.contractState = ContractState.OFFERED
+        // no need to update the sync timestamp, because otherwise we'd have to update it everywhere
+
+        eventBus.publish(OfferedDraft(contract))
 
         Response.created(URI.create("/${contract.id}"))
                 .entity(contract)

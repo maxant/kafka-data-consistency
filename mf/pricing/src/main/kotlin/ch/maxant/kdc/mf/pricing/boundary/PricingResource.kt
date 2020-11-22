@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.pricing.boundary
 
+import ch.maxant.kdc.mf.pricing.entity.PriceEntity
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import java.util.*
 import javax.inject.Inject
@@ -18,8 +19,8 @@ class PricingResource(
 ) {
 
     @GET
-    @Path("/{contractId}")
-    fun getByContractId(@PathParam("contractId") id: UUID) =
-        Response.ok("TODO").build()
+    @Path("/validateSyncTime/{contractId}/{syncTimestamp}")
+    fun validateSyncTime(@PathParam("contractId") contractId: UUID, @PathParam("syncTimestamp") syncTimestamp: Long) =
+            Response.ok(PriceEntity.Queries.countByContractIdAndSyncTimestamp(em, contractId, syncTimestamp)).build()
 
 }

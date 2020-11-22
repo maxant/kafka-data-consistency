@@ -22,9 +22,12 @@ open class ContractEntity( // add open, rather than rely on maven plugin, becaus
 
         @Column(name = "STATE", nullable = false)
         @Enumerated(EnumType.STRING)
-        open var contractState: ContractState
+        open var contractState: ContractState,
+
+        @Column(name = "SYNC_TIMESTAMP", nullable = false)
+        open var syncTimestamp: Long
 
 ) {
     // for hibernate
-    constructor() : this(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, ContractState.DRAFT)
+    constructor() : this(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, ContractState.DRAFT, 0)
 }
