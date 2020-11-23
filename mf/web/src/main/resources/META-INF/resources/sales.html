@@ -183,6 +183,9 @@ const App = {
             });
         }
     },
+    offerDraft() {
+        PUT 'http://localhost:8080/drafts/ce3cde0a-7ca1-4567-a774-1e6753038f02/offer'
+    },
     getDemoContext() {
         return JSON.stringify( { forceError: this.forceError.value } )
     }

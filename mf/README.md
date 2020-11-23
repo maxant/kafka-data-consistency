@@ -140,34 +140,16 @@ Also known as entry points, process components or UIs.
 
 ## TODO
 
-- add sessionId to requestId - errors are propagated back to the session or request?
 - add offering and accepting and do validation of prices at that point. TRANSPORT still with kafka!
+- add the ability to fix errors, so that the user isnt blocked.
+- "Must be processed by time X" as a header on messages, after which they are disposed of, since we know 
+  the UI will deal with the timeout: in online processes the user will get a timeout. At that stage you 
+  don't want to have to say, hey no idea whats still going to happen, rather we want to have a 
+  determinate state which can be reloaded and allow the user to restart from there
+- add the analagous timeout in the UI
+- add sessionId to requestId - errors are propagated back to the session or request?
 - UI should show progress of updating, calcing discounts, caling prices. widget can have knowledge of last one it waits for
-- add timeouts in UI
-- think about error handling - what else is missing?
-  - all seems to be working well
-  - any problem in contracts results in a reset of the UI - do i do that explicitly?
-  - technical problem in pricing is self healed
-  - business problem in pricing is still an issue, because we are no longer consistent! at least the UI shows the prices are unknown. but the backend still has them
-    - **so we need to STOP any further processes what rely on them being consistent!**
-- "Must be processed by time X" as a header on messages, after which they are disposed of, since we know the UI will deal with the timeout: 
-  in online processes the user will get a timeout. At that stage u don't want to have to 
-  say, hey no idea whats still going to happen, rather we want to have a determinate state which can be reloaded and 
-  allow the user to restart from there
-- when pricing error demo happens, we end up in an inconsistent state
-  - we could save that in the contract. or we could do validation before a specific process step => but how would we do that, 
-    since we have prices, theyre just for the old version of the draft. 
-  - SO, we need to either send an event back, so that the state can be updated (which could also fail), or we need to send a 
-    timestamp down to pricing, which needs to be reflected in the pricing data, which can be used to validate later
-  - lets call it a consistencyTimestamp
-  - actually, when the UI sets the value back, it could just then do it by calling the service again... but we dont know what the state in all components is.
-    - whats better? should it try and fix the problem, or just mark it as wrong? or both? it needs to mark it red, 
-      so that the user can work out what the problem is, if they continue in the process and we report an error like, 
-      prices are not up to date due to consistencyTimestamp
-  - hmmm not everything is always updated, so how would we know that components with an old consistency timestamp are ok?
-
 - call the contract validation service when we load the draft, and provide problems to the client
-- do we want the contract service to listen for errors on contracts and keep track of those in the contract as a substate? or is it ok to do it when we load and at given process steps like offering?
 - config inheritance - but only certain stuff makes sense, the rest doesnt
 - config deviations in cases where the sales team needs to specifically deviate from a normal customisation and it needs to be explicitly mentioned in the contract
 - remove support for string messages in the pimp interceptor
@@ -212,18 +194,26 @@ Also known as entry points, process components or UIs.
   longer than the first one. 10 sec topic has consumers that wait that long and their consumer config allows that. Send
   to waiting room contains a header so it knows where to send it back to
 - Retryable vs non retryable. Unique constraint, validation, illegal argument are non retryable. Anything else?
+- validation of some process steps is done with online rest calls so that we can ensure that we 
+  dont allow inconsistent cases to be processed beyond a certain point. the user has to fix any 
+  problems before we allow them to continue
+- syncTimestamp vs having a substate in the contract which gets updated if there are errors - its analagous
+  to always calling services with OUR key and not relying on getting their key, which we may not get if the response fails to arrive
 
-## the five tenets of global data consistency
+### the five tenets of global data consistency
 
 - async communication for writing data
   - realised with kafka
+  - pull principle, so that the system isnt overloaded
 - use automated retry for non-business errors
   - realised with the waiting room with a suitable back off strategy
+  - which allows for a self healing system
 - error propagation back to the originator
   - realised with the requestId and web component which filters data and returns it to the right browser
 - timeouts and "must be processed by"
   - and the ability to reload and fix problems, e.g. recalculating discounts and prices
 - sync timestamp in order to be able to determine when data is not globally consistent
+  - eg upstream we committed, but downstream we ran into a problem (business or technical)
 
 ## Running tips
 
