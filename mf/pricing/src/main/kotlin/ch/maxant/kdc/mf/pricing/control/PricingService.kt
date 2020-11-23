@@ -43,16 +43,17 @@ class PricingService(
         // TODO replace with DTO
         val contract = draft.get("contract")
         val contractId = UUID.fromString(contract.get("id").asText())
+        val syncTimestamp = contract.get("syncTimestamp").asLong()
         val start = LocalDateTime.parse(contract.get("start").asText())
         val end = LocalDateTime.parse(contract.get("end").asText())
         if(draft.has("pack")) {
             val pack = draft.get("pack").toString()
             val root = om.readValue(pack, TreeComponent::class.java)
-            return completedFuture(priceDraft(contractId, start, end, root))
+            return completedFuture(priceDraft(contractId, syncTimestamp, start, end, root))
         } else if(draft.has("allComponents")) {
             val allComponents = draft.get("allComponents").toString()
             val list = om.readValue<ArrayList<FlatComponent>>(allComponents)
-            return completedFuture(priceDraft(contractId, start, end, toTree(list)))
+            return completedFuture(priceDraft(contractId, syncTimestamp, start, end, toTree(list)))
         } else {
             throw IllegalArgumentException("unexpected draft structure")
         }
@@ -84,7 +85,7 @@ class PricingService(
         return map(byId.values.find { it.parentId == null } !!)
     }
 
-    private fun priceDraft(contractId: UUID, start: LocalDateTime, end: LocalDateTime, root: TreeComponent): PricingResult {
+    private fun priceDraft(contractId: UUID, syncTimestamp: Long, start: LocalDateTime, end: LocalDateTime, root: TreeComponent): PricingResult {
         log.info("starting to price individual components for contract $contractId...")
 
         context.throwExceptionInPricingIfRequiredForDemo()
@@ -106,7 +107,7 @@ class PricingService(
                 log.info("priced component ${component.componentDefinitionId}: $price using rule $ruleName")
 
                 val pe = PriceEntity(UUID.randomUUID(), contractId, start, end,
-                        componentId, ruleName, price.total, price.tax)
+                        componentId, ruleName, price.total, price.tax, syncTimestamp)
 
                 em.persist(pe)
             }

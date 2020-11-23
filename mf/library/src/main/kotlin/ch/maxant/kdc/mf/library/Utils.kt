@@ -3,6 +3,7 @@ package ch.maxant.kdc.mf.library
 import javax.validation.ValidationException
 import javax.ws.rs.core.Response
 
+// TODO add logging to this, otherwise you dont see the problem in the service provider logs
 fun doByHandlingValidationExceptions(fn: () -> Response): Response =
     try {
         fn()

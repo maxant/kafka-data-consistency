@@ -121,6 +121,7 @@ class DraftsResource(
         // check draft status
         val contract = em.find(ContractEntity::class.java, contractId)
         require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
+        contract.syncTimestamp = System.currentTimeMillis()
 
         val allComponents = componentsRepo.updateConfig(contractId, componentId, ConfigurableParameter.valueOf(param), newValue)
 
@@ -155,12 +156,15 @@ class DraftsResource(
         require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
         // check all downstream services are in sync, in case there were any errors
         validationService.validateContractIsInSync(contractId, contract.syncTimestamp)
+        log.info("draft is valid")
 
         // TODO should this be done async? us emutiny to get free context propagation?
 
         contract.contractState = ContractState.OFFERED
-        // no need to update the sync timestamp, because otherwise we'd have to update it everywhere
+        // no need to update the sync timestamp, because otherwise we'd have to update it everywhere,
+        // but we just validated that everything is indeed synchronised with us
 
+        log.info("publishing OfferedDraft event")
         eventBus.publish(OfferedDraft(contract))
 
         Response.created(URI.create("/${contract.id}"))

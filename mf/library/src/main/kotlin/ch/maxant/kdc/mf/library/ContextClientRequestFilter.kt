@@ -16,7 +16,7 @@ class ContextClientRequestFilter : ClientRequestFilter {
     val log: Logger = Logger.getLogger(this.javaClass)
 
     override fun filter(requestContext: ClientRequestContext) {
-        log.info("adding request id")
+        log.debug("adding requestId ${context.requestId} to outbound rest request")
         requestContext.headers.add(REQUEST_ID, context.requestId.toString())
     }
 }

@@ -140,6 +140,7 @@ Also known as entry points, process components or UIs.
 
 ## TODO
 
+- add sessionId to requestId - errors are propagated back to the session or request?
 - add offering and accepting and do validation of prices at that point. TRANSPORT still with kafka!
 - UI should show progress of updating, calcing discounts, caling prices. widget can have knowledge of last one it waits for
 - add timeouts in UI
@@ -211,6 +212,18 @@ Also known as entry points, process components or UIs.
   longer than the first one. 10 sec topic has consumers that wait that long and their consumer config allows that. Send
   to waiting room contains a header so it knows where to send it back to
 - Retryable vs non retryable. Unique constraint, validation, illegal argument are non retryable. Anything else?
+
+## the five tenets of global data consistency
+
+- async communication for writing data
+  - realised with kafka
+- use automated retry for non-business errors
+  - realised with the waiting room with a suitable back off strategy
+- error propagation back to the originator
+  - realised with the requestId and web component which filters data and returns it to the right browser
+- timeouts and "must be processed by"
+  - and the ability to reload and fix problems, e.g. recalculating discounts and prices
+- sync timestamp in order to be able to determine when data is not globally consistent
 
 ## Running tips
 

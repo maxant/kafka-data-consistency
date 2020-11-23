@@ -110,7 +110,7 @@ class WaitingroomResource(
             try {
                 if(run.get()) {
                     log.debug("checking waiting room $delay")
-                    val records: ConsumerRecords<String?, String?> = consumer.poll(Duration.ofSeconds(10)) // so we dont need to wait forever to restart quarkus
+                    val records: ConsumerRecords<String?, String?> = consumer.poll(Duration.ofSeconds(1)) // so we dont need to wait forever to restart quarkus
                     log.debug("received ${records.count()} records requiring a delay in waiting room $delay")
                     for (r in records) {
                         val timeToDelayUntil = String(r.headers().lastHeader(DELAY_UNTIL).value()).toLong()

@@ -19,8 +19,7 @@ class PricingResource(
 ) {
 
     @GET
-    @Path("/validateSyncTime/{contractId}/{syncTimestamp}")
+    @Path("/countNotSameSyncTime/{contractId}/{syncTimestamp}")
     fun validateSyncTime(@PathParam("contractId") contractId: UUID, @PathParam("syncTimestamp") syncTimestamp: Long) =
-            Response.ok(PriceEntity.Queries.countByContractIdAndSyncTimestamp(em, contractId, syncTimestamp)).build()
-
+            Response.ok(PriceEntity.Queries.countByContractIdAndNotSyncTimestamp(em, contractId, syncTimestamp)).build()
 }

@@ -1,6 +1,7 @@
 package ch.maxant.kdc.mf.pricing.entity
 
 import org.hibernate.annotations.Type
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.*
@@ -11,8 +12,8 @@ import javax.persistence.*
 @NamedQueries(
         NamedQuery(name = PriceEntity.NqDeleteByContractId.name,
                 query = PriceEntity.NqDeleteByContractId.query),
-        NamedQuery(name = PriceEntity.NqCountByContractIdAndSyncTime.name,
-                query = PriceEntity.NqCountByContractIdAndSyncTime.query)
+        NamedQuery(name = PriceEntity.NqCountByContractIdAndNotSyncTime.name,
+                query = PriceEntity.NqCountByContractIdAndNotSyncTime.query)
 )
 open class PriceEntity( // add open, rather than rely on maven plugin, because @QuarkusTest running in IntelliJ seems to think its final
 
@@ -55,7 +56,7 @@ open class PriceEntity( // add open, rather than rely on maven plugin, because @
         const val query = "delete from PriceEntity p where p.contractId = :$contractIdParam"
     }
 
-    object NqCountByContractIdAndSyncTime {
+    object NqCountByContractIdAndNotSyncTime {
         const val name = "selectPriceByContractId"
         const val contractIdParam = "contractId"
         const val syncTimestampParam = "syncTimestamp"
@@ -63,22 +64,26 @@ open class PriceEntity( // add open, rather than rely on maven plugin, because @
             select count(p) 
             from PriceEntity p 
             where p.contractId = :$contractIdParam
-              and p.syncTimestamp = :$syncTimestampParam
+              and p.syncTimestamp <> :$syncTimestampParam
             """
     }
 
     object Queries {
+        private val log = Logger.getLogger(this.javaClass)
+
         fun deleteByContractId(em: EntityManager, contractId: UUID): Int {
             return em.createNamedQuery(NqDeleteByContractId.name)
                     .setParameter(NqDeleteByContractId.contractIdParam, contractId)
                     .executeUpdate()
         }
 
-        fun countByContractIdAndSyncTimestamp(em: EntityManager, contractId: UUID, syncTimestamp: Long): Int {
-            return em.createNamedQuery(NqCountByContractIdAndSyncTime.name, Int::class.java)
-                    .setParameter(NqCountByContractIdAndSyncTime.contractIdParam, contractId)
-                    .setParameter(NqCountByContractIdAndSyncTime.syncTimestampParam, syncTimestamp)
-                    .firstResult
+        // TODO is there a nicer way to deal with jpa requiring us to return a long here?
+        fun countByContractIdAndNotSyncTimestamp(em: EntityManager, contractId: UUID, syncTimestamp: Long): Long {
+            log.info("counting for contract $contractId and syncTimestamp $syncTimestamp")
+            return em.createNamedQuery(NqCountByContractIdAndNotSyncTime.name, java.lang.Long::class.java)
+                    .setParameter(NqCountByContractIdAndNotSyncTime.contractIdParam, contractId)
+                    .setParameter(NqCountByContractIdAndNotSyncTime.syncTimestampParam, syncTimestamp)
+                    .singleResult.toLong()
         }
     }
 }
