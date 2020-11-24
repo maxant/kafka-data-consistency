@@ -1,0 +1,5 @@
+/* TODO make the cursor work - conflict with primevue */
+.p-disabled {
+    cursor: wait !important;
+    background-color: grey;
+}

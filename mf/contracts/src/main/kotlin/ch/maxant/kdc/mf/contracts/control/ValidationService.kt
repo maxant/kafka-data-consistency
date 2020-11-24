@@ -11,7 +11,7 @@ import javax.validation.ValidationException
 class ValidationService {
 
     @Inject
-    @field:RestClient
+    @RestClient // bizarrely this doesnt work with constructor injection
     lateinit var pricingAdapter: PricingAdapter
 
     /**

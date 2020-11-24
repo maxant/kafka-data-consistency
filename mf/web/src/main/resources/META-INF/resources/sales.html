@@ -2,45 +2,34 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>The Milk Factory</title>
+    <title>The Milk Factory :: Sales</title>
+    <script src="./common.js"></script>
+    <link href="./styles.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.20/lodash.min.js"></script>
-    <script src="https://unpkg.com/vue@next"></script>
+
+    <script src="https://unpkg.com/vue@3.0.2/dist/vue.global.js"></script>
+    <!-- <script src="https://unpkg.com/vue@next"></script> -->
+
+    <!--
     <link href="https://unpkg.com/primevue/resources/themes/saga-blue/theme.css " rel="stylesheet">
     <link href="https://unpkg.com/primevue/resources/primevue.min.css " rel="stylesheet">
     <link href="https://unpkg.com/primeicons/primeicons.css " rel="stylesheet">
-    <script src="https://unpkg.com/primevue/components/calendar/calendar.umd.min.js"></script>
+     <script src="https://unpkg.com/primevue/components/calendar/calendar.umd.min.js"></script>
     <script src="https://unpkg.com/primevue/components/dropdown/dropdown.umd.min.js"></script>
-    <script>
-// cases each quarkus uService to reload, since it doesnt do that when a kafka event arrives
-const CONTRACTS_BASE_URL   = "http://localhost:8080"; // http://178.199.206.170
-const PRICING_BASE_URL     = "http://localhost:8081";
-const WEB_BASE_URL         = "http://localhost:8082";
-const PARTNERS_BASE_URL    = "http://localhost:8083";
-const CASES_BASE_URL       = "http://localhost:8084";
-const WAITINGROOM_BASE_URL = "http://localhost:8085";
-
-function pingAll() {
-    fetch(CONTRACTS_BASE_URL   + "/ping").then(r => r.text());
-    fetch(PRICING_BASE_URL     + "/ping").then(r => r.text());
-    fetch(WEB_BASE_URL         + "/ping").then(r => r.text());
-    fetch(PARTNERS_BASE_URL    + "/ping").then(r => r.text());
-    fetch(CASES_BASE_URL       + "/ping").then(r => r.text());
-    fetch(WAITINGROOM_BASE_URL + "/ping").then(r => r.text());
-}
-    </script>
-    <style>
-    /* TODO make the cursor work - conflict with primevue */
-    .p-disabled {
-        cursor: wait !important;
-        background-color: grey;
-    }
-    </style>
+     -->
+    <!-- search for version numbers in npm: https://www.npmjs.com/package/primevue -->
+    <link href="https://unpkg.com/primevue@3.0.1/resources/themes/saga-blue/theme.css" rel="stylesheet">
+    <link href="https://unpkg.com/primevue@3.0.1/resources/primevue.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/primeicons@4.1.0/primeicons.css" rel="stylesheet">
+    <script src="https://unpkg.com/primevue@3.0.1/components/calendar/calendar.umd.min.js"></script>
+    <script src="https://unpkg.com/primevue@3.0.1/components/dropdown/dropdown.umd.min.js"></script>
 </head>
 <body style="background-image: url(https://hips.hearstapps.com/del.h-cdn.co/assets/15/24/1600x800/landscape-1433889344-del-milkshakes-index.jpg); background-color: rgba(255, 255, 255, 0.85); background-blend-mode: overlay;">
-    <h2>The Milk Factory</h2>
+    <h2>The Milk Factory :: Sales</h2>
     <div id="app">
         <div style="width: 100%; text-align: right; font-size: small;">
-            <button onclick="pingAll()">reload all microservices</button><br>
+            <button onclick="pingAll()">reload all microservices</button>
+            <br>
             Force error: <p-dropdown :options="forcibleErrors" v-model="forceError">
                             <template #option="slotProps">{{slotProps.option.label}}</template>
                             <template #value="slotProps">{{slotProps.value.label}}</template>
@@ -85,19 +74,14 @@ function pingAll() {
                 </li>
             </ul>
         </div>
+        <div>
+            <button :disabled="!allowOffer" @click="offerDraft()">offer draft</button>
+            (test if locked: <button @click="offerDraft()">offer draft</button>)
         </div>
     </div>
     <hr>
 </body>
-<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
 <script>
-// https://stackoverflow.com/a/2117523/458370
-function uuidv4() {
-  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-  );
-}
-
 const forcibleErrors = [ {label: 'none', value: 'none'},
                         {label: 'business error in contracts (REST)', value: 'businessErrorInContracts'},
                         {label: 'technical error in contracts (REST)', value: 'technicalErrorInContracts'},
@@ -114,15 +98,16 @@ const App = {
       requestId: uuidv4(),
       forcibleErrors,
       forceError: forcibleErrors[0],
+      allowOffer: false
     }
   },
   mounted() {
     this.newDraft();
-    window.model = this.model;
+    window.model = this.model; // just for debugging purposes
   },
   methods: {
     newDraft() {
-        this.start = new Date().getTime();
+        this.allowOffer = false;
         let body = {
           "productId": "COOKIES_MILKSHAKE",
           "start": new Date(new Date().getTime() + 24*3600000).toISOString().substr(0,10)
@@ -132,15 +117,17 @@ const App = {
         // subscribe before sending request to server, to ensure we receive ALL of the events, and any errors
         sse(this.requestId, this);
 
-        fetch(CONTRACTS_BASE_URL + "/drafts",
-              { "method": "POST",
-                body: JSON.stringify(body),
-                "headers": getHeaders(this.requestId, this.getDemoContext)
-              }
-        )
-        .then(r => r.json())
-        .then(r => {
-            console.log("got contract with id " + r.id + ", for requestId " + this.requestId);
+        fetchIt(CONTRACTS_BASE_URL + "/drafts", "POST", this, body).then(r => {
+            if(r.ok) console.log("got contract with id " + r.id + ", for requestId " + this.requestId);
+            else {
+                let msg = "Failed to offer contract: " + r.payload.error;
+                console.error(msg);
+                alert(msg);
+                ameliorateCurrentAction(self)
+            }
+        }).catch(error => {
+            console.error("received error: " + error);
+            ameliorateCurrentAction(self)
         });
     },
     get(obj, path) {
@@ -158,6 +145,7 @@ const App = {
         return vals;
     },
     changeParam(component, paramName, e) {
+        this.allowOffer = false;
         let newValue = component.$configs[paramName].value
         let oldValue = _(component.configs).find(c => c.name === paramName).value
         if(newValue != oldValue) {
@@ -165,26 +153,39 @@ const App = {
             console.log("change param " + paramName + " on component " + component.componentId + " to " + newValue)
             this.currentAction = {action: "changeParam", paramName, componentId: component.componentId, oldValue, newValue}
             let self = this;
-            this.start = new Date().getTime();
-            fetch(CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/" + component.componentId + "/" + paramName + "/" + newValue,
-                  { "method": "PUT",
-                    "headers": getHeaders(this.requestId, this.getDemoContext)
-                  }
-            )
-            .then(r => {
-                return r.json().then(payload => ({payload, ok: r.ok}))
-            }).then(r => {
+            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/" + component.componentId + "/" + paramName + "/" + newValue;
+            fetchIt(url, "PUT", this).then(r => {
                 if(r.ok) console.log("updated contract with id " + r.payload.id + ", for requestId " + self.requestId);
-                else throw Error(r.payload)
+                else {
+                    let msg = "Failed to offer contract: " + r.payload.error;
+                    console.error(msg);
+                    alert(msg);
+                    ameliorateCurrentAction(self)
+                }
             }).catch(error => {
                 console.error("received error: " + error);
-                alert("an error occurred - see the console");
                 ameliorateCurrentAction(self)
             });
         }
     },
     offerDraft() {
-        PUT 'http://localhost:8080/drafts/ce3cde0a-7ca1-4567-a774-1e6753038f02/offer'
+        this.allowOffer = false;
+        console.log("offering contract...")
+        this.currentAction = {action: "offerDraft"}
+        let self = this;
+        let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/offer";
+        fetchIt(url, "PUT", this).then(r => {
+            if(r.ok) console.log("offered contract with id " + r.payload.id + ", for requestId " + self.requestId);
+            else {
+                let msg = "Failed to offer contract: " + r.payload.error;
+                console.error(msg);
+                alert(msg);
+                ameliorateCurrentAction(self)
+            }
+        }).catch(error => {
+            console.error("received error: " + error);
+            ameliorateCurrentAction(self)
+        });
     },
     getDemoContext() {
         return JSON.stringify( { forceError: this.forceError.value } )
@@ -208,10 +209,6 @@ function addPrice(component, id, price) {
     }
 }
 
-function getHeaders(requestId, getDemoContext) {
-    return {"Content-Type": "application/json", "request-id": requestId, "demo-context": getDemoContext() }
-}
-
 function sse(requestId, self) {
     if(self.source && self.source.readyState != EventSource.CLOSED) self.source.close();
     self.source = new EventSource("/web/stream/" + requestId);
@@ -221,16 +218,22 @@ function sse(requestId, self) {
         if(msg.event == "CREATED_DRAFT") {
             self.model.draft = msg.payload;
             initialiseDraft(self.model.draft.pack);
+            // dont update any waiting or timing state, because this is just the first of many events to come
         } else if(msg.event == "UPDATED_DRAFT") {
             updateDraft(msg.payload.allComponents, self.model.draft.pack);
-        } else if(msg.event == "OFFERED_DRAFT") {
-            offeredDraft(msg.payload.contract);
+            // dont update any waiting or timing state, because this is just the first of many events to come
         } else if(msg.event == "UPDATED_PRICES") {
             self.model.draft.prices = msg.payload.priceByComponentId;
             _.forEach(self.model.draft.prices, (v,k) => {
                 addPrice(self.model.draft.pack, k, v);
             });
+            self.allowOffer = true;
             self.timeTaken = new Date().getTime() - self.start;
+        } else if(msg.event == "OFFERED_DRAFT") {
+            console.log("offered draft for contract " + msg.payload.contract.id);
+            self.allowOffer = false;
+            self.timeTaken = new Date().getTime() - self.start;
+            window.location.href = '/partner.html?id=1'; // TODO
         } else if(msg.event == "CHANGED_CASE") {
             if(msg.originalCommand == "CREATE_TASK" || msg.originalCommand == "UPDATE_TASK") {
                 // TODO refresh area that show tasks related to this sales case
@@ -253,10 +256,14 @@ function sse(requestId, self) {
 function ameliorateCurrentAction(self) {
     if(self.currentAction.action == "newDraft") {
         // not much can be done => user has a button to go get a new one
+        alert("Failed to create an offer. Please try refreshing the page.")
     } else if(self.currentAction.action == "changeParam") {
         alert("TODO offer user the chance to reload the entire draft with the backend state");
         // {action: "changeParam", paramName, componentId, oldValue, newValue}
         removeWaitingAndResetValue(self.currentAction.componentId, self.currentAction.paramName, self.currentAction.oldValue, self.model.draft.pack)
+        self.allowOffer = false
+    } else if(self.currentAction.action == "offerDraft") {
+        self.allowOffer = true // so user can retry if they want to. it mustve been enabled in order to get here.
     } else {
         console.error("unexpected current action: " + self.currentaction.action)
     }
