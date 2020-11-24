@@ -2,7 +2,7 @@ CREATE TABLE T_PARTNERS (
   ID            VARCHAR(36),
   FIRST_NAME    VARCHAR(100)   NOT NULL,
   LAST_NAME     VARCHAR(100)   NOT NULL,
-  TYPE          VARCHAR(20)    NOT NULL,    -- valid to, inclusive
+  TYPE          VARCHAR(20)    NOT NULL,
   DOB           DATE           NOT NULL,    -- date of birth / established
   EMAIL         VARCHAR(100),
   PHONE         VARCHAR(100),

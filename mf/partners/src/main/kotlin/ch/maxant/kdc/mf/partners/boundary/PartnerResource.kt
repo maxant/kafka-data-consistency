@@ -1,6 +1,14 @@
 package ch.maxant.kdc.mf.partners.boundary
 
 import ch.maxant.kdc.mf.partners.entity.PartnerEntity
+import org.eclipse.microprofile.openapi.annotations.Operation
+import org.eclipse.microprofile.openapi.annotations.media.Content
+import org.eclipse.microprofile.openapi.annotations.media.Schema
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses
+import org.eclipse.microprofile.openapi.annotations.tags.Tag
+import org.eclipse.microprofile.openapi.annotations.tags.Tags
 import java.net.URI
 import java.time.LocalDate
 import java.util.*
@@ -12,6 +20,7 @@ import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
 @Path("/partners")
+@Tag(name = "partners")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 class PartnerResource(
@@ -40,13 +49,18 @@ class PartnerResource(
             ).build()!!
 
     @POST
+    @Operation(summary = "Create a partner", description = "descr")
+    @APIResponses(
+            APIResponse(description = "a partner", responseCode = "201", content = [
+                Content(mediaType = MediaType.APPLICATION_JSON, schema = Schema(implementation = PartnerEntity::class))
+            ])
+    )
     @Transactional
     @Produces(MediaType.TEXT_PLAIN)
-    fun create(partner: PartnerEntity) =
+    fun create(@Parameter(name = "partner", required = true) partner: PartnerEntity) =
         Response.created(URI("/partners/${partner.id}"))
                 .entity(fun (): UUID{ em.persist(partner); return partner.id }())
                 .build()!!
-
 }
 
 class DateOfBirth(dob: String?) {

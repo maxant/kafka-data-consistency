@@ -101,12 +101,21 @@ class KotlinExperiments {
 
     @Test
     fun bifunc() {
+        fun convert(function: (Long, Int) -> String)=
+            object: BiFunction<Long, Int, String> {
+                override fun apply(p0: Long, p1: Int) = function(p0, p1)
+            }
+
         fun takesABifunc(b: BiFunction<Long, Int, String>): String {
             return b.apply(1L, 2)
         }
 
         val bifunc = BiFunction<Long, Int, String> { l, i -> "$l$i" }
         assertEquals("12", takesABifunc(bifunc))
+
+        assertEquals("1:2", takesABifunc(BiFunction { l, i -> "$l:$i"}))
+
+        assertEquals("1-2", takesABifunc(convert { l, i -> "$l-$i" }))
     }
 
 }

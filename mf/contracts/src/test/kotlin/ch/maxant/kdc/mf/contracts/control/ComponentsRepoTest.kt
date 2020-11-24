@@ -5,6 +5,8 @@ import ch.maxant.kdc.mf.contracts.dto.Draft
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractState
+import ch.maxant.kdc.mf.library.TestUtils
+import ch.maxant.kdc.mf.library.TestUtils.Companion.flushed
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.quarkus.test.junit.QuarkusTest
@@ -33,7 +35,7 @@ class ComponentsRepoTest {
     lateinit var om: ObjectMapper
 
     fun setup(): Draft = flushed(em) {
-        val contract = ContractEntity(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, ContractState.DRAFT)
+        val contract = ContractEntity(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, ContractState.DRAFT, System.currentTimeMillis())
         em.persist(contract)
         val profile: Profile = Profiles.find()
         val product = Products.find(ProductId.COOKIES_MILKSHAKE, profile.quantityMlOfProduct)
@@ -95,13 +97,3 @@ class ComponentsRepoTest {
 
 }
 
-// TODO delete this in lieu of the one in the library
-fun <T> flushed(em: EntityManager, f: ()->T) =
-    try {
-        f()
-    } catch(e: Exception) {
-        throw e
-    } finally {
-        em.flush()
-        em.clear()
-    }

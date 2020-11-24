@@ -214,6 +214,8 @@ Also known as entry points, process components or UIs.
   - and the ability to reload and fix problems, e.g. recalculating discounts and prices
 - sync timestamp in order to be able to determine when data is not globally consistent
   - eg upstream we committed, but downstream we ran into a problem (business or technical)
+  - validation before important process steps: partners may already exist beforehand and they are 
+    loosely coupled to the sales system, so it doesnt make sense to use a syncTimestamp for them => just check existance 
 
 ## Running tips
 

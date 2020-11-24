@@ -1,0 +1,13 @@
+CREATE TABLE T_PARTNER_RELATIONSHIPS (
+  ID            VARCHAR(36),
+  PARTNER_ID    VARCHAR(36)    NOT NULL, -- id of the partner to which there is a relationship
+  FOREIGN_ID    VARCHAR(100)   NOT NULL, -- eg a contract number
+  STARTTIME     DATETIME(3)    NOT NULL, -- valid from, inclusive
+  ENDTIME       DATETIME(3)    NOT NULL, -- valid to, inclusive
+  ROLE          VARCHAR(20)    NOT NULL, -- this partner is a ...
+  PRIMARY KEY(ID)
+)
+;
+
+CREATE INDEX I_PARTNER_RELATIONSHIPS_PARTNER_ID ON T_PARTNER_RELATIONSHIPS (PARTNER_ID);
+CREATE INDEX I_PARTNER_RELATIONSHIPS_FOREIGN_ID ON T_PARTNER_RELATIONSHIPS (FOREIGN_ID);

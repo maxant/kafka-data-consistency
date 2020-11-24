@@ -5,12 +5,13 @@ import java.time.LocalDate
 import java.util.*
 import javax.persistence.*
 import ch.maxant.kdc.mf.partners.entity.PartnerEntity.NqSelectByFirstNameOrLastNameOrDobOrEmailOrPhone as NqSByFNOrLNOrDobOrEOrP
+import ch.maxant.kdc.mf.partners.entity.PartnerEntity.NqSelectByIds as NqSByIds
 
 @Entity
 @Table(name = "T_PARTNERS")
 @NamedQueries(
-        NamedQuery(name = NqSByFNOrLNOrDobOrEOrP.name,
-                query = NqSByFNOrLNOrDobOrEOrP.query)
+        NamedQuery(name = NqSByFNOrLNOrDobOrEOrP.name, query = NqSByFNOrLNOrDobOrEOrP.query),
+        NamedQuery(name = NqSByIds.name, query = NqSByIds.query)
 )
 class PartnerEntity(
 
@@ -57,6 +58,15 @@ class PartnerEntity(
                 """
     }
 
+    object NqSelectByIds {
+        const val name = "selectPartnerByIds"
+        const val idsParam = "ids"
+        const val query = """
+                from PartnerEntity p
+                where p.id in :$idsParam
+                """
+    }
+
     object Queries {
         fun selectByFirstNameOrLastNameOrDobOrEmailOrPhone(em: EntityManager,
           firstName: String?,
@@ -70,6 +80,11 @@ class PartnerEntity(
                     .setParameter(NqSByFNOrLNOrDobOrEOrP.dobParam,       dob?:LocalDate.now())
                     .setParameter(NqSByFNOrLNOrDobOrEOrP.emailParam,     email?:"")
                     .setParameter(NqSByFNOrLNOrDobOrEOrP.phoneParam,     phone?:"")
+                    .resultList
+        }
+        fun selectByIds(em: EntityManager, ids: List<UUID>): List<PartnerEntity> {
+            return em.createNamedQuery(NqSByIds.name, PartnerEntity::class.java)
+                    .setParameter(NqSByIds.idsParam, ids)
                     .resultList
         }
     }
