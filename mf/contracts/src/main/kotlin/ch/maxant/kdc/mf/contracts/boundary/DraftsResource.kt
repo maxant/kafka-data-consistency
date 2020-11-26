@@ -95,6 +95,10 @@ class DraftsResource(
 
         eventBus.publish(CreateCaseCommand(contract.id))
 
+        if(draftRequest.partnerId != null) {
+            eventBus.publish(CreatePartnerRelationshipCommand(draftRequest.partnerId!!, contract.id, "CONTRACT_HOLDER"))
+        }
+
         Response.created(URI.create("/${contract.id}"))
                 .entity(contract)
                 .build()

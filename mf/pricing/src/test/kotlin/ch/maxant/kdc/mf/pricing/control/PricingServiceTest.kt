@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.pricing.control
 
+import ch.maxant.kdc.mf.library.Context
 import ch.maxant.kdc.mf.pricing.dto.Configuration
 import ch.maxant.kdc.mf.pricing.dto.FlatComponent
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -18,7 +19,7 @@ class PricingServiceTest {
     fun setup() {
         val em = mock<EntityManager> {  }
         val om = mock<ObjectMapper> {  }
-        sut = PricingService(em, om)
+        sut = PricingService(em, om, Context())
     }
 
     @Test

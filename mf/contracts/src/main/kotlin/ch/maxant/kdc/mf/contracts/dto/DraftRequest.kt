@@ -15,5 +15,7 @@ data class DraftRequest (
     var productId: ProductId,
 
     /** an optional contractId - if supplied, it will be honoured. */
-    var contractId: UUID = UUID.randomUUID()
+    var contractId: UUID = UUID.randomUUID(),
+
+    var partnerId: String?
 )

@@ -221,3 +221,6 @@ Also known as entry points, process components or UIs.
 
     export MAVEN_OPTS="-Xmx150m"
     mvn quarkus:dev -Ddebug=5006
+
+    export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.9.11-0.el7_9.x86_64
+    mvn --version

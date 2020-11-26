@@ -25,6 +25,10 @@ class EventBus {
     lateinit var cases: Emitter<String>
 
     @Inject
+    @Channel("partners-out")
+    lateinit var partners: Emitter<String>
+
+    @Inject
     lateinit var messageBuilder: MessageBuilder
 
     @Inject
@@ -46,6 +50,10 @@ class EventBus {
 
     fun publish(createCaseCommand: CreateCaseCommand) {
         send(cases, createCaseCommand.referenceId, createCaseCommand, command = "CREATE_CASE")
+    }
+
+    fun publish(createPartnerRelationshipCommand: CreatePartnerRelationshipCommand) {
+        send(partners, createPartnerRelationshipCommand.contractId, createPartnerRelationshipCommand, command = "CREATE_PARTNER")
     }
 
     private fun send(emitter: Emitter<String>, key: Any, value: Any, command: String? = null, event: String? = null) {
