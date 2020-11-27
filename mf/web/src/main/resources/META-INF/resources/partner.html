@@ -23,14 +23,21 @@
             <button onclick="pingAll()">reload all microservices</button>
         </div>
         <div>
-            Partner ID {{id}}
+            Partner ID: {{id}}<br>
+            First Name: {{model.partner.firstName}}<br>
+            Last Name: {{model.partner.lastName}}<br>
+            DoB: {{model.partner.dob}}<br>
+            Email: {{model.partner.email}}<br>
+            Phone: {{model.partner.phone}}<br>
+            Type: {{model.partner.type}}<br>
         </div>
     </div>
     <hr>
 </body>
 <script>
 var urlParams = new URLSearchParams(window.location.search);
-var id = console.log(urlParams.has('id'));
+var id = urlParams.get('id');
+console.log(id);
 
 const App = {
   data() {
@@ -42,15 +49,18 @@ const App = {
     }
   },
   mounted() {
-    this.fetchPartner(this.pnr);
+    this.fetchPartner(this.id);
     window.model = this.model; // just for debugging purposes
   },
   methods: {
     fetchPartner() {
-        let url = PARTNERS_BASE_URL + "/" + this.id;
+        let self = this;
+        let url = PARTNERS_BASE_URL + "/partners/" + this.model.id;
         fetchIt(url, "GET", this).then(r => {
-            if(r.ok) console.log("got partner with id " + r.id + ", for requestId " + this.requestId);
-            else {
+            if(r.ok) {
+                console.log("got partner with id " + r.id + ", for requestId " + this.requestId);
+                self.model.partner = r.payload;
+            } else {
                 let msg = "Failed to get partner: " + r.payload.error;
                 console.error(msg);
                 alert(msg);

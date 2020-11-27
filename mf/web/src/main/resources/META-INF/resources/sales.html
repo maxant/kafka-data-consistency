@@ -113,6 +113,11 @@ const App = {
   },
   methods: {
     newDraft() {
+        if(!this.partner) {
+            alert("please select a partner");
+            return;
+        }
+
         this.allowOffer = false;
         let body = {
           "productId": "COOKIES_MILKSHAKE",
@@ -244,6 +249,8 @@ function sse(requestId, self) {
             self.allowOffer = false;
             self.timeTaken = new Date().getTime() - self.start;
             window.location.href = '/partner.html?id=' + self.partner.id;
+        } else if(msg.event == "CHANGED_PARTNER_RELATIONSHIP") {
+            // nothing to do at the moment
         } else if(msg.event == "CHANGED_CASE") {
             if(msg.originalCommand == "CREATE_TASK" || msg.originalCommand == "UPDATE_TASK") {
                 // TODO refresh area that show tasks related to this sales case

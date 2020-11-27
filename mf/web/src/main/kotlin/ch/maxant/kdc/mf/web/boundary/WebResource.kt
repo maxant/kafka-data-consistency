@@ -56,6 +56,10 @@ class WebResource {
     @PimpedAndWithDltAndAck
     fun processCases(message: Message<String>) = process(message)
 
+    @Incoming("partners-in")
+    @PimpedAndWithDltAndAck
+    fun processPartners(message: Message<String>) = process(message)
+
     @Incoming("errors-in")
     @PimpedAndWithDltAndAck
     fun processErrors(message: Message<String>) = process(message)
