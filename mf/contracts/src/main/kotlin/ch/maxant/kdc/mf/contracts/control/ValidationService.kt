@@ -30,16 +30,8 @@ class ValidationService {
         // partners may already exist beforehand and they are loosely coupled to the sales system,
         // so it doesnt make sense to use a syncTimestamp for them => just check existance
 
-        if(partnerAdapter.getPartnersInRole(contractId, "CONTRACT_HOLDER").size != 1) {
-            throw MissingContractHolderValidationException("Contract holder not found")
-        }
-        if(partnerAdapter.getPartnersInRole(contractId, "SALES_REP").size != 1) {
-            throw MissingSalesRepValidationException("Sales rep not found")
-        }
+        partnerAdapter.validate(contractId)
     }
 }
 
 class PricingValidationException(msg: String): ValidationException(msg)
-abstract class PartnerValidationException(msg: String): ValidationException(msg)
-class MissingContractHolderValidationException(msg: String): PartnerValidationException(msg)
-class MissingSalesRepValidationException(msg: String): PartnerValidationException(msg)

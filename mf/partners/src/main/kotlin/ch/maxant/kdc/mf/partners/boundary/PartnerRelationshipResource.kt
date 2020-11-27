@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.partners.boundary
 
+import ch.maxant.kdc.mf.partners.entity.ForeignIdType
 import ch.maxant.kdc.mf.partners.entity.PartnerEntity
 import ch.maxant.kdc.mf.partners.entity.PartnerRelationshipEntity
 import ch.maxant.kdc.mf.partners.entity.Role
@@ -15,6 +16,7 @@ import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
 import javax.persistence.EntityManager
+import javax.validation.ValidationException
 import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
@@ -65,6 +67,46 @@ class PartnerRelationshipResource(
             return Response.ok(results).build()
         }
     }
+
+    @GET
+    @Operation(summary = "validates the cardinalitites")
+    @APIResponses(
+            APIResponse(responseCode = "200", content = [
+                Content(mediaType = MediaType.APPLICATION_JSON,schema = Schema(implementation = Unit::class))
+            ]),
+            APIResponse(responseCode = "400", content = [
+                Content(mediaType = MediaType.APPLICATION_JSON,schema = Schema(implementation = ValidationException::class))
+            ])
+    )
+    @Path("/validate/{foreignId}")
+    fun validate(
+            @Parameter(name = "foreignId", description = "the id of say the contract, to which the partner has a relationship")
+            @PathParam("foreignId") foreignId: String
+    ): Response {
+
+        val allRelationships = PartnerRelationshipEntity.Queries.selectByForeignId(em, foreignId)
+        val latest = HashMap<String, PartnerRelationshipEntity>()
+        allRelationships.forEach { r ->
+            val key = r.foreignId + r.role
+            latest.computeIfAbsent(key) { _ -> r }
+            latest.computeIfPresent(key) { _, existing -> if (existing.end > r.end) existing else r }
+        }
+
+        val distinctTypes = latest.values.map { rel -> rel.role.foreignIdType }.distinct()
+        if(distinctTypes.count() != 1)
+            throw NoSingleForeignIdTypeValidationException(distinctTypes)
+
+        val relationshipsWithWrongCardinality = latest.values
+                .groupBy { it.role }
+                .filter { (role, relationships)  -> relationships.size > role.cardinality }
+                .flatMap { it.value }
+        if(relationshipsWithWrongCardinality.isNotEmpty()) {
+            throw RelationshipsWithWrongCardinalityValidationException(
+                relationshipsWithWrongCardinality.map { WrongCardinality(it.role, it.partnerId) }
+            )
+        }
+        return Response.ok().build()
+    }
 }
 
 data class PartnerRelationshipDetails(
@@ -75,3 +117,7 @@ data class PartnerRelationshipDetails(
         val role: Role,
         val foreignId: String
 )
+
+class NoSingleForeignIdTypeValidationException(val typesPresent: List<ForeignIdType>): ValidationException()
+class RelationshipsWithWrongCardinalityValidationException(val relationShips: List<WrongCardinality>): ValidationException()
+data class WrongCardinality(val role: Role, val partnerId: UUID)

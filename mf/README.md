@@ -140,6 +140,7 @@ Also known as entry points, process components or UIs.
 
 ## TODO
 
+- how do cases and then PARTNER RELATIONSHIPS end up in the client, when they use contractId? ok coz of requestId?
 - add offering and accepting and do validation of prices at that point. TRANSPORT still with kafka!
 - add the ability to fix errors, so that the user isnt blocked.
 - "Must be processed by time X" as a header on messages, after which they are disposed of, since we know 

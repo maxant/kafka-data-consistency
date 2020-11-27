@@ -1,7 +1,10 @@
 package ch.maxant.kdc.mf.cases.control
 
-import ch.maxant.kdc.mf.cases.boundary.*
+import ch.maxant.kdc.mf.cases.boundary.CreateCaseCommand
+import ch.maxant.kdc.mf.cases.boundary.CreateTaskCommand
+import ch.maxant.kdc.mf.cases.boundary.UpdateTaskCommand
 import ch.maxant.kdc.mf.cases.entity.CaseEntity
+import ch.maxant.kdc.mf.cases.entity.CaseType
 import ch.maxant.kdc.mf.cases.entity.State
 import ch.maxant.kdc.mf.cases.entity.TaskEntity
 import ch.maxant.kdc.mf.library.AsyncContextAware
@@ -27,7 +30,7 @@ class CasesService(
 ) {
     @Inject // this doesnt appear to work in the constructor
     @Channel("cases-out")
-    lateinit var eventBus: Emitter<String>
+    lateinit var casesOut: Emitter<String>
 
     private val log = Logger.getLogger(this.javaClass)
 
@@ -80,8 +83,24 @@ class CasesService(
         val cce = CaseChangedEvent(case.id, case.referenceId, case.type, tasks.map { TaskDto(it) })
         val ack = CompletableFuture<Unit>()
         val msg = messageBuilder.build(case.referenceId, cce, ack, event = "CHANGED_CASE")
-        eventBus.send(msg)
+        casesOut.send(msg)
         return ack
     }
+}
 
+data class CaseChangedEvent(
+        val caseId: UUID,
+        val referenceId: UUID,
+        val type: CaseType,
+        val tasks: List<TaskDto>
+)
+
+data class TaskDto(
+        val taskId: UUID,
+        val userId: String,
+        val title: String,
+        val description: String,
+        val state: State
+) {
+    constructor(task: TaskEntity) : this(task.id, task.userId, task.title, task.description, task.state)
 }

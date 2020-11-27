@@ -3,7 +3,6 @@ package ch.maxant.kdc.mf.cases.boundary
 import ch.maxant.kdc.mf.cases.control.CasesService
 import ch.maxant.kdc.mf.cases.entity.CaseType
 import ch.maxant.kdc.mf.cases.entity.State
-import ch.maxant.kdc.mf.cases.entity.TaskEntity
 import ch.maxant.kdc.mf.library.Context
 import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -72,19 +71,3 @@ data class UpdateTaskCommand(
         val state: State
 )
 
-data class CaseChangedEvent(
-        val caseId: UUID,
-        val referenceId: UUID,
-        val type: CaseType,
-        val tasks: List<TaskDto>
-)
-
-data class TaskDto(
-        val taskId: UUID,
-        val userId: String,
-        val title: String,
-        val description: String,
-        val state: State
-) {
-    constructor(task: TaskEntity) : this(task.id, task.userId, task.title, task.description, task.state)
-}

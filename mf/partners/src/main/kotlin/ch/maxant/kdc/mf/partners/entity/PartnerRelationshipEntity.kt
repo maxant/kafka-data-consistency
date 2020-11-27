@@ -8,7 +8,8 @@ import javax.persistence.*
 @Entity
 @Table(name = "T_PARTNER_RELATIONSHIPS")
 @NamedQueries(
-        NamedQuery(name = PartnerRelationshipEntity.NqSelectByForeignIdAndRole.name, query = PartnerRelationshipEntity.NqSelectByForeignIdAndRole.query)
+        NamedQuery(name = PartnerRelationshipEntity.NqSelectByForeignIdAndRole.name, query = PartnerRelationshipEntity.NqSelectByForeignIdAndRole.query),
+        NamedQuery(name = PartnerRelationshipEntity.NqSelectByForeignId.name, query = PartnerRelationshipEntity.NqSelectByForeignId.query)
 )
 class PartnerRelationshipEntity(
 
@@ -47,6 +48,15 @@ class PartnerRelationshipEntity(
                 """
     }
 
+    object NqSelectByForeignId {
+        const val name = "selectPartnerRelationshipsByForeignId"
+        const val foreignIdParam = "foreignId"
+        const val query = """
+                from PartnerRelationshipEntity p
+                where p.foreignId = :$foreignIdParam
+                """
+    }
+
     object Queries {
         fun selectByForeignIdAndRole(em: EntityManager, foreignId: String, role: Role): List<PartnerRelationshipEntity> {
             return em.createNamedQuery(NqSelectByForeignIdAndRole.name, PartnerRelationshipEntity::class.java)
@@ -54,10 +64,28 @@ class PartnerRelationshipEntity(
                     .setParameter(NqSelectByForeignIdAndRole.roleParam, role)
                     .resultList
         }
+
+        fun selectByForeignId(em: EntityManager, foreignId: String): List<PartnerRelationshipEntity> {
+            return em.createNamedQuery(NqSelectByForeignId.name, PartnerRelationshipEntity::class.java)
+                    .setParameter(NqSelectByForeignId.foreignIdParam, foreignId)
+                    .resultList
+        }
     }
 }
 
-enum class Role {
-    CONTRACT_HOLDER,
-    SALES_REP
+// currently every role exists just once at a time.
+// if that was to increase, we'd have to adjust the validation which uses "latest" semantics!
+enum class Role(val cardinality: Int, val foreignIdType: ForeignIdType) {
+    CONTRACT_HOLDER(1, ForeignIdType.CONTRACT),
+    INVOICE_RECIPIENT(Int.MAX_VALUE, ForeignIdType.CONTRACT),
+    SALES_REP(Int.MAX_VALUE, ForeignIdType.CONTRACT),
+    ORDER_RECIPIENT(Int.MAX_VALUE, ForeignIdType.ORDER),
+    AFTER_SALES_REP(Int.MAX_VALUE, ForeignIdType.ORDER),
+    SUPPLIER(Int.MAX_VALUE, ForeignIdType.ADDITIONAL_INFORMATION)
+}
+
+enum class ForeignIdType {
+    CONTRACT,
+    ORDER,
+    ADDITIONAL_INFORMATION
 }

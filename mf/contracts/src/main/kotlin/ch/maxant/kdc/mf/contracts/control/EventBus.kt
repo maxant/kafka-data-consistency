@@ -53,7 +53,7 @@ class EventBus {
     }
 
     fun publish(createPartnerRelationshipCommand: CreatePartnerRelationshipCommand) {
-        send(partners, createPartnerRelationshipCommand.contractId, createPartnerRelationshipCommand, command = "CREATE_PARTNER")
+        send(partners, createPartnerRelationshipCommand.foreignId, createPartnerRelationshipCommand, command = "CREATE_PARTNER_RELATIONSHIP")
     }
 
     private fun send(emitter: Emitter<String>, key: Any, value: Any, command: String? = null, event: String? = null) {

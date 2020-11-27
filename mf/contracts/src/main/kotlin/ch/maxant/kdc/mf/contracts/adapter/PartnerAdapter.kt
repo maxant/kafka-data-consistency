@@ -7,14 +7,15 @@ import javax.ws.rs.core.MediaType
 
 @Path("/partner-relationships")
 @RegisterRestClient
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
 interface PartnerAdapter {
 
     @GET
-    @Path("/latest/{contractId}/{role}")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    fun getPartnersInRole(@PathParam("contractId") contractId: UUID,
-                          @PathParam("role") role: String): List<PartnerRelationship>
+    @Path("/validate/{contractId}")
+    fun validate(
+            @PathParam("contractId") foreignId: UUID
+    ): Unit
 }
 
 data class PartnerRelationship(

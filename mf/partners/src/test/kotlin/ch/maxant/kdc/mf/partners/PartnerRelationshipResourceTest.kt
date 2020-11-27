@@ -3,10 +3,7 @@ package ch.maxant.kdc.mf.partners;
 import ch.maxant.kdc.mf.library.TestUtils
 import ch.maxant.kdc.mf.partners.boundary.PartnerRelationshipDetails
 import ch.maxant.kdc.mf.partners.boundary.PartnerRelationshipResource
-import ch.maxant.kdc.mf.partners.entity.PartnerEntity
-import ch.maxant.kdc.mf.partners.entity.PartnerRelationshipEntity
-import ch.maxant.kdc.mf.partners.entity.PersonType
-import ch.maxant.kdc.mf.partners.entity.Role
+import ch.maxant.kdc.mf.partners.entity.*
 import io.quarkus.test.junit.QuarkusTest
 import io.restassured.RestAssured.given
 import io.restassured.http.ContentType
