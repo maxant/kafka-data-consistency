@@ -6,20 +6,22 @@ function uuidv4() {
 }
 
 // cases each quarkus uService to reload, since it doesnt do that when a kafka event arrives
-const CONTRACTS_BASE_URL   = "http://localhost:8080"; // http://178.199.206.170
-const PRICING_BASE_URL     = "http://localhost:8081";
-const WEB_BASE_URL         = "http://localhost:8082";
-const PARTNERS_BASE_URL    = "http://localhost:8083";
-const CASES_BASE_URL       = "http://localhost:8084";
-const WAITINGROOM_BASE_URL = "http://localhost:8085";
+const CONTRACTS_BASE_URL    = "http://localhost:8080"; // http://178.199.206.170
+const PRICING_BASE_URL      = "http://localhost:8081";
+const WEB_BASE_URL          = "http://localhost:8082";
+const PARTNERS_BASE_URL     = "http://localhost:8083";
+const CASES_BASE_URL        = "http://localhost:8084";
+const WAITINGROOM_BASE_URL  = "http://localhost:8085";
+const ORGANISATION_BASE_URL = "http://localhost:8086";
 
 function pingAll() {
-    fetch(CONTRACTS_BASE_URL   + "/ping").then(r => r.text());
-    fetch(PRICING_BASE_URL     + "/ping").then(r => r.text());
-    fetch(WEB_BASE_URL         + "/ping").then(r => r.text());
-    fetch(PARTNERS_BASE_URL    + "/ping").then(r => r.text());
-    fetch(CASES_BASE_URL       + "/ping").then(r => r.text());
-    fetch(WAITINGROOM_BASE_URL + "/ping").then(r => r.text());
+    fetch(CONTRACTS_BASE_URL    + "/ping").then(r => r.text());
+    fetch(PRICING_BASE_URL      + "/ping").then(r => r.text());
+    fetch(WEB_BASE_URL          + "/ping").then(r => r.text());
+    fetch(PARTNERS_BASE_URL     + "/ping").then(r => r.text());
+    fetch(CASES_BASE_URL        + "/ping").then(r => r.text());
+    fetch(WAITINGROOM_BASE_URL  + "/ping").then(r => r.text());
+    fetch(ORGANISATION_BASE_URL + "/ping").then(r => r.text());
 }
 
 function getHeaders(requestId, getDemoContext) {
