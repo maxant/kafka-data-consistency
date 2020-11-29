@@ -1,11 +1,14 @@
 package ch.maxant.kdc.mf.organisation.control
 
+import ch.maxant.kdc.mf.library.Role
 import ch.maxant.kdc.mf.organisation.control.Staff.Companion.JANE
 import ch.maxant.kdc.mf.organisation.control.Staff.Companion.JANET
 import ch.maxant.kdc.mf.organisation.control.Staff.Companion.JOHN
 import com.fasterxml.jackson.annotation.JsonIgnore
 import java.util.*
 import java.util.UUID.fromString
+import kotlin.reflect.full.memberProperties
+import kotlin.reflect.jvm.javaType
 
 object OUs {
     val HEAD_OFFICE = OU(DN("Head Office", listOf("ch", "maxant", "mf")), listOf(JOHN), listOf(), listOf())
@@ -29,35 +32,59 @@ object OUs {
     }
 }
 
-/** distinguished name - this refers to the name that uniquely identifies an entry in the directory
+/**
+ * distinguished name - this refers to the name that uniquely identifies an entry in the directory
  * @param cn common name
  * @param dcs domain components, this refers to each component of the domain
  */
 class DN(val cn: String, val dcs: List<String>)
 
-class Staff(val dn: DN, val partnerId: UUID, val staffRoles: List<StaffRole>) {
-    @get:JsonIgnore val ous = mutableListOf<OU>()
+/**
+ * @param un username
+ */
+abstract class User(val dn: DN, val partnerId: UUID, val un: String, val roles: List<Role>)
+
+class Staff(dn: DN, partnerId: UUID, staffRoles: List<StaffRole>, un: String): User(dn, partnerId, un, staffRoles) {
+    @get:JsonIgnore val ous = mutableListOf<OU>() // ignored since its a relationship back up to the parent which could cause infinite loops during serialisation
 
     /** keys of OUs where staff works */
     val ouDnCns = mutableListOf<String>()
 
-    fun getAllStaffRoles(): Set<StaffRole> {
-        val roles = mutableSetOf(*staffRoles.toTypedArray())
-        ous.forEach { roles.addAll(it.getAllInheritableRoles()) }
-        return roles
+    fun getAllStaffRoles(): Set<Role> {
+        val allRoles = mutableSetOf(*roles.toTypedArray())
+        ous.forEach { allRoles.addAll(it.getAllInheritableRoles()) }
+        return allRoles
     }
+
+    fun getEmail(): String = "$un@mf.maxant.ch"
 
     companion object {
         val JOHN = Staff(DN("John", listOf("")), fromString("3cd5b3b1-e740-4533-a526-2fa274350586"),
-                listOf(StaffRole.SALES_REP, StaffRole.FINANCE_SPECIALIST)
+                listOf(StaffRole.SALES_REP, StaffRole.FINANCE_SPECIALIST), "john.smith"
         )
         val JANE = Staff(DN("Jane", listOf("")), fromString("6c5aa3cd-0a07-4055-9cec-955900c6bea0"),
-                listOf(StaffRole.SALES_REP, StaffRole.ORDER_COMPLETION_CONSULTANT)
+                listOf(StaffRole.SALES_REP, StaffRole.ORDER_COMPLETION_CONSULTANT), "jane.smith"
         )
         val JANET = Staff(DN("Janet", listOf("")), fromString("c1f1b7ee-ed4e-4342-ac68-199fba9fe50d"),
-                listOf(StaffRole.ORDER_COMPLETION_CONSULTANT, StaffRole.SUPPLY_CHAIN_SPECIALIST)
+                listOf(StaffRole.ORDER_COMPLETION_CONSULTANT, StaffRole.SUPPLY_CHAIN_SPECIALIST), "janet.smith"
         )
+        fun values() = (Companion::class.memberProperties as ArrayList)
+                .filter { it.returnType.javaType.typeName == Staff::class.java.name }
+                .map { it.get(Companion) as Staff }
+    }
+}
 
+/** a partner (e.g. a customer, or supplier) with access to some part of the landscape */
+class Partner(dn: DN, partnerId: UUID, partnerRoles: List<PartnerRole>, un: String): User(dn, partnerId, un, partnerRoles) {
+    @get:JsonIgnore val ous = mutableListOf<OU>()
+
+    companion object {
+        val AUGUSTUS = Partner(DN("Augustus", listOf("")), fromString("331e5c18-e330-4204-95a1-371e54a12f5c"),
+                listOf(PartnerRole.CUSTOMER), "180000032"
+        )
+        fun values() = (Companion::class.memberProperties as ArrayList)
+                .filter { it.returnType.javaType.typeName == Partner::class.java.name }
+                .map { it.get(Companion) as Partner }
     }
 }
 
@@ -107,9 +134,3 @@ class OU(val dn: DN,
     }
 }
 
-enum class StaffRole(description: String) {
-    SALES_REP("A person who sells stuff"),
-    SUPPLY_CHAIN_SPECIALIST("Someone specialising in sourcing products"),
-    ORDER_COMPLETION_CONSULTANT("Someone who completes bespoke orders"),
-    FINANCE_SPECIALIST("Someone who works with finances")
-}

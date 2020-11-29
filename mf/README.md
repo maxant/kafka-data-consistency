@@ -148,6 +148,15 @@ Also known as entry points, process components or UIs.
 
 ## TODO
 
+- do a view of all meethods, and the roles and therefore the users which can run them
+- add other tables to security overview
+- can we check on startup that for each method that is annotated by our security annotation, there is a suitable mapping in place?
+- security and abac
+- customer portal
+- digitally sign contract
+- https://zipkin.io/
+- add accepted time to contract as well as by who - altho we are guaranteed its the contract holder, since they have to be, in order to do it
+- contracts: execute business rules e.g. if total is higher than customers credit limit, then we need to go thru the approval process
 - when showing partner after offering contract, display contracts
 - when showing sales rep, use a widget from the partners application
 - how do cases and then PARTNER RELATIONSHIPS end up in the client, when they use contractId? ok coz of requestId?
