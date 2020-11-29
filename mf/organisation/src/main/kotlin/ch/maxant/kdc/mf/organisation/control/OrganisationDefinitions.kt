@@ -8,39 +8,42 @@ import java.util.*
 import java.util.UUID.fromString
 
 object OUs {
-    val HEAD_OFFICE = OU(DN("Head Office", listOf("ch", "maxant", "mf")), listOf(JOHN), listOf())
+    val HEAD_OFFICE = OU(DN("Head Office", listOf("ch", "maxant", "mf")), listOf(JOHN), listOf(), listOf())
     val FINANCES = OU(DN("Finances", listOf("finances")), listOf(
         // note how john is here, but also in head office
         JOHN
-    ), listOf(), HEAD_OFFICE)
+    ), listOf(), listOf(), HEAD_OFFICE)
     val BERN = OU(DN("Bern", listOf("bern")), listOf(
         JANE
-    ), listOf(), HEAD_OFFICE)
+    ), listOf(), listOf("3000"), HEAD_OFFICE)
     val LAUSANNE = OU(DN("Lausanne", listOf("lausanne")), listOf(
         JANET
-    ), listOf(), HEAD_OFFICE)
+    ), listOf(), listOf("1000", "1007"), HEAD_OFFICE)
 
     /** returns all staff, optionally matching the given role (null means all roles),
      * operating recursively down thru the kids of the given OU, or HEAD_OFFICE if none is provided */
-    fun getAllStaff(staffRole: StaffRole?, ou: OU = HEAD_OFFICE): MutableList<Staff> {
-        val staffList: MutableList<Staff> = mutableListOf()
+    fun getAllStaff(staffRole: StaffRole?, ou: OU = HEAD_OFFICE): MutableSet<Staff> {
+        val staffList = mutableSetOf<Staff>()
         ou.getAllStaff(staffRole, staffList)
         return staffList
     }
 }
 
 /** distinguished name - this refers to the name that uniquely identifies an entry in the directory
- * @param CN common name
+ * @param cn common name
  * @param dcs domain components, this refers to each component of the domain
  */
-class DN(val CN: String, val dcs: List<String>)
+class DN(val cn: String, val dcs: List<String>)
 
 class Staff(val dn: DN, val partnerId: UUID, val staffRoles: List<StaffRole>) {
-    @get:JsonIgnore lateinit var ou: OU
+    @get:JsonIgnore val ous = mutableListOf<OU>()
 
-    fun getAllStaffRoles(): List<StaffRole> {
-        val roles = mutableListOf(*staffRoles.toTypedArray())
-        roles.addAll(ou.getAllInheritableRoles())
+    /** keys of OUs where staff works */
+    val ouDnCns = mutableListOf<String>()
+
+    fun getAllStaffRoles(): Set<StaffRole> {
+        val roles = mutableSetOf(*staffRoles.toTypedArray())
+        ous.forEach { roles.addAll(it.getAllInheritableRoles()) }
         return roles
     }
 
@@ -69,23 +72,30 @@ class Staff(val dn: DN, val partnerId: UUID, val staffRoles: List<StaffRole>) {
  * @param dn distinguised name of the ou. note that dcs are inherited by children.
  * @param inheritableRoles roles that are inherited by all child-ous and staff
  */
-class OU(val dn: DN, val staff: List<Staff>, val inheritableRoles: List<StaffRole>, @get:JsonIgnore val parent: OU? = null) {
+class OU(val dn: DN,
+         val staff: List<Staff>,
+         val inheritableRoles: List<StaffRole>,
+         val postcodes: List<String>,
+         @get:JsonIgnore val parent: OU? = null) {
     val children = mutableListOf<OU>()
 
     init {
         parent?.children?.add(this)
-        staff.forEach { it.ou = this }
+        staff.forEach { it.ous.add(this) }
+        staff.forEach { it.ouDnCns.add(getId()) }
     }
 
     fun getAllInheritableRoles(): Collection<StaffRole> {
-        val roles = mutableListOf(*inheritableRoles.toTypedArray())
+        val roles = mutableSetOf(*inheritableRoles.toTypedArray())
         roles.addAll(parent?.getAllInheritableRoles()?: emptyList())
         return roles
     }
 
+    fun getId(): String = (if(parent != null) parent.getId() + "." else "").plus(dn.dcs.joinToString("."))
+
     /** puts all staff into the given list, optionally matching the given role (null means all roles),
      * operating recursively down thru the kids */
-    fun getAllStaff(staffRole: StaffRole?, staffList: MutableList<Staff> = mutableListOf()) {
+    fun getAllStaff(staffRole: StaffRole?, staffList: MutableSet<Staff> = mutableSetOf()) {
         staffList.addAll(
             if(staffRole == null) {
                 staff

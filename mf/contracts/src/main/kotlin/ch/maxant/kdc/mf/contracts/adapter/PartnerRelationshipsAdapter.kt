@@ -9,13 +9,14 @@ import javax.ws.rs.core.MediaType
 @RegisterRestClient
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-interface PartnerAdapter {
+interface PartnerRelationshipsAdapter {
 
     @GET
     @Path("/validate/{contractId}")
     fun validate(
-            @PathParam("contractId") foreignId: UUID
-    ): Unit
+            @PathParam("contractId") foreignId: UUID,
+            @QueryParam("rolesThatCanBeMissing") rolesThatCanBeMissing: List<String>
+    )
 }
 
 data class PartnerRelationship(

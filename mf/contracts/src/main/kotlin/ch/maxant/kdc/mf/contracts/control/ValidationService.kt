@@ -1,6 +1,6 @@
 package ch.maxant.kdc.mf.contracts.control
 
-import ch.maxant.kdc.mf.contracts.adapter.PartnerAdapter
+import ch.maxant.kdc.mf.contracts.adapter.PartnerRelationshipsAdapter
 import ch.maxant.kdc.mf.contracts.adapter.PricingAdapter
 import org.eclipse.microprofile.rest.client.inject.RestClient
 import java.util.*
@@ -17,12 +17,13 @@ class ValidationService {
 
     @Inject
     @RestClient // bizarrely this doesnt work with constructor injection
-    lateinit var partnerAdapter: PartnerAdapter
+    lateinit var partnerRelationshipsAdapter: PartnerRelationshipsAdapter
 
     /**
-     * @throws PricingValidationException if the prices are not in sync
+     * Throws PricingValidationException if the prices are not in sync, or others if there are problems with
+     * partner relationships
      */
-    fun validateContractIsInSync(contractId: UUID, syncTimestamp: Long) {
+    fun validateContractIsInSyncToOfferIt(contractId: UUID, syncTimestamp: Long) {
         if(pricingAdapter.countNotSameSyncTime(contractId, syncTimestamp) != 0) {
             throw PricingValidationException("Pricing is not in sync with the contract $contractId and timestamp $syncTimestamp")
         }
@@ -30,7 +31,7 @@ class ValidationService {
         // partners may already exist beforehand and they are loosely coupled to the sales system,
         // so it doesnt make sense to use a syncTimestamp for them => just check existance
 
-        partnerAdapter.validate(contractId)
+        partnerRelationshipsAdapter.validate(contractId, listOf("INVOICE_RECIPIENT"))
     }
 }
 

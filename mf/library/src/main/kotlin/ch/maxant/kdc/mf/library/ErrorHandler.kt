@@ -9,6 +9,7 @@ import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.eclipse.microprofile.reactive.messaging.Message
 import java.math.BigInteger
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionException
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
 
@@ -49,9 +50,10 @@ class ErrorHandler {
      * @param originalMessage the message which lead to this problem
      */
     fun dlt(originalMessage: Any, t: Throwable): CompletableFuture<Unit> {
+        val unwrapped = unwrapThrowableIfRequired(t)
         val value = when(originalMessage) {
-            is String -> om.writeValueAsString(Error(t, originalMessage))
-            is Message<*> -> om.writeValueAsString(Error(t, originalMessage.payload as String))
+            is String -> om.writeValueAsString(Error(unwrapped, originalMessage))
+            is Message<*> -> om.writeValueAsString(Error(unwrapped, originalMessage.payload as String))
             else -> throw UnsupportedOperationException("unexpected first parameter type ${originalMessage::class.java.name}")
         }
         val key = when(originalMessage) {
@@ -68,6 +70,11 @@ class ErrorHandler {
         errors.send(msg)
         return ack
     }
+
+    private fun unwrapThrowableIfRequired(t: Throwable) =
+        if(t is CompletionException) {
+            t.cause ?: t
+        } else t
 
     /**
      * Sends the message to the waiting room so that it can be sent back for a retry.

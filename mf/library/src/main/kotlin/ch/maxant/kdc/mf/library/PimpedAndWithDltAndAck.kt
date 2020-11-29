@@ -171,10 +171,10 @@ class PimpedAndWithDltAndAckInterceptor(
                                    // give up => we simply dont support retry when you use basic strings instead of message objects
                 is Message<*> -> {
                     val throwables = ExceptionUtils.getThrowableList(t).map { it::class.java }
-                    throwables.none {
-                               it == ValidationException::class.java
-                            || it == ConstraintViolationException::class.java
-                            || it == IllegalArgumentException::class.java
+                    !throwables.any {
+                        ValidationException::class.java.isAssignableFrom(it)
+                            || ConstraintViolationException::class.java.isAssignableFrom(it)
+                            || IllegalArgumentException::class.java.isAssignableFrom(it)
                     }
                 }
                 else -> throw UnsupportedOperationException("unexpected first parameter type ${firstParam::class.java.name}")

@@ -50,6 +50,9 @@
         <div v-if="get(model, 'draft.contract')">
             Contract ID: {{ model.draft.contract.id }}
         </div>
+        <div v-if="get(model, 'draft.contract')">
+            Sales Rep: {{ model.salesRep }}
+        </div>
         <div v-if="!!get(model, 'draft.pack.$price')">
             Product: {{ model.draft.pack.children[0].productId }} {{ model.draft.pack.$price.total }} CHF ({{ model.draft.pack.$price.tax }} CHF VAT)
         </div>
@@ -96,7 +99,7 @@ const App = {
   data() {
     return {
       partner: null,
-      model: {"draft": {"contract": {}, "pack": {}, "prices": {}}, "startDate": new Date()},
+      model: {"draft": {"contract": {}, "pack": {}, "prices": {}}, "startDate": new Date(), salesRep: null},
       start: 0,
       timeTaken: 0,
       source: null,
@@ -191,9 +194,15 @@ const App = {
         fetchIt(url, "PUT", this).then(r => {
             if(r.ok) console.log("offered contract with id " + r.payload.id + ", for requestId " + self.requestId);
             else {
-                let msg = "Failed to offer contract: " + r.payload.error;
-                console.error(msg);
-                alert(msg);
+                if(r.payload.class == "ch.maxant.kdc.mf.partners.boundary.NoRelationshipsFoundValidationException") {
+                    alert("No partner relationships exist, please create a new offer");
+                } else if(r.payload.class == "ch.maxant.kdc.mf.partners.boundary.NotEnoughRelationshipsForForeignIdTypeValidationException") {
+                    alert("A partner relationship is missing: " + r.payload.data);
+                } else {
+                    let msg = "Failed to offer contract: " + r.payload.error;
+                    console.error(msg);
+                    alert(msg);
+                }
                 ameliorateCurrentAction(self)
             }
         }).catch(error => {
@@ -250,15 +259,22 @@ function sse(requestId, self) {
             self.timeTaken = new Date().getTime() - self.start;
             window.location.href = '/partner.html?id=' + self.partner.id;
         } else if(msg.event == "CHANGED_PARTNER_RELATIONSHIP") {
-            // nothing to do at the moment
+            if(msg.payload.role == "SALES_REP") {
+                self.model.salesRep = msg.payload.partnerId;
+            }
         } else if(msg.event == "CHANGED_CASE") {
             if(msg.originalCommand == "CREATE_TASK" || msg.originalCommand == "UPDATE_TASK") {
                 // TODO refresh area that show tasks related to this sales case
             }
         } else if(msg.event == "ERROR") {
-            console.error("received error: " + JSON.stringify(msg));
-            alert("an error occurred - see the console");
-            ameliorateCurrentAction(self)
+            if(msg.payload.errorClass == "ch.maxant.kdc.mf.partners.control.PartnerHasNoPrimaryAddressValidationException") {
+                alert(msg.payload.errorMessage);
+                // TODO let user add a primary address
+            } else {
+                console.error("received error: " + JSON.stringify(msg));
+                alert("an error occurred - see the console");
+                ameliorateCurrentAction(self)
+            }
         } else {
             console.error("received unexpected event: " + event.data);
         }

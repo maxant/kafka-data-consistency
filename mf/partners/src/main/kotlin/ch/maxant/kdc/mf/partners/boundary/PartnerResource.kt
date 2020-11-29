@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.partners.boundary
 
+import ch.maxant.kdc.mf.partners.entity.AddressEntity
 import ch.maxant.kdc.mf.partners.entity.PartnerEntity
 import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.media.Content
@@ -25,7 +26,7 @@ import javax.ws.rs.core.Response
 @Produces(MediaType.APPLICATION_JSON)
 class PartnerResource(
     @Inject
-    public var em: EntityManager
+    var em: EntityManager
 ) {
 
     @GET
@@ -46,6 +47,16 @@ class PartnerResource(
                     PartnerEntity.Queries.selectByFirstNameOrLastNameOrDobOrEmailOrPhone(
                             em, firstName, lastName, dob?.date, email, phone
                     )
+            ).build()!!
+
+    @GET
+    @Operation(summary = "gets all addresses of the partner")
+    @Path("/addresses/{partnerId}")
+    fun getAddresses(
+            @Parameter(name = "partnerId") @PathParam("partnerId") partnerId: UUID
+    ) =
+            Response.ok(
+                    AddressEntity.Queries.selectByPartnerId(em, partnerId)
             ).build()!!
 
     @POST

@@ -1,11 +1,15 @@
 package ch.maxant.kdc.mf.partners.entity
 
 import org.hibernate.annotations.Type
+import java.time.LocalDate
 import java.util.*
 import javax.persistence.*
 
 @Entity
 @Table(name = "T_ADDRESSES")
+@NamedQueries(
+        NamedQuery(name = AddressEntity.NqSelectByPartnerId.name, query = AddressEntity.NqSelectByPartnerId.query)
+)
 class AddressEntity(
 
     @Id
@@ -41,6 +45,23 @@ class AddressEntity(
 
 ) {
     constructor() : this(UUID.randomUUID(), UUID.randomUUID(), "", "", "", "", "", "", AddressType.PRIMARY)
+
+    object NqSelectByPartnerId {
+        const val name = "selectAddressByPartnerId"
+        const val partnerIdParam = "partnerId"
+        const val query = """
+                from AddressEntity a
+                where a.partnerId = :$partnerIdParam
+                """
+    }
+
+    object Queries {
+        fun selectByPartnerId(em: EntityManager, partnerId: UUID): List<AddressEntity> {
+            return em.createNamedQuery(NqSelectByPartnerId.name, AddressEntity::class.java)
+                    .setParameter(NqSelectByPartnerId.partnerIdParam, partnerId)
+                    .resultList
+        }
+    }
 }
 
 enum class AddressType {

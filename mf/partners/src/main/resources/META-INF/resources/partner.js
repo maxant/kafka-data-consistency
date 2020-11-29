@@ -3,7 +3,7 @@ var template =
 `
 
 <p-dropdown :options="partners"
-           optionLabel="firstName"
+           optionLabel="$name"
            v-model="partner"
            placeholder="Select a partner"
 >
@@ -15,13 +15,28 @@ window.mfPartner = {
   template,
   data: function(){
     return {
-        partners: [
-            {"firstName": "John", "lastName": "Smith", "id": "3cd5b3b1-e740-4533-a526-2fa274350586"},
-            {"firstName": "Jane", "lastName": "Smith", "id": "6c5aa3cd-0a07-4055-9cec-955900c6bea0"},
-            {"firstName": "Janet", "lastName": "Smith", "id": "c1f1b7ee-ed4e-4342-ac68-199fba9fe50d"}
-        ],
-        partner: null
+        partners: [],
+        partner: null,
+        requestId: uuidv4(),
     }
+  },
+  created() {
+    let self = this;
+    let url = PARTNERS_BASE_URL + "/partners/search"
+    fetchIt(url, "GET", this).then(r => {
+        if(r.ok) {
+            console.log("got partners for requestId " + this.requestId);
+            let ps = _.sortBy(r.payload, ['lastName', 'firstName', 'dob']);
+            _.forEach(ps, p => p.$name = p.firstName + " " + p.lastName + " (" + p.dob + " - " + p.id + ")")
+            this.partners = ps;
+        } else {
+            let msg = "Failed to get partners: " + r.payload.error;
+            console.error(msg);
+            alert(msg);
+        }
+    }).catch(error => {
+        console.error("received error: " + error);
+    });
   },
   components: {
     'p-dropdown': dropdown

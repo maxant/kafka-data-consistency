@@ -75,13 +75,14 @@ class PartnerRelationshipEntity(
 
 // currently every role exists just once at a time.
 // if that was to increase, we'd have to adjust the validation which uses "latest" semantics!
-enum class Role(val cardinality: Int, val foreignIdType: ForeignIdType) {
-    CONTRACT_HOLDER(1, ForeignIdType.CONTRACT),
-    INVOICE_RECIPIENT(Int.MAX_VALUE, ForeignIdType.CONTRACT),
-    SALES_REP(Int.MAX_VALUE, ForeignIdType.CONTRACT),
-    ORDER_RECIPIENT(Int.MAX_VALUE, ForeignIdType.ORDER),
-    AFTER_SALES_REP(Int.MAX_VALUE, ForeignIdType.ORDER),
-    SUPPLIER(Int.MAX_VALUE, ForeignIdType.ADDITIONAL_INFORMATION)
+enum class Role(val minCardinality: Int, val maxCardinality: Int, val foreignIdType: ForeignIdType) {
+    CONTRACT_HOLDER(1, 1, ForeignIdType.CONTRACT),
+    INVOICE_RECIPIENT(1, Int.MAX_VALUE, ForeignIdType.CONTRACT),
+    SALES_REP(1, Int.MAX_VALUE, ForeignIdType.CONTRACT),
+    MARKETING_RECIPIENT(0, Int.MAX_VALUE, ForeignIdType.CONTRACT),
+    ORDER_RECIPIENT(1, Int.MAX_VALUE, ForeignIdType.ORDER),
+    AFTER_SALES_REP(1, Int.MAX_VALUE, ForeignIdType.ORDER),
+    SUPPLIER(1, Int.MAX_VALUE, ForeignIdType.ADDITIONAL_INFORMATION),
 }
 
 enum class ForeignIdType {

@@ -96,7 +96,16 @@ class DraftsResource(
         eventBus.publish(CreateCaseCommand(contract.id))
 
         if(draftRequest.partnerId != null) {
-            eventBus.publish(CreatePartnerRelationshipCommand(draftRequest.partnerId!!, contract.id, "CONTRACT_HOLDER", start, end))
+            eventBus.publish(
+                    CreatePartnerRelationshipCommand(
+                            draftRequest.partnerId!!,
+                            contract.id,
+                            CreatePartnerRelationshipCommand.Role.CONTRACT_HOLDER,
+                            start,
+                            end,
+                            listOf(CreatePartnerRelationshipCommand.Role.SALES_REP)
+                    )
+            )
         }
 
         Response.created(URI.create("/${contract.id}"))
@@ -152,14 +161,13 @@ class DraftsResource(
     fun offerDraft(
             @PathParam("contractId") @Parameter(name = "contractId", required = true) contractId: UUID
     ): Response = doByHandlingValidationExceptions {
-
         log.info("offering draft $contractId")
 
         // check draft status
         val contract = em.find(ContractEntity::class.java, contractId)
         require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
         // check all downstream services are in sync, in case there were any errors
-        validationService.validateContractIsInSync(contractId, contract.syncTimestamp)
+        validationService.validateContractIsInSyncToOfferIt(contractId, contract.syncTimestamp)
         log.info("draft is valid")
 
         // TODO should this be done async? us emutiny to get free context propagation?

@@ -6,7 +6,13 @@ import java.util.*
 data class CreatePartnerRelationshipCommand(
         val partnerId: UUID,
         val foreignId: UUID,
-        val role: String,
+        val role: Role,
         val start: LocalDateTime,
-        val end: LocalDateTime
-)
+        val end: LocalDateTime,
+        val additionalRelationshipsToCreate: List<Role>
+) {
+    enum class Role {
+        SALES_REP,
+        CONTRACT_HOLDER
+    }
+}

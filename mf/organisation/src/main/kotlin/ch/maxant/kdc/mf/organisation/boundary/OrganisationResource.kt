@@ -30,6 +30,19 @@ class OrganisationResource {
         Response.ok(OUs.getAllStaff(role)).build()
 
     @GET
+    @Operation(summary = "gets all staff in a given role who can service the given postcode",
+            description = "if none is explicitly attached to the postcode, then someone from head office takes over.")
+    @Path("/staffInRole/{role}/{postcode}")
+    fun getStaffByRoleAndPostCode(@Parameter(name = "role") @PathParam("role") role: StaffRole,
+                                  @Parameter(name = "postcode") @PathParam("postcode") postcode: String): Response {
+        val staffInRole = OUs.getAllStaff(role)
+        return Response.ok(
+                // TODO first, or someone else say based on some kind of work load criteria? we could feed back work load to this component
+            staffInRole.find { it.ous.flatMap { it.postcodes }.contains(postcode) } ?: staffInRole.find { it.ous.contains(HEAD_OFFICE) }
+        ).build()
+    }
+
+    @GET
     @Operation(summary = "gets the organisation as a tree")
     fun getOrganisation() =
         Response.ok(HEAD_OFFICE).build()

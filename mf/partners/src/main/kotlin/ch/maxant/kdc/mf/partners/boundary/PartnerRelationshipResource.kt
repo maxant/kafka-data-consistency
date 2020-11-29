@@ -1,5 +1,7 @@
 package ch.maxant.kdc.mf.partners.boundary
 
+import ch.maxant.kdc.mf.library.MfValidationException
+import ch.maxant.kdc.mf.library.doByHandlingValidationExceptions
 import ch.maxant.kdc.mf.partners.entity.ForeignIdType
 import ch.maxant.kdc.mf.partners.entity.PartnerEntity
 import ch.maxant.kdc.mf.partners.entity.PartnerRelationshipEntity
@@ -12,6 +14,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
+import org.jboss.logging.Logger
 import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
@@ -28,8 +31,9 @@ import kotlin.collections.HashMap
 @Produces(MediaType.APPLICATION_JSON)
 class PartnerRelationshipResource(
     @Inject
-    public var em: EntityManager
+    var em: EntityManager
 ) {
+    private val log = Logger.getLogger(this.javaClass)
 
     @GET
     @Operation(summary = "gets the latest matching partners")
@@ -81,31 +85,65 @@ class PartnerRelationshipResource(
     @Path("/validate/{foreignId}")
     fun validate(
             @Parameter(name = "foreignId", description = "the id of say the contract, to which the partner has a relationship")
-            @PathParam("foreignId") foreignId: String
-    ): Response {
+            @PathParam("foreignId") foreignId: String,
+            @Parameter(name = "rolesThatCanBeMissing", description = "optional list of roles that are not important for the current validation")
+            @QueryParam("rolesThatCanBeMissing") rolesThatCanBeMissing: List<Role>
+    ): Response = doByHandlingValidationExceptions {
+        log.info("validating relationships for foreignId $foreignId")
 
         val allRelationships = PartnerRelationshipEntity.Queries.selectByForeignId(em, foreignId)
         val latest = HashMap<String, PartnerRelationshipEntity>()
         allRelationships.forEach { r ->
             val key = r.foreignId + r.role
-            latest.computeIfAbsent(key) { _ -> r }
+            latest.computeIfAbsent(key) { r }
             latest.computeIfPresent(key) { _, existing -> if (existing.end > r.end) existing else r }
         }
 
         val distinctTypes = latest.values.map { rel -> rel.role.foreignIdType }.distinct()
-        if(distinctTypes.count() != 1)
-            throw NoSingleForeignIdTypeValidationException(distinctTypes)
 
+        checkAllRelationshipsHaveOneForeignIdType(distinctTypes)
+
+        checkNumberOfRelationshipsMatchCardinality(distinctTypes.first(), latest, rolesThatCanBeMissing)
+
+        checkForWrongCardinality(latest)
+
+        log.info("validation complete")
+        Response.ok().build()
+    }
+
+    private fun checkForWrongCardinality(latest: HashMap<String, PartnerRelationshipEntity>) {
+        // TODO is the following superflous to the above? probably, but it doesnt check for required roles which dont yet exist!
         val relationshipsWithWrongCardinality = latest.values
                 .groupBy { it.role }
-                .filter { (role, relationships)  -> relationships.size > role.cardinality }
+                .filter { (role, relationships) -> relationships.size > role.minCardinality }
                 .flatMap { it.value }
-        if(relationshipsWithWrongCardinality.isNotEmpty()) {
+        log.info("relationshipsWithWrongCardinality $relationshipsWithWrongCardinality")
+        if (relationshipsWithWrongCardinality.isNotEmpty()) {
             throw RelationshipsWithWrongCardinalityValidationException(
-                relationshipsWithWrongCardinality.map { WrongCardinality(it.role, it.partnerId) }
+                    relationshipsWithWrongCardinality.map { WrongCardinality(it.role, it.partnerId) }
             )
         }
-        return Response.ok().build()
+    }
+
+    private fun checkNumberOfRelationshipsMatchCardinality(distinctType: ForeignIdType, latest: HashMap<String, PartnerRelationshipEntity>, rolesThatCanBeMissing: List<Role>) {
+        // now check we have the right number of relationships
+        Role.values()
+                .filter { it.foreignIdType == distinctType }
+                .filter { !rolesThatCanBeMissing.contains(it) }
+                .forEach { role ->
+                    val numOfRelationshipsInRole = latest.values.filter { it.role == role }.count()
+                    if (numOfRelationshipsInRole < role.minCardinality) throw NotEnoughRelationshipsForForeignIdTypeValidationException(role)
+                    if (numOfRelationshipsInRole > role.maxCardinality) throw TooManyRelationshipsForForeignIdTypeValidationException(role)
+                }
+    }
+
+    private fun checkAllRelationshipsHaveOneForeignIdType(distinctTypes: List<ForeignIdType>): List<ForeignIdType> {
+        // check we only have relationships belonging to one type of foreignId, e.g. contracts
+        if (distinctTypes.isEmpty())
+            throw NoRelationshipsFoundValidationException()
+        if (distinctTypes.size != 1)
+            throw NoSingleForeignIdTypeValidationException(distinctTypes)
+        return distinctTypes
     }
 }
 
@@ -118,6 +156,9 @@ data class PartnerRelationshipDetails(
         val foreignId: String
 )
 
-class NoSingleForeignIdTypeValidationException(val typesPresent: List<ForeignIdType>): ValidationException()
-class RelationshipsWithWrongCardinalityValidationException(val relationShips: List<WrongCardinality>): ValidationException()
+class NoRelationshipsFoundValidationException: ValidationException()
+class NoSingleForeignIdTypeValidationException(val typesPresent: List<ForeignIdType>): MfValidationException(typesPresent)
+class RelationshipsWithWrongCardinalityValidationException(val relationShips: List<WrongCardinality>): MfValidationException(relationShips)
 data class WrongCardinality(val role: Role, val partnerId: UUID)
+class NotEnoughRelationshipsForForeignIdTypeValidationException(role: Role) : MfValidationException(role)
+class TooManyRelationshipsForForeignIdTypeValidationException(role: Role) : MfValidationException(role)

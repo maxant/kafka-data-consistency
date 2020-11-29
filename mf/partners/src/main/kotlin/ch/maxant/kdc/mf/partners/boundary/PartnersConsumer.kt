@@ -47,7 +47,8 @@ enum class Command {
 data class CreatePartnerRelationshipCommand(
         val partnerId: UUID,
         val foreignId: String,
-        val role: String,
+        val role: Role,
         val start: LocalDateTime,
-        val end: LocalDateTime
+        val end: LocalDateTime,
+        val additionalRelationshipsToCreate: List<Role>
 )

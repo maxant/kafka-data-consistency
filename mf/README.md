@@ -23,11 +23,17 @@ become cheaper / more expensive year on year, depending upon raw product costs.
 In this project we shall investigate an architecture which is based on something akin to MVC, but
 not just for the UI, rather for the entire landscape.
 
-### Architectural Guidelines
+### Architectural Principles & Guidelines
 
 - The landscape into microservice based
-- Only the UI uses REST, in order to start a process step (this could be replaced by a web socket sending commands 
-  to the backend, but we prefer REST+SSE over WebSockets because of browser, infrastructure and security limitations)
+- Writing is done using commands over Kafka, apart from the UI which uses REST. This is to increase robustness but also
+  to allow services that are under load to fetch work when they are ready, rather than being bombarded with requests.
+- Reading is done via REST. In order to increase robustness, we can use self containment (data replication).
+- Where the UI uses REST when writing, e.g. in order to start a process step, this could be replaced by a web socket 
+  sending commands to the backend, but we prefer REST+SSE over WebSockets because of browser, infrastructure and 
+  security limitations
+- We attempt to use principles of the MVC pattern (and relations), as the event driven nature seems to be a good fit 
+  with the Kafka backbone
 - The view uses a controller to execute a process step
 - The controller updates the model (e.g. rows in the database)
 - The controller emits an event after updating the model
@@ -66,13 +72,15 @@ not just for the UI, rather for the entire landscape.
   - pricing
   - billing
 - partners
-- cases (human workflow)
+  - partners, including addresses and partner relationships (to contracts, orders, etc.)
+- cases (human workflow, including tasks)
 - output
 - requisition orders
 - search
 - approvals
 - notes
 - distribution
+- organisation including staff and roles
 
 ## Processes
 
@@ -140,8 +148,10 @@ Also known as entry points, process components or UIs.
 
 ## TODO
 
+- when showing partner after offering contract, display contracts
+- when showing sales rep, use a widget from the partners application
 - how do cases and then PARTNER RELATIONSHIPS end up in the client, when they use contractId? ok coz of requestId?
-- add offering and accepting and do validation of prices at that point. TRANSPORT still with kafka!
+- add accepting and do validation of prices at that point. TRANSPORT still with kafka!
 - add the ability to fix errors, so that the user isnt blocked.
 - "Must be processed by time X" as a header on messages, after which they are disposed of, since we know 
   the UI will deal with the timeout: in online processes the user will get a timeout. At that stage you 
@@ -149,7 +159,7 @@ Also known as entry points, process components or UIs.
   determinate state which can be reloaded and allow the user to restart from there
 - add the analagous timeout in the UI
 - add sessionId to requestId - errors are propagated back to the session or request?
-- UI should show progress of updating, calcing discounts, caling prices. widget can have knowledge of last one it waits for
+- UI should show progress of updating, calcing discounts, calcing prices, partner relationships. widget can have knowledge of last one it waits for
 - call the contract validation service when we load the draft, and provide problems to the client
 - config inheritance - but only certain stuff makes sense, the rest doesnt
 - config deviations in cases where the sales team needs to specifically deviate from a normal customisation and it needs to be explicitly mentioned in the contract
@@ -200,6 +210,7 @@ Also known as entry points, process components or UIs.
   problems before we allow them to continue
 - syncTimestamp vs having a substate in the contract which gets updated if there are errors - its analagous
   to always calling services with OUR key and not relying on getting their key, which we may not get if the response fails to arrive
+- when creating partner relationships, we send as much info in the command as possible, so that eg the selection of the sales rep can be done in the right place, namely the partner service
 
 ### the five tenets of global data consistency
 
@@ -220,7 +231,7 @@ Also known as entry points, process components or UIs.
 
 ## Running tips
 
-    export MAVEN_OPTS="-Xmx150m"
+    export MAVEN_OPTS="-Xmx200m"
     mvn quarkus:dev -Ddebug=5006
 
     export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.9.11-0.el7_9.x86_64
