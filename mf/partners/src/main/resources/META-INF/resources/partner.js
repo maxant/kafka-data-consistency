@@ -1,14 +1,12 @@
 var template =
 // start template
 `
-
 <p-dropdown :options="partners"
            optionLabel="$name"
            v-model="partner"
            placeholder="Select a partner"
 >
 </p-dropdown>
-
 ` // end template
 
 window.mfPartner = {

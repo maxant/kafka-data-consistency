@@ -36,4 +36,6 @@ class SecurityCheckInterceptor() {
     }
 }
 
-interface Role
+interface Role {
+    fun getDescription(): String
+}
