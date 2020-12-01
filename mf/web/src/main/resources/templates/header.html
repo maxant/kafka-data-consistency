@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>The Milk Factory :: {title}</title>
+    <script src="./common.js"></script>
+    <link href="./styles.css" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.20/lodash.min.js"></script>
+
+    <script src="https://unpkg.com/vue@{vueversion}/dist/vue.global.js"></script>
+
+    <link href="https://unpkg.com/primevue{pvversion}/resources/themes/saga-blue/theme.css" rel="stylesheet">
+    <link href="https://unpkg.com/primevue{pvversion}/resources/primevue.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/primeicons{primeiconsversion}/primeicons.css" rel="stylesheet">
+
+    {#for pvc in pvcomponents }
+    <script src="https://unpkg.com/primevue{pvversion}/components/{pvc}/{pvc}.umd.min.js"></script>
+    {/for}
+
+    {#for mfc in mfcomponents }
+    <script src="{mfc}"></script>
+    {/for}
+</head>
+<body>
+<h2>The Milk Factory :: {title}</h2>
+<div id="app">
+    <div style="width: 100%; text-align: right; font-size: small;">
+        User: <p-dropdown :options="users" v-model="user" optionLabel="name" @change="userChanged()"></p-dropdown>
+    </div>

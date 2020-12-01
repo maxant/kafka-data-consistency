@@ -148,8 +148,12 @@ Also known as entry points, process components or UIs.
 
 ## TODO
 
-- do a view of all meethods, and the roles and therefore the users which can run them
-- add other tables to security overview
+- add jwt to portal and protect methods for getting draft as well as accepting it
+- show fat content and other params in portal
+- use qute for other SPAs
+- move sse and other standard things into vue components
+- security: do a view of all methods, and the roles and therefore the users which can run them
+- finish security.html
 - can we check on startup that for each method that is annotated by our security annotation, there is a suitable mapping in place?
 - security and abac
 - customer portal

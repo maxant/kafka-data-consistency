@@ -18,6 +18,10 @@
             <artifactId>quarkus-resteasy-mutiny</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-qute</artifactId>
+        </dependency>
+        <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>library</artifactId>
             <version>${project.version}</version>
