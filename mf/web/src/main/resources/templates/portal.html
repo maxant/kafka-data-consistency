@@ -72,6 +72,7 @@ const App = {
         return _.get(obj, path);
     },
     userChanged() {
+        window.un = user.un;
         this.newDraft();
     },
     priceOf(component) {

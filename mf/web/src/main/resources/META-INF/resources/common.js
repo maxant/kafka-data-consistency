@@ -25,21 +25,23 @@ function pingAll() {
 }
 
 function getHeaders(requestId, getDemoContext) {
-    let ctx = {"Content-Type": "application/json", "request-id": requestId }
+    let ctx = addJwt({"Content-Type": "application/json", "request-id": requestId })
     if(getDemoContext) {
         ctx["demo-context"] = getDemoContext()
     }
     return ctx
 }
 
-function fetchIt(url, method, self, body) {
-    self.start = new Date().getTime();
-    let data = { "method": method,
-                   body: JSON.stringify(body),
-                   "headers": getHeaders(self.requestId, self.getDemoContext)
-                 };
-    return fetch(url, data)
-    .then(r => {
-        return r.json().then(payload => ({payload, ok: r.ok}))
+function fetchIt(url, method, self, body, username) {
+    return getJwt(window.un).then(jwt => {
+        self.start = new Date().getTime();
+        let data = { "method": method,
+                       body: JSON.stringify(body),
+                       "headers": getHeaders(self.requestId, self.getDemoContext)
+                     };
+        return fetch(url, data)
+        .then(r => {
+            return r.json().then(payload => ({payload, ok: r.ok}))
+        })
     })
 }

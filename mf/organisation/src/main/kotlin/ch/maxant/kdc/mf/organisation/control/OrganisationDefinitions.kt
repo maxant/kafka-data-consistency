@@ -42,9 +42,9 @@ class DN(val cn: String, val dcs: List<String>)
 /**
  * @param un username
  */
-abstract class User(val dn: DN, val partnerId: UUID, val un: String, val roles: List<Role>)
+abstract class User(val dn: DN, val partnerId: UUID, val un: String, val pswd: String, val roles: List<Role>)
 
-class Staff(dn: DN, partnerId: UUID, staffRoles: List<StaffRole>, un: String): User(dn, partnerId, un, staffRoles) {
+class Staff(dn: DN, partnerId: UUID, staffRoles: List<StaffRole>, un: String, pswd: String): User(dn, partnerId, un, pswd, staffRoles) {
     @get:JsonIgnore val ous = mutableListOf<OU>() // ignored since its a relationship back up to the parent which could cause infinite loops during serialisation
 
     /** keys of OUs where staff works */
@@ -60,13 +60,13 @@ class Staff(dn: DN, partnerId: UUID, staffRoles: List<StaffRole>, un: String): U
 
     companion object {
         val JOHN = Staff(DN("John", listOf("")), fromString("3cd5b3b1-e740-4533-a526-2fa274350586"),
-                listOf(StaffRole.SALES_REP, StaffRole.FINANCE_SPECIALIST), "john.smith"
+                listOf(StaffRole.SALES_REP, StaffRole.FINANCE_SPECIALIST), "john.smith", "asdf"
         )
         val JANE = Staff(DN("Jane", listOf("")), fromString("6c5aa3cd-0a07-4055-9cec-955900c6bea0"),
-                listOf(StaffRole.SALES_REP, StaffRole.ORDER_COMPLETION_CONSULTANT), "jane.smith"
+                listOf(StaffRole.SALES_REP, StaffRole.ORDER_COMPLETION_CONSULTANT), "jane.smith", "asdf"
         )
         val JANET = Staff(DN("Janet", listOf("")), fromString("c1f1b7ee-ed4e-4342-ac68-199fba9fe50d"),
-                listOf(StaffRole.ORDER_COMPLETION_CONSULTANT, StaffRole.SUPPLY_CHAIN_SPECIALIST), "janet.smith"
+                listOf(StaffRole.ORDER_COMPLETION_CONSULTANT, StaffRole.SUPPLY_CHAIN_SPECIALIST), "janet.smith", "asdf"
         )
         fun values() = (Companion::class.memberProperties as ArrayList)
                 .filter { it.returnType.javaType.typeName == Staff::class.java.name }
@@ -75,12 +75,12 @@ class Staff(dn: DN, partnerId: UUID, staffRoles: List<StaffRole>, un: String): U
 }
 
 /** a partner (e.g. a customer, or supplier) with access to some part of the landscape */
-class Partner(dn: DN, partnerId: UUID, partnerRoles: List<PartnerRole>, un: String): User(dn, partnerId, un, partnerRoles) {
+class Partner(dn: DN, partnerId: UUID, partnerRoles: List<PartnerRole>, un: String, pswd: String): User(dn, partnerId, un, pswd, partnerRoles) {
     @get:JsonIgnore val ous = mutableListOf<OU>()
 
     companion object {
         val AUGUSTUS = Partner(DN("Augustus", listOf("")), fromString("331e5c18-e330-4204-95a1-371e54a12f5c"),
-                listOf(PartnerRole.CUSTOMER), "180000032"
+                listOf(PartnerRole.CUSTOMER), "180000032", "asdf"
         )
         fun values() = (Companion::class.memberProperties as ArrayList)
                 .filter { it.returnType.javaType.typeName == Partner::class.java.name }

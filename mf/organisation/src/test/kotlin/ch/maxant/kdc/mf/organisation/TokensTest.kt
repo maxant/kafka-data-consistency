@@ -16,7 +16,7 @@ class TokensTest {
     fun test() {
         val token = tokens.generate(Staff.JOHN)
         println(token)
-        val jwt = tokens.parse(token)
+        val jwt = tokens.parseAndVerify(token)
         assertEquals(setOf("SALES_REP", "FINANCE_SPECIALIST"), jwt.groups)
         assertEquals("john.smith@mf.maxant.ch", jwt.claim<String>("email").get())
     }

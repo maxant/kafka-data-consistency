@@ -151,6 +151,7 @@ Also known as entry points, process components or UIs.
 - add jwt to portal and protect methods for getting draft as well as accepting it
 - show fat content and other params in portal
 - use qute for other SPAs
+- writing 100s of inserts faster if done in parallel? sharding
 - move sse and other standard things into vue components
 - security: do a view of all methods, and the roles and therefore the users which can run them
 - finish security.html
