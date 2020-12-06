@@ -19,6 +19,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import org.jboss.logging.Logger
 import java.net.URI
 import java.util.*
+import javax.annotation.security.PermitAll
+import javax.annotation.security.RolesAllowed
 import javax.inject.Inject
 import javax.persistence.EntityManager
 import javax.transaction.Transactional

@@ -48,14 +48,14 @@ class SecurityResource {
         val f: (User) -> Boolean = { it.un == username }
         val user = Staff.values().find(f) ?: Partner.values().find(f)
         if (user == null) {
-            log.info("unknown user $user")
+            log.info("unknown user $username")
             throw ForbiddenException() // no details, as that would be an attack point
         }
-        if (user.pswd != hash(password)) {
-            log.info("wrong password for user $user")
+        if (hash(user.pswd) != password) {
+            log.info("wrong password for user ${user.un}")
             throw ForbiddenException() // no details, as that would be an attack point
         }
-        log.info("user is logged in $user")
+        log.info("user is logged in ${user.un}")
         return user
     }
 

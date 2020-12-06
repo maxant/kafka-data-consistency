@@ -2,8 +2,7 @@ package ch.maxant.kdc.mf.contracts.boundary
 
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractState
-import ch.maxant.kdc.mf.library.AttributeChecks.*
-import ch.maxant.kdc.mf.library.SecurityCheck
+import ch.maxant.kdc.mf.library.Secure
 import ch.maxant.kdc.mf.library.doByHandlingValidationExceptions
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import java.net.URI
@@ -26,24 +25,30 @@ class ContractResource(
 
     @GET
     @Path("/{id}")
-    @SecurityCheck(attributeChecks = [
-        CUSTOMER_OWNS_CONTRACT,
+    @Secure
+    fun getById(@PathParam("id") id: UUID): Response {
+        val contract = em.find(ContractEntity::class.java, id)
+/* TODO        CUSTOMER_OWNS_CONTRACT,
         OU_OWNS_CONTRACT,
         USER_IN_HEAD_OFFICE])
-    fun getById(@PathParam("id") id: UUID) =
-        Response.ok(em.find(ContractEntity::class.java, id)).build()
+   */
+        return Response.ok(contract).build()
+    }
 
     @PUT
     @Path("/accept/{id}")
-    @SecurityCheck(attributeChecks = [CUSTOMER_OWNS_CONTRACT])
+    @Secure
     fun acceptOffer(@PathParam("id") id: UUID) = doByHandlingValidationExceptions {
         val contract = em.find(ContractEntity::class.java, id)
-        require(contract.contractState != ContractState.OFFERED) { "Contract is not in state offered, but in state ${contract.contractState}" }
+        require(contract.contractState == ContractState.OFFERED) { "Contract is not in state ${ContractState.OFFERED}, but in state ${contract.contractState}" }
         contract.contractState = ContractState.ACCEPTED
+        // TODO validate like when offering? i guess only if stuff changed?
         // TODO execute business rules e.g. if total is higher than customers credit limit, then we need to go thru the approval process
+// TODO @SecurityCheck(attributeChecks = [CUSTOMER_OWNS_CONTRACT])
         Response.ok(contract).build()
     }
 
+    // TODO who calls this?!?!
     @POST
     @Transactional
     fun create(contractEntity: ContractEntity): Response {

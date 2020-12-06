@@ -25,7 +25,7 @@ function pingAll() {
 }
 
 function getHeaders(requestId, getDemoContext) {
-    let ctx = addJwt({"Content-Type": "application/json", "request-id": requestId })
+    let ctx = security.addJwt({"Content-Type": "application/json", "request-id": requestId })
     if(getDemoContext) {
         ctx["demo-context"] = getDemoContext()
     }
@@ -33,7 +33,7 @@ function getHeaders(requestId, getDemoContext) {
 }
 
 function fetchIt(url, method, self, body, username) {
-    return getJwt(window.un).then(jwt => {
+    return security.ensureJwtIsValid$().then(jwt => {
         self.start = new Date().getTime();
         let data = { "method": method,
                        body: JSON.stringify(body),

@@ -19,7 +19,7 @@ class CorsFilter : Filter {
         res.addHeader("Access-Control-Allow-Origin", "*")
         if ("OPTIONS" == req.method) {
             res.addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, HEAD")
-            res.addHeader("Access-Control-Allow-Headers", "content-type, elastic-apm-traceparent, $REQUEST_ID, $DEMO_CONTEXT")
+            res.addHeader("Access-Control-Allow-Headers", "${SecurityHeaderName}, content-type, elastic-apm-traceparent, $REQUEST_ID, $DEMO_CONTEXT")
             res.status = 200
         } else {
             chain.doFilter(request, response)

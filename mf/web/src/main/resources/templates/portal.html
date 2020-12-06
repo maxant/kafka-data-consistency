@@ -17,12 +17,14 @@
         </li>
     </ul>
 </div>
-
+<div>
+    <button @click="offerDraftAndAcceptOffer()">accept offer</button>
+</div>
 
 </div> |}{! end of app !}{|
 <script>
-const users = [ {name: 'none',     un: 'none',      id: null},
-                {name: 'Augustus', un: '180000032', id: '331e5c18-e330-4204-95a1-371e54a12f5c'}
+const users = [ {name: 'none',     un: 'none',      password: "wrong", id: null},
+                {name: 'Augustus', un: '180000032', password: "asdf", id: '331e5c18-e330-4204-95a1-371e54a12f5c'}
               ];
 const App = {
   data() {
@@ -37,11 +39,13 @@ const App = {
     }
   },
   mounted() {
-    this.newDraft();
     window.model = this.model; // just for debugging purposes
+    security.login$(this.user.un, this.user.password)
+            .then(this.newDraft);
   },
   methods: {
     newDraft() {
+        console.log("getting new draft");
         this.allowOffer = false;
         let body = {
           "productId": "COOKIES_MILKSHAKE",
@@ -67,13 +71,51 @@ const App = {
             ameliorateCurrentAction(self)
         });
     },
+    offerDraftAndAcceptOffer() {
+        this.allowOffer = false;
+        console.log("offering contract...")
+        this.currentAction = {action: "offerDraft"}
+        let self = this;
+        let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/offer";
+        fetchIt(url, "PUT", this).then(r => {
+            if(r.ok) console.log("offered contract with id " + r.payload.id + ", for requestId " + self.requestId);
+            else {
+                if(r.payload.class == "ch.maxant.kdc.mf.partners.boundary.NoRelationshipsFoundValidationException") {
+                    alert("No partner relationships exist, please create a new offer");
+                } else if(r.payload.class == "ch.maxant.kdc.mf.partners.boundary.NotEnoughRelationshipsForForeignIdTypeValidationException") {
+                    alert("A partner relationship is missing: " + r.payload.data);
+                } else {
+                    let msg = "Failed to offer contract: " + r.payload.error;
+                    console.error(msg);
+                    alert(msg);
+                }
+                ameliorateCurrentAction(self)
+            }
+        }).then(offer => {
+            console.log("accepting offer");
+            self.allowOffer = false;
+            self.currentAction = {action: "acceptOffer"}
+            let url = CONTRACTS_BASE_URL + "/contracts/accept/" + this.model.draft.contract.id
+            return fetchIt(url, "PUT", this).then(r => {
+                if(r.ok) console.log("accepted offer with id " + r.id + ", for requestId " + this.requestId);
+                else {
+                    let msg = "Failed to accept offer: " + r.payload.error;
+                    console.error(msg);
+                    alert(msg);
+                }
+            });
+        }).catch(error => {
+            console.error("received error: " + error);
+            ameliorateCurrentAction(self)
+        });
+    },
     get(obj, path) {
         // vue3 doesnt like seeing underscores in attribute values => so lets create an alias with this method
         return _.get(obj, path);
     },
     userChanged() {
-        window.un = user.un;
-        this.newDraft();
+        security.login$(this.user.un, this.user.password)
+                .then(this.newDraft);
     },
     priceOf(component) {
         return (component.$price.total - _.sumBy(component.children, '$price.total')).toFixed(2);
@@ -133,12 +175,9 @@ function ameliorateCurrentAction(self) {
     if(self.currentAction.action == "newDraft") {
         // not much can be done => user has a button to go get a new one
         alert("Failed to create an offer. Please try refreshing the page.")
-    } else if(self.currentAction.action == "changeParam") {
-        alert("TODO offer user the chance to reload the entire draft with the backend state");
-        // {action: "changeParam", paramName, componentId, oldValue, newValue}
-        removeWaitingAndResetValue(self.currentAction.componentId, self.currentAction.paramName, self.currentAction.oldValue, self.model.draft.pack)
-        self.allowOffer = false
     } else if(self.currentAction.action == "offerDraft") {
+        self.allowOffer = true // so user can retry if they want to. it mustve been enabled in order to get here.
+    } else if(self.currentAction.action == "acceptOffer") {
         self.allowOffer = true // so user can retry if they want to. it mustve been enabled in order to get here.
     } else {
         console.error("unexpected current action: " + self.currentaction.action)

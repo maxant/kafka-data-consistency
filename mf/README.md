@@ -250,3 +250,9 @@ Also known as entry points, process components or UIs.
 
     export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.9.11-0.el7_9.x86_64
     mvn --version
+
+## Infrastructure
+
+    CREATE USER 'mfcontracts'@'%' IDENTIFIED BY 'secret';
+    CREATE DATABASE mfcontracts CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+    GRANT ALL PRIVILEGES ON mfcontracts.* TO mfcontracts@'%' IDENTIFIED BY 'the_password';
