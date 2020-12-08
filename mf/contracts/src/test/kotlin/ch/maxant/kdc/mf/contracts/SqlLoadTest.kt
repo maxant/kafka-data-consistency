@@ -115,6 +115,10 @@ class SqlLoadTest {
     parallel test commits 3 times, once after each 51 rows, since three client threads and connections are used to create the data
     one connection pool per service with 3-5 connections (only three are needed).
 
+where parallel does cause a problem is when you have hundreds of services and the DB doesn't have that many connections,
+and so the load on the services out weighs the number of connections that can be used, and so threads are starved
+of the DB connections as they have to wait for connections to become free.
+
     results taken after about 45 tests:
     - 50 services in parallel + 1 sequentially (many more active connections than cores):
       - XXXXmysqld 10-100% cpu, average maybe 30%?

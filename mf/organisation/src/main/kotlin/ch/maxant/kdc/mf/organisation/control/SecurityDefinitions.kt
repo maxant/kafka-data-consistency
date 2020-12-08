@@ -62,17 +62,17 @@ enum class PartnerRole(private val description: String): Role {
 
 enum class ProcessSteps(val fqMethodNames: Set<String>) {
     DRAFT(setOf(
-        "ch.maxant.kdc.mf.contracts.boundary.DraftsResource.create",
-        "ch.maxant.kdc.mf.contracts.boundary.DraftsResource.updateConfig",
-        "ch.maxant.kdc.mf.contracts.boundary.ContractResource.getById"
+        "ch.maxant.kdc.mf.contracts.boundary.DraftsResource#create",
+        "ch.maxant.kdc.mf.contracts.boundary.DraftsResource#updateConfig",
+        "ch.maxant.kdc.mf.contracts.boundary.ContractResource#getById"
     )),
     OFFER(setOf(
-        "ch.maxant.kdc.mf.contracts.boundary.ContractResource.getById",
-        "ch.maxant.kdc.mf.contracts.boundary.DraftsResource.offerDraft"
+        "ch.maxant.kdc.mf.contracts.boundary.ContractResource#getById",
+        "ch.maxant.kdc.mf.contracts.boundary.DraftsResource#offerDraft"
     )),
     ACCEPT(setOf(
-        "ch.maxant.kdc.mf.contracts.boundary.ContractResource.getById",
-        "ch.maxant.kdc.mf.contracts.boundary.ContractResource.acceptOffer"
+        "ch.maxant.kdc.mf.contracts.boundary.ContractResource#getById",
+        "ch.maxant.kdc.mf.contracts.boundary.ContractResource#acceptOffer"
     ))
 }
 

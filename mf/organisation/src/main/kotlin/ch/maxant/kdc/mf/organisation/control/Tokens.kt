@@ -1,5 +1,7 @@
 package ch.maxant.kdc.mf.organisation.control
 
+import ch.maxant.kdc.mf.library.Issuer
+import ch.maxant.kdc.mf.library.TokenSecret
 import io.smallrye.jwt.auth.principal.JWTParser
 import io.smallrye.jwt.build.Jwt
 import org.eclipse.microprofile.config.inject.ConfigProperty
@@ -20,12 +22,12 @@ class Tokens {
     @Inject
     lateinit var parser: JWTParser
 
-    @ConfigProperty(name = "ch.maxant.kdc.mf.jwt.secret", defaultValue = "CtjA9hYPuet4Uv3p69T42JUJ6VagkEegkTVWHZxTAqH3dkhchwLVqW6CJeVE8PWbypWD7pkhr57x4RPdDxFy52sNErS9pqJGLEDtT9H74aNvAHr69VG5kRnkMnLhsaFK")
+    @ConfigProperty(name = "ch.maxant.kdc.mf.jwt.secret", defaultValue = TokenSecret)
     lateinit var secret: String
 
     fun generate(user: User): String {
         val now = LocalDateTime.now()
-        val builder = Jwt.issuer("https://maxant.ch/issuer")
+        val builder = Jwt.issuer(Issuer)
                 .upn("${user.un}")
                 .subject(user.un)
                 .groups(user.roles.map { it.toString() }.toMutableSet())
