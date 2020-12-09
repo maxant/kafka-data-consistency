@@ -8,6 +8,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.eclipse.microprofile.jwt.Claims
 import org.eclipse.microprofile.jwt.JsonWebToken
 import org.jboss.logging.Logger
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -31,8 +32,8 @@ class Tokens {
                 .upn("${user.un}")
                 .subject(user.un)
                 .groups(user.roles.map { it.toString() }.toMutableSet())
-                .expiresAt(now.plusMinutes(1).atZone(ZoneId.systemDefault()).toInstant())
-                .issuedAt(now.toInstant(ZoneOffset.UTC))
+                .expiresAt(toInstant(now.plusMinutes(1)))
+                .issuedAt(toInstant(now))
         if(user is Partner) {
             builder
                 .claim("userType", "partner")
@@ -44,6 +45,8 @@ class Tokens {
         } else throw TODO()
         return builder.signWithSecret(secret)
     }
+
+    private fun toInstant(time: LocalDateTime) = time.atZone(ZoneId.systemDefault()).toInstant()
 
     fun parseAndVerify(token: String): JsonWebToken {
         return parser.verify(token, secret)

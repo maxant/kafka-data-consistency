@@ -1,6 +1,11 @@
 package ch.maxant.kdc.mf.library
 
+import io.quarkus.runtime.Startup
+import java.util.*
+import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.context.RequestScoped
+import javax.enterprise.event.Observes
+import javax.inject.Inject
 import javax.validation.ValidationException
 
 @RequestScoped
@@ -73,3 +78,21 @@ class DemoContext(
     }
 }
 
+@ApplicationScoped
+class InitContextForBackgroundProcessing {
+
+    @Inject
+    private lateinit var contextInitialisedEvent: javax.enterprise.event.Event<ContextInitialised>
+
+    @Inject
+    lateinit var context: Context
+
+    fun setupForBackgroundProcessing(@Observes e: Startup) {
+        context.requestId = RequestId(UUID.randomUUID().toString())
+        context.command = "BACKGROUND_STARTUP"
+        contextInitialisedEvent.fire(object: ContextInitialised {})
+    }
+
+}
+
+interface ContextInitialised

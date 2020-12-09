@@ -74,6 +74,8 @@ not just for the UI, rather for the entire landscape.
 - partners
   - partners, including addresses and partner relationships (to contracts, orders, etc.)
 - cases (human workflow, including tasks)
+- organisation
+  - organisation, security, staff, users, tokens
 - output
 - requisition orders
 - search
@@ -98,6 +100,10 @@ not just for the UI, rather for the entire landscape.
 - Requisition Order
   - choose component
   - organise distribution
+- Organisation
+  - staff started
+  - staff quit
+  - security updated
 - Distribution
   - ...
 
@@ -130,12 +136,13 @@ Also known as entry points, process components or UIs.
   - CREATE_CASE (cases-commands)
   - CREATE_TASK (cases-commands)
   - UPDATE_TASK (cases-commands)
-- Events (all have the attribute "event" at root level)
+- Events (all have the header "event")
   - ERROR (errors)
   - CHANGED_CASE (cases-events)
   - CREATED_DRAFT (event-bus)
   - UPDATED_DRAFT (event-bus)
   - UPDATED_PRICES (event-bus)
+  - SECURITY_MODEL (organisation-events)
 
 ## Links
 
@@ -148,6 +155,8 @@ Also known as entry points, process components or UIs.
 
 ## TODO
 
+- test app reloads security if org doesnt send data
+- test app gets security when org reboots
 - add jwt to portal and protect methods for getting draft as well as accepting it
 - show fat content and other params in portal
 - use qute for other SPAs
@@ -225,6 +234,8 @@ Also known as entry points, process components or UIs.
 - syncTimestamp vs having a substate in the contract which gets updated if there are errors - its analagous
   to always calling services with OUR key and not relying on getting their key, which we may not get if the response fails to arrive
 - when creating partner relationships, we send as much info in the command as possible, so that eg the selection of the sales rep can be done in the right place, namely the partner service
+- publishing security data when it changes, or when org starts up
+  - fetching security data during startup or lazily if that fails, so that we can check jwts based on processes
 
 ### the five tenets of global data consistency
 

@@ -1,10 +1,10 @@
 package ch.maxant.kdc.mf.waitingroom.boundary
 
 import ch.maxant.kdc.mf.library.Context.Companion.RETRY_COUNT
+import ch.maxant.kdc.mf.library.ContextInitialised
 import ch.maxant.kdc.mf.library.ErrorHandler.Companion.DELAY_UNTIL
 import ch.maxant.kdc.mf.library.ErrorHandler.Companion.ORIGINAL_TOPIC
 import io.quarkus.runtime.ShutdownEvent
-import io.quarkus.runtime.StartupEvent
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.clients.consumer.KafkaConsumer
@@ -47,7 +47,7 @@ class WaitingroomResource(
     lateinit var latch10: CountDownLatch
 
     @SuppressWarnings("unused")
-    fun init(@Observes e: StartupEvent) {
+    fun init(@Observes e: ContextInitialised) {
         log.info("starting producers/consumers...")
         run.set(true)
 
