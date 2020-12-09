@@ -155,6 +155,8 @@ Also known as entry points, process components or UIs.
 
 ## TODO
 
+- reflection not working in order to find all cdi beans with secure annotation in order to check they are configured
+- ContextInitialised isnt being called?!
 - test app reloads security if org doesnt send data
 - test app gets security when org reboots
 - add jwt to portal and protect methods for getting draft as well as accepting it

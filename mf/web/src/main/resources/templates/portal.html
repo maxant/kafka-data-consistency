@@ -97,8 +97,10 @@ const App = {
             self.currentAction = {action: "acceptOffer"}
             let url = CONTRACTS_BASE_URL + "/contracts/accept/" + this.model.draft.contract.id
             return fetchIt(url, "PUT", this).then(r => {
-                if(r.ok) console.log("accepted offer with id " + r.id + ", for requestId " + this.requestId);
-                else {
+                if(r.ok) {
+                    console.log("accepted offer with id " + r.id + ", for requestId " + this.requestId);
+                    window.location.href = '/partner.html?id=' + self.user.id;
+                } else {
                     let msg = "Failed to accept offer: " + r.payload.error;
                     console.error(msg);
                     alert(msg);

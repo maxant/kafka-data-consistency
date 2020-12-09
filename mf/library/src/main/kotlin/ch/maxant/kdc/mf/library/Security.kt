@@ -85,6 +85,8 @@ class SecurityCheckInterceptor {
         if((1000*jwt.expirationTime )< System.currentTimeMillis()) throw NotAuthorizedException("token expired at ${jwt.expirationTime}")
         if(roles.intersect(jwt.groups).isEmpty()) throw NotAuthorizedException("token does not contain one of the required roles $roles necessary to call $fqMethodName")
 
+        log.info("user ${jwt.subject} is entitled to call $fqMethodName")
+
         return ctx.proceed()
     }
 
