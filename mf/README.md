@@ -180,6 +180,7 @@ Worth alerting on:
 - contracts: execute business rules e.g. if total is higher than customers credit limit, then we need to go thru the approval process
 - when showing partner after offering contract, display contracts
 - when showing sales rep, use a widget from the partners application
+- quarkus log to ELK
 - how do cases and then PARTNER RELATIONSHIPS end up in the client, when they use contractId? ok coz of requestId?
 - add accepting and do validation of prices at that point. TRANSPORT still with kafka!
 - add the ability to fix errors, so that the user isnt blocked.
