@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.organisation.boundary
 
+import ch.maxant.kdc.mf.library.Secure
 import ch.maxant.kdc.mf.organisation.control.*
 import com.google.common.hash.Hashing
 import org.eclipse.microprofile.openapi.annotations.Operation
@@ -34,8 +35,8 @@ class SecurityResource {
     @GET
     @Path("/definitions")
     @Operation(summary = "gets the security configuration as a tree of processes, process steps, methods, roles, users")
-    fun getSecurityConfiguration() =
-        Response.ok(securityDefinitions.getDefinitions()).build()
+    fun getSecurityConfiguration(@QueryParam("includeUsers") @Parameter(name = "includeUsers") includeUsers: Boolean?) =
+        Response.ok(securityDefinitions.getDefinitions(includeUsers)).build()
 
     @POST // not get, because URLs are often logged, and so we want the password to be hidden
     @Path("/token/{username}/")
@@ -63,6 +64,15 @@ class SecurityResource {
         // CryptoJS.SHA512("asdf").toString(CryptoJS.enc.Base64);
         // QBsJ6rPAE9TKVJIruAK+yP1TGBkrCnXyAdizcnQpCA+zN1kavT5ERTuVRVW3oIEuEIHDm3QCk/dl6ucx9aZe0Q==
         Base64.getEncoder().encodeToString(Hashing.sha512().hashString(password, StandardCharsets.UTF_8).asBytes())
+
+
+    @GET
+    @Path("/testSecurity")
+    @Secure // just to check that we get a warning at boot time
+    fun testSecureChecks(): Response {
+        return Response.ok().build()
+    }
+
 }
 
 

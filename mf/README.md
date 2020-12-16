@@ -153,21 +153,26 @@ Also known as entry points, process components or UIs.
 - https://dev.mysql.com/doc/refman/8.0/en/json.html
 - https://v3.vuejs.org/guide/
 
+## Logs
+
+Worth alerting on:
+
+- EH00* TODO
+- SEC-001 no process steps / roles found in security model that are capable of calling $fqMethodName. 
+  If this method is called, it will always end in a security exception. To resolve this issue, update 
+  the security model or delete the method, if it is no longer required.
+
 ## TODO
 
-- reflection not working in order to find all cdi beans with secure annotation in order to check they are configured
-- ContextInitialised isnt being called?!
-- test app reloads security if org doesnt send data
-- test app gets security when org reboots
-- add jwt to portal and protect methods for getting draft as well as accepting it
+- pep, pip?, pdp
+- security and abac
+- put some stuff into internal package in lib - does kotlin have support for this so that you cannot access it outside of the module?
+- timestamp - if we attempt to insert but a new version has already been applied, we need to ignore it and log it for alerting. or fail with an error? why not just use optimistic locking. whats on my bit of paper?
 - show fat content and other params in portal
 - use qute for other SPAs
-- writing 100s of inserts faster if done in parallel? sharding
 - move sse and other standard things into vue components
 - security: do a view of all methods, and the roles and therefore the users which can run them
 - finish security.html
-- can we check on startup that for each method that is annotated by our security annotation, there is a suitable mapping in place?
-- security and abac
 - customer portal
 - digitally sign contract
 - https://zipkin.io/
@@ -214,6 +219,12 @@ Also known as entry points, process components or UIs.
 - error handling - https://github.com/cloudstark/quarkus-zalando-problem-extension
 - https://quarkus.io/guides/rest-data-panache
 - use noArgs for jpa => in pom, but hot deploy doesnt work with mods to entity class
+- quarkus extension for lib in order to avoid reflection when loading @Secure - a) it wasnt working and b) this is a killer: Local Quarkus extension dependency ch.maxant.kdc.mf:library will not be hot-reloadable
+
+## Further reading
+
+- https://dev.mysql.com/doc/refman/8.0/en/replication-gtids-howto.html
+- https://aiven.io/blog/an-introduction-to-apache-cassandra
 
 ## Blog
 
@@ -255,6 +266,29 @@ Also known as entry points, process components or UIs.
   - eg upstream we committed, but downstream we ran into a problem (business or technical)
   - validation before important process steps: partners may already exist beforehand and they are 
     loosely coupled to the sales system, so it doesnt make sense to use a syncTimestamp for them => just check existance 
+
+- https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing
+- https://www.youtube.com/watch?v=CZ3wIuvmHeM
+  - why microservices?
+    - an abstraction
+    - easier to understand where problem is because a service is smaller than a monolith
+    - one monolithic db goes down, it all goes down. costly to run such a large db
+    - separation of concerns
+      - modularity + encapsulation
+    - scalability: horizontal + workload paritioning
+    - virtualisation + elasticity (automated ops + on demand provisioning)
+    - for netflix, a microservice includes the client lib+cache
+    - rest call potential problems: network latency, congestions, logical failure, scaling failure, timeouts, human error/deployment
+      - handling timeouts, fallbacks, fail fast, feedback
+      - FIT fault injection testing
+    - critical microservices => the path which MUST run for the most basic availability. ensure those services fail less
+    - netflix builds client libs to avoid duplicated code. dodgy, since teams operate code they dont own, and a bug will cause failure in many services
+    - api gateway, like their central orchestator?
+    - oracle doesnt offer eventual consistency, cassandra however does, like kafka - so long as one node is running, you can continue, albeit at a risk
+      - hmm... entirely true? its clustered after all
+    - dont let offline run on operations db, but on replications. partition clients?
+    - client has encrypted state which is sent with requests and can be used in callback. why encrypted and why only for fallback?
+    - 
 
 ## Running tips
 

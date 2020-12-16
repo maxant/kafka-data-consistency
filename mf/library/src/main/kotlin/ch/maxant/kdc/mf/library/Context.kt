@@ -1,6 +1,6 @@
 package ch.maxant.kdc.mf.library
 
-import io.quarkus.runtime.Startup
+import io.quarkus.runtime.StartupEvent
 import java.util.*
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.context.RequestScoped
@@ -36,7 +36,11 @@ class Context {
         }
         fun of(toCopy: Context): Context {
             val context = Context()
-            context.requestId = toCopy.requestId
+            try {
+                context.requestId = toCopy.requestId
+            } catch(e: UninitializedPropertyAccessException) {
+                context.requestId = RequestId(UUID.randomUUID().toString()) // can happen when receiving a message from kafka
+            }
             context.originalMessage = toCopy.originalMessage
             context.command = toCopy.command
             context.event = toCopy.event
@@ -87,7 +91,7 @@ class InitContextForBackgroundProcessing {
     @Inject
     lateinit var context: Context
 
-    fun setupForBackgroundProcessing(@Observes e: Startup) {
+    fun setupForBackgroundProcessing(@Observes e: StartupEvent) {
         context.requestId = RequestId(UUID.randomUUID().toString())
         context.command = "BACKGROUND_STARTUP"
         contextInitialisedEvent.fire(object: ContextInitialised {})

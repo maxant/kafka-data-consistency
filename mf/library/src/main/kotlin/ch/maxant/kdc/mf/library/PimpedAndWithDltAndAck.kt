@@ -71,7 +71,7 @@ class PimpedAndWithDltAndAckInterceptor(
         val copyOfContext = Context.of(context)
 
         // set/clear MDC for this thread and proceed into intercepted code
-        return withMdcSet(context) {
+        return withMdcSet(copyOfContext) {
             proceed(copyOfContext, ctx, firstParam)
         }
     }

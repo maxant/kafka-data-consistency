@@ -9,28 +9,33 @@ import javax.enterprise.context.Dependent
 @Dependent
 class SecurityDefinitions {
 
-    fun getDefinitions(): SecurityDefinitionResponse {
+    fun getDefinitions(includeUsers: Boolean? = false): SecurityDefinitionResponse {
         return SecurityDefinitionResponse(
-                buildProcessSteps(Processes.values())
+                buildProcessSteps(includeUsers!!, Processes.values())
         )
     }
 
-    private fun buildProcessSteps(processes: Array<Processes>): List<Node> {
+    private fun buildProcessSteps(includeUsers: Boolean, processes: Array<Processes>): List<Node> {
         return processes.map {
-            Node(it.name, Data(it.name, "Process"), buildProcessSteps(it.processSteps, it.name))
+            Node(it.name, Data(it.name, "Process"), buildProcessSteps(includeUsers, it.processSteps, it.name))
         }
     }
-    private fun buildProcessSteps(steps: Set<ProcessSteps>, parentKey: String): List<Node> {
+    private fun buildProcessSteps(includeUsers: Boolean, steps: Set<ProcessSteps>, parentKey: String): List<Node> {
         return steps.map { ps ->
             val key = parentKey + "::" + ps.name
-            val users: MutableList<User> = Partner.values().toMutableList()
-            users.addAll(Staff.values())
             val relevantRoleMappings = RoleMappings.values()
                     .filter { rm -> rm.processStep == ps }
-            val userList = relevantRoleMappings
-                    .map { rm -> users.filter { u -> u.roles.contains(rm.role) } }
-                    .flatten()
-                    .map { it.un }
+            val userList: List<String> = if(includeUsers) {
+                val users: MutableList<User> = Partner.values().toMutableList()
+                users.addAll(Staff.values())
+                relevantRoleMappings
+                        .map { rm -> users.filter { u -> u.roles.contains(rm.role) } }
+                        .flatten()
+                        .map { it.un }
+
+            } else {
+                emptyList()
+            }
             Node(key, Data(ps.name, "Step", relevantRoleMappings.joinToString { "${it.role}" }, userList, ps.fqMethodNames), emptyList())
         }
     }
