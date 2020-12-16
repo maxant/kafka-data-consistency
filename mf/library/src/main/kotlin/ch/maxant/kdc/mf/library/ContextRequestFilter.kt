@@ -30,9 +30,15 @@ class ContextRequestFilter : ContainerRequestFilter {
         val rId = if (requestId != null && requestId.isNotEmpty())
             requestId[0]
         else {
-            val n = UUID.randomUUID().toString()
-            log.info("creating new requestId as it is missing in the request: $n")
-            n
+            // it might already be in the request from another filter
+            val rId2 =
+                    try {
+                        context.requestId.requestId
+                    } catch(e: UninitializedPropertyAccessException) {
+                        UUID.randomUUID().toString()
+                    }
+            log.info("creating new requestId as it is missing in the request: $rId2")
+            rId2
         }
         return RequestId(rId)
     }

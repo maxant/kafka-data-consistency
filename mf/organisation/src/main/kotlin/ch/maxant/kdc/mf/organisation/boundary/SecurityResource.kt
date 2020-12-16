@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.organisation.boundary
 
+import ch.maxant.kdc.mf.library.ContextInitialised
 import ch.maxant.kdc.mf.library.Secure
 import ch.maxant.kdc.mf.organisation.control.*
 import com.google.common.hash.Hashing
@@ -29,6 +30,9 @@ class SecurityResource {
 
     @Inject
     lateinit var tokens: Tokens
+
+    @Inject
+    lateinit var securityModelPublisher: SecurityModelPublisher
 
     val log: Logger = Logger.getLogger(this.javaClass)
 
@@ -65,6 +69,10 @@ class SecurityResource {
         // QBsJ6rPAE9TKVJIruAK+yP1TGBkrCnXyAdizcnQpCA+zN1kavT5ERTuVRVW3oIEuEIHDm3QCk/dl6ucx9aZe0Q==
         Base64.getEncoder().encodeToString(Hashing.sha512().hashString(password, StandardCharsets.UTF_8).asBytes())
 
+
+    @GET
+    @Path("/broadcastModel")
+    fun broadcastSecurityModel() = Response.ok(securityModelPublisher.init(object: ContextInitialised{})).build()
 
     @GET
     @Path("/testSecurity")

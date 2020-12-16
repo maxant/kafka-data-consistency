@@ -47,6 +47,7 @@ annotation class Secure
 private val log: Logger = Logger.getLogger(Secure::class.java)
 
 private var securityModel: SecurityDefinitionResponse? = null
+private var secureMethods = mutableListOf<Method>()
 
 @Secure
 @Interceptor
@@ -93,13 +94,15 @@ class SecurityCheckInterceptor {
     }
 
     private fun getSecurityModel(): SecurityDefinitionResponse {
-        if(securityModel == null) {
-            // can happen if organisation service is not available at startup
-            // and its startup message has not yet arrived, but a rest call to
-            // this service has, so fetch it now
-            loadSecurityModel(securityAdapter)
+        synchronized(lock) {
+            if(securityModel == null) {
+                // can happen if organisation service is not available at startup
+                // and its startup message has not yet arrived, but a rest call to
+                // this service has, so fetch it now
+                loadSecurityModel(securityAdapter)
+            }
+            return securityModel!!
         }
-        return securityModel!!
     }
 
 }
@@ -150,7 +153,9 @@ class SecurityEnsurer {
             when (context.event) {
                 "SECURITY_MODEL" -> {
                     log.info("received new security model")
-                    setSecurityModelAndDoSecurityChecks(om.readValue(msg.payload))
+                    synchronized(lock) {
+                        setSecurityModelAndDoSecurityChecks(om.readValue(msg.payload))
+                    }
                 }
                 // else -> ignore other messages
             }
@@ -176,12 +181,16 @@ class SecurityEnsurer {
     }
 }
 
+private val lock = Object()
+
 /** check methods that are annotated also have a definition, otherwise warn devops */
 private fun setSecurityModelAndDoSecurityChecks(sm: SecurityDefinitionResponse) {
     securityModel = sm
     val start = System.currentTimeMillis()
-    val refls = Reflections("ch.maxant.kdc.mf", MethodAnnotationsScanner())
-    val secureMethods = refls.getMethodsAnnotatedWith(Secure::class.java)
+    if(secureMethods.isEmpty()) {
+        val refls = Reflections("ch.maxant.kdc.mf", MethodAnnotationsScanner())
+        secureMethods.addAll(refls.getMethodsAnnotatedWith(Secure::class.java))
+    }
     log.info("found the following secure methods:\r\n" +
             secureMethods.joinToString("\r\n", transform = ::getFqMethodName))
     for(method in secureMethods) {
@@ -203,15 +212,17 @@ class LoadSecurityModelJob: Job {
     lateinit var securityAdapter: SecurityAdapter
 
     override fun execute(context: JobExecutionContext?) {
-        if(securityModel == null) {
-            log.info("trying to reload security model")
-            try {
-                loadSecurityModel(securityAdapter)
-            } catch(e: Exception) {
-                log.warn("SEC003 failed to get security model after startup. deferring to first rest call that needs " +
-                        "it, or an event from the organisation application when/if it reboots", e)
-            }
-        } else log.info("security model already loaded")
+        synchronized(lock) {
+            if(securityModel == null) {
+                log.info("trying to reload security model")
+                try {
+                    loadSecurityModel(securityAdapter)
+                } catch(e: Exception) {
+                    log.warn("SEC003 failed to get security model after startup. deferring to first rest call that needs " +
+                            "it, or an event from the organisation application when/if it reboots", e)
+                }
+            } else log.info("security model already loaded")
+        }
     }
 }
 
