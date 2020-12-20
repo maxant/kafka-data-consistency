@@ -174,7 +174,7 @@ services:
       "node.name": "elasticsearch01"
       "bootstrap.memory_lock": "true"
       "discovery.type": "single-node"
-      "ES_JAVA_OPTS": "-Xmx512m"
+      "ES_JAVA_OPTS": "-Xms512m -Xmx512m"
     volumes:
       - ./es-data:/usr/share/elasticsearch/data
   kibana:
