@@ -171,7 +171,7 @@ services:
     ports:
       - "30050:9200"
     environment:
-      "node.name": "elasticsearch01"
+      "node.name": "elasticsearch"
       "bootstrap.memory_lock": "true"
       "discovery.type": "single-node"
       "ES_JAVA_OPTS": "-Xms512m -Xmx512m"
@@ -187,9 +187,11 @@ services:
       - "30057:9600"
     depends_on:
       - elasticsearch
-    environment:
-      "monitoring.elasticsearch.hosts": "http://kdc.elasticsearch.maxant.ch1"
-      "MONITORING_ELASTICSEARCH_HOSTS": "http://kdc.elasticsearch.maxant.ch2"
+    #environment:
+      # https://www.elastic.co/guide/en/logstash/7.10/docker-config.html#docker-env-config
+      # not defined in oss image:
+      #"monitoring.elasticsearch.hosts": "http://kdc.elasticsearch.maxant.ch1"
+      #"MONITORING_ELASTICSEARCH_HOSTS": "http://kdc.elasticsearch.maxant.ch2"
   kibana:
     image: docker.elastic.co/kibana/kibana-oss:7.10.1
     container_name: "kibana"
