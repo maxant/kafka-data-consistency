@@ -170,6 +170,7 @@ services:
     container_name: "elasticsearch"
     ports:
       - "30050:9200"
+      - "30051:9300"
     environment:
       "node.name": "elasticsearch"
       "bootstrap.memory_lock": "true"
@@ -202,9 +203,9 @@ services:
       - "elasticsearch:elasticsearch"
     depends_on:
       - elasticsearch
-    environment:
-      "ELASTICSEARCH_HOSTS": "http://kdc.elasticsearch.maxant.ch"
+    #environment:
       # https://www.elastic.co/guide/en/kibana/current/settings.html
+      #"ELASTICSEARCH_HOSTS": "http://kdc.elasticsearch.maxant.ch"
       #"ELASTICSEARCH_HOSTS": "http://maxant.ch:30050" => doesnt work entirely because somehow it still cannot connect. maybe to 9300 instead of 9200?
       #"XPACK_SECURITY_ENABLED": "false"
       # seems to work out of the box, when we name ES "elasticsearch"

@@ -91,6 +91,7 @@ Open ports like this:
     #                    kafka_2:30002:9092  exposed
     #           kafka-rest-proxy:30030:8082  inactive?
     #                    elastic:30050:9200  mapped in nginx
+    #                    elastic:30051:9300  hidden
     #                   logstash:30055:12201 exposed
     #                   logstash:30056:5000  hidden
     #                   logstash:30057:9600  hidden
