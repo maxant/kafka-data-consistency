@@ -165,25 +165,27 @@ services:
       KAFKA_REST_BOOTSTRAP_SERVERS: PLAINTEXT://kdc-kafka-1:9092,PLAINTEXT://kdc-kafka-2:9092
 
   # https://www.elastic.co/guide/en/elastic-stack-get-started/current/get-started-docker.html
-  kdc-elasticsearch:
+  elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
-    container_name: "kdc-elasticsearch"
+    container_name: "elasticsearch"
     ports:
       - "30050:9200"
-      - "30051:9300"
     environment:
+      "node.name": "elasticsearch01"
+      "bootstrap.memory_lock": "true"
       "discovery.type": "single-node"
+      "ES_JAVA_OPTS": "-Xmx512m"
     volumes:
       - ./es-data:/usr/share/elasticsearch/data
-  kdc-kibana:
+  kibana:
     image: docker.elastic.co/kibana/kibana:7.10.1
-    container_name: "kdc-kibana"
+    container_name: "kibana"
     ports:
       - "30150:5601"
     links:
-      - "kdc-elasticsearch:elasticsearch"
+      - "elasticsearch:elasticsearch"
     depends_on:
-      - kdc-elasticsearch
+      - elasticsearch
       #environment:
       # https://www.elastic.co/guide/en/kibana/current/settings.html
       #"ELASTICSEARCH_HOSTS": "http://maxant.ch:30050" => doesnt work entirely because somehow it still cannot connect. maybe to 9300 instead of 9200?
