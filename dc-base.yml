@@ -188,7 +188,8 @@ services:
     depends_on:
       - elasticsearch
     environment:
-      - monitoring.elasticsearch.hosts=http://elasticsearch:9200
+      "monitoring.elasticsearch.hosts": "http://kdc.elasticsearch.maxant.ch1"
+      "MONITORING_ELASTICSEARCH_HOSTS": "http://kdc.elasticsearch.maxant.ch2"
   kibana:
     image: docker.elastic.co/kibana/kibana-oss:7.10.1
     container_name: "kibana"
@@ -199,7 +200,7 @@ services:
     depends_on:
       - elasticsearch
     environment:
-      "ELASTICSEARCH_HOSTS": "http://maxant.ch:30050"
+      "ELASTICSEARCH_HOSTS": "http://kdc.elasticsearch.maxant.ch"
       # https://www.elastic.co/guide/en/kibana/current/settings.html
       #"ELASTICSEARCH_HOSTS": "http://maxant.ch:30050" => doesnt work entirely because somehow it still cannot connect. maybe to 9300 instead of 9200?
       #"XPACK_SECURITY_ENABLED": "false"
