@@ -83,29 +83,33 @@ Open ports like this:
 
     # port list: not everything is exposed!
     # =======================================
-    #                    grafana:29993:3000
-    #                 prometheus:29996:9000
-    #                  portainer:29999:9000
-    #                  zookeeper:30000:2181
-    #                    kafka_1:30001:9092
-    #                    kafka_2:30002:9092
-    #           kafka-rest-proxy:30030:8082
-    #                    elastic:30050:9200
-    #                    kafdrop:30060:9000
-    #                      neo4j:30101:7687
-    #                     kibana:30150:5601
-    #         elastic-apm-server:30200:8200
-    #                      mysql:30300:3306
-    #              ksql-server-1:30401:8088
-    #              ksql-server-2:30402:8088
-    #            ksqldb-server-1:30410:8088
-    #   confluent-control-center:30500:9021
-    #            schemaregistry: 30550:8085
-    #          schemaregistry-ui:30555:8000
-    #                kdc-objects:30601:8086
+    #                    grafana:29993:3000  mapped in nginx
+    #                 prometheus:29996:9000  mapped in nginx
+    #                  portainer:29999:9000  mapped in nginx
+    #                  zookeeper:30000:2181  exposed
+    #                    kafka_1:30001:9092  exposed
+    #                    kafka_2:30002:9092  exposed
+    #           kafka-rest-proxy:30030:8082  inactive?
+    #                    elastic:30050:9200  mapped in nginx
+    #                   logstash:30055:12201 exposed
+    #                   logstash:30056:5000  hidden
+    #                   logstash:30057:9600  hidden
+    #                    kafdrop:30060:9000  mapped in nginx
+    #                      neo4j:30101:7687  exposed
+    #                     kibana:30150:5601  mapped in nginx
+    #         elastic-apm-server:30200:8200  exposed
+    #                      mysql:30300:3306  exposed
+    #              ksql-server-1:30401:8088  exposed, inactive
+    #              ksql-server-2:30402:8088  exposed, inactive
+    #            ksqldb-server-1:30410:8088  exposed, inactive
+    #   confluent-control-center:30500:9021  exposed, inactive
+    #            schemaregistry: 30550:8085  mapped in nginx
+    #          schemaregistry-ui:30555:8000  mapped in nginx
+    #                kdc-objects:30601:8086  mapped in nginx
     firewall-cmd --zone=public --permanent --add-port=30000/tcp
     firewall-cmd --zone=public --permanent --add-port=30001/tcp
     firewall-cmd --zone=public --permanent --add-port=30002/tcp
+    firewall-cmd --zone=public --permanent --add-port=30055/udp
     firewall-cmd --zone=public --permanent --add-port=30101/tcp
     firewall-cmd --zone=public --permanent --add-port=30200/tcp
     firewall-cmd --zone=public --permanent --add-port=30300/tcp
@@ -117,6 +121,7 @@ Open ports like this:
     firewall-cmd --reload
     firewall-cmd --list-all
     firewall-cmd --zone=public --permanent --remove-port=30550/tcp
+    firewall-cmd --zone=public --permanent --remove-port=30055/tcp
 
 Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-consistency.conf):
 
