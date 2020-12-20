@@ -179,6 +179,7 @@ services:
       - ./es-data:/usr/share/elasticsearch/data
   logstash:
     image: docker.elastic.co/logstash/logstash-oss:7.10.1
+    container_name: "logstash"
     volumes:
       - ./pipelines:/usr/share/logstash/pipeline
     ports:
