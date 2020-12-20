@@ -180,9 +180,7 @@ services:
   logstash:
     image: docker.elastic.co/logstash/logstash-oss:7.10.1
     volumes:
-      - source: ./pipelines
-        target: /usr/share/logstash/pipeline
-        type: bind
+      - ./pipelines:/usr/share/logstash/pipeline
     ports:
       - "30055:12201/udp"
       - "30056:5000"
