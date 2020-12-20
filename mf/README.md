@@ -164,10 +164,16 @@ Worth alerting on:
 
 ## TODO
 
+- timestamp - if we attempt to insert but a new version has already been applied, we need to ignore it and log it for alerting. or fail with an error? why not just use optimistic locking. whats on my bit of paper?
+- sessionId
+- web register for session, request, contract, etc. not just requestId
+- add accepted time to contract as well as by who - altho we are guaranteed its the contract holder, since they have to be, in order to do it
+- contracts: execute business rules e.g. if total is higher than customers credit limit, then we need to go thru the approval process
+- when showing partner after offering contract, display contracts
+- when showing sales rep, use a widget from the partners application
 - pep, pip?, pdp
 - security and abac
 - put some stuff into internal package in lib - does kotlin have support for this so that you cannot access it outside of the module?
-- timestamp - if we attempt to insert but a new version has already been applied, we need to ignore it and log it for alerting. or fail with an error? why not just use optimistic locking. whats on my bit of paper?
 - show fat content and other params in portal
 - use qute for other SPAs
 - move sse and other standard things into vue components
@@ -176,10 +182,6 @@ Worth alerting on:
 - customer portal
 - digitally sign contract
 - https://zipkin.io/
-- add accepted time to contract as well as by who - altho we are guaranteed its the contract holder, since they have to be, in order to do it
-- contracts: execute business rules e.g. if total is higher than customers credit limit, then we need to go thru the approval process
-- when showing partner after offering contract, display contracts
-- when showing sales rep, use a widget from the partners application
 - quarkus log to ELK
 - how do cases and then PARTNER RELATIONSHIPS end up in the client, when they use contractId? ok coz of requestId?
 - add accepting and do validation of prices at that point. TRANSPORT still with kafka!

@@ -164,17 +164,19 @@ services:
       KAFKA_REST_HOST_NAME: kdc-kafka-rest-proxy
       KAFKA_REST_BOOTSTRAP_SERVERS: PLAINTEXT://kdc-kafka-1:9092,PLAINTEXT://kdc-kafka-2:9092
 
+  # https://www.elastic.co/guide/en/elastic-stack-get-started/current/get-started-docker.html
   kdc-elasticsearch:
-    image: elasticsearch:7.6.2
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
     container_name: "kdc-elasticsearch"
     ports:
       - "30050:9200"
       - "30051:9300"
     environment:
       "discovery.type": "single-node"
-
+    volumes:
+      - ./es-data:/usr/share/elasticsearch/data
   kdc-kibana:
-    image: kibana:7.6.2
+    image: docker.elastic.co/kibana/kibana:7.10.1
     container_name: "kdc-kibana"
     ports:
       - "30150:5601"
