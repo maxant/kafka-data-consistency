@@ -56,7 +56,7 @@ Make sure the necessary volume folder exists:
 Access Portainer here: http://portainer.maxant.ch/
 
     # start everything
-    docker-compose -f dc-base.yml up -d 
+    docker-compose -f dc-base.yml up -d
 
     # undeploy and entirely remove just one of the services
     docker-compose -f dc-base.yml rm -fsv kdc-ksqldb-server
@@ -64,7 +64,7 @@ Access Portainer here: http://portainer.maxant.ch/
     docker-compose -f dc-ksqldb.yml rm -fsv kdc-ksqldb-server
 
     # redeploy just missing services
-    docker-compose -f ... up -d 
+    docker-compose -f ... up -d --remove-orphans
 
 Monitor docker CPU/Memory with:
 

@@ -307,7 +307,3 @@ Worth alerting on:
     CREATE DATABASE mfcontracts CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
     GRANT ALL PRIVILEGES ON mfcontracts.* TO mfcontracts@'%' IDENTIFIED BY 'the_password';
 
-
-docker run --rm -p 30050:9200 -p 30051:9300 -v es-data:/usr/share/elasticsearch/data -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.10.1
-docker run --rm -p 30055:12201 -p 30056:5000 -p 30057:9600 -v pipelines:/usr/share/logstash/pipeline docker.elastic.co/logstash/logstash-oss:7.10.1
-docker run --rm -p 30150:5601 docker.elastic.co/kibana/kibana-oss:7.10.1
