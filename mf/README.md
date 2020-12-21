@@ -293,6 +293,165 @@ Worth alerting on:
     - client has encrypted state which is sent with requests and can be used in callback. why encrypted and why only for fallback?
     - 
 
+## Create Elastic Search Indices
+
+    # check existing:
+    curl -X GET "kdc.elasticsearch.maxant.ch/contracts"
+    curl -X GET "kdc.elasticsearch.maxant.ch/partners"
+
+    curl -X DELETE "kdc.elasticsearch.maxant.ch/contracts"
+    curl -X DELETE "kdc.elasticsearch.maxant.ch/partners"
+
+    curl -X PUT "kdc.elasticsearch.maxant.ch/contracts" -H 'Content-Type: application/json' -d'
+    {
+        "settings" : {
+            "index" : {
+                "number_of_shards" : 1,
+                "number_of_replicas" : 1
+            },
+            "analysis": {
+                "filter": {
+                    "english_stop": {
+                        "type":       "stop",
+                        "stopwords":  "_english_"
+                    },
+                    "english_stemmer": {
+                        "type":       "stemmer",
+                        "language":   "english"
+                    },
+                    "german_stop": {
+                        "type":       "stop",
+                        "stopwords":  "_german_"
+                    },
+                    "german_stemmer": {
+                        "type":       "stemmer",
+                        "language":   "light_german"
+                    },
+                    "french_elision": {
+                        "type":         "elision",
+                        "articles_case": true,
+                        "articles": [
+                          "l", "m", "t", "qu", "n", "s",
+                          "j", "d", "c", "jusqu", "quoiqu",
+                          "lorsqu", "puisqu"
+                        ]
+                    },
+                    "french_stop": {
+                        "type":       "stop",
+                        "stopwords":  "_french_"
+                    },
+                    "french_stemmer": {
+                        "type":       "stemmer",
+                        "language":   "light_french"
+                    }
+                },
+                "analyzer": {
+                    "ants_analyzer": {
+                        "tokenizer": "standard",
+                        "filter": [
+                            "lowercase",
+                            "english_stop",
+                            "english_stemmer",
+                            "german_stop",
+                            "german_normalization",
+                            "german_stemmer",
+                            "french_elision",
+                            "french_stop",
+                            "french_stemmer"
+                        ]
+                    }
+                }
+            }
+        },
+        "mappings" : {
+            "properties": {
+                "partnerId": { "type": "keyword" },
+                "productId": { "type": "text", "analyzer": "ants_analyzer" },
+                "totalPrice": { "type": "double" },
+                "start": { "type": "date", "format": "strict_date" },
+                "end": { "type": "date", "format": "strict_date" },
+                "components": { "type": "flattened" }
+            }
+        }
+    }
+    '
+
+    curl -X PUT "kdc.elasticsearch.maxant.ch/partners" -H 'Content-Type: application/json' -d'
+    {
+        "settings" : {
+            "index" : {
+                "number_of_shards" : 1,
+                "number_of_replicas" : 1
+            },
+            "analysis": {
+                "filter": {
+                    "english_stop": {
+                        "type":       "stop",
+                        "stopwords":  "_english_"
+                    },
+                    "english_stemmer": {
+                        "type":       "stemmer",
+                        "language":   "english"
+                    },
+                    "german_stop": {
+                        "type":       "stop",
+                        "stopwords":  "_german_"
+                    },
+                    "german_stemmer": {
+                        "type":       "stemmer",
+                        "language":   "light_german"
+                    },
+                    "french_elision": {
+                        "type":         "elision",
+                        "articles_case": true,
+                        "articles": [
+                          "l", "m", "t", "qu", "n", "s",
+                          "j", "d", "c", "jusqu", "quoiqu",
+                          "lorsqu", "puisqu"
+                        ]
+                    },
+                    "french_stop": {
+                        "type":       "stop",
+                        "stopwords":  "_french_"
+                    },
+                    "french_stemmer": {
+                        "type":       "stemmer",
+                        "language":   "light_french"
+                    }
+                },
+                "analyzer": {
+                    "ants_analyzer": {
+                        "tokenizer": "standard",
+                        "filter": [
+                            "lowercase",
+                            "english_stop",
+                            "english_stemmer",
+                            "german_stop",
+                            "german_normalization",
+                            "german_stemmer",
+                            "french_elision",
+                            "french_stop",
+                            "french_stemmer"
+                        ]
+                    }
+                }
+            }
+        },
+        "mappings" : {
+            "properties": {
+                "partnerId": { "type": "keyword" },
+                "firstName": { "type": "text", "analyzer": "ants_analyzer" },
+                "lastName": { "type": "text", "analyzer": "ants_analyzer" },
+                "dob": { "type": "date", "format": "strict_date" },
+                "email": { "type": "text", "analyzer": "ants_analyzer" },
+                "phone": { "type": "text", "analyzer": "ants_analyzer" },
+                "type": { "type": "text", "analyzer": "ants_analyzer" }
+            }
+        }
+    }
+    '
+
+
 ## Running tips
 
     export MAVEN_OPTS="-Xmx200m"
