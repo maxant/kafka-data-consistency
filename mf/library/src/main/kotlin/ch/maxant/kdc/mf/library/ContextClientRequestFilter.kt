@@ -17,12 +17,7 @@ class ContextClientRequestFilter : ClientRequestFilter {
     val log: Logger = Logger.getLogger(this.javaClass)
 
     override fun filter(requestContext: ClientRequestContext) {
-        val requestId = try {
-            context.requestId
-        } catch (e: UninitializedPropertyAccessException) {
-            // ignore - this can happen when eg fetching security info at startup ie when no user is involved
-            RequestId(UUID.randomUUID().toString())
-        }
+        val requestId = context.getRequestIdSafely()
         log.debug("adding requestId $requestId to outbound rest request")
         requestContext.headers.add(REQUEST_ID, requestId.toString())
     }

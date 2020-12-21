@@ -31,12 +31,7 @@ class ContextRequestFilter : ContainerRequestFilter {
             requestId[0]
         else {
             // it might already be in the request from another filter
-            val rId2 =
-                    try {
-                        context.requestId.requestId
-                    } catch(e: UninitializedPropertyAccessException) {
-                        UUID.randomUUID().toString()
-                    }
+            val rId2 = context.getRequestIdSafely().requestId
             log.info("creating new requestId as it is missing in the request: $rId2")
             rId2
         }

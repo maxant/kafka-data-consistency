@@ -10,12 +10,20 @@ import javax.validation.ValidationException
 
 @RequestScoped
 class Context {
-    lateinit var requestId: RequestId
+    lateinit var requestId: RequestId // TODO instead of lateinit, always give it a default value, and simply override it in (incoming) boundaries
     var originalMessage: Any? = null
     var command: String? = null
     var event: String? = null
     var demoContext: DemoContext? = null
     var retryCount: Int = 0
+
+    fun getRequestIdSafely() =
+        try {
+            requestId
+        } catch(e: UninitializedPropertyAccessException) {
+            requestId = RequestId(UUID.randomUUID().toString()) // can happen e.g. when receiving a message from kafka or doing background work e.g. timers
+            requestId
+        }
 
     companion object {
         const val REQUEST_ID = "request-id"
@@ -36,11 +44,7 @@ class Context {
         }
         fun of(toCopy: Context): Context {
             val context = Context()
-            try {
-                context.requestId = toCopy.requestId
-            } catch(e: UninitializedPropertyAccessException) {
-                context.requestId = RequestId(UUID.randomUUID().toString()) // can happen when receiving a message from kafka
-            }
+            context.requestId = toCopy.getRequestIdSafely()
             context.originalMessage = toCopy.originalMessage
             context.command = toCopy.command
             context.event = toCopy.event
@@ -83,6 +87,7 @@ class DemoContext(
 }
 
 @ApplicationScoped
+@SuppressWarnings("unused")
 class InitContextForBackgroundProcessing {
 
     @Inject
@@ -91,6 +96,7 @@ class InitContextForBackgroundProcessing {
     @Inject
     lateinit var context: Context
 
+    @SuppressWarnings("unused")
     fun setupForBackgroundProcessing(@Observes e: StartupEvent) {
         context.requestId = RequestId(UUID.randomUUID().toString())
         context.command = "BACKGROUND_STARTUP"
