@@ -295,12 +295,24 @@ Worth alerting on:
 
 ## Create Elastic Search Indices
 
-    # check existing:
+For nested docs, see this first: https://www.elastic.co/guide/en/elasticsearch/reference/current/properties.html
+
+Kibana searches:
+
+    components:{ componentDefinitionId: CardboardBox }
+    components:{ configs:{ name: FAT_CONTENT AND value: 1.8 } }
+
+Check existing:
+
     curl -X GET "kdc.elasticsearch.maxant.ch/contracts"
     curl -X GET "kdc.elasticsearch.maxant.ch/partners"
 
+Delete existing:
+
     curl -X DELETE "kdc.elasticsearch.maxant.ch/contracts"
     curl -X DELETE "kdc.elasticsearch.maxant.ch/partners"
+
+Create new:
 
     curl -X PUT "kdc.elasticsearch.maxant.ch/contracts" -H 'Content-Type: application/json' -d'
     {
@@ -308,69 +320,28 @@ Worth alerting on:
             "index" : {
                 "number_of_shards" : 1,
                 "number_of_replicas" : 1
-            },
-            "analysis": {
-                "filter": {
-                    "english_stop": {
-                        "type":       "stop",
-                        "stopwords":  "_english_"
-                    },
-                    "english_stemmer": {
-                        "type":       "stemmer",
-                        "language":   "english"
-                    },
-                    "german_stop": {
-                        "type":       "stop",
-                        "stopwords":  "_german_"
-                    },
-                    "german_stemmer": {
-                        "type":       "stemmer",
-                        "language":   "light_german"
-                    },
-                    "french_elision": {
-                        "type":         "elision",
-                        "articles_case": true,
-                        "articles": [
-                          "l", "m", "t", "qu", "n", "s",
-                          "j", "d", "c", "jusqu", "quoiqu",
-                          "lorsqu", "puisqu"
-                        ]
-                    },
-                    "french_stop": {
-                        "type":       "stop",
-                        "stopwords":  "_french_"
-                    },
-                    "french_stemmer": {
-                        "type":       "stemmer",
-                        "language":   "light_french"
-                    }
-                },
-                "analyzer": {
-                    "ants_analyzer": {
-                        "tokenizer": "standard",
-                        "filter": [
-                            "lowercase",
-                            "english_stop",
-                            "english_stemmer",
-                            "german_stop",
-                            "german_normalization",
-                            "german_stemmer",
-                            "french_elision",
-                            "french_stop",
-                            "french_stemmer"
-                        ]
-                    }
-                }
             }
         },
         "mappings" : {
             "properties": {
                 "partnerId": { "type": "keyword" },
-                "productId": { "type": "text", "analyzer": "ants_analyzer" },
                 "totalPrice": { "type": "double" },
-                "start": { "type": "date", "format": "strict_date" },
-                "end": { "type": "date", "format": "strict_date" },
-                "components": { "type": "flattened" }
+                "start": { "type": "date", "format": "date_hour_minute_second" },
+                "end": { "type": "date", "format": "date_hour_minute_second" },
+                "state": { "type": "text" },
+                "components": { 
+                    "type": "nested",
+                    "properties": {
+                        "componentDefinitionId": { "type": "text" },
+                        "configs": {
+                            "type": "nested",
+                            "properties": {
+                                "name": { "type": "text" },
+                                "value": { "type": "text" }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

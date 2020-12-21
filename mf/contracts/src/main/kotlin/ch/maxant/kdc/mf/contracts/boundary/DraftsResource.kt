@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.contracts.boundary
 
+import ch.maxant.kdc.mf.contracts.adapter.ESAdapter
 import ch.maxant.kdc.mf.contracts.control.ComponentsRepo
 import ch.maxant.kdc.mf.contracts.control.EventBus
 import ch.maxant.kdc.mf.contracts.control.ValidationService
@@ -19,8 +20,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import org.jboss.logging.Logger
 import java.net.URI
 import java.util.*
-import javax.annotation.security.PermitAll
-import javax.annotation.security.RolesAllowed
 import javax.inject.Inject
 import javax.persistence.EntityManager
 import javax.transaction.Transactional
@@ -49,9 +48,11 @@ class DraftsResource(
         var validationService: ValidationService,
 
         @Inject
-        var context: Context
-) {
+        var context: Context,
 
+        @Inject
+        var esAdapter: ESAdapter
+) {
     val log: Logger = Logger.getLogger(this.javaClass)
 
     @Operation(summary = "Create a draft", description = "descr")
@@ -88,6 +89,10 @@ class DraftsResource(
         log.info("packaged ${contract.id}")
 
         val draft = Draft(contract, pack)
+
+        // TODO use transactional outbox. or just use a command via kafka, since once its in there, we have a retry. we need to subscribe to it as we dont
+        // have any infrastructure to send kafka to ES
+        esAdapter.createOffer(draft, draftRequest.partnerId)
 
         // it's ok to publish this model, because it's no different than getting pricing to
         // go fetch all this data, or us giving it to them. the dependency exists and is tightly
@@ -141,6 +146,9 @@ class DraftsResource(
         val allComponents = componentsRepo.updateConfig(contractId, componentId, ConfigurableParameter.valueOf(param), newValue)
 
         context.throwExceptionInContractsIfRequiredForDemo()
+
+        // TODO use transactional outbox
+        esAdapter.updateOffer(contractId, allComponents)
 
         // instead of publishing the initial model based on definitions, which contain extra
         // info like possible inputs, we publish a simpler model here

@@ -31,6 +31,7 @@
             })
             .then(r => { console.log("got token"); return r.text()})
             .then(r => { console.log("token has been read"); currentJwt = r; return r; })
+            .then(r => { window.eventHub.emit(LOGGED_IN, {r}); return r; })
         },
 
         ensureJwtIsValid$: function() {

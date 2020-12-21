@@ -32,7 +32,7 @@ function getHeaders(requestId, getDemoContext) {
     return ctx
 }
 
-function fetchIt(url, method, self, body, username) {
+function fetchIt(url, method, self, body) {
     return security.ensureJwtIsValid$().then(jwt => {
         self.start = new Date().getTime();
         let data = { "method": method,
@@ -45,3 +45,8 @@ function fetchIt(url, method, self, body, username) {
         })
     })
 }
+
+// common event hub events
+var LOGGED_IN = "loggedIn"; // emitted by security after a login
+
+window.eventHub = mitt();

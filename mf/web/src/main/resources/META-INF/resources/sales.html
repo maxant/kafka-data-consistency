@@ -3,8 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <title>The Milk Factory :: Sales</title>
+
+    <!-- https://docs.gitlab.com/ee/development/fe_guide/vue3_migration.html#event-hub -->
+    <script src="https://unpkg.com/mitt/dist/mitt.umd.js"></script>
+
     <script src="./common.js"></script>
+    <script src="./security.js"></script>
     <link href="./styles.css" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.20/lodash.min.js"></script>
 
     <script src="https://unpkg.com/vue@3.0.2/dist/vue.global.js"></script>
@@ -36,6 +44,8 @@
                             <template #option="slotProps">{{slotProps.option.label}}</template>
                             <template #value="slotProps">{{slotProps.value.label}}</template>
                         </p-dropdown>
+            <br>
+            User: <p-dropdown :options="users" v-model="user" option-label="name" @change="userChanged()"></p-dropdown>
         </div>
         <div>
             <mf-partner v-model="partner"></mf-partner>
@@ -89,6 +99,9 @@
     </div>
     <hr>
 <script>
+const users = [ {name: 'none', un: 'none',       password: "wrong", id: null},
+                {name: 'John', un: 'john.smith', password: "asdf",  id: '3cd5b3b1-e740-4533-a526-2fa274350586'}
+              ];
 const forcibleErrors = [ {label: 'none', value: 'none'},
                         {label: 'business error in contracts (REST)', value: 'businessErrorInContracts'},
                         {label: 'technical error in contracts (REST)', value: 'technicalErrorInContracts'},
@@ -104,14 +117,16 @@ const App = {
       source: null,
       currentAction: null,
       requestId: uuidv4(),
+      users,
+      user: users[1],
       forcibleErrors,
       forceError: forcibleErrors[0],
       allowOffer: false
     }
   },
   mounted() {
-    //this.newDraft();
     window.model = this.model; // just for debugging purposes
+    security.login$(this.user.un, this.user.password);
   },
   methods: {
     newDraft() {
@@ -149,6 +164,9 @@ const App = {
     get(obj, path) {
         // vue3 doesnt like seeing underscores in attribute values => so lets create an alias with this method
         return _.get(obj, path);
+    },
+    userChanged() {
+        security.login$(this.user.un, this.user.password);
     },
     getDistinctParamNames(configPossibilities) {
         return _(configPossibilities).map("name").uniq().value()

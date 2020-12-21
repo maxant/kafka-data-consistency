@@ -40,8 +40,8 @@ const App = {
   },
   mounted() {
     window.model = this.model; // just for debugging purposes
-    security.login$(this.user.un, this.user.password)
-            .then(this.newDraft);
+    security.login$(this.user.un, this.user.password);
+    eventHub.on(LOGGED_IN, this.newDraft);
   },
   methods: {
     newDraft() {
@@ -116,8 +116,7 @@ const App = {
         return _.get(obj, path);
     },
     userChanged() {
-        security.login$(this.user.un, this.user.password)
-                .then(this.newDraft);
+        security.login$(this.user.un, this.user.password);
     },
     priceOf(component) {
         return (component.$price.total - _.sumBy(component.children, '$price.total')).toFixed(2);
