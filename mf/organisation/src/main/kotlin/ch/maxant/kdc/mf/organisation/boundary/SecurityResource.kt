@@ -57,7 +57,7 @@ class SecurityResource {
             throw ForbiddenException() // no details, as that would be an attack point
         }
         if (hash(user.pswd) != password) {
-            log.info("wrong password for user ${user.un}")
+            log.info("wrong password '$password' for user ${user.un}")
             throw ForbiddenException() // no details, as that would be an attack point
         }
         log.info("user is logged in ${user.un}")

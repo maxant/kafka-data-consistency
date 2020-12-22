@@ -38,7 +38,7 @@
                         </p-dropdown>
         </div>
         <div>
-            <mf-partner v-model="partner"></mf-partner>
+            <mf-partner-select v-model="partner"></mf-partner-select>
         </div>
         <div>
             <p-calendar v-model="model.startDate" :showIcon="true" placeholder="Select a date for your order"></p-calendar>
@@ -217,7 +217,7 @@ const App = {
   components: {
     'p-calendar': calendar,
     'p-dropdown': dropdown,
-    'mf-partner': mfPartner
+    'mf-partner-select': mfPartnerSelect
   }
 }
 Vue.createApp(App).mount("#app")
