@@ -164,26 +164,31 @@ Worth alerting on:
 
 ## TODO
 
-- PortalResource/common.js: put urls into the backend config of the web component and put them here as well as in common.js, from there
+- add a partner in postcode 3000 and see if jane becomes salesRep. same for janet in 1000.
 - timestamp - if we attempt to insert but a new version has already been applied, we need to ignore it and log it for alerting. or fail with an error? why not just use optimistic locking. whats on my bit of paper?
 - sessionId
 - web register for session, request, contract, etc. not just requestId
 - add accepted time to contract as well as by who - altho we are guaranteed its the contract holder, since they have to be, in order to do it
 - contracts: execute business rules e.g. if total is higher than customers credit limit, then we need to go thru the approval process
 - when showing partner after offering contract, display contracts
-- when showing sales rep, use a widget from the partners application
 - pep, pip?, pdp
 - security and abac
+  - finish impl checks for who can read a contract
 - put some stuff into internal package in lib - does kotlin have support for this so that you cannot access it outside of the module?
 - show fat content and other params in portal
-- use qute for other SPAs
+- use qute for other SPAs:
+  - organisation
+  - security
+  - home
 - move sse and other standard things into vue components
 - security: do a view of all methods, and the roles and therefore the users which can run them
 - finish security.html
-- customer portal
+- customer portal - add view of my contracts
 - digitally sign contract
+- business rules when offering, eg if too expensive then create a task in cases
+- display existing draft so that you can continue working from there
+- add partner (inline widget)
 - https://zipkin.io/
-- quarkus log to ELK
 - how do cases and then PARTNER RELATIONSHIPS end up in the client, when they use contractId? ok coz of requestId?
 - add accepting and do validation of prices at that point. TRANSPORT still with kafka!
 - add the ability to fix errors, so that the user isnt blocked.

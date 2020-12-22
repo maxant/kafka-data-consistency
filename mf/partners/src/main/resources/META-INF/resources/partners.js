@@ -64,7 +64,7 @@ template =
 // start template
 // TODO responsive, columns, etc.
 `
-<div style="border: 1px solid #999999; width: 350px; margin-bottom: 5px;">
+<div style="border: 1px solid #999999; width: 350px; margin-top: 3px; margin-bottom: 5px;">
     <div v-if="error">
         Error loading partner<br>
         {{error}}

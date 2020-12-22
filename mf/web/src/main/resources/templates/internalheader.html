@@ -7,6 +7,25 @@
     <!-- https://docs.gitlab.com/ee/development/fe_guide/vue3_migration.html#event-hub -->
     <script src="https://unpkg.com/mitt/dist/mitt.umd.js"></script>
 
+    <script>
+    // causes each quarkus uService to reload, since it doesnt do that when a kafka event arrives
+    {#for mfc in mfcomponents }
+    const {mfc.constantName}_BASE_URL    = "{mfc.baseUrl}";
+    {/for}
+
+    function pingAll() {
+        {#for mfc in mfcomponents }
+        fetch({mfc.constantName}_BASE_URL + "/ping").then(r => r.text());
+        {/for}
+    }
+    </script>
+    <script>
+{|
+    const users = [ {name: 'none', un: 'none',       password: "wrong", id: null},
+                    {name: 'John', un: 'john.smith', password: "asdf",  id: '3cd5b3b1-e740-4533-a526-2fa274350586'}
+              ];
+|}
+    </script>
     <script src="./common.js"></script>
     <script src="./security.js"></script>
     <link href="./styles.css" rel="stylesheet">
@@ -25,13 +44,18 @@
     <script src="https://unpkg.com/primevue{pvversion}/components/{pvc}/{pvc}.umd.min.js"></script>
     {/for}
 
-    {#for mfc in mfcomponents }
-    <script src="{mfc}"></script>
+    {#for mfw in mfwidgets }
+    <script src="{mfw}"></script>
     {/for}
+    <script src="users.js"></script>
 </head>
 <body>
 <h2>The Milk Factory :: {title}</h2>
 <div id="app">
     <div style="width: 100%; text-align: right; font-size: small;">
-        User: <p-dropdown :options="users" v-model="user" option-label="name" @change="userChanged()"></p-dropdown>
+        | <a href='/'>home</a>
+        | <a href='/sales'>sales</a>
+        | <a href='#' onclick="pingAll()">reload all microservices</a>
+        | <mf-users :users="users"></mf-users>
+        |
     </div>

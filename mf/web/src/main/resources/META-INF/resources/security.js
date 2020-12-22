@@ -27,10 +27,24 @@
             method: "POST",
             body: currentEncryptedPassword,
             headers: {"Content-Type": "application/json"}
-        })
-        .then(r => { console.log("got token"); return r.text()})
-        .then(r => { console.log("token has been read"); currentJwt = r; return r; })
-        .then(r => { eventHub.emit(LOGGED_IN, {r}); return r; })
+        }).then(r => {
+            return r.text().then(token => ({token, status: r.status, ok: r.ok, originalResponse: r}));
+        }).then(r => {
+            if(r.ok) {
+                console.log("got token");
+                currentJwt = r.token;
+                setTimeout(() => eventHub.emit(LOGGED_IN, currentUsername), 1); // async otherwise errors that happen after login are caught below
+                return r.token;
+            } else if(r.status == 403) {
+                throw new Error("Unknown user or password wrong");
+            } else {
+                throw new Error("Failed to login. Server Status was " + r.status);
+            }
+        }).catch(error => {
+            let msg = "received error while getting token: " + error;
+            console.error(msg);
+            alert(error);
+        });
     }
 
     window.security = {

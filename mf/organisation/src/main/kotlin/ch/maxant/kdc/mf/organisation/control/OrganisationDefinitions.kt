@@ -82,6 +82,12 @@ class Partner(dn: DN, partnerId: UUID, partnerRoles: List<PartnerRole>, un: Stri
         val AUGUSTUS = Partner(DN("Augustus", listOf("")), fromString("331e5c18-e330-4204-95a1-371e54a12f5c"),
                 listOf(PartnerRole.CUSTOMER), "180000032", "asdf"
         )
+        val TIBERIUS = Partner(DN("Tiberius", listOf("")), fromString("c642e4c8-bdcf-4b34-96d4-6a45df2cbf22"),
+                listOf(PartnerRole.CUSTOMER), "180000033", "asdf"
+        )
+        val GAIUS = Partner(DN("Gaius", listOf("")), fromString("8599d3f0-3807-4b57-9770-6864cb3fddbd"),
+                listOf(PartnerRole.CUSTOMER), "180000034", "asdf"
+        )
         fun values() = (Companion::class.memberProperties as ArrayList)
                 .filter { it.returnType.javaType.typeName == Partner::class.java.name }
                 .map { it.get(Companion) as Partner }

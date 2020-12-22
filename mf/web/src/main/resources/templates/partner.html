@@ -1,0 +1,64 @@
+{#include internalheader title="Partner" /}{|
+
+<div style="font-size: small;">
+    Fetched in {{ timeTaken }}ms
+</div>
+
+<div>
+    Partner ID: {{model.id}}<br>
+    First Name: {{model.partner.firstName}}<br>
+    Last Name: {{model.partner.lastName}}<br>
+    DoB: {{model.partner.dob}}<br>
+    Email: {{model.partner.email}}<br>
+    Phone: {{model.partner.phone}}<br>
+    Type: {{model.partner.type}}<br>
+</div>
+
+</div> |}{! end of app div !}{|
+<script>
+var urlParams = new URLSearchParams(window.location.search);
+var id = urlParams.get('id');
+console.log("using id from url: " + id);
+
+const App = {
+  data() {
+    return {
+      model: { "id": id, "partner": {} },
+      start: 0,
+      timeTaken: 0,
+      requestId: uuidv4(),
+      users
+    }
+  },
+  mounted() {
+    window.model = this.model; // just for debugging purposes
+    eventHub.on(LOGGED_IN, this.fetchPartner);
+  },
+  methods: {
+    fetchPartner() {
+        let self = this;
+        let url = PARTNERS_BASE_URL + "/partners/" + this.model.id;
+        fetchIt(url, "GET", this).then(r => {
+            self.timeTaken = new Date().getTime() - self.start;
+            if(r.ok) {
+                console.log("got partner with id " + r.payload.id + ", for requestId " + this.requestId);
+                self.model.partner = r.payload;
+            } else {
+                let msg = "Failed to get partner: " + r.payload.error;
+                console.error(msg);
+                alert(msg);
+            }
+        }).catch(error => {
+            alert("received error: " + error);
+        });
+    }
+  },
+  components: {
+    'mf-users': mfUsers
+  }
+}
+Vue.createApp(App).mount("#app")
+</script>
+
+
+|}{#include internalfooter /}

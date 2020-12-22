@@ -1,10 +1,10 @@
-{#include header title="Portal" /}{|
+{#include externalheader title="Portal" /}{|
 
 <div style="font-size: small;">
     Drafted in {{ timeTaken }}ms
 </div>
 <div v-if="get(model, 'draft.contract')">
-    Contract ID: {{ model.draft.contract.id }}
+    <mf-contract :contract="model.draft.contract"></mf-contract>
 </div>
 <div v-if="!!get(model, 'draft.pack.$price')">
     Product: {{ model.draft.pack.children[0].productId }} {{ model.draft.pack.$price.total }} CHF ({{ model.draft.pack.$price.tax }} CHF VAT)
@@ -20,28 +20,30 @@
 <div>
     <button @click="offerDraftAndAcceptOffer()">accept offer</button>
 </div>
+<div v-if="get(model, 'draft.contract')">
+    <mf-partner v-if="model.salesRep" :partner-id="model.salesRep" role="SALES_REP"></mf-partner>
+</div>
 
-</div> |}{! end of app !}{|
+</div> |}{! end of app div !}{|
 <script>
-const users = [ {name: 'none',     un: 'none',      password: "wrong", id: null},
-                {name: 'Augustus', un: '180000032', password: "asdf", id: '331e5c18-e330-4204-95a1-371e54a12f5c'}
-              ];
 const App = {
   data() {
     return {
-      model: { "draft": {"contract": {}, "pack": {}, "prices": {}}, "startDate": new Date()},
+      model: {"draft": {"prices": {}}, "startDate": new Date(), salesRep: null},
       start: 0,
       timeTaken: 0,
       requestId: uuidv4(),
       users,
-      user: users[1],
       allowOffer: false
     }
   },
   mounted() {
     window.model = this.model; // just for debugging purposes
-    security.login$(this.user.un, this.user.password);
-    eventHub.on(LOGGED_IN, this.newDraft);
+    eventHub.on(LOGGED_IN, (username) => {
+        let userId = _.find(users, u => u.un == username).id;
+        this.user = {id: userId};
+        this.newDraft();
+    });
   },
   methods: {
     newDraft() {
@@ -99,7 +101,8 @@ const App = {
             return fetchIt(url, "PUT", this).then(r => {
                 if(r.ok) {
                     console.log("accepted offer with id " + r.id + ", for requestId " + this.requestId);
-                    window.location.href = '/partner.html?id=' + self.user.id;
+alert("TODO navigate to external users home to view new offer, rather than jumping to internal page!");
+                    window.location.href = '/partner?id=' + self.user.id;
                 } else {
                     let msg = "Failed to accept offer: " + r.payload.error;
                     console.error(msg);
@@ -115,16 +118,14 @@ const App = {
         // vue3 doesnt like seeing underscores in attribute values => so lets create an alias with this method
         return _.get(obj, path);
     },
-    userChanged() {
-        security.login$(this.user.un, this.user.password);
-    },
     priceOf(component) {
         return (component.$price.total - _.sumBy(component.children, '$price.total')).toFixed(2);
     }
   },
   components: {
-    'p-calendar': calendar,
-    'p-dropdown': dropdown
+    'mf-partner': mfPartnerTile,
+    'mf-contract': mfContractTile,
+    'mf-users': mfUsers
   }
 }
 Vue.createApp(App).mount("#app")
@@ -154,6 +155,10 @@ function sse(requestId, self) {
             });
             self.allowOffer = true;
             self.timeTaken = new Date().getTime() - self.start;
+        } else if(msg.event == "CHANGED_PARTNER_RELATIONSHIP") {
+            if(msg.payload.role == "SALES_REP") {
+                self.model.salesRep = msg.payload.partnerId;
+            }
         } else if(msg.event == "ERROR") {
             if(msg.payload.errorClass == "ch.maxant.kdc.mf.partners.control.PartnerHasNoPrimaryAddressValidationException") {
                 alert(msg.payload.errorMessage);
@@ -185,36 +190,13 @@ function ameliorateCurrentAction(self) {
     }
 }
 
-function removeWaitingAndResetValue(targetComponentId, paramName, oldValue, component) {
-    if(component.componentId == targetComponentId) {
-        component.$configs[paramName].waiting = false
-        component.$configs[paramName].value = oldValue
-    }
-    _.forEach(component.children, child => removeWaitingAndResetValue(targetComponentId, paramName, oldValue, child));
-}
-
 function initialiseDraft(component) {
     component.$configs = {}
     _.forEach(component.configs, c => component.$configs[c.name] = _.clone(c));
     _.forEach(component.children, child => initialiseDraft(child));
 }
 
-function updateDraft(newComponents, component){
-    let newComponent = _(newComponents).find(c => c.id === component.componentId)
-    if(newComponent) {
-        let areWaiting = _(component.$configs).filter(c => c.waiting).map("name").value()
-        component.configs = newComponent.configs; // adopt new configs
-        _.forEach(component.configs, c => component.$configs[c.name] = _.clone(c)); // also clears waiting (disabled)
-        _.forEach(areWaiting, name => component.$configs[name].waiting = true); // reset so that they remain waiting, until prices are calculated
-        component.$price = {} // reset them as we dont know what they are right now! in the case of an error, they stay empty indicating that there was a problem!
-    } else {
-        console.error("no component with ID " + component.componentId + " found in response")
-    }
-
-    _.forEach(component.children, child => updateDraft(newComponents, child));
-}
-
 </script>
 
 
-|}{#include footer /}
+|}{#include externalfooter /}

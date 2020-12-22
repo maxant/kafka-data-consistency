@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>The Milk Factory :: {title}</title>
+
+    <!-- https://docs.gitlab.com/ee/development/fe_guide/vue3_migration.html#event-hub -->
+    <script src="https://unpkg.com/mitt/dist/mitt.umd.js"></script>
+
+    <script>
+    // causes each quarkus uService to reload, since it doesnt do that when a kafka event arrives
+    {#for mfc in mfcomponents }
+    const {mfc.constantName}_BASE_URL    = "{mfc.baseUrl}";
+    {/for}
+    function pingAll() {
+        {#for mfc in mfcomponents }
+        fetch({mfc.constantName}_BASE_URL + "/ping").then(r => r.text());
+        {/for}
+    }
+    </script>
+    <script>
+{|
+    const users = [ {name: 'none',     un: 'none',      password: "wrong", id: null},
+                    {name: 'Augustus', un: '180000032', password: "asdf", id: '331e5c18-e330-4204-95a1-371e54a12f5c'},
+                    {name: 'Tiberius', un: '180000033', password: "asdf", id: 'c642e4c8-bdcf-4b34-96d4-6a45df2cbf22'},
+                    {name: 'Gaius',    un: '180000034', password: "asdf", id: '8599d3f0-3807-4b57-9770-6864cb3fddbd'}
+              ];
+|}
+    </script>
+    <script src="./common.js"></script>
+    <script src="./security.js"></script>
+    <link href="./styles.css" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.20/lodash.min.js"></script>
+
+    <script src="https://unpkg.com/vue@{vueversion}/dist/vue.global.js"></script>
+
+    <link href="https://unpkg.com/primevue{pvversion}/resources/themes/saga-blue/theme.css" rel="stylesheet">
+    <link href="https://unpkg.com/primevue{pvversion}/resources/primevue.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/primeicons{primeiconsversion}/primeicons.css" rel="stylesheet">
+
+    {#for pvc in pvcomponents }
+    <script src="https://unpkg.com/primevue{pvversion}/components/{pvc}/{pvc}.umd.min.js"></script>
+    {/for}
+
+    {#for mfw in mfwidgets }
+    <script src="{mfw}"></script>
+    {/for}
+    <script src="users.js"></script>
+</head>
+<body>
+<h2>The Milk Factory :: {title}</h2>
+<div id="app">
+    <div style="width: 100%; text-align: right; font-size: small;">
+        | <a href='/'>home</a>
+        | <a href='/sales'>sales</a>
+        | <a href='#' onclick="pingAll()">reload all microservices</a>
+        | <mf-users :users="users"></mf-users>
+        |
+    </div>

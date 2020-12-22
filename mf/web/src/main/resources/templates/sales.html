@@ -1,113 +1,70 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>The Milk Factory :: Sales</title>
+{#include internalheader title="Sales" /}{|
 
-    <!-- https://docs.gitlab.com/ee/development/fe_guide/vue3_migration.html#event-hub -->
-    <script src="https://unpkg.com/mitt/dist/mitt.umd.js"></script>
+<div style="width: 100%; text-align: right; font-size: small;">
+    Force error: <p-dropdown :options="forcibleErrors" v-model="forceError">
+        <template #option="slotProps">{{slotProps.option.label}}</template>
+        <template #value="slotProps">{{slotProps.value.label}}</template>
+    </p-dropdown>
+</div>
 
-    <script src="./common.js"></script>
-    <script src="./security.js"></script>
-    <link href="./styles.css" rel="stylesheet">
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.20/lodash.min.js"></script>
-
-    <script src="https://unpkg.com/vue@3.0.2/dist/vue.global.js"></script>
-    <!-- <script src="https://unpkg.com/vue@next"></script> -->
-
-    <!--
-    <link href="https://unpkg.com/primevue/resources/themes/saga-blue/theme.css " rel="stylesheet">
-    <link href="https://unpkg.com/primevue/resources/primevue.min.css " rel="stylesheet">
-    <link href="https://unpkg.com/primeicons/primeicons.css " rel="stylesheet">
-     <script src="https://unpkg.com/primevue/components/calendar/calendar.umd.min.js"></script>
-    <script src="https://unpkg.com/primevue/components/dropdown/dropdown.umd.min.js"></script>
-     -->
-    <!-- search for version numbers in npm: https://www.npmjs.com/package/primevue -->
-    <link href="https://unpkg.com/primevue@3.0.1/resources/themes/saga-blue/theme.css" rel="stylesheet">
-    <link href="https://unpkg.com/primevue@3.0.1/resources/primevue.min.css" rel="stylesheet">
-    <link href="https://unpkg.com/primeicons@4.1.0/primeicons.css" rel="stylesheet">
-    <script src="https://unpkg.com/primevue@3.0.1/components/calendar/calendar.umd.min.js"></script>
-    <script src="https://unpkg.com/primevue@3.0.1/components/dropdown/dropdown.umd.min.js"></script>
-
-    <script src="http://localhost:8080/contracts.js"></script>
-    <script src="http://localhost:8083/partners.js"></script>
-</head>
-<body style="background-image: url(https://hips.hearstapps.com/del.h-cdn.co/assets/15/24/1600x800/landscape-1433889344-del-milkshakes-index.jpg); background-color: rgba(255, 255, 255, 0.85); background-blend-mode: overlay;">
-    <h2>The Milk Factory :: Sales</h2>
-    <div id="app">
-        <div style="width: 100%; text-align: right; font-size: small;">
-            <button onclick="pingAll()">reload all microservices</button>
-            <br>
-            Force error: <p-dropdown :options="forcibleErrors" v-model="forceError">
-                            <template #option="slotProps">{{slotProps.option.label}}</template>
-                            <template #value="slotProps">{{slotProps.value.label}}</template>
-                        </p-dropdown>
-            <br>
-            User: <p-dropdown :options="users" v-model="user" option-label="name" @change="userChanged()"></p-dropdown>
-        </div>
-        <div>
-            <mf-partner-select v-model="partner"></mf-partner-select>
-        </div>
-        <div>
-            <p-calendar v-model="model.startDate" :showIcon="true" placeholder="Select a date for your order"></p-calendar>
-            <button @click="newDraft()">get new draft</button>
-        </div>
-        <div style="font-size: small;">
-            Drafted in {{ timeTaken }}ms
-        </div>
-        <div v-if="get(model, 'draft.contract')">
-            <mf-contract :contract="model.draft.contract"></mf-contract>
-        </div>
-        <div v-if="get(model, 'draft.contract')">
-            <mf-partner v-if="model.salesRep" :partner-id="model.salesRep" role="SALES_REP"></mf-partner>
-        </div>
-        <div v-if="!!get(model, 'draft.pack.$price')">
-            Product: {{ model.draft.pack.children[0].productId }} {{ model.draft.pack.$price.total }} CHF ({{ model.draft.pack.$price.tax }} CHF VAT)
-        </div>
-        <div v-if="!!get(model, 'draft.pack.$price')">
-            <ul>
-                <li v-for="child in model.draft.pack.children">
-                    {{ child.componentDefinitionId }}: {{ child.$price.total }} CHF
-                    <ul v-if="get(child, 'children.length') > 0">
-                        <li v-for="child2 in child.children">
-                            {{ child2.componentDefinitionId }}: {{ child2.$price.total }} CHF
-                            <div v-if="child2.configPossibilities && child2.configPossibilities.length > 0">
-                                <div v-for="paramName in getDistinctParamNames(child2.configPossibilities)">
-                                    {{paramName}}: <p-dropdown :options="getParamOptions(paramName, child2)"
-                                                               v-model="child2.$configs[paramName].value"
-                                                               @change="changeParam(child2, paramName, $event)"
-                                                               :disabled="child2.$configs[paramName].waiting"
-                                                    ></p-dropdown>
-                                </div>
-                            </div>
-                            <ul v-if="get(child2, 'children.length') > 0">
-                                <li v-for="child3 in child2.children">
-                                    {{ child3.componentDefinitionId }}: {{ child3.$price.total }} CHF
-                                </li>
-                            </ul>
+<div>
+    <mf-partner-select v-model="partner"></mf-partner-select>
+</div>
+<div>
+    <p-calendar v-model="model.startDate" :showIcon="true" placeholder="Select a date for your order"></p-calendar>
+    <button @click="newDraft()">get new draft</button>
+</div>
+<div style="font-size: small;">
+    Drafted in {{ timeTaken }}ms
+</div>
+<div v-if="get(model, 'draft.contract')">
+    <mf-contract :contract="model.draft.contract"></mf-contract>
+</div>
+<div v-if="get(model, 'draft.contract')">
+    <mf-partner v-if="model.salesRep" :partner-id="model.salesRep" role="SALES_REP"></mf-partner>
+</div>
+<div v-if="!!get(model, 'draft.pack.$price')">
+    Product: {{ model.draft.pack.children[0].productId }} {{ model.draft.pack.$price.total }} CHF ({{ model.draft.pack.$price.tax }} CHF VAT)
+</div>
+<div v-if="!!get(model, 'draft.pack.$price')">
+    <ul>
+        <li v-for="child in model.draft.pack.children">
+            {{ child.componentDefinitionId }}: {{ child.$price.total }} CHF
+            <ul v-if="get(child, 'children.length') > 0">
+                <li v-for="child2 in child.children">
+                    {{ child2.componentDefinitionId }}: {{ child2.$price.total }} CHF
+                    <div v-if="child2.configPossibilities && child2.configPossibilities.length > 0">
+                        <div v-for="paramName in getDistinctParamNames(child2.configPossibilities)">
+                            {{paramName}}: <p-dropdown :options="getParamOptions(paramName, child2)"
+                                                       v-model="child2.$configs[paramName].value"
+                                                       @change="changeParam(child2, paramName, $event)"
+                                                       :disabled="child2.$configs[paramName].waiting"
+                        ></p-dropdown>
+                        </div>
+                    </div>
+                    <ul v-if="get(child2, 'children.length') > 0">
+                        <li v-for="child3 in child2.children">
+                            {{ child3.componentDefinitionId }}: {{ child3.$price.total }} CHF
                         </li>
                     </ul>
                 </li>
             </ul>
-        </div>
-        <div>
-            <button :disabled="!allowOffer" @click="offerDraft()">offer draft</button>
-            (test if locked: <button @click="offerDraft()">offer draft</button>)
-        </div>
-    </div>
-    <hr>
+        </li>
+    </ul>
+</div>
+<div>
+    <button :disabled="!allowOffer" @click="offerDraft()">offer draft</button>
+    (test if locked: <button @click="offerDraft()">offer draft</button>)
+</div>
+
+</div> |}{! end of app div !}{|
 <script>
-const users = [ {name: 'none', un: 'none',       password: "wrong", id: null},
-                {name: 'John', un: 'john.smith', password: "asdf",  id: '3cd5b3b1-e740-4533-a526-2fa274350586'}
-              ];
 const forcibleErrors = [ {label: 'none', value: 'none'},
                         {label: 'business error in contracts (REST)', value: 'businessErrorInContracts'},
                         {label: 'technical error in contracts (REST)', value: 'technicalErrorInContracts'},
                         {label: 'business error in pricing (Kafka)', value: 'businessErrorInPricing'},
                         {label: 'technical error in pricing (Kafka)', value: 'technicalErrorInPricing'} ];
+
 const App = {
   data() {
     return {
@@ -115,19 +72,17 @@ const App = {
       model: {"draft": {"prices": {}}, "startDate": new Date(), salesRep: null},
       start: 0,
       timeTaken: 0,
+      requestId: uuidv4(),
       source: null,
       currentAction: null,
-      requestId: uuidv4(),
-      users,
-      user: users[1],
       forcibleErrors,
       forceError: forcibleErrors[0],
-      allowOffer: false
+      allowOffer: false,
+      users
     }
   },
   mounted() {
     window.model = this.model; // just for debugging purposes
-    security.login$(this.user.un, this.user.password);
   },
   methods: {
     newDraft() {
@@ -165,9 +120,6 @@ const App = {
     get(obj, path) {
         // vue3 doesnt like seeing underscores in attribute values => so lets create an alias with this method
         return _.get(obj, path);
-    },
-    userChanged() {
-        security.login$(this.user.un, this.user.password);
     },
     getDistinctParamNames(configPossibilities) {
         return _(configPossibilities).map("name").uniq().value()
@@ -237,7 +189,8 @@ const App = {
     'p-dropdown': dropdown,
     'mf-partner-select': mfPartnerSelect,
     'mf-partner': mfPartnerTile,
-    'mf-contract': mfContractTile
+    'mf-contract': mfContractTile,
+    'mf-users': mfUsers
   }
 }
 Vue.createApp(App).mount("#app")
@@ -277,7 +230,7 @@ function sse(requestId, self) {
             console.log("offered draft for contract " + msg.payload.contract.id);
             self.allowOffer = false;
             self.timeTaken = new Date().getTime() - self.start;
-            window.location.href = '/partner.html?id=' + self.partner.id;
+            window.location.href = '/partner?id=' + self.partner.id;
         } else if(msg.event == "CHANGED_PARTNER_RELATIONSHIP") {
             if(msg.payload.role == "SALES_REP") {
                 self.model.salesRep = msg.payload.partnerId;
@@ -352,5 +305,5 @@ function updateDraft(newComponents, component){
 }
 
 </script>
-</body>
-</html>
+
+|}{#include internalfooter /}
