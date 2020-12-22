@@ -20,7 +20,7 @@ class PortalResource {
     @GET
     fun item(): TemplateInstance =
         portal.instance()
-              .data("mfcomponents", listOf("http://localhost:8083/partner.js"))
+              .data("mfcomponents", listOf("http://localhost:8080/contracts.js", "http://localhost:8083/partners.js"))
               .data("pvversion", "@3.0.2") // search for version numbers in npm: https://www.npmjs.com/package/primevue or use "" for latest? not sure that acutally works properly, coz had issues where suddenly a version 2 was used
               .data("vueversion", "3.0.2") // search for version numbers in npm, or use "next"
               .data("pvcomponents", listOf("calendar", "dropdown"))

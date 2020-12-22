@@ -164,6 +164,7 @@ Worth alerting on:
 
 ## TODO
 
+- PortalResource/common.js: put urls into the backend config of the web component and put them here as well as in common.js, from there
 - timestamp - if we attempt to insert but a new version has already been applied, we need to ignore it and log it for alerting. or fail with an error? why not just use optimistic locking. whats on my bit of paper?
 - sessionId
 - web register for session, request, contract, etc. not just requestId
