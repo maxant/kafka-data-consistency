@@ -25,9 +25,15 @@ open class ContractEntity( // add open, rather than rely on maven plugin, becaus
         open var contractState: ContractState,
 
         @Column(name = "SYNC_TIMESTAMP", nullable = false)
-        open var syncTimestamp: Long
+        open var syncTimestamp: Long,
+
+        @Column(name = "CREATED_AT", nullable = false)
+        open var createdAt: LocalDateTime = LocalDateTime.now(),
+
+        @Column(name = "CREATED_BY", nullable = false)
+        open var createdBy: String
 
 ) {
     // for hibernate
-    constructor() : this(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, ContractState.DRAFT, 0)
+    constructor() : this(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, ContractState.DRAFT, 0, LocalDateTime.now(), "")
 }

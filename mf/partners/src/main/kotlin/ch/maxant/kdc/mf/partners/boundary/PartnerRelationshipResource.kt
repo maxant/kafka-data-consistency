@@ -36,13 +36,13 @@ class PartnerRelationshipResource(
     private val log = Logger.getLogger(this.javaClass)
 
     @GET
-    @Operation(summary = "gets the latest matching partners")
+    @Operation(summary = "gets the latest partners for the given foreignId and role")
     @APIResponses(
-            APIResponse(description = "a partner", responseCode = "201", content = [
+            APIResponse(description = "a partner", responseCode = "200", content = [
                 Content(mediaType = MediaType.APPLICATION_JSON,schema = Schema(type = SchemaType.ARRAY, implementation = PartnerRelationshipDetails::class))
             ])
     )
-    @Path("/latest/{foreignId}/{role}")
+    @Path("/latestByForeignId/{foreignId}/{role}")
     fun latestByForeignIdAndRole(
             @Parameter(name = "idsOnly", description = "if true, then the result is an array of IDs rather than PartnerEntities")
             @QueryParam("idsOnly") idsOnly: Boolean = false,
@@ -65,6 +65,35 @@ class PartnerRelationshipResource(
             val partnerIds = latest.map { it.value.partnerId }
             val partners = PartnerEntity.Queries.selectByIds(em, partnerIds)
             val results = latest.values.map {
+                val partner = partners.find { p -> it.partnerId == p.id }
+                PartnerRelationshipDetails(it.partnerId, partner, it.start, it.end, it.role, it.foreignId)
+            }
+            return Response.ok(results).build()
+        }
+    }
+
+    @GET
+    @Operation(summary = "gets the relationships that the given partner has to other entities")
+    @APIResponses(
+            APIResponse(description = "all relationships this partner has", responseCode = "200", content = [
+                Content(mediaType = MediaType.APPLICATION_JSON,schema = Schema(type = SchemaType.ARRAY, implementation = PartnerRelationshipDetails::class))
+            ])
+    )
+    @Path("/allByPartnerId/{partnerId}")
+    fun allByPartnerId(
+            @Parameter(name = "idsOnly", description = "if true, then the result is an array of IDs rather than PartnerEntities")
+            @QueryParam("idsOnly") idsOnly: Boolean = false,
+            @Parameter(name = "partnerId", description = "the id of the partner")
+            @PathParam("partnerId") partnerId: UUID
+    ): Response {
+
+        val allRelationships = PartnerRelationshipEntity.Queries.selectByPartnerId(em, partnerId)
+        if(idsOnly) {
+            return Response.ok(allRelationships.map { PartnerRelationshipDetails(it.partnerId, null, it.start, it.end, it.role, it.foreignId) }).build()
+        } else {
+            val partnerIds = allRelationships.map { it.partnerId }.distinct()
+            val partners = PartnerEntity.Queries.selectByIds(em, partnerIds)
+            val results = allRelationships.map {
                 val partner = partners.find { p -> it.partnerId == p.id }
                 PartnerRelationshipDetails(it.partnerId, partner, it.start, it.end, it.role, it.foreignId)
             }

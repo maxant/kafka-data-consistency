@@ -10,6 +10,7 @@ import org.eclipse.microprofile.reactive.messaging.Incoming
 import org.eclipse.microprofile.reactive.messaging.Message
 import org.eclipse.microprofile.rest.client.inject.RestClient
 import org.jboss.logging.Logger
+import org.jose4j.jwt.consumer.InvalidJwtException
 import org.quartz.*
 import org.reflections.Reflections
 import org.reflections.scanners.MethodAnnotationsScanner
@@ -25,6 +26,7 @@ import javax.interceptor.Interceptor
 import javax.interceptor.InterceptorBinding
 import javax.interceptor.InvocationContext
 import javax.servlet.http.HttpServletRequest
+import javax.ws.rs.ForbiddenException
 import javax.ws.rs.NotAuthorizedException
 
 
@@ -67,6 +69,9 @@ class SecurityCheckInterceptor {
     @RestClient // bizarrely this doesnt work with constructor injection
     lateinit var securityAdapter: SecurityAdapter
 
+    @Inject
+    lateinit var context: Context
+
     @AroundInvoke
     fun invoke(ctx: InvocationContext): Any? {
 
@@ -82,15 +87,21 @@ class SecurityCheckInterceptor {
             throw NotAuthorizedException("missing header $SecurityHeaderName")
         }
 
-        val jwt = parser.verify(authToken.substring("Bearer ".length), secret)
+        try {
+            val jwt = parser.verify(authToken.substring("Bearer ".length), secret)
 
-        if(jwt.issuer != Issuer) throw NotAuthorizedException("wrong issuer ${jwt.issuer}")
-        if((1000*jwt.expirationTime )< System.currentTimeMillis()) throw NotAuthorizedException("token expired at ${jwt.expirationTime}")
-        if(roles.intersect(jwt.groups).isEmpty()) throw NotAuthorizedException("token does not contain one of the required roles $roles necessary to call $fqMethodName")
+            if(jwt.issuer != Issuer) throw ForbiddenException("wrong issuer ${jwt.issuer}")
+            if((1000*jwt.expirationTime )< System.currentTimeMillis()) throw ForbiddenException("token expired at ${jwt.expirationTime}")
+            if(roles.intersect(jwt.groups).isEmpty()) throw ForbiddenException("token does not contain one of the required roles $roles necessary to call $fqMethodName")
 
-        log.info("user ${jwt.subject} is entitled to call $fqMethodName")
+            log.info("user ${jwt.subject} is entitled to call $fqMethodName")
 
-        return ctx.proceed()
+            context.user = jwt.subject
+
+            return ctx.proceed()
+        } catch (e: InvalidJwtException) {
+            throw NotAuthorizedException(e.message, e)
+        }
     }
 
     private fun getSecurityModel(): SecurityDefinitionResponse {

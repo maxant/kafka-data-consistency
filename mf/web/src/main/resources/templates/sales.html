@@ -105,7 +105,7 @@ const App = {
         let self = this;
         let url = CONTRACTS_BASE_URL + "/drafts"
         fetchIt(url, "POST", this, body).then(r => {
-            if(r.ok) console.log("got contract with id " + r.payload.id + ", for requestId " + this.requestId);
+            if(r.ok) console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
             else {
                 let msg = "Failed to offer contract: " + r.payload.error;
                 console.error(msg);
@@ -193,7 +193,9 @@ const App = {
     'mf-users': mfUsers
   }
 }
-Vue.createApp(App).mount("#app")
+const app = Vue.createApp(App)
+app.use(primevue);
+app.mount("#app")
 
 function addPrice(component, id, price) {
     if(component.componentId == id) {

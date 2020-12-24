@@ -4,14 +4,19 @@
     Fetched in {{ timeTaken }}ms
 </div>
 
+<mf-partner :partner-id="model.id" :roles="model.partnerRoles"></mf-partner>
+
 <div>
     Partner ID: {{model.id}}<br>
     First Name: {{model.partner.firstName}}<br>
     Last Name: {{model.partner.lastName}}<br>
     DoB: {{model.partner.dob}}<br>
-    Email: {{model.partner.email}}<br>
-    Phone: {{model.partner.phone}}<br>
     Type: {{model.partner.type}}<br>
+</div>
+<hr>
+<mf-contract v-for="contractId in model.contractIds" :contract-id="contractId"></mf-contract>
+<div v-if="model.hasMoreContracts">
+    Partner has more contracts. <a href="/search">Search here...</a>
 </div>
 
 </div> |}{! end of app div !}{|
@@ -19,6 +24,8 @@
 var urlParams = new URLSearchParams(window.location.search);
 var id = urlParams.get('id');
 console.log("using id from url: " + id);
+
+const NUM_CONTRACTS_TO_DISPLAY = 10;
 
 const App = {
   data() {
@@ -32,16 +39,16 @@ const App = {
   },
   mounted() {
     window.model = this.model; // just for debugging purposes
-    eventHub.on(LOGGED_IN, this.fetchPartner);
+    this.fetchPartner();
   },
   methods: {
     fetchPartner() {
         let self = this;
         let url = PARTNERS_BASE_URL + "/partners/" + this.model.id;
-        fetchIt(url, "GET", this).then(r => {
+        let partners$ = fetchIt(url, "GET", this).then(r => {
             self.timeTaken = new Date().getTime() - self.start;
             if(r.ok) {
-                console.log("got partner with id " + r.payload.id + ", for requestId " + this.requestId);
+                console.log("got partner with id " + r.payload.id + ", for requestId " + self.requestId);
                 self.model.partner = r.payload;
             } else {
                 let msg = "Failed to get partner: " + r.payload.error;
@@ -51,13 +58,39 @@ const App = {
         }).catch(error => {
             alert("received error: " + error);
         });
+
+        url = PARTNERS_BASE_URL + "/partner-relationships/allByPartnerId/" + this.model.id + "?idsOnly=true";
+        let partnerRelationships$ = fetchIt(url, "GET", this).then(r => {
+            self.timeTaken = new Date().getTime() - self.start;
+            if(r.ok) {
+                console.log("got partner-relationships, for requestId " + self.requestId);
+                self.model.partnerRelationships = _.groupBy(r.payload, "role");
+                let contractIds = _(self.model.partnerRelationships["CONTRACT_HOLDER"]).map("foreignId").uniq().value();
+                self.model.hasMoreContracts = contractIds.length > NUM_CONTRACTS_TO_DISPLAY;
+                self.model.contractIds = _(contractIds).reverse().take(NUM_CONTRACTS_TO_DISPLAY).value();
+                self.model.partnerRoles = _(r.payload).map("role").uniq().value().join(",");
+            } else {
+                let msg = "Failed to get partner relationships: " + r.payload.error;
+                console.error(msg);
+                alert(msg);
+            }
+        }).catch(error => {
+            alert("received error: " + error);
+        });
+
+        return Promise.all([partners$, partnerRelationships$]);
     }
   },
   components: {
+    'mf-partner': mfPartnerTile,
+    'mf-contract': mfContractTile,
     'mf-users': mfUsers
   }
 }
-Vue.createApp(App).mount("#app")
+const app = Vue.createApp(App)
+app.use(primevue);
+app.mount("#app")
+
 </script>
 
 

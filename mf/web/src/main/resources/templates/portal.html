@@ -62,7 +62,7 @@ const App = {
         let self = this;
         let url = CONTRACTS_BASE_URL + "/drafts"
         fetchIt(url, "POST", this, body).then(r => {
-            if(r.ok) console.log("got contract with id " + r.id + ", for requestId " + this.requestId);
+            if(r.ok) console.log("got contract with id " + r.id + ", for requestId " + self.requestId);
             else {
                 let msg = "Failed to offer contract: " + r.payload.error;
                 console.error(msg);
@@ -97,10 +97,10 @@ const App = {
             console.log("accepting offer");
             self.allowOffer = false;
             self.currentAction = {action: "acceptOffer"}
-            let url = CONTRACTS_BASE_URL + "/contracts/accept/" + this.model.draft.contract.id
-            return fetchIt(url, "PUT", this).then(r => {
+            let url = CONTRACTS_BASE_URL + "/contracts/accept/" + self.model.draft.contract.id
+            return fetchIt(url, "PUT", self).then(r => {
                 if(r.ok) {
-                    console.log("accepted offer with id " + r.id + ", for requestId " + this.requestId);
+                    console.log("accepted offer with id " + r.id + ", for requestId " + self.requestId);
 alert("TODO navigate to external users home to view new offer, rather than jumping to internal page!");
                     window.location.href = '/partner?id=' + self.user.id;
                 } else {
@@ -128,7 +128,9 @@ alert("TODO navigate to external users home to view new offer, rather than jumpi
     'mf-users': mfUsers
   }
 }
-Vue.createApp(App).mount("#app")
+const app = Vue.createApp(App)
+app.use(primevue);
+app.mount("#app")
 
 function addPrice(component, id, price) {
     if(component.componentId == id) {

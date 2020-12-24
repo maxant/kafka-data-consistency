@@ -10,25 +10,32 @@ import javax.ws.rs.Path
 import javax.ws.rs.Produces
 import javax.ws.rs.core.MediaType
 
+/** adds vue, primevue and prime icons */
 private fun TemplateInstance.addStandardLibraries() =
+        // primevue version (pvversion): search for version numbers in npm: https://www.npmjs.com/package/primevue or use "" for latest? not sure that acutally works properly, coz had issues where suddenly a version 2 was used
+        // vue version (vueversion): search for version numbers in npm, or use "next"
         // also checkout the footer of this: https://primefaces.org/primevue/showcase/#/theming,
         // it says: PrimeVue 3.1.1 on Vue 3.0.3 by PrimeTek
-        // TODO upgrade to 3.1.1 and vue3.0.3/4. see https://github.com/primefaces/primevue/issues/808
-        this.data("pvversion", "@3.0.2") // search for version numbers in npm: https://www.npmjs.com/package/primevue or use "" for latest? not sure that acutally works properly, coz had issues where suddenly a version 2 was used
-            .data("vueversion", "3.0.2") // search for version numbers in npm, or use "next"
-            .data("pvcomponents", listOf("calendar", "dropdown"))
+        this.data("pvversion", "@3.1.1")
+            .data("vueversion", "3.0.4")
             .data("primeiconsversion", "@4.1.0")
 
+/** adds the given primevue widgets */
+private fun TemplateInstance.addPvWidgets(pvcomponents: List<String>) =
+        this.data("pvcomponents", pvcomponents)
+
+/** adds the given milk factory widgets */
 private fun TemplateInstance.addMfWidgets(components: List<Components>) =
         this.data("mfwidgets", components.map { "${it.baseUrl}/${it.uiWidgetsJavascript}" })
 
+/** adds all the constants for the various microservice components in the landscape */
 private fun TemplateInstance.addMfComponents() =
         this.data("mfcomponents", Components.values())
 
 @ApplicationScoped
 @Path("/portal")
 @Produces(MediaType.TEXT_HTML)
-class PortalResource {
+class PortalTemplate {
 
     @Inject
     lateinit var portal: Template
@@ -37,6 +44,7 @@ class PortalResource {
     fun get(): TemplateInstance =
         portal.instance()
             .addStandardLibraries()
+            .addPvWidgets(listOf("calendar", "dropdown"))
             .addMfWidgets(listOf(Components.Contracts, Components.Partners))
             .addMfComponents()
 }
@@ -44,7 +52,7 @@ class PortalResource {
 @ApplicationScoped
 @Path("/partner")
 @Produces(MediaType.TEXT_HTML)
-class PartnerResource {
+class PartnerTemplate {
 
     @Inject
     lateinit var partner: Template
@@ -53,6 +61,7 @@ class PartnerResource {
     fun get(): TemplateInstance =
             partner.instance()
             .addStandardLibraries()
+            .addPvWidgets(listOf("calendar", "dropdown"))
             .addMfWidgets(listOf(Components.Contracts, Components.Partners))
             .addMfComponents()
 }
@@ -60,7 +69,7 @@ class PartnerResource {
 @ApplicationScoped
 @Path("/sales")
 @Produces(MediaType.TEXT_HTML)
-class SalesResource {
+class SalesTemplate {
 
     @Inject
     lateinit var sales: Template
@@ -69,6 +78,7 @@ class SalesResource {
     fun get(): TemplateInstance =
             sales.instance()
             .addStandardLibraries()
+            .addPvWidgets(listOf("calendar", "dropdown"))
             .addMfWidgets(listOf(Components.Contracts, Components.Partners))
             .addMfComponents()
 }

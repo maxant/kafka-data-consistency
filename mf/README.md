@@ -164,6 +164,7 @@ Worth alerting on:
 
 ## TODO
 
+- add createdAt/By to all entities and order partner relationships by that and load only the latest ones
 - add a partner in postcode 3000 and see if jane becomes salesRep. same for janet in 1000.
 - timestamp - if we attempt to insert but a new version has already been applied, we need to ignore it and log it for alerting. or fail with an error? why not just use optimistic locking. whats on my bit of paper?
 - sessionId

@@ -52,7 +52,7 @@ const App = {
         let url = ORGANISATION_BASE_URL + "/organisation";
         fetchIt(url, "GET", this).then(r => {
             if(r.ok) {
-                console.log("got org for requestId " + this.requestId);
+                console.log("got org for requestId " + self.requestId);
                 self.model.root = [r.payload];
                 setupModel(self.model.root);
             } else {

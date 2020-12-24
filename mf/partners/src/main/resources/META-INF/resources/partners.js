@@ -18,22 +18,14 @@ window.mfPartnerSelect = {
     return {
         partners: [],
         partner: null,
-        requestId: uuidv4(),
-        initialised: false
+        requestId: uuidv4()
     }
   },
-  created() {
-    eventHub.on(LOGGED_IN, this.loggedIn); // needs to be logged in in order to initialise,
-                                           // otherwise we have no token to be able to call the backend
+  mounted() {
+    this.initialise();
   },
   methods: {
-    loggedIn() {
-        if(!this.initialised) {
-            this.initialise();
-        }
-    },
     initialise() {
-      this.initialised = true;
       let self = this;
       let url = PARTNERS_BASE_URL + "/partners/search"
       fetchIt(url, "GET", this).then(r => {
@@ -74,26 +66,26 @@ template =
     </div>
     <div v-else>
         <div v-if="role == 'SALES_REP'">
-            <div>
             Sales Representative: {{partner.firstName}} {{partner.lastName}}
-            </div>
-            <div>
-            Phone: {{partner.phone}}
-            </div>
-            <div>
-            Email: {{partner.email}}
-            </div>
         </div>
         <div v-else>
-            Partner {{partnerId}} <br>
-            Unexpected role {{role}}
+            {{partner.firstName}} {{partner.lastName}}
+        </div>
+        <div>
+        Phone: {{partner.phone}}
+        </div>
+        <div>
+        Email: {{partner.email}}
+        </div>
+        <div v-if="roles && roles.length >= 0">
+        Roles: {{roles}}
         </div>
     </div>
 </div>
 ` // end template
 
 window.mfPartnerTile = {
-  props: ['partnerId', 'role'],
+  props: ['partnerId', 'role', 'roles'],
   template,
   watch: {
     partnerId(oldPartnerId, newPartnerId) {
@@ -118,15 +110,15 @@ window.mfPartnerTile = {
       let url = PARTNERS_BASE_URL + "/partners/" + this.partnerId;
       fetchIt(url, "GET", this).then(r => {
         if(r.ok) {
-            console.log("got partner " + this.partnerId + " for requestId " + this.requestId);
-            this.partner = r.payload;
+            console.log("got partner " + self.partnerId + " for requestId " + self.requestId);
+            self.partner = r.payload;
         } else {
-            let msg = "Failed to get partner " + this.partnerId + ": " + r.payload.error;
-            this.error = msg;
+            let msg = "Failed to get partner " + self.partnerId + ": " + r.payload.error;
+            self.error = msg;
             console.error(msg);
         }
       }).catch(error => {
-        this.error = error;
+        self.error = error;
         console.error("received error: " + error);
       });
     }

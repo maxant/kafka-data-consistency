@@ -9,6 +9,7 @@ import ch.maxant.kdc.mf.contracts.dto.*
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractState
 import ch.maxant.kdc.mf.library.Context
+import ch.maxant.kdc.mf.library.Secure
 import ch.maxant.kdc.mf.library.doByHandlingValidationExceptions
 import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.media.Content
@@ -19,6 +20,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import org.jboss.logging.Logger
 import java.net.URI
+import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
 import javax.persistence.EntityManager
@@ -62,6 +64,7 @@ class DraftsResource(
             ])
     )
     @POST
+    @Secure
     @Transactional
     fun create(
             @Parameter(name = "draftRequest", required = true)
@@ -79,7 +82,7 @@ class DraftsResource(
         val contractDefinition = ContractDefinition.find(draftRequest.productId, start)
         val end = start.plusDays(contractDefinition.defaultDurationDays)
 
-        val contract = ContractEntity(draftRequest.contractId, start, end, ContractState.DRAFT, System.currentTimeMillis())
+        val contract = ContractEntity(draftRequest.contractId, start, end, ContractState.DRAFT, System.currentTimeMillis(), LocalDateTime.now(), context.user)
         em.persist(contract)
         log.info("added contract ${contract.id} in state ${contract.contractState}")
 

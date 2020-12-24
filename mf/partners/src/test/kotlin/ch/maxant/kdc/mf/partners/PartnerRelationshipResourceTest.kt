@@ -84,7 +84,7 @@ class PartnerRelationshipResourceTest {
         given()
             .contentType(ContentType.JSON)
             .log().all()
-            .get("/partner-relationships/latest/$foreignId/${Role.CONTRACT_HOLDER}")
+            .get("/partner-relationships/latestByForeignId/$foreignId/${Role.CONTRACT_HOLDER}")
             .then()
             .statusCode(200)
             .log().all()

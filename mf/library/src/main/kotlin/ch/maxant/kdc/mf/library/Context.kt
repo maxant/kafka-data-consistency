@@ -16,6 +16,7 @@ class Context {
     var event: String? = null
     var demoContext: DemoContext? = null
     var retryCount: Int = 0
+    var user: String = "anonymous"
 
     fun getRequestIdSafely() =
         try {

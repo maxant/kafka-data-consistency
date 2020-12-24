@@ -6,22 +6,35 @@ template =
 // TODO responsive, columns, etc.
 `
 <div style="border: 1px solid #999999; width: 350px; margin-bottom: 5px;">
-    <div v-if="error">
-        Error loading contract<br>
-        {{error}}
-    </div>
-    <div v-else-if="contract == null">
-        loading...
-    </div>
-    <div v-else>
-        <div>
-            Contract: {{contract.id}}
+    <div>
+        <div v-if="myContract">
+            Contract: {{myContract.id}}
         </div>
-        <div>
-            Valid from {{contract.start.toString().substr(0,10)}} until {{contract.end.toString().substr(0,10)}}
+        <div v-else-if="contractId">
+            Contract: {{contractId}}
         </div>
-        <div>
-            State: {{contract.contractState}}
+        <div v-else>
+        </div>
+    </div>
+    <div>
+        <div v-if="error">
+            Error loading contract<br>
+            {{error}}
+        </div>
+        <div v-else-if="myContract == null">
+            loading...
+        </div>
+        <div v-else>
+            <div>
+                Valid from {{myContract.start.toString().substr(0,10)}} until {{myContract.end.toString().substr(0,10)}}
+            </div>
+            <div>
+                Created by {{myContract.createdBy}} on {{myContract.createdAt}}
+            </div>
+            <div>
+                State: {{myContract.contractState}}
+                <i class="pi pi-eye" @click="navigateToContract()"></i>
+            </div>
         </div>
     </div>
 </div>
@@ -33,32 +46,35 @@ window.mfContractTile = {
   watch: {
     contractId(oldContractId, newContractId) {
         this.loadContract();
-    },
-    contract(oldContract, newContract) {
-        console.log("CONTRACT HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     }
   },
   data() {
     return {
+        myContract: null,
         error: null,
         requestId: uuidv4()
     }
   },
   mounted() {
-    if(!this.contract) {
-        this.loadContract();
+    if(!!this.contract) {
+        this.myContract = this.contract;
+    } else if(!this.contractId) {
+        throw new Error("neither a contract nor a contractId was supplied to the contract widget");
+    } else { // client provided an ID and no model, so lets load it
+        return this.loadContract$();
     }
   },
   methods: {
-    loadContract: function() {
-      this.contract = null;
+    loadContract$: function() {
+      this.myContract = null;
       this.error = null;
       let self = this;
       let url = CONTRACTS_BASE_URL + "/contracts/" + this.contractId;
-      fetchIt(url, "GET", this).then(r => {
+      return fetchIt(url, "GET", this).then(r => {
         if(r.ok) {
-            console.log("got contract " + this.contractId + " for requestId " + this.requestId);
-            this.contract = r.payload;
+            console.log("got contract " + self.contractId + " for requestId " + self.requestId);
+            self.myContract = r.payload;
+            self.contractId = self.myContract.id;
         } else {
             let msg = "Failed to get contract " + this.contractId + ": " + r.payload.error;
             this.error = msg;
@@ -66,8 +82,11 @@ window.mfContractTile = {
         }
       }).catch(error => {
         this.error = error;
-        console.error("received error: " + error);
+        console.log("received error: " + error);
       });
+    },
+    navigateToContract() {
+        window.location.href = '/contract?id=' + self.contractId;
     }
   }
 }

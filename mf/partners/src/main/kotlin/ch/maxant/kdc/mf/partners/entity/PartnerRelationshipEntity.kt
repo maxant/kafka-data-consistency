@@ -9,7 +9,8 @@ import javax.persistence.*
 @Table(name = "T_PARTNER_RELATIONSHIPS")
 @NamedQueries(
         NamedQuery(name = PartnerRelationshipEntity.NqSelectByForeignIdAndRole.name, query = PartnerRelationshipEntity.NqSelectByForeignIdAndRole.query),
-        NamedQuery(name = PartnerRelationshipEntity.NqSelectByForeignId.name, query = PartnerRelationshipEntity.NqSelectByForeignId.query)
+        NamedQuery(name = PartnerRelationshipEntity.NqSelectByForeignId.name, query = PartnerRelationshipEntity.NqSelectByForeignId.query),
+        NamedQuery(name = PartnerRelationshipEntity.NqSelectByPartnerId.name, query = PartnerRelationshipEntity.NqSelectByPartnerId.query)
 )
 class PartnerRelationshipEntity(
 
@@ -57,6 +58,15 @@ class PartnerRelationshipEntity(
                 """
     }
 
+    object NqSelectByPartnerId {
+        const val name = "selectPartnerRelationshipsByPartnerId"
+        const val partnerIdParam = "partnerId"
+        const val query = """
+                from PartnerRelationshipEntity p
+                where p.partnerId = :$partnerIdParam
+                """
+    }
+
     object Queries {
         fun selectByForeignIdAndRole(em: EntityManager, foreignId: String, role: Role): List<PartnerRelationshipEntity> {
             return em.createNamedQuery(NqSelectByForeignIdAndRole.name, PartnerRelationshipEntity::class.java)
@@ -68,6 +78,12 @@ class PartnerRelationshipEntity(
         fun selectByForeignId(em: EntityManager, foreignId: String): List<PartnerRelationshipEntity> {
             return em.createNamedQuery(NqSelectByForeignId.name, PartnerRelationshipEntity::class.java)
                     .setParameter(NqSelectByForeignId.foreignIdParam, foreignId)
+                    .resultList
+        }
+
+        fun selectByPartnerId(em: EntityManager, partnerId: UUID): List<PartnerRelationshipEntity> {
+            return em.createNamedQuery(NqSelectByPartnerId.name, PartnerRelationshipEntity::class.java)
+                    .setParameter(NqSelectByPartnerId.partnerIdParam, partnerId)
                     .resultList
         }
     }
