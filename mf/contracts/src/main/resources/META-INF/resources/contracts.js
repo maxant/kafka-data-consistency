@@ -74,19 +74,18 @@ window.mfContractTile = {
         if(r.ok) {
             console.log("got contract " + self.contractId + " for requestId " + self.requestId);
             self.myContract = r.payload;
-            self.contractId = self.myContract.id;
         } else {
-            let msg = "Failed to get contract " + this.contractId + ": " + r.payload.error;
-            this.error = msg;
+            let msg = "Failed to get contract " + self.contractId + ": " + r.payload.error;
+            self.error = msg;
             console.error(msg);
         }
       }).catch(error => {
-        this.error = error;
+        self.error = error;
         console.log("received error: " + error);
       });
     },
     navigateToContract() {
-        window.location.href = '/contract?id=' + self.contractId;
+        window.location.href = '/contract?id=' + self.myContract.id;
     }
   }
 }

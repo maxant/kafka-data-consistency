@@ -118,5 +118,13 @@ class KotlinExperiments {
         assertEquals("1-2", takesABifunc(convert { l, i -> "$l-$i" }))
     }
 
+    @Test
+    fun intersect() {
+        val a = listOf("1", "2")
+        val b = listOf("2", "3")
+        val c = a.intersect(b)
+        assertEquals(1, c.size)
+        assertEquals("2", c.toList()[0])
+    }
 }
 

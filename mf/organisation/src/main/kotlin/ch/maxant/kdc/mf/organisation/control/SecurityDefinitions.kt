@@ -88,6 +88,7 @@ enum class Processes(val processSteps: Set<ProcessSteps>) {
 enum class RoleMappings(val role: Role, val processStep: ProcessSteps) {
     SALES_REP___DRAFT(SALES_REP, DRAFT),
     SALES_REP___OFFER(SALES_REP, OFFER),
-    CUSTOMER___ACCEPT(CUSTOMER, ACCEPT)
+    CUSTOMER___ACCEPT(CUSTOMER, ACCEPT),
+    CUSTOMER___DRAFT(CUSTOMER, DRAFT),
 }
 

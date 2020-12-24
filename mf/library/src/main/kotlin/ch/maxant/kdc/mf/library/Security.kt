@@ -92,7 +92,7 @@ class SecurityCheckInterceptor {
 
             if(jwt.issuer != Issuer) throw ForbiddenException("wrong issuer ${jwt.issuer}")
             if((1000*jwt.expirationTime )< System.currentTimeMillis()) throw ForbiddenException("token expired at ${jwt.expirationTime}")
-            if(roles.intersect(jwt.groups).isEmpty()) throw ForbiddenException("token does not contain one of the required roles $roles necessary to call $fqMethodName")
+            if(roles.intersect(jwt.groups.toList()).isEmpty()) throw ForbiddenException("token does not contain one of the required roles $roles necessary to call $fqMethodName")
 
             log.info("user ${jwt.subject} is entitled to call $fqMethodName")
 
@@ -120,7 +120,7 @@ class SecurityCheckInterceptor {
 
 private fun findRolesThatCanExecuteMethod(fqMethodName: String, node: Node, roles: MutableList<String>) {
     if(node.data.methods.contains(fqMethodName) && node.data.roleMappings != null) {
-        roles.addAll(node.data.roleMappings.split(","))
+        roles.addAll(node.data.roleMappings.split(",").map { it.trim() })
     }
     node.children.forEach { findRolesThatCanExecuteMethod(fqMethodName, it, roles) }
 }

@@ -33,7 +33,7 @@ window.mfPartnerSelect = {
               console.log("got partners for requestId " + this.requestId);
               let ps = _.sortBy(r.payload, ['lastName', 'firstName', 'dob']);
               _.forEach(ps, p => p.$name = p.firstName + " " + p.lastName + " (" + p.dob + " - " + p.id + ")")
-              this.partners = ps;
+              self.partners = ps;
           } else {
               let msg = "Failed to get partners: " + r.payload.error;
               console.error(msg);
