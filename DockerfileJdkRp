@@ -1,0 +1,37 @@
+#####################################################################################
+# builds a base image with the jdk and some tools, for the raspberrypi 4, ie arm32v7
+#####################################################################################
+# docker build -f DockerfileJdkRp -t maxant/jdkrp .
+
+# see https://hub.docker.com/r/arm32v7/adoptopenjdk
+# it appears to be Ubuntu 20.04.1 LTS (Focal Fossa)
+# dont work coz of clock issue: FROM arm32v7/adoptopenjdk:11.0.9.1_1-jdk-hotspot
+
+FROM arm32v7/debian:buster-20201209
+
+RUN apt update -y
+
+RUN apt-get install -y apt-utils
+
+# necessary in order to do upgrade as well as install jdk - related to perl
+RUN apt-get install -y dialog
+RUN apt-get install -y dialog
+
+RUN apt upgrade -y
+
+RUN apt install -y default-jdk
+
+RUN java --version
+
+RUN apt install -y curl
+RUN apt install -y wget
+RUN apt install -y less
+
+RUN echo "alias ll='ls -la'" >> ~/.bashrc
+
+RUN mkdir /project
+WORKDIR /project
+
+CMD /bin/bash
+
+
