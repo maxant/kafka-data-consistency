@@ -1,0 +1,21 @@
+##################################################################
+# builds a base image with the jdk, maven and some tools
+##################################################################
+# docker build -f DockerfileJdk -t maxant/jdk .
+
+FROM openjdk:11.0.9-slim-buster
+
+RUN apt update
+RUN apt upgrade
+RUN apt install -y curl
+RUN apt install -y wget
+RUN apt install -y less
+
+WORKDIR /usr/local
+
+RUN echo "alias ll='ls -la'" >> ~/.bashrc
+
+RUN mkdir /project
+WORKDIR /project
+
+CMD /bin/bash
