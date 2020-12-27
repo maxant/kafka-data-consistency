@@ -7,6 +7,18 @@ services:
 #    ports:
 #      - "30601:8086"
 
+  kdc-mf-cases:
+    image: maxant/jdkrp
+    container_name: kdc-mf-cases
+    ports:
+      - "30784:8080"
+    environment:
+      quarkus.http.port: 8080
+    volumes:
+      - ./mf/cases/target:/project
+    command:
+      java -jar cases-1.0-SNAPSHOT-runner.jar -Xmx300m
+
   kdc-mf-waitingroom:
     image: maxant/jdkrp
     container_name: kdc-mf-waitingroom
@@ -18,3 +30,15 @@ services:
       - ./mf/waitingroom/target:/project
     command:
       java -jar waitingroom-1.0-SNAPSHOT-runner.jar -Xmx300m
+
+  kdc-mf-organisation:
+    image: maxant/jdkrp
+    container_name: kdc-mf-organisation
+    ports:
+      - "30786:8080"
+    environment:
+      quarkus.http.port: 8080
+    volumes:
+      - ./mf/organisation/target:/project
+    command:
+      java -jar organisation-1.0-SNAPSHOT-runner.jar -Xmx300m
