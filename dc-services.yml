@@ -1,8 +1,20 @@
 version: '3'
 services:
 
-  kdc-objects:
-    image: maxant/kdc-objects
-    container_name: kdc-objects
+#  kdc-objects:
+#    image: maxant/kdc-objects
+#    container_name: kdc-objects
+#    ports:
+#      - "30601:8086"
+
+  kdc-mf-waitingroom:
+    image: maxant/jdkrp
+    container_name: kdc-mf-waitingroom
     ports:
-      - "30601:8086"
+      - "30785:8080"
+    environment:
+      quarkus.http.port: 8080
+    volumes:
+      - ./mf/waitingroom/target:/project
+    command:
+      java -jar waitingroom-1.0-SNAPSHOT-runner.jar -Xmx300m

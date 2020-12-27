@@ -107,6 +107,13 @@ Open ports like this:
     #            schemaregistry: 30550:8085  mapped in nginx
     #          schemaregistry-ui:30555:8000  mapped in nginx
     #                kdc-objects:30601:8086  mapped in nginx
+    #           kdc-mf-contracts:30780:8080  just on retropie!
+    #             kdc-mf-pricing:30781:8080  just on retropie!
+    #                 kdc-mf-web:30782:8080  just on retropie!
+    #            kdc-mf-partners:30783:8080  just on retropie!
+    #               kdc-mf-cases:30784:8080  just on retropie!
+    #         kdc-mf-waitingroom:30785:8080  just on retropie!
+    #        kdc-mf-organisation:30786:8080  just on retropie!
     firewall-cmd --zone=public --permanent --add-port=30000/tcp
     firewall-cmd --zone=public --permanent --add-port=30001/tcp
     firewall-cmd --zone=public --permanent --add-port=30002/tcp
