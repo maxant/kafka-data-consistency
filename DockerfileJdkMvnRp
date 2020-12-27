@@ -19,3 +19,4 @@ RUN mkdir /project
 WORKDIR /project
 
 CMD /bin/bash
+
