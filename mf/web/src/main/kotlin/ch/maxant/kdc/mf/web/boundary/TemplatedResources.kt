@@ -26,7 +26,7 @@ private fun TemplateInstance.addPvWidgets(pvcomponents: List<String>) =
 
 /** adds the given milk factory widgets */
 private fun TemplateInstance.addMfWidgets(components: List<Components>) =
-        this.data("mfwidgets", components.map { "${it.baseUrl}/${it.uiWidgetsJavascript}" })
+        this.data("mfwidgets", listOf("users.js") + components.map { "${it.uiWidgetsJavascript}" })
 
 /** adds all the constants for the various microservice components in the landscape */
 private fun TemplateInstance.addMfComponents() =
@@ -84,11 +84,11 @@ class SalesTemplate {
 }
 
 enum class Components(val constantName: String, val uiWidgetsJavascript: String, val baseUrl: String) {
-    Contracts    ("CONTRACTS",    "contracts.js",    ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.contracts.url",    String::class.java).orElse("http://localhost:8080")),
-    Pricing      ("PRICING",      "pricing.js",      ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.pricing.url",      String::class.java).orElse("http://localhost:8081")),
-    Web          ("WEB",          "web.js",          ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.web.url",          String::class.java).orElse("http://localhost:8082")),
-    Partners     ("PARTNERS",     "partners.js",     ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.partners.url",     String::class.java).orElse("http://localhost:8083")),
-    Cases        ("CASES",        "cases.js",        ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.cases.url",        String::class.java).orElse("http://localhost:8084")),
-    Waitingroom  ("WAITINGROOM",  "waitingroom.js",  ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.waitingroom.url",  String::class.java).orElse("http://localhost:8085")),
-    Organisation ("ORGANISATION", "organisation.js", ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.organisation.url", String::class.java).orElse("http://localhost:8086")),
+    Contracts    ("CONTRACTS",    "contracts.js",    ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.contracts.url",    String::class.java).orElse("http://contracts:8080")),
+    Pricing      ("PRICING",      "pricing.js",      ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.pricing.url",      String::class.java).orElse("http://pricing:8081")),
+    Web          ("WEB",          "web.js",          ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.web.url",          String::class.java).orElse("http://web:8082")),
+    Partners     ("PARTNERS",     "partners.js",     ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.partners.url",     String::class.java).orElse("http://partners:8083")),
+    Cases        ("CASES",        "cases.js",        ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.cases.url",        String::class.java).orElse("http://cases:8084")),
+    Waitingroom  ("WAITINGROOM",  "waitingroom.js",  ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.waitingroom.url",  String::class.java).orElse("http://waitingroom:8085")),
+    Organisation ("ORGANISATION", "organisation.js", ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.organisation.url", String::class.java).orElse("http://organisation:8086")),
 }

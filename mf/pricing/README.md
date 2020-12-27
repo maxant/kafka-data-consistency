@@ -28,7 +28,7 @@ You can then execute your native executable with: `./target/pricing-1.0-SNAPSHOT
 
 ## Swagger-UI
 
-    http://localhost:8081/swagger-ui
+    http://pricing:8081/swagger-ui
 
 ## TODO
 

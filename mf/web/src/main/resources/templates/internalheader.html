@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>The Milk Factory :: {title}</title>
 
-    <!-- https://docs.gitlab.com/ee/development/fe_guide/vue3_migration.html#event-hub -->
+    {! https://docs.gitlab.com/ee/development/fe_guide/vue3_migration.html#event-hub !}
     <script src="https://unpkg.com/mitt/dist/mitt.umd.js"></script>
 
     <script>
@@ -47,9 +47,8 @@
 
 
     {#for mfw in mfwidgets }
-    <script src="{mfw}"></script>
+    <script src="./{mfw}"></script>
     {/for}
-    <script src="users.js"></script>
 </head>
 <body>
 <h2>The Milk Factory :: {title}</h2>

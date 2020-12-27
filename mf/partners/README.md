@@ -28,7 +28,7 @@ You can then execute your native executable with: `./target/partners-1.0-SNAPSHO
 
 ## Swagger-UI
 
-    http://localhost:808x/swagger-ui
+    http://partners:8083/swagger-ui
 
 ## TODO
 

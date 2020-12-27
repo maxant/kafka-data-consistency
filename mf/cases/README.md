@@ -28,7 +28,7 @@ You can then execute your native executable with: `./target/cases-1.0-SNAPSHOT-r
 
 ## Swagger-UI
 
-    http://localhost:808x/swagger-ui
+    http://cases:8084/swagger-ui
 
 ## TODO
 

@@ -11,9 +11,9 @@ services:
     image: maxant/jdkrp
     container_name: kdc-mf-cases
     ports:
-      - "30784:8080"
-    environment:
-      quarkus.http.port: 8080
+      - "8084:8084"
+    #environment:
+    #  ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://retropie:8086"
     volumes:
       - ./mf/cases/target:/project
     command:
@@ -23,9 +23,7 @@ services:
     image: maxant/jdkrp
     container_name: kdc-mf-waitingroom
     ports:
-      - "30785:8080"
-    environment:
-      quarkus.http.port: 8080
+      - "8085:8085"
     volumes:
       - ./mf/waitingroom/target:/project
     command:
@@ -35,9 +33,7 @@ services:
     image: maxant/jdkrp
     container_name: kdc-mf-organisation
     ports:
-      - "30786:8080"
-    environment:
-      quarkus.http.port: 8080
+      - "8086:8086"
     volumes:
       - ./mf/organisation/target:/project
     command:

@@ -29,7 +29,7 @@ You can then execute your native executable with: `./target/waitingroom-1.0-SNAP
 
 ## Swagger-UI
 
-    http://localhost:808x/swagger-ui
+    http://waitingroom:8085/swagger-ui
 
 ## Functional docs
 
@@ -54,7 +54,7 @@ timestamp, depending on how it was forwarded!
 
 ### Log Example one second delay
 
-    curl -v -X POST http://localhost:8085/waitingroom/test/1
+    curl -v -X POST http://waitingroom:8085/waitingroom/test/1
 
     2020-11-17 23:27:48,020 INFO  (executor-thread-2) POST /waitingroom/test/1 sent test message to waiting room 1
     2020-11-17 23:27:48,103 DEBUG (executor-thread-3) received 1 records requiring a delay in waiting room 1000
@@ -66,7 +66,7 @@ timestamp, depending on how it was forwarded!
 
 ### Log Example ten second delay
 
-    curl -v -X POST http://localhost:8085/waitingroom/test/10
+    curl -v -X POST http://waitingroom:8085/waitingroom/test/10
 
     2020-11-17 23:46:40,757 INFO  (executor-thread-3) POST /waitingroom/test/10 sent test message to waiting room 10
     2020-11-17 23:46:40,790 DEBUG (executor-thread-2) received 1 records requiring a delay in waiting room 10000

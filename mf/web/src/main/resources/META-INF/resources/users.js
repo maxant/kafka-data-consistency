@@ -1,7 +1,7 @@
+(function(){
 //////////////////////////////////////////////////////////////////////////////////////////////
 // test functionality allowing the user to select their identity
 //////////////////////////////////////////////////////////////////////////////////////////////
-
 const template =
 `
         User: <p-dropdown :options="users"
@@ -12,7 +12,7 @@ const template =
 ` // end template
 
 
-const LOGGED_IN = "loggedIn"; // emitted by security after a login
+window.LOGGED_IN = "loggedIn"; // emitted by security after a login
 
 window.mfUsers = {
     template,
@@ -34,3 +34,5 @@ window.mfUsers = {
         'p-dropdown': dropdown
     }
 };
+
+})();

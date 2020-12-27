@@ -34,4 +34,4 @@ You can then execute your native executable with: `./target/contracts-1.0-SNAPSH
 
 ## Swagger-UI
 
-    http://localhost:8080/swagger-ui
+    http://contracts:8080/swagger-ui

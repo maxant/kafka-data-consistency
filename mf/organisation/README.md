@@ -29,7 +29,7 @@ You can then execute your native executable with: `./target/organisation-1.0-SNA
 
 ## Swagger-UI
 
-    http://localhost:808x/swagger-ui
+    http://organisation:8086/swagger-ui
 
 ## TODO
 

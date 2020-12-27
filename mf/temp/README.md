@@ -28,7 +28,7 @@ You can then execute your native executable with: `./target/temp-1.0-SNAPSHOT-ru
 
 ## Swagger-UI
 
-    http://localhost:808x/swagger-ui
+    http://temp:808x/swagger-ui
 
 ## TODO
 

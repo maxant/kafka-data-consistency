@@ -29,6 +29,6 @@ You can then execute your native executable with: `./target/web-1.0-SNAPSHOT-run
 
 ## Swagger-UI
 
-    http://localhost:8082/swagger-ui
+    http://web:8082/swagger-ui
 
 
