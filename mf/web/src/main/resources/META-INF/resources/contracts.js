@@ -34,7 +34,7 @@ const template =
             </div>
             <div>
                 State: {{fetchedContract.contractState}}
-                <i class="pi pi-eye" @click="navigateToContract()"></i>
+                <i v-if="clickable" class="pi pi-eye" @click="navigateToContract()"></i>
             </div>
         </div>
     </div>
@@ -42,11 +42,14 @@ const template =
 ` // end template
 
 window.mfContractTile = {
-  props: ['contractId', 'contract'],
+  props: ['contractId', 'contract', 'clickable'],
   template,
   watch: {
-    contractId(oldContractId, newContractId) {
+    contractId(newContractId, oldContractId) {
         this.loadContract();
+    },
+    contract(newContract, oldContract) {
+        this.fetchedContract = newContract;
     }
   },
   data() {

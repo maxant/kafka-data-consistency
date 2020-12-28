@@ -14,7 +14,7 @@
     Type: {{model.partner.type}}<br>
 </div>
 <hr>
-<mf-contract v-for="contractId in model.contractIds" :contract-id="contractId"></mf-contract>
+<mf-contract v-for="contractId in model.contractIds" :contract-id="contractId" clickable="true"></mf-contract>
 <div v-if="model.hasMoreContracts">
     Partner has more contracts. <a href="/search">Search here...</a>
 </div>

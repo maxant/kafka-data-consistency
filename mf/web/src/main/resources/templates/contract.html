@@ -4,19 +4,19 @@
     Fetched in {{ timeTaken }}ms
 </div>
 
-<mf-contract :contract-id="model.id"></mf-contract>
+<mf-contract v-if="model.contract.id" :contract="model.contract"></mf-contract>
 <div v-if="model.contract.offeredBy">Offered by {{model.contract.offeredBy}} at {{model.contract.offeredAt}}</div>
 <div v-if="model.contract.acceptedBy">Accepted by {{model.contract.acceptedBy}} at {{model.contract.acceptedAt}}</div>
 <div v-if="model.contract.approvedBy">Approved by {{model.contract.approvedBy}} at {{model.contract.approvedAt}}</div>
 <hr>
 <mf-partner v-for="partnerRelationship in model.partnerRelationships"
             :partner-id="partnerRelationship.partnerId"
-            :role="partnerRelationship.role">
+            :role="partnerRelationship.role"
+            clickable="true">
 </mf-partner>
 <hr>
 <div v-if="model.contract.contractState == 'AWAITING_APPROVAL'">
-    TODO add a text field where the user can justify this
-    <br>
+    |}{! TODO add a text field where the user can justify this !}{|
     <button @click="approveContract()">Approve contract</button>
 </div>
 

@@ -21,7 +21,7 @@
     <mf-contract :contract="model.draft.contract"></mf-contract>
 </div>
 <div v-if="get(model, 'draft.contract')">
-    <mf-partner v-if="model.salesRep" :partner-id="model.salesRep" role="SALES_REP"></mf-partner>
+    <mf-partner v-if="model.salesRep" :partner-id="model.salesRep" role="SALES_REP" clickable="true"></mf-partner>
 </div>
 <div v-if="!!get(model, 'draft.pack.$price')">
     Product: {{ model.draft.pack.children[0].productId }} {{ model.draft.pack.$price.total }} CHF ({{ model.draft.pack.$price.tax }} CHF VAT)

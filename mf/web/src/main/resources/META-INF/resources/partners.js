@@ -84,15 +84,18 @@ template =
         <div v-if="roles && roles.length >= 0">
         Roles: {{roles}}
         </div>
+        <div v-if="clickable">
+            <i class="pi pi-eye" @click="navigateToPartner()"></i>
+        </div>
     </div>
 </div>
 ` // end template
 
 window.mfPartnerTile = {
-  props: ['partnerId', 'role', 'roles'],
+  props: ['partnerId', 'role', 'roles', 'clickable'],
   template,
   watch: {
-    partnerId(oldPartnerId, newPartnerId) {
+    partnerId(newPartnerId, oldPartnerId) {
         this.loadPartner();
     }
   },
@@ -107,7 +110,7 @@ window.mfPartnerTile = {
     this.loadPartner();
   },
   methods: {
-    loadPartner: function() {
+    loadPartner() {
       this.partner = null;
       this.error = null;
       let self = this;
@@ -131,6 +134,9 @@ window.mfPartnerTile = {
     },
     isContractHolder() {
         return this.role == 'CONTRACT_HOLDER';
+    },
+    navigateToPartner() {
+        window.location.href = '/partner?id=' + this.partnerId;
     }
   }
 }

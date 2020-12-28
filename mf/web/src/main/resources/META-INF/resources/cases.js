@@ -65,7 +65,7 @@ window.mfCases = {
   props: ['caseReferenceIds'],
   template,
   watch: {
-    caseReferenceIds(oldCaseReferenceIds, newCaseReferenceIds) {
+    caseReferenceIds(newCaseReferenceIds, oldCaseReferenceIds) {
         this.loadCases();
     }
   },

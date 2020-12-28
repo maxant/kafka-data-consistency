@@ -22,13 +22,14 @@ class CasesResource(
 ) {
 
     @GET
-    @Operation(summary = "get all cases including tasks, by referenceIds", description = "taskState should be one of *, OPEN or DONE. only tasks matching, are returned.")
+    @Operation(summary = "get all cases including tasks, by referenceIds",
+            description = "taskState should be one of *, OPEN or DONE. only tasks matching, are returned.")
     @Path("/byReferenceIds/{taskState}")
-    fun getByReferenceIds(@Parameter(name = "state") @PathParam("state") stateString: String,
+    fun getByReferenceIds(@Parameter(name = "taskState") @PathParam("taskState") taskStateString: String,
                           @Parameter(name = "referenceIds") @QueryParam("referenceIds") referenceIds: List<UUID>): Response {
         val cases = CaseEntity.Queries.selectByReferenceIds(em, referenceIds)
         val tasks = TaskEntity.Queries.selectByCaseIds(em, cases.map { it.id })
-                .filter { stateString == "*" || State.valueOf(stateString) == it.state }
+                .filter { taskStateString == "*" || State.valueOf(taskStateString) == it.state }
 
         val results = cases.map { CaseChangedEvent(it, tasks.filter { task -> task.caseId == it.id }) }
         return Response.ok(results).build()
