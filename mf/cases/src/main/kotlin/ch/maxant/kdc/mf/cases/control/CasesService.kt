@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.cases.control
 
+import ch.maxant.kdc.mf.cases.boundary.CompleteTasksCommand
 import ch.maxant.kdc.mf.cases.boundary.CreateCaseCommand
 import ch.maxant.kdc.mf.cases.boundary.CreateTaskCommand
 import ch.maxant.kdc.mf.cases.boundary.UpdateTaskCommand
@@ -85,6 +86,18 @@ class CasesService(
         val tasks = TaskEntity.Queries.selectByCaseId(em, case.id)
 
         return sendCaseChangedEvent(case, tasks)
+    }
+
+    @AsyncContextAware
+    fun completeTasks(tasksCommand: CompleteTasksCommand): CompletionStage<*> {
+        log.info("completing tasks: $tasksCommand")
+
+        val case = CaseEntity.Queries.selectByCaseId(em, tasksCommand.referenceId)
+
+        val allTasks = TaskEntity.Queries.selectByCaseId(em, case.id)
+        allTasks.filter { tasksCommand.action == it.action }.forEach { it.state = State.DONE }
+
+        return sendCaseChangedEvent(case, allTasks)
     }
 
     private fun sendCaseChangedEvent(case: CaseEntity, tasks: List<TaskEntity>): CompletionStage<*> {

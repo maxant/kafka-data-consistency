@@ -70,6 +70,7 @@ window.mfCases = {
     return {
         cases: [],
         tasks: [], // flattened
+        state: "OPEN", // ready for a toggle, should one want to view closed tasks at the push of a button
         error: null,
         requestId: uuidv4()
     }
@@ -84,7 +85,7 @@ window.mfCases = {
       this.tasks = [];
       this.error = null;
       let self = this;
-      let url = CASES_BASE_URL + "/cases/?" + _.map(this.caseReferenceIds, crid => { return "referenceIds=" + crid; }).join("&");
+      let url = CASES_BASE_URL + "/cases/byReferenceIds/" + this.state + "?" + _.map(this.caseReferenceIds, crid => { return "referenceIds=" + crid; }).join("&");
       fetchIt(url, "GET", this).then(r => {
         if(r.ok) {
             console.log("got cases for requestId " + self.requestId);

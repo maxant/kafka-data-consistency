@@ -6,7 +6,10 @@
 
 <mf-contract :contract-id="model.id"></mf-contract>
 <hr>
-<mf-partner v-for="partnerRelationship in model.partnerRelationships" :partner-id="partnerRelationship.partnerId"></mf-partner>
+<mf-partner v-for="partnerRelationship in model.partnerRelationships"
+            :partner-id="partnerRelationship.partnerId"
+            :role="partnerRelationship.role">
+</mf-partner>
 <hr>
 <div v-if="model.contract.contractState == 'AWAITING_APPROVAL'">
     TODO add a text field where the user can justify this
@@ -14,6 +17,8 @@
     <button @click="approveContract()">Approve contract</button>
 </div>
 
+</span>
+</div>
 </div> |}{! end of app div !}{|
 <script>
 var urlParams = new URLSearchParams(window.location.search);
@@ -45,10 +50,10 @@ const App = {
         let contract$ = fetchIt(url, "GET", this).then(r => {
             self.timeTaken = new Date().getTime() - self.start;
             if(r.ok) {
-                console.log("got partner with id " + r.payload.id + ", for requestId " + self.requestId);
-                self.model.partner = r.payload;
+                console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
+                self.model.contract = r.payload;
             } else {
-                let msg = "Failed to get partner: " + r.payload;
+                let msg = "Failed to get contract: " + r.payload;
                 console.error(msg);
                 alert(msg);
             }
@@ -72,6 +77,23 @@ const App = {
         });
 
         return Promise.all([contract$, partnerRelationships$]);
+    },
+    approveContract() {
+        let self = this;
+        let url = CONTRACTS_BASE_URL + "/contracts/approve" + this.model.id;
+        let contract$ = fetchIt(url, "GET", this).then(r => {
+            self.timeTaken = new Date().getTime() - self.start;
+            if(r.ok) {
+                console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
+                self.model.contract = r.payload;
+            } else {
+                let msg = "Failed to get contract: " + r.payload;
+                console.error(msg);
+                alert(msg);
+            }
+        }).catch(error => {
+            alert("received error: " + error);
+        });
     }
   },
   components: {

@@ -4,6 +4,7 @@ import ch.maxant.kdc.mf.contracts.adapter.OrganisationAdapter
 import ch.maxant.kdc.mf.contracts.adapter.PartnerRelationshipsAdapter
 import ch.maxant.kdc.mf.contracts.adapter.PricingAdapter
 import ch.maxant.kdc.mf.contracts.control.EventBus
+import ch.maxant.kdc.mf.contracts.dto.CompleteTasksCommand
 import ch.maxant.kdc.mf.contracts.dto.CreatePartnerRelationshipCommand
 import ch.maxant.kdc.mf.contracts.dto.CreateTaskCommand
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
@@ -112,10 +113,9 @@ class ContractResource(
         contract.contractState = ContractState.ACCEPTED
     }
 
-    // TODO reuse this function when an employee approves a contract
-    private fun approveContract(contract: ContractEntity, autoApprovalUser: String) {
+    private fun approveContract(contract: ContractEntity, userId: String) {
         contract.approvedAt = LocalDateTime.now()
-        contract.approvedBy = autoApprovalUser
+        contract.approvedBy = userId
         contract.contractState = ContractState.APPROVED // code just for completions sake
         contract.contractState = ContractState.RUNNING
     }
@@ -130,9 +130,45 @@ class ContractResource(
         }
     }
 
+    private fun abacEnsureUserIsSalesRep(contractId: UUID) {
+        val partnerId = context.jwt!!.claim<String>("partnerId").orElse(null)
+        val role = CreatePartnerRelationshipCommand.Role.SALES_REP
+        if (!partnerRelationshipsAdapter.latestByForeignIdAndRole(contractId, role)
+                        .all { it.partnerId.toString() == partnerId }) {
+            throw NotAuthorizedException("you are not the sales rep of contract $contractId. " +
+                    "Only the sales rep may approve the contract.")
+        }
+    }
+
     private fun getSalesRepUsername(contractId: UUID): String {
         val role = CreatePartnerRelationshipCommand.Role.SALES_REP
         val partnerId = partnerRelationshipsAdapter.latestByForeignIdAndRole(contractId, role).first().partnerId
         return organisationAdapter.getStaffByPartnerId(partnerId).un
+    }
+
+    @PUT
+    @Path("/approve/{contractId}")
+    @Secure
+    @Transactional
+    fun approve(@PathParam("contractId") contractId: UUID) = doByHandlingValidationExceptions {
+
+        abacEnsureUserIsSalesRep(contractId)
+
+        // TODO validate like when offering? i guess only if stuff changed?
+
+        val contract = em.find(ContractEntity::class.java, contractId)
+
+        require(contract.contractState == ContractState.AWAITING_APPROVAL) {
+            "Contract is not in state ${ContractState.AWAITING_APPROVAL}, but in state ${contract.contractState}"
+        }
+
+        eventBus.publish(
+                CompleteTasksCommand(contract.id, CreateTaskCommand.Action.APPROVE_CONTRACT.toString())
+        )
+
+        approveContract(contract, context.user)
+        log.info("approved contract $contractId")
+
+        Response.ok(contract).build()
     }
 }

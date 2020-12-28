@@ -39,6 +39,8 @@ class CasesConsumer(
                 casesService.createTask(om.readValue(msg.payload, CreateTaskCommand::class.java))
             Command.UPDATE_TASK == command ->
                 casesService.updateTask(om.readValue(msg.payload, UpdateTaskCommand::class.java))
+            Command.COMPLETE_TASKS == command ->
+                casesService.completeTasks(om.readValue(msg.payload, CompleteTasksCommand::class.java))
             else -> throw RuntimeException("unexpected command $command: $msg")
         }
     }
@@ -47,7 +49,8 @@ class CasesConsumer(
 enum class Command {
     CREATE_CASE,
     CREATE_TASK,
-    UPDATE_TASK
+    UPDATE_TASK,
+    COMPLETE_TASKS
 }
 
 data class CreateCaseCommand(
@@ -71,5 +74,10 @@ data class UpdateTaskCommand(
         val title: String,
         val description: String,
         val state: State
+)
+
+data class CompleteTasksCommand(
+        val referenceId: UUID,
+        val action: String
 )
 

@@ -66,8 +66,11 @@ template =
         loading...
     </div>
     <div v-else>
-        <div v-if="role == 'SALES_REP'">
+        <div v-if="isSalesRep()">
             Sales Representative: {{partner.firstName}} {{partner.lastName}}
+        </div>
+        <div v-else-if="isContractHolder()">
+            Contract Holder: {{partner.firstName}} {{partner.lastName}}
         </div>
         <div v-else>
             {{partner.firstName}} {{partner.lastName}}
@@ -122,6 +125,12 @@ window.mfPartnerTile = {
         self.error = error;
         console.error("received error: " + error);
       });
+    },
+    isSalesRep() {
+        return this.role == 'SALES_REP';
+    },
+    isContractHolder() {
+        return this.role == 'CONTRACT_HOLDER';
     }
   }
 }
