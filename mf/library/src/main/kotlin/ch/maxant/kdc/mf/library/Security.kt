@@ -78,7 +78,7 @@ class SecurityCheckInterceptor {
         val fqMethodName = getFqMethodName(ctx.method)
         log.info("checking security for call to $fqMethodName")
 
-        val roles = mutableListOf<String>()
+        val roles = mutableSetOf<String>()
         getSecurityModel().root.forEach { findRolesThatCanExecuteMethod(fqMethodName, it, roles) }
         log.info("method $fqMethodName can be executed with roles '${roles.joinToString()}'")
 
@@ -119,7 +119,7 @@ class SecurityCheckInterceptor {
 
 }
 
-private fun findRolesThatCanExecuteMethod(fqMethodName: String, node: Node, roles: MutableList<String>) {
+private fun findRolesThatCanExecuteMethod(fqMethodName: String, node: Node, roles: MutableCollection<String>) {
     if(node.data.methods.contains(fqMethodName) && node.data.roleMappings != null) {
         roles.addAll(node.data.roleMappings.split(",").map { it.trim() })
     }

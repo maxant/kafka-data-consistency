@@ -1,35 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>The Milk Factory :: Security</title>
-    <script src="http://web:8082/common.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.20/lodash.min.js"></script>
+{#include internalheader title="Organisation" /}{|
 
-    <script src="https://unpkg.com/vue@3.0.2/dist/vue.global.js"></script>
-
-    <link href="https://unpkg.com/primevue@3.0.2/resources/themes/saga-blue/theme.css" rel="stylesheet">
-    <link href="https://unpkg.com/primevue@3.0.2/resources/primevue.min.css" rel="stylesheet">
-    <link href="https://unpkg.com/primeicons@4.1.0/primeicons.css" rel="stylesheet">
-    <script src="https://unpkg.com/primevue@3.0.2/components/dropdown/dropdown.umd.js"></script>
-    <script src="https://unpkg.com/primevue@3.0.2/components/treetable/treetable.umd.js"></script>
-    <script src="https://unpkg.com/primevue@3.0.2/components/column/column.umd.js"></script>
-</head>
-<body style="background-image: url(https://hips.hearstapps.com/del.h-cdn.co/assets/15/24/1600x800/landscape-1433889344-del-milkshakes-index.jpg); background-color: rgba(255, 255, 255, 0.85); background-blend-mode: overlay;">
-<h2>The Milk Factory :: Security</h2>
-<div id="app">
-    <div style="width: 100%; text-align: right; font-size: small;">
-        <button onclick="pingAll()">reload all microservices</button>
-    </div>
     <overview-table></overview-table>
     <br><br>
     <ul>
         <li>TODO add list of each method, showing which process it belongs to and which role can call it, kinda like the inverse of the above</li>
         <li>TODO break after each un and method</li>
     </ul>
+
+</span>
 </div>
-<hr>
-</body>
+</div> |}{! end of app div !}{|
 <script>
 // make a component, so we can use a template, because otherwise primevue doesnt pick up things like headerStyle
 // because they have to be camel case, rather than kebab! - see https://vuejs.org/v2/guide/components-props.html
@@ -48,14 +28,12 @@ var overviewTable = {
   data: function(){
     return {
       model: { expandedKeys: {}, root: [] },
-      start: 0,
-      timeTaken: 0,
       requestId: uuidv4()
     }
   },
   mounted() {
-    this.fetchSec();
     window.model = this.model; // just for debugging purposes
+    this.fetchSec();
   },
   methods: {
     fetchSec() {
@@ -87,7 +65,9 @@ const App = {
     'overview-table': overviewTable
   }
 }
-Vue.createApp(App).mount("#app")
+const app = Vue.createApp(App)
+app.use(primevue);
+app.mount("#app")
 
 function setupModel(self, nodes) {
     _.forEach(nodes, n => {
@@ -98,6 +78,6 @@ function setupModel(self, nodes) {
     });
 }
 
-
 </script>
-</html>
+
+|}{#include internalfooter /}

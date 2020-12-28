@@ -100,6 +100,40 @@ class SalesTemplate {
             .addMfComponents()
 }
 
+@ApplicationScoped
+@Path("/organisation")
+@Produces(MediaType.TEXT_HTML)
+class OrganisationTemplate {
+
+    @Inject
+    lateinit var organisation: Template
+
+    @GET
+    fun get(): TemplateInstance =
+            organisation.instance()
+            .addStandardLibraries()
+            .addPvWidgets(listOf("dropdown", "treetable", "column"))
+            .addMfWidgets(listOf())
+            .addMfComponents()
+}
+
+@ApplicationScoped
+@Path("/security")
+@Produces(MediaType.TEXT_HTML)
+class SecurityTemplate {
+
+    @Inject
+    lateinit var security: Template
+
+    @GET
+    fun get(): TemplateInstance =
+            security.instance()
+            .addStandardLibraries()
+            .addPvWidgets(listOf("dropdown", "treetable", "column"))
+            .addMfWidgets(listOf())
+            .addMfComponents()
+}
+
 enum class Components(val constantName: String, val uiWidgetsJavascript: String, val baseUrl: String) {
     Contracts    ("CONTRACTS",    "contracts.js",    ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.contracts.url",    String::class.java).orElse("http://contracts:8080")),
     Pricing      ("PRICING",      "pricing.js",      ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.pricing.url",      String::class.java).orElse("http://pricing:8081")),

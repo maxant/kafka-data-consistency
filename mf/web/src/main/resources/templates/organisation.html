@@ -1,0 +1,69 @@
+{#include internalheader title="Organisation" /}{|
+
+    <p-treetable :value="model.root">
+        <p-column field="name" header="Name" :expander="true"></p-column>
+        <p-column field="inheritableRoles" header="Inheritable Roles"></p-column>
+        <p-column field="postcodes" header="Post Codes"></p-column>
+        <p-column field="staff" header="Staff"></p-column>
+    </p-treetable>
+
+</span>
+</div>
+</div> |}{! end of app div !}{|
+<script>
+const App = {
+  data() {
+    return {
+      model: { root: null },
+      requestId: uuidv4()
+    }
+  },
+  mounted() {
+    window.model = this.model; // just for debugging purposes
+    this.fetchOrg();
+  },
+  methods: {
+    fetchOrg() {
+        let self = this;
+        let url = ORGANISATION_BASE_URL + "/organisation";
+        fetchIt(url, "GET", this).then(r => {
+            if(r.ok) {
+                console.log("got org for requestId " + self.requestId);
+                self.model.root = [r.payload];
+                setupModel(self.model.root);
+            } else {
+                let msg = "Failed to get org: " + r.payload;
+                console.error(msg);
+                alert(msg);
+            }
+        }).catch(error => {
+            alert("received error: " + error);
+        });
+    }
+  },
+  components: {
+    'p-treetable': treetable,
+    'p-column': column
+  }
+}
+const app = Vue.createApp(App)
+app.use(primevue);
+app.mount("#app")
+
+function setupModel(nodes, parentKey) {
+    parentKey = (!!parentKey) ? parentKey : "";
+    _.forEach(nodes, node => {
+        node.key = parentKey + "::" + node.dn.cn;
+        node.data = {
+            name: node.dn.cn,
+            inheritableRoles: node.inheritableRoles.join(";"),
+            staff: _(node.staff).map(s => s.dn.cn + " (" + s.staffRoles.join(";") + ")").join("<br>"),
+            postcodes: node.postcodes.join(",")
+        };
+        setupModel(node.children, node.key);
+    });
+}
+
+</script>
+
+|}{#include internalfooter /}
