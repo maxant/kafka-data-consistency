@@ -17,12 +17,11 @@ class CorsFilter : Filter {
         val req = request as HttpServletRequest
         val res = response as HttpServletResponse
         res.addHeader("Access-Control-Allow-Origin", "*")
+        res.addHeader("Access-Control-Expose-Headers", "*") // quarkus maps ForbiddenException/NotAuthorizedException to the www-authenticate header. expose requestId too
         if ("OPTIONS" == req.method) {
-            // quarkus maps ForbiddenException/NotAuthorizedException to the www-authenticate header
             // unclear if it belongs in allow-headers, or expose-headers: https://stackoverflow.com/a/44816592/458370
             res.addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, HEAD")
-            res.addHeader("Access-Control-Allow-Headers", "www-authenticate, ${SecurityHeaderName}, content-type, elastic-apm-traceparent, $REQUEST_ID, $DEMO_CONTEXT")
-            res.addHeader("access-control-expose-headers", "www-authenticate, $REQUEST_ID") // TODO this doesnt work - no access to www-authenticate header :-(
+            res.addHeader("Access-Control-Allow-Headers", "${SecurityHeaderName}, content-type, elastic-apm-traceparent, $REQUEST_ID, $DEMO_CONTEXT")
             res.status = 200
         } else {
             chain.doFilter(request, response)
