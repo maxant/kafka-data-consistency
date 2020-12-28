@@ -35,7 +35,7 @@ class ComponentsRepoTest {
     lateinit var om: ObjectMapper
 
     fun setup(): Draft = flushed(em) {
-        val contract = ContractEntity(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, ContractState.DRAFT, System.currentTimeMillis(), LocalDateTime.now(), "fred")
+        val contract = ContractEntity(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, "fred")
         em.persist(contract)
         val profile: Profile = Profiles.find()
         val product = Products.find(ProductId.COOKIES_MILKSHAKE, profile.quantityMlOfProduct)
