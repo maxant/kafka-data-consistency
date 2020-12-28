@@ -7,7 +7,7 @@ import javax.persistence.*
 @Entity
 @Table(name = "T_TASKS")
 @NamedQueries(
-        NamedQuery(name = TaskEntity.NqSelectByCaseId.name, query = TaskEntity.NqSelectByCaseId.query)
+        NamedQuery(name = TaskEntity.NqSelectByCaseIds.name, query = TaskEntity.NqSelectByCaseIds.query)
 )
 class TaskEntity(
 
@@ -36,16 +36,18 @@ class TaskEntity(
 ) {
     constructor() : this(UUID.randomUUID(), UUID.randomUUID(), "", "", "", State.OPEN)
 
-    object NqSelectByCaseId {
-        const val name = "selectTaskByCaseId"
-        const val caseIdParam = "caseId"
-        const val query = "from TaskEntity t where t.caseId = :$caseIdParam"
+    object NqSelectByCaseIds {
+        const val name = "selectTaskByCaseIds"
+        const val caseIdsParam = "caseIds"
+        const val query = "from TaskEntity t where t.caseId in :$caseIdsParam"
     }
 
     object Queries {
-        fun selectByCaseId(em: EntityManager, caseId: UUID): MutableList<TaskEntity> {
-            return em.createNamedQuery(NqSelectByCaseId.name, TaskEntity::class.java)
-                    .setParameter(NqSelectByCaseId.caseIdParam, caseId)
+        fun selectByCaseId(em: EntityManager, caseId: UUID) = selectByCaseIds(em, listOf(caseId))
+
+        fun selectByCaseIds(em: EntityManager, caseIds: List<UUID>): MutableList<TaskEntity> {
+            return em.createNamedQuery(NqSelectByCaseIds.name, TaskEntity::class.java)
+                    .setParameter(NqSelectByCaseIds.caseIdsParam, caseIds)
                     .resultList
         }
 

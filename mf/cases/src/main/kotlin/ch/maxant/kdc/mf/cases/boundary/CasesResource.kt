@@ -1,5 +1,8 @@
 package ch.maxant.kdc.mf.cases.boundary
 
+import ch.maxant.kdc.mf.cases.control.CaseChangedEvent
+import ch.maxant.kdc.mf.cases.entity.CaseEntity
+import ch.maxant.kdc.mf.cases.entity.TaskEntity
 import java.util.*
 import javax.inject.Inject
 import javax.persistence.EntityManager
@@ -12,12 +15,15 @@ import javax.ws.rs.core.Response
 @Produces(MediaType.APPLICATION_JSON)
 class CasesResource(
     @Inject
-    public var em: EntityManager
+    var em: EntityManager
 ) {
 
     @GET
-    @Path("/{id}")
-    fun getById(@PathParam("id") id: UUID) =
-        Response.ok("id").build()
+    fun getByIds(@QueryParam("referenceIds") referenceIds: List<UUID>): Response {
+        val cases = CaseEntity.Queries.selectByReferenceIds(em, referenceIds)
+        val tasks = TaskEntity.Queries.selectByCaseIds(em, cases.map { it.id })
+        val results = cases.map { CaseChangedEvent(it, tasks.filter { task -> task.caseId == it.id }) }
+        return Response.ok(results).build()
+    }
 
 }

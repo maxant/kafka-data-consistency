@@ -7,7 +7,7 @@ import javax.persistence.*
 @Entity
 @Table(name = "T_CASES")
 @NamedQueries(
-    NamedQuery(name = CaseEntity.NqSelectByReferenceId.name, query = CaseEntity.NqSelectByReferenceId.query)
+    NamedQuery(name = CaseEntity.NqSelectByReferenceIds.name, query = CaseEntity.NqSelectByReferenceIds.query)
 )
 class CaseEntity(
 
@@ -27,17 +27,20 @@ class CaseEntity(
 ) {
     constructor() : this(UUID.randomUUID(), UUID.randomUUID(), CaseType.SALES)
 
-    object NqSelectByReferenceId {
-        const val name = "selectCaseByReferenceId"
-        const val referenceIdParam = "referenceId"
-        const val query = "from CaseEntity c where c.referenceId = :$referenceIdParam"
+    object NqSelectByReferenceIds {
+        const val name = "selectCaseByReferenceIds"
+        const val referenceIdsParam = "referenceIds"
+        const val query = "from CaseEntity c where c.referenceId in :$referenceIdsParam"
     }
 
     object Queries {
-        fun selectByReferenceId(em: EntityManager, referenceId: UUID): CaseEntity {
-            return em.createNamedQuery(NqSelectByReferenceId.name, CaseEntity::class.java)
-                    .setParameter(NqSelectByReferenceId.referenceIdParam, referenceId)
-                    .singleResult
+        fun selectByReferenceId(em: EntityManager, referenceId: UUID) =
+                selectByReferenceIds(em, listOf(referenceId)).get(0)
+
+        fun selectByReferenceIds(em: EntityManager, referenceIds: List<UUID>): List<CaseEntity> {
+            return em.createNamedQuery(NqSelectByReferenceIds.name, CaseEntity::class.java)
+                    .setParameter(NqSelectByReferenceIds.referenceIdsParam, referenceIds)
+                    .resultList
         }
 
         fun selectByCaseId(em: EntityManager, caseId: UUID): CaseEntity {

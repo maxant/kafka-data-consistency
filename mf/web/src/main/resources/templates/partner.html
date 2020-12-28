@@ -18,6 +18,11 @@
 <div v-if="model.hasMoreContracts">
     Partner has more contracts. <a href="/search">Search here...</a>
 </div>
+</span>
+<span>
+    <mf-case :caseReferenceId="model.contract."></mf-case>
+</span>
+</div>
 
 </div> |}{! end of app div !}{|
 <script>
@@ -30,7 +35,7 @@ const NUM_CONTRACTS_TO_DISPLAY = 10;
 const App = {
   data() {
     return {
-      model: { "id": id, "partner": {} },
+      model: { id, partner: {}, tasks: [] },
       start: 0,
       timeTaken: 0,
       requestId: uuidv4(),
@@ -84,7 +89,9 @@ const App = {
   components: {
     'mf-partner': mfPartnerTile,
     'mf-contract': mfContractTile,
-    'mf-users': mfUsers
+    'mf-users': mfUsers,
+    'mf-case': mfCase,
+    'mf-task': mfTask
   }
 }
 const app = Vue.createApp(App)

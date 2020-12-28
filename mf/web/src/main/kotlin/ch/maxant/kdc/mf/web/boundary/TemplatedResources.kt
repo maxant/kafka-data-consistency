@@ -62,7 +62,7 @@ class PartnerTemplate {
             partner.instance()
             .addStandardLibraries()
             .addPvWidgets(listOf("calendar", "dropdown"))
-            .addMfWidgets(listOf(Components.Contracts, Components.Partners))
+            .addMfWidgets(listOf(Components.Contracts, Components.Partners, Components.Cases))
             .addMfComponents()
 }
 

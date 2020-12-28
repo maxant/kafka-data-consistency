@@ -80,7 +80,7 @@ class CasesService(
     }
 
     private fun sendCaseChangedEvent(case: CaseEntity, tasks: List<TaskEntity>): CompletionStage<*> {
-        val cce = CaseChangedEvent(case.id, case.referenceId, case.type, tasks.map { TaskDto(it) })
+        val cce = CaseChangedEvent(case, tasks)
         val ack = CompletableFuture<Unit>()
         val msg = messageBuilder.build(case.referenceId, cce, ack, event = "CHANGED_CASE")
         casesOut.send(msg)
@@ -93,7 +93,9 @@ data class CaseChangedEvent(
         val referenceId: UUID,
         val type: CaseType,
         val tasks: List<TaskDto>
-)
+) {
+    constructor(case: CaseEntity, tasks: List<TaskEntity>) : this(case.id, case.referenceId, case.type, tasks.map { TaskDto(it) })
+}
 
 data class TaskDto(
         val taskId: UUID,
