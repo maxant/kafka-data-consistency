@@ -432,7 +432,7 @@ Create new:
 
 ## Running tips
 
-    export MAVEN_OPTS="-Xmx200m"
+    export MAVEN_OPTS="-Xmx500m"
     mvn quarkus:dev -Ddebug=5006
 
     export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.9.11-0.el7_9.x86_64

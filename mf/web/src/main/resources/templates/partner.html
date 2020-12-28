@@ -20,7 +20,7 @@
 </div>
 </span>
 <span>
-    <mf-case :caseReferenceId="model.contract."></mf-case>
+    <mf-cases :case-reference-ids="model.allContractIds"></mf-cases>
 </span>
 </div>
 
@@ -56,7 +56,7 @@ const App = {
                 console.log("got partner with id " + r.payload.id + ", for requestId " + self.requestId);
                 self.model.partner = r.payload;
             } else {
-                let msg = "Failed to get partner: " + r.payload.error;
+                let msg = "Failed to get partner: " + r.payload;
                 console.error(msg);
                 alert(msg);
             }
@@ -70,12 +70,12 @@ const App = {
             if(r.ok) {
                 console.log("got partner-relationships, for requestId " + self.requestId);
                 self.model.partnerRelationships = _.groupBy(r.payload, "role");
-                let contractIds = _(self.model.partnerRelationships["CONTRACT_HOLDER"]).map("foreignId").uniq().value();
-                self.model.hasMoreContracts = contractIds.length > NUM_CONTRACTS_TO_DISPLAY;
-                self.model.contractIds = _(contractIds).reverse().take(NUM_CONTRACTS_TO_DISPLAY).value();
+                self.model.allContractIds = _(self.model.partnerRelationships["CONTRACT_HOLDER"]).map("foreignId").uniq().value();
+                self.model.hasMoreContracts = self.model.allContractIds.length > NUM_CONTRACTS_TO_DISPLAY;
+                self.model.contractIds = _(self.model.allContractIds).reverse().take(NUM_CONTRACTS_TO_DISPLAY).value();
                 self.model.partnerRoles = _(r.payload).map("role").uniq().value().join(",");
             } else {
-                let msg = "Failed to get partner relationships: " + r.payload.error;
+                let msg = "Failed to get partner relationships: " + r.payload;
                 console.error(msg);
                 alert(msg);
             }
@@ -90,8 +90,7 @@ const App = {
     'mf-partner': mfPartnerTile,
     'mf-contract': mfContractTile,
     'mf-users': mfUsers,
-    'mf-case': mfCase,
-    'mf-task': mfTask
+    'mf-cases': mfCases
   }
 }
 const app = Vue.createApp(App)

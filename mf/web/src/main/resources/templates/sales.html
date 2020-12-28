@@ -107,7 +107,7 @@ const App = {
         fetchIt(url, "POST", this, body).then(r => {
             if(r.ok) console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
             else {
-                let msg = "Failed to offer contract: " + r.payload.error;
+                let msg = "Failed to offer contract: " + r.payload;
                 console.error(msg);
                 alert(msg);
                 ameliorateCurrentAction(self)
@@ -144,7 +144,7 @@ const App = {
             fetchIt(url, "PUT", this).then(r => {
                 if(r.ok) console.log("updated contract with id " + r.payload.id + ", for requestId " + self.requestId);
                 else {
-                    let msg = "Failed to offer contract: " + r.payload.error;
+                    let msg = "Failed to offer contract: " + r.payload;
                     console.error(msg);
                     alert(msg);
                     ameliorateCurrentAction(self)
@@ -169,7 +169,7 @@ const App = {
                 } else if(r.payload.class == "ch.maxant.kdc.mf.partners.boundary.NotEnoughRelationshipsForForeignIdTypeValidationException") {
                     alert("A partner relationship is missing: " + r.payload.data);
                 } else {
-                    let msg = "Failed to offer contract: " + r.payload.error;
+                    let msg = "Failed to offer contract: " + r.payload;
                     console.error(msg);
                     alert(msg);
                 }

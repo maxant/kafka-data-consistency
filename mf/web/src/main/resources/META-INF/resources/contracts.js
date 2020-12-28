@@ -76,7 +76,7 @@ window.mfContractTile = {
             console.log("got contract " + self.contractId + " for requestId " + self.requestId);
             self.myContract = r.payload;
         } else {
-            let msg = "Failed to get contract " + self.contractId + ": " + r.payload.error;
+            let msg = "Failed to get contract " + self.contractId + ": " + r.payload;
             self.error = msg;
             console.error(msg);
         }

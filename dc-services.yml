@@ -12,8 +12,8 @@ services:
     container_name: kdc-mf-cases
     ports:
       - "8084:8084"
-    #environment:
-    #  ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://retropie:8086"
+    environment:
+      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://retropie:8086"
     volumes:
       - ./mf/cases/target:/project
     command:
@@ -24,6 +24,8 @@ services:
     container_name: kdc-mf-waitingroom
     ports:
       - "8085:8085"
+    environment:
+      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://retropie:8086"
     volumes:
       - ./mf/waitingroom/target:/project
     command:
@@ -34,6 +36,8 @@ services:
     container_name: kdc-mf-organisation
     ports:
       - "8086:8086"
+    environment:
+      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://retropie:8086"
     volumes:
       - ./mf/organisation/target:/project
     command:

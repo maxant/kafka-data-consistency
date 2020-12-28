@@ -67,7 +67,7 @@ var overviewTable = {
                 setupModel(self, r.payload.root);
                 self.model.root = r.payload.root;
             } else {
-                let msg = "Failed to get security: " + r.payload.error;
+                let msg = "Failed to get security: " + r.payload;
                 console.error(msg);
                 alert(msg);
             }

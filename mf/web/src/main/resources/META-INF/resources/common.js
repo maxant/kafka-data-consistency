@@ -23,7 +23,11 @@ window.fetchIt = function(url, method, self, body) {
                      };
         return fetch(url, data)
         .then(r => {
-            return r.json().then(payload => ({payload, ok: r.ok}))
+            if(r.status >= 200 && r.status < 300) {
+                return r.json().then(payload => ({payload, ok: r.ok, response: r}))
+            } else {
+                return r.text().then(payload => ({payload, ok: r.ok, response: r}))
+            }
         })
     })
 }

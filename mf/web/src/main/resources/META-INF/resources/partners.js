@@ -36,7 +36,7 @@ window.mfPartnerSelect = {
               _.forEach(ps, p => p.$name = p.firstName + " " + p.lastName + " (" + p.dob + " - " + p.id + ")")
               self.partners = ps;
           } else {
-              let msg = "Failed to get partners: " + r.payload.error;
+              let msg = "Failed to get partners: " + r.payload;
               console.error(msg);
               alert(msg);
           }
@@ -114,7 +114,7 @@ window.mfPartnerTile = {
             console.log("got partner " + self.partnerId + " for requestId " + self.requestId);
             self.partner = r.payload;
         } else {
-            let msg = "Failed to get partner " + self.partnerId + ": " + r.payload.error;
+            let msg = "Failed to get partner " + self.partnerId + ": " + r.payload;
             self.error = msg;
             console.error(msg);
         }

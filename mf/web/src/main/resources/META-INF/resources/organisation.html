@@ -56,7 +56,7 @@ const App = {
                 self.model.root = [r.payload];
                 setupModel(self.model.root);
             } else {
-                let msg = "Failed to get org: " + r.payload.error;
+                let msg = "Failed to get org: " + r.payload;
                 console.error(msg);
                 alert(msg);
             }
