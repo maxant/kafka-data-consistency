@@ -83,6 +83,10 @@
 
         getCurrentJwt: function() {
             return currentJwt ? parseJwt(currentJwt) : undefined
+        },
+
+        getCurrentUser: function() {
+            return currentUsername;
         }
     };
 })();

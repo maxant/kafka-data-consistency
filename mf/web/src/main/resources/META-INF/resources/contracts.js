@@ -90,4 +90,11 @@ window.mfContractTile = {
     }
   }
 }
+
+cases.registerActionHandler("APPROVE_CONTRACT", "Approve contract", (task) => {
+    // navigate to contract details page, so that the user can assess the contract and approve it.
+    // approval there is based on the state, and not simply a task
+    window.location.href = '/contract?id=' + task.params["contractId"];
+});
+
 })();

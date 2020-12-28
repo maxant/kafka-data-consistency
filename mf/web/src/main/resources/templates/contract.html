@@ -1,27 +1,17 @@
-{#include internalheader title="Partner" /}{|
+{#include internalheader title="Contract" /}{|
 
 <div style="font-size: small;">
     Fetched in {{ timeTaken }}ms
 </div>
 
-<mf-partner :partner-id="model.id" :roles="model.partnerRoles"></mf-partner>
-
-<div>
-    Partner ID: {{model.id}}<br>
-    First Name: {{model.partner.firstName}}<br>
-    Last Name: {{model.partner.lastName}}<br>
-    DoB: {{model.partner.dob}}<br>
-    Type: {{model.partner.type}}<br>
-</div>
+<mf-contract :contract-id="model.id"></mf-contract>
 <hr>
-<mf-contract v-for="contractId in model.contractIds" :contract-id="contractId"></mf-contract>
-<div v-if="model.hasMoreContracts">
-    Partner has more contracts. <a href="/search">Search here...</a>
-</div>
-</span>
-<span>
-    <mf-cases :case-reference-ids="model.allContractIds"></mf-cases>
-</span>
+<mf-partner v-for="partnerRelationship in model.partnerRelationships" :partner-id="partnerRelationship.partnerId"></mf-partner>
+<hr>
+<div v-if="model.contract.contractState == 'AWAITING_APPROVAL'">
+    TODO add a text field where the user can justify this
+    <br>
+    <button @click="approveContract()">Approve contract</button>
 </div>
 
 </div> |}{! end of app div !}{|
@@ -30,12 +20,10 @@ var urlParams = new URLSearchParams(window.location.search);
 var id = urlParams.get('id');
 console.log("using id from url: " + id);
 
-const NUM_CONTRACTS_TO_DISPLAY = 10;
-
 const App = {
   data() {
     return {
-      model: { id, partner: {}, tasks: [] },
+      model: { id, contract: {}, tasks: [] },
       start: 0,
       timeTaken: 0,
       requestId: uuidv4(),
@@ -47,14 +35,14 @@ const App = {
     eventHub.on(LOGGED_IN, (username) => {
         // re-fetch when trying a different user, to e.g. re-render how tasks are shown for
         // that user, as well as re-check security
-        this.fetchPartner();
+        this.fetchContract();
     });
   },
   methods: {
-    fetchPartner() {
+    fetchContract() {
         let self = this;
-        let url = PARTNERS_BASE_URL + "/partners/" + this.model.id;
-        let partner$ = fetchIt(url, "GET", this).then(r => {
+        let url = CONTRACTS_BASE_URL + "/contracts/" + this.model.id;
+        let contract$ = fetchIt(url, "GET", this).then(r => {
             self.timeTaken = new Date().getTime() - self.start;
             if(r.ok) {
                 console.log("got partner with id " + r.payload.id + ", for requestId " + self.requestId);
@@ -68,16 +56,12 @@ const App = {
             alert("received error: " + error);
         });
 
-        url = PARTNERS_BASE_URL + "/partner-relationships/allByPartnerId/" + this.model.id + "?idsOnly=true";
+        url = PARTNERS_BASE_URL + "/partner-relationships/latestByForeignId/" + this.model.id + "/*?idsOnly=false";
         let partnerRelationships$ = fetchIt(url, "GET", this).then(r => {
             self.timeTaken = new Date().getTime() - self.start;
             if(r.ok) {
                 console.log("got partner-relationships, for requestId " + self.requestId);
-                self.model.partnerRelationships = _.groupBy(r.payload, "role");
-                self.model.allContractIds = _(self.model.partnerRelationships["CONTRACT_HOLDER"]).map("foreignId").uniq().value();
-                self.model.hasMoreContracts = self.model.allContractIds.length > NUM_CONTRACTS_TO_DISPLAY;
-                self.model.contractIds = _(self.model.allContractIds).reverse().take(NUM_CONTRACTS_TO_DISPLAY).value();
-                self.model.partnerRoles = _(r.payload).map("role").uniq().value().join(",");
+                self.model.partnerRelationships = r.payload;
             } else {
                 let msg = "Failed to get partner relationships: " + r.payload;
                 console.error(msg);
@@ -87,14 +71,13 @@ const App = {
             alert("received error: " + error);
         });
 
-        return Promise.all([partner$, partnerRelationships$]);
+        return Promise.all([contract$, partnerRelationships$]);
     }
   },
   components: {
     'mf-partner': mfPartnerTile,
     'mf-contract': mfContractTile,
-    'mf-users': mfUsers,
-    'mf-cases': mfCases
+    'mf-users': mfUsers
   }
 }
 const app = Vue.createApp(App)

@@ -19,12 +19,29 @@ var template =
     <div>
         {{task.state}}
     </div>
+    <div v-if="security.getCurrentUser() == task.userId">
+        Assigned to you
+    </div>
+    <div v-else>
+        Assigned to: {{task.userId}}
+    </div>
+    <div v-if="task.action && security.getCurrentUser() == task.userId">
+        <button @click="callActionHandler(task)">{{getActionText(task.action)}}</button>
+    </div>
 </div>
 ` // end template
 
 window.mfTask = {
   props: ['task'],
-  template
+  template,
+  methods: {
+    getActionText(action) {
+        return cases.getActionText(action)
+    },
+    callActionHandler(task) {
+        cases.callActionHandler(task)
+    }
+  }
 }
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -35,7 +52,7 @@ template =
 // start template
 `
 <hr>
-CASES:
+Tasks:
 <div v-for="task in tasks">
     <mf-task :task="task"></mf-task>
 </div>
@@ -88,5 +105,28 @@ window.mfCases = {
     'mf-task': mfTask
   }
 }
+
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// the cases application, which is responsible for this library, knows nothing about the implementation of
+// tasks, i.e. the things that the UI can do with them. that is supplied by other components/teams which
+// register their action handlers generically. when a task is displayed, it's action is used to determine
+// the buttons and their text which are rendered. when you click on a button, this library simply delegates
+// to the registered callback, which has knowledge of what to do. that way, we don't need to program contract
+// logic here :-)
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+window.cases = {
+    state: {},
+    registerActionHandler: function(action, actionText, callback) {
+        this.state[action] = {
+            action, actionText, callback
+        };
+    },
+    callActionHandler: function(task) {
+        this.state[task.action].callback(task);
+    },
+    getActionText: function(action) {
+        return this.state[action].actionText;
+    }
+};
 
 })();

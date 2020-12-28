@@ -48,11 +48,14 @@ class PartnerRelationshipResource(
             @QueryParam("idsOnly") idsOnly: Boolean = false,
             @Parameter(name = "foreignId", description = "the id of say the contract, to which the partner has a relationship")
             @PathParam("foreignId") foreignId: String,
-            @Parameter(name = "role", description = "the role the partner plays in the relationship")
-            @PathParam("role") role: Role
+            @Parameter(name = "role", description = "the role the partner plays in the relationship, or optionally just '*' in order to select all the latest relationships, regardless of role")
+            @PathParam("role") roleString: String
     ): Response {
-
-        val allRelationships = PartnerRelationshipEntity.Queries.selectByForeignIdAndRole(em, foreignId, role)
+        val allRelationships = if(roleString == "*") {
+            PartnerRelationshipEntity.Queries.selectByForeignId(em, foreignId)
+        } else {
+            PartnerRelationshipEntity.Queries.selectByForeignIdAndRole(em, foreignId, Role.valueOf(roleString))
+        }
         val latest = HashMap<String, PartnerRelationshipEntity>()
         allRelationships.forEach { r ->
             val key = r.foreignId + r.role
