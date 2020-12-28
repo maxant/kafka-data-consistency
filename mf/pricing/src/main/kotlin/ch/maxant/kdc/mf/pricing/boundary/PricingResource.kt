@@ -28,9 +28,9 @@ class PricingResource(
     @GET
     @Path("/totalPrice")
     fun totalPrice(@QueryParam("componentIds") componentIds: List<UUID>,
-                   @QueryParam("dateTime") dateTime: LocalDateTime
+                   @QueryParam("dateTime") dateTimeString: String
     ): Response {
-        val entities = PriceEntity.Queries.selectByComponentIdsAndDateTime(em, componentIds, dateTime)
+        val entities = PriceEntity.Queries.selectByComponentIdsAndDateTime(em, componentIds, LocalDateTime.parse(dateTimeString))
         val price = entities.map{ it.price }.reduce{ acc, price -> acc.add(price) }
         val tax = entities.map{ it.tax }.reduce{ acc, tax -> acc.add(tax) }
         return Response.ok(Price(price, tax)).build()

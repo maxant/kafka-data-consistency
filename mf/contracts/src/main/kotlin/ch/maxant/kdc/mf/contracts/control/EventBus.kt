@@ -52,6 +52,10 @@ class EventBus {
         send(cases, createCaseCommand.referenceId, createCaseCommand, command = "CREATE_CASE")
     }
 
+    fun publish(createTaskCommand: CreateTaskCommand) {
+        send(cases, createTaskCommand.referenceId, createTaskCommand, command = "CREATE_TASK")
+    }
+
     fun publish(createPartnerRelationshipCommand: CreatePartnerRelationshipCommand) {
         send(partners, createPartnerRelationshipCommand.foreignId, createPartnerRelationshipCommand, command = "CREATE_PARTNER_RELATIONSHIP")
     }

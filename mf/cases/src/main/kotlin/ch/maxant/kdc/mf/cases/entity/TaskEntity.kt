@@ -6,6 +6,9 @@ import javax.persistence.*
 
 @Entity
 @Table(name = "T_TASKS")
+@NamedQueries(
+        NamedQuery(name = TaskEntity.NqSelectByCaseId.name, query = TaskEntity.NqSelectByCaseId.query)
+)
 class TaskEntity(
 
     @Id

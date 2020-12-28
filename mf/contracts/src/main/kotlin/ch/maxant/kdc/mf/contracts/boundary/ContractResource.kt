@@ -2,7 +2,10 @@ package ch.maxant.kdc.mf.contracts.boundary
 
 import ch.maxant.kdc.mf.contracts.adapter.PartnerRelationshipsAdapter
 import ch.maxant.kdc.mf.contracts.adapter.PricingAdapter
+import ch.maxant.kdc.mf.contracts.control.EventBus
+import ch.maxant.kdc.mf.contracts.dto.CreateCaseCommand
 import ch.maxant.kdc.mf.contracts.dto.CreatePartnerRelationshipCommand
+import ch.maxant.kdc.mf.contracts.dto.CreateTaskCommand
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractState
@@ -46,6 +49,9 @@ class ContractResource(
     @ConfigProperty(name = "ch.maxant.kdc.mf.contracts.auto-approval-user", defaultValue = "auto-approval-user")
     lateinit var autoApprovalUser: String
 
+    @Inject
+    lateinit var eventBus: EventBus
+
     private val log = Logger.getLogger(this.javaClass)
 
     @GET
@@ -79,7 +85,9 @@ class ContractResource(
         if(pricingAdapter.totalPrice(listOf(rootComponentId), contract.end).total > BigDecimal("3.00")) {
             contract.contractState = ContractState.AWAITING_APPROVAL
             log.info("contract $id too expensive for auto-approval")
-            // TODO create task. assign to ?? based on org!
+            // TODO needs a key, so the UI can do something with it!
+            // TODO assign to ?? based on org!
+            eventBus.publish(CreateTaskCommand(contract.id, "TODO_FROM_ORG", "Approve Contract", "Please approve contract $id"))
         } else {
             approveContract(contract, autoApprovalUser)
             log.info("auto-approved contract $id")
