@@ -15,7 +15,8 @@ const App = {
   data() {
     return {
       model: { root: null },
-      requestId: uuidv4()
+      requestId: uuidv4(),
+      users
     }
   },
   mounted() {
@@ -43,7 +44,8 @@ const App = {
   },
   components: {
     'p-treetable': treetable,
-    'p-column': column
+    'p-column': column,
+    'mf-users': mfUsers
   }
 }
 const app = Vue.createApp(App)
@@ -57,7 +59,7 @@ function setupModel(nodes, parentKey) {
         node.data = {
             name: node.dn.cn,
             inheritableRoles: node.inheritableRoles.join(";"),
-            staff: _(node.staff).map(s => s.dn.cn + " (" + s.staffRoles.join(";") + ")").join("<br>"),
+            staff: _(node.staff).map(s => s.dn.cn + " (" + s.roles.join(";") + ")").join("<br>"),
             postcodes: node.postcodes.join(",")
         };
         setupModel(node.children, node.key);

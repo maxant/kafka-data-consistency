@@ -50,7 +50,7 @@ class Staff(dn: DN, partnerId: UUID, staffRoles: List<StaffRole>, un: String, ps
     /** keys of OUs where staff works */
     val ouDnCns = mutableListOf<String>()
 
-    fun getAllStaffRoles(): Set<Role> {
+    fun getAllStaffRolesInclInherited(): Set<Role> {
         val allRoles = mutableSetOf(*roles.toTypedArray())
         ous.forEach { allRoles.addAll(it.getAllInheritableRoles()) }
         return allRoles
@@ -133,7 +133,7 @@ class OU(val dn: DN,
             if(staffRole == null) {
                 staff
             } else {
-                staff.filter { it.getAllStaffRoles().contains(staffRole) }
+                staff.filter { it.getAllStaffRolesInclInherited().contains(staffRole) }
             }
         )
         children.forEach { it.getAllStaff(staffRole, staffList) }
