@@ -1,6 +1,7 @@
 package ch.maxant.kdc.mf.library
 
 import io.quarkus.runtime.StartupEvent
+import org.eclipse.microprofile.jwt.JsonWebToken
 import java.util.*
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.context.RequestScoped
@@ -17,6 +18,7 @@ class Context {
     var demoContext: DemoContext? = null
     var retryCount: Int = 0
     var user: String = "anonymous"
+    var jwt: JsonWebToken? = null
 
     fun getRequestIdSafely() =
         try {

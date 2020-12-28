@@ -4,6 +4,9 @@
     Drafted in {{ timeTaken }}ms
 </div>
 <div v-if="get(model, 'draft.contract')">
+    <button @click="newDraft()">create a new draft</button>
+</div>
+<div v-if="get(model, 'draft.contract')">
     <mf-contract :contract="model.draft.contract"></mf-contract>
 </div>
 <div v-if="!!get(model, 'draft.pack.$price')">
@@ -42,10 +45,15 @@ const App = {
     eventHub.on(LOGGED_IN, (username) => {
         let userId = _.find(users, u => u.un == username).id;
         this.user = {id: userId};
-        this.newDraft();
+        this.initialise();
     });
   },
   methods: {
+    initialise() {
+        if(!this.model.draft.contract) {
+            this.newDraft();
+        } // else the user needs to hit the button (after optionally changing the user)
+    },
     newDraft() {
         console.log("getting new draft");
         this.allowOffer = false;

@@ -31,9 +31,31 @@ open class ContractEntity( // add open, rather than rely on maven plugin, becaus
         open var createdAt: LocalDateTime = LocalDateTime.now(),
 
         @Column(name = "CREATED_BY", nullable = false)
-        open var createdBy: String
+        open var createdBy: String,
+
+        @Column(name = "OFFERED_AT")
+        open var offeredAt: LocalDateTime?,
+
+        @Column(name = "OFFERED_BY")
+        open var offeredBy: String?,
+
+        @Column(name = "ACCEPTED_AT")
+        open var acceptedAt: LocalDateTime?,
+
+        @Column(name = "ACCEPTED_BY")
+        open var acceptedBy: String?,
+
+        @Column(name = "APPROVED_AT")
+        open var approvedAt: LocalDateTime?,
+
+        @Column(name = "APPROVED_BY")
+        open var approvedBy: String?
 
 ) {
-    // for hibernate
-    constructor() : this(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, ContractState.DRAFT, 0, LocalDateTime.now(), "")
+    /** for hibernate */
+    constructor() : this(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, ContractState.DRAFT, 0, LocalDateTime.now(), "", null, null, null, null, null, null)
+
+    /** for initially creating a draft */
+    constructor(id: UUID, start: LocalDateTime, end: LocalDateTime, createdBy: String) :
+            this(id, start, end, ContractState.DRAFT, System.currentTimeMillis(), LocalDateTime.now(), createdBy, null, null, null, null, null, null)
 }

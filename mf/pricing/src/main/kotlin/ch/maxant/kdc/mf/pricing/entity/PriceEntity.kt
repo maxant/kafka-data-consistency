@@ -13,7 +13,9 @@ import javax.persistence.*
         NamedQuery(name = PriceEntity.NqDeleteByContractId.name,
                 query = PriceEntity.NqDeleteByContractId.query),
         NamedQuery(name = PriceEntity.NqCountByContractIdAndNotSyncTime.name,
-                query = PriceEntity.NqCountByContractIdAndNotSyncTime.query)
+                query = PriceEntity.NqCountByContractIdAndNotSyncTime.query),
+        NamedQuery(name = PriceEntity.NqSelectByComponentIdsAndDateTime.name,
+                query = PriceEntity.NqSelectByComponentIdsAndDateTime.query)
 )
 open class PriceEntity( // add open, rather than rely on maven plugin, because @QuarkusTest running in IntelliJ seems to think its final
 
@@ -57,7 +59,7 @@ open class PriceEntity( // add open, rather than rely on maven plugin, because @
     }
 
     object NqCountByContractIdAndNotSyncTime {
-        const val name = "selectPriceByContractId"
+        const val name = "countByContractIdAndNotSyncTime"
         const val contractIdParam = "contractId"
         const val syncTimestampParam = "syncTimestamp"
         const val query = """
@@ -65,6 +67,19 @@ open class PriceEntity( // add open, rather than rely on maven plugin, because @
             from PriceEntity p 
             where p.contractId = :$contractIdParam
               and p.syncTimestamp <> :$syncTimestampParam
+            """
+    }
+
+    object NqSelectByComponentIdsAndDateTime {
+        const val name = "selectByComponentIdsAndDateTime"
+        const val componentIdsParam = "componentIds"
+        const val dateTimeParam = "dateTime"
+        const val query = """
+            select p 
+            from PriceEntity p 
+            where p.componentId in :$componentIdsParam
+              and p.start <= :$dateTimeParam
+              and p.end >= :$dateTimeParam
             """
     }
 
@@ -84,6 +99,14 @@ open class PriceEntity( // add open, rather than rely on maven plugin, because @
                     .setParameter(NqCountByContractIdAndNotSyncTime.contractIdParam, contractId)
                     .setParameter(NqCountByContractIdAndNotSyncTime.syncTimestampParam, syncTimestamp)
                     .singleResult.toLong()
+        }
+
+        fun selectByComponentIdsAndDateTime(em: EntityManager, componentIds: List<UUID>, dateTime: LocalDateTime): List<PriceEntity> {
+            log.info("getting price entities for components $componentIds and dateTime $dateTime")
+            return em.createNamedQuery(NqSelectByComponentIdsAndDateTime.name, PriceEntity::class.java)
+                    .setParameter(NqSelectByComponentIdsAndDateTime.componentIdsParam, componentIds)
+                    .setParameter(NqSelectByComponentIdsAndDateTime.dateTimeParam, dateTime)
+                    .resultList
         }
     }
 }

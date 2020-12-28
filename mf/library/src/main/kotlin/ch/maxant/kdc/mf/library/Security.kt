@@ -97,6 +97,7 @@ class SecurityCheckInterceptor {
             log.info("user ${jwt.subject} is entitled to call $fqMethodName")
 
             context.user = jwt.subject
+            context.jwt = jwt
 
             return ctx.proceed()
         } catch (e: InvalidJwtException) {

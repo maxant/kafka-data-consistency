@@ -78,17 +78,22 @@ enum class ProcessSteps(val fqMethodNames: Set<String>) {
     ACCEPT(setOf(
         "ch.maxant.kdc.mf.contracts.boundary.ContractResource#getById",
         "ch.maxant.kdc.mf.contracts.boundary.ContractResource#acceptOffer"
+    )),
+    APPROVE(setOf(
+        "ch.maxant.kdc.mf.contracts.boundary.ContractResource#approve"
     ))
 }
 
 enum class Processes(val processSteps: Set<ProcessSteps>) {
-    SALES(setOf(DRAFT, OFFER, ACCEPT))
+    SALES(setOf(DRAFT, OFFER, ACCEPT, APPROVE))
 }
 
 enum class RoleMappings(val role: Role, val processStep: ProcessSteps) {
     SALES_REP___DRAFT(SALES_REP, DRAFT),
     SALES_REP___OFFER(SALES_REP, OFFER),
-    CUSTOMER___ACCEPT(CUSTOMER, ACCEPT),
+    SALES_REP___APPROVE(SALES_REP, APPROVE),
     CUSTOMER___DRAFT(CUSTOMER, DRAFT),
+    CUSTOMER___OFFER(CUSTOMER, OFFER),
+    CUSTOMER___ACCEPT(CUSTOMER, ACCEPT),
 }
 

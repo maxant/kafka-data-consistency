@@ -82,7 +82,7 @@ class DraftsResource(
         val contractDefinition = ContractDefinition.find(draftRequest.productId, start)
         val end = start.plusDays(contractDefinition.defaultDurationDays)
 
-        val contract = ContractEntity(draftRequest.contractId, start, end, ContractState.DRAFT, System.currentTimeMillis(), LocalDateTime.now(), context.user)
+        val contract = ContractEntity(draftRequest.contractId, start, end, context.user)
         em.persist(contract)
         log.info("added contract ${contract.id} in state ${contract.contractState}")
 
@@ -170,6 +170,7 @@ class DraftsResource(
     )
     @PUT
     @Path("/{contractId}/offer")
+    @Secure
     @Transactional
     fun offerDraft(
             @PathParam("contractId") @Parameter(name = "contractId", required = true) contractId: UUID
@@ -186,6 +187,9 @@ class DraftsResource(
         // TODO should this be done async? us emutiny to get free context propagation?
 
         contract.contractState = ContractState.OFFERED
+        contract.offeredAt = LocalDateTime.now()
+        contract.offeredBy = context.user
+
         // no need to update the sync timestamp, because otherwise we'd have to update it everywhere,
         // but we just validated that everything is indeed synchronised with us
 
