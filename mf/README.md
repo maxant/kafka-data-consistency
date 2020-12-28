@@ -164,31 +164,25 @@ Worth alerting on:
 
 ## TODO
 
+- accept offer => event to billing
+- add partner (inline widget)
+- display existing draft so that you can continue working from there
+- change from external to internal, if you arent sure and need a consultation
+- allow changing the quantity in the offer, so you can get under the approval threshold
+- security and abac - finish impl checks for who can read a contract
 - add createdAt/By to all entities and order partner relationships by that and load only the latest ones
 - add a partner in postcode 3000 and see if jane becomes salesRep. same for janet in 1000.
 - timestamp - if we attempt to insert but a new version has already been applied, we need to ignore it and log it for alerting. or fail with an error? why not just use optimistic locking. whats on my bit of paper?
 - sessionId
 - web register for session, request, contract, etc. not just requestId
-- add accepted time to contract as well as by who - altho we are guaranteed its the contract holder, since they have to be, in order to do it
-- contracts: execute business rules e.g. if total is higher than customers credit limit, then we need to go thru the approval process
-- when showing partner after offering contract, display contracts
 - pep, pip?, pdp
-- security and abac
-  - finish impl checks for who can read a contract
 - put some stuff into internal package in lib - does kotlin have support for this so that you cannot access it outside of the module?
 - show fat content and other params in portal
-- use qute for other SPAs:
-  - organisation
-  - security
-  - home
+- use qute for other SPAs: home
 - move sse and other standard things into vue components
 - security: do a view of all methods, and the roles and therefore the users which can run them
 - finish security.html
 - customer portal - add view of my contracts
-- digitally sign contract
-- business rules when offering, eg if too expensive then create a task in cases
-- display existing draft so that you can continue working from there
-- add partner (inline widget)
 - https://zipkin.io/
 - how do cases and then PARTNER RELATIONSHIPS end up in the client, when they use contractId? ok coz of requestId?
 - add accepting and do validation of prices at that point. TRANSPORT still with kafka!
@@ -199,32 +193,31 @@ Worth alerting on:
   determinate state which can be reloaded and allow the user to restart from there
 - add the analagous timeout in the UI
 - add sessionId to requestId - errors are propagated back to the session or request?
+- after sales
+  - terminate
+  - cancel
+  - etc
 - UI should show progress of updating, calcing discounts, calcing prices, partner relationships. widget can have knowledge of last one it waits for
 - call the contract validation service when we load the draft, and provide problems to the client
 - config inheritance - but only certain stuff makes sense, the rest doesnt
 - config deviations in cases where the sales team needs to specifically deviate from a normal customisation and it needs to be explicitly mentioned in the contract
 - remove support for string messages in the pimp interceptor
 - introduce discounts, which adds an extra event => choreography vs orchestration, whats it say about that above?
-- create create pdf
-- accept offer => event to billing
+- create contract pdf
 - calendar to select startTimestamp (rename start to startTimestamp too, coz of conflict in UI)
 - ok, we want pricing to listen to draft, and we dont want to orchestrate that from the UI. or do we?
-- add a task based on a business rule and allow the user to do it - eg sign off on a big order
 - add action to execute when task is completed or started (ie open UI, or do something)
-- addinfo
 - billing
   - billing is an orchestrator which keeps its model in a global ktable and which uses tombstone records and compaction
 - output
 - requisition orders
-- replace my cors with quarkus cors
-- add APM too
+- replace my cors with quarkus cors? can it do everything i need?
 - make sales ui sexier
 - components diff for warning user after changing to a different product release
 - additional info - to hang stuff external to the contract onto components
 - billing publishes event to world to inform contract component that the contract is active?
 - add a structure rule to components, to ensure there is always a bottle or container in a milk product
 - add duration, day in year to bill, billing frequency => make customer pay for first period until next billing period according to config
-- publishing billing as command => losely coupled
 - add daily billing job
 - error handling - https://github.com/cloudstark/quarkus-zalando-problem-extension
 - https://quarkus.io/guides/rest-data-panache
@@ -432,7 +425,7 @@ Create new:
 
 ## Running tips
 
-    export MAVEN_OPTS="-Xmx500m"
+    export MAVEN_OPTS="-Xmx700m"
     mvn quarkus:dev -Ddebug=5006
 
     export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.9.11-0.el7_9.x86_64
