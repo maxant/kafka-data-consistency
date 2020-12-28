@@ -34,10 +34,10 @@ class Tokens {
                 .groups(user.roles.map { it.toString() }.toMutableSet())
                 .expiresAt(toInstant(now.plusMinutes(1)))
                 .issuedAt(toInstant(now))
+                .claim("partnerId", user.partnerId)
         if(user is Partner) {
             builder
                 .claim("userType", "partner")
-                .claim("partnerId", user.partnerId)
         } else if(user is Staff) {
             builder
                 .claim("userType", "staff")

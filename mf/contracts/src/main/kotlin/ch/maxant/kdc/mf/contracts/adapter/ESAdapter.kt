@@ -31,8 +31,8 @@ class ESAdapter {
         val request = Request(
                 "PUT",
                 "/contracts/_doc/" + draft.contract.id)
-        val esDraft = EsDraft(draft, partnerId, flatten(draft.pack))
-        request.setJsonEntity(om.writeValueAsString(esDraft))
+        val esContract = EsContract(draft, partnerId, flatten(draft.pack))
+        request.setJsonEntity(om.writeValueAsString(esContract))
         performRequest(request, draft.contract.id)
     }
 
@@ -45,7 +45,7 @@ class ESAdapter {
     fun updateOffer(contractId: UUID, allComponents: List<Component>) {
         val request = Request(
                 "POST",
-                "/contracts/_update/" + contractId)
+                "/contracts/_update/$contractId")
         /*
             {
               "script" : {
@@ -60,12 +60,28 @@ class ESAdapter {
         val root = om.createObjectNode()
         val script = om.createObjectNode()
         val params = om.createObjectNode()
-        root.put("script", script)
+        root.replace("script", script)
         script.put("source", "ctx._source.components = params.components")
         script.put("lang", "painless")
-        script.put("params", params)
+        script.replace("params", params)
         val components = om.readTree(om.writeValueAsString(allComponents.map { ESComponent(it) }))
-        params.put("components", components)
+        params.replace("components", components)
+        request.setJsonEntity(om.writeValueAsString(root))
+        performRequest(request, contractId)
+    }
+
+    fun updateOffer(contractId: UUID, newState: ContractState) {
+        val request = Request(
+                "POST",
+                "/contracts/_update/$contractId")
+        val root = om.createObjectNode()
+        val script = om.createObjectNode()
+        val params = om.createObjectNode()
+        root.replace("script", script)
+        script.put("source", "ctx._source.state = params.state")
+        script.put("lang", "painless")
+        script.replace("params", params)
+        params.put("state", newState.toString())
         request.setJsonEntity(om.writeValueAsString(root))
         performRequest(request, contractId)
     }
@@ -76,21 +92,21 @@ class ESAdapter {
             // TODO tidy up exception handling. status code isnt returned if the server returns an error, eg 4xx coz of bad request
             val statusCode = response.statusLine.statusCode
             if(statusCode < 200 || statusCode >= 300) {
-                throw WebApplicationException("failed to index draft in ES. ($statusCode) ${response.entity}")
+                throw WebApplicationException("failed to index contract in ES. ($statusCode) ${response.entity}")
             }
-            log.info("updated draft components ${contractId} in elasticsearch")
+            log.info("updated contract components $contractId in elasticsearch")
         } catch(e: ConnectException) {
-            throw WebApplicationException("failed to index draft in ES. no connection")
+            throw WebApplicationException("failed to index contract in ES. no connection")
         } catch(e: Exception) {
             if(e is WebApplicationException){
-                throw e;
+                throw e
             }
-            throw WebApplicationException("failed to index draft in ES", e)
+            throw WebApplicationException("failed to index contract in ES", e)
         }
     }
 
-    data class EsDraft(val partnerId: UUID?, val start: LocalDateTime, val end: LocalDateTime, val status: ContractState,
-                       val components: List<ESComponent>, val totalPrice: BigDecimal = BigDecimal.ZERO) {
+    data class EsContract(val partnerId: UUID?, val start: LocalDateTime, val end: LocalDateTime, val state: ContractState,
+                          val components: List<ESComponent>, val totalPrice: BigDecimal = BigDecimal.ZERO) {
         constructor(draft: Draft, partnerId: UUID?, components: List<ESComponent>) : this(
                 partnerId,
                 draft.contract.start.withNano(0),

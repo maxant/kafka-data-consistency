@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.contracts.boundary
 
+import ch.maxant.kdc.mf.contracts.adapter.ESAdapter
 import ch.maxant.kdc.mf.contracts.adapter.OrganisationAdapter
 import ch.maxant.kdc.mf.contracts.adapter.PartnerRelationshipsAdapter
 import ch.maxant.kdc.mf.contracts.adapter.PricingAdapter
@@ -56,6 +57,9 @@ class ContractResource(
     @Inject
     lateinit var eventBus: EventBus
 
+    @Inject
+    lateinit var esAdapter: ESAdapter
+
     private val log = Logger.getLogger(this.javaClass)
 
     @GET
@@ -100,6 +104,9 @@ class ContractResource(
             approveContract(contract, autoApprovalUser)
             log.info("auto-approved contract $contractId")
         }
+
+        // TODO use transactional outbox
+        esAdapter.updateOffer(contractId, contract.contractState)
 
         Response.ok(contract).build()
     }
@@ -168,6 +175,9 @@ class ContractResource(
 
         approveContract(contract, context.user)
         log.info("approved contract $contractId")
+
+        // TODO use transactional outbox
+        esAdapter.updateOffer(contractId, contract.contractState)
 
         Response.ok(contract).build()
     }

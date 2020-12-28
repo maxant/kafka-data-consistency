@@ -22,8 +22,8 @@ class CasesResource(
 ) {
 
     @GET
-    @Operation(summary = "get all cases including tasks, by referenceIds", description = "state should be one of *, OPEN or DONE")
-    @Path("/byReferenceIds/{state}")
+    @Operation(summary = "get all cases including tasks, by referenceIds", description = "taskState should be one of *, OPEN or DONE. only tasks matching, are returned.")
+    @Path("/byReferenceIds/{taskState}")
     fun getByReferenceIds(@Parameter(name = "state") @PathParam("state") stateString: String,
                           @Parameter(name = "referenceIds") @QueryParam("referenceIds") referenceIds: List<UUID>): Response {
         val cases = CaseEntity.Queries.selectByReferenceIds(em, referenceIds)

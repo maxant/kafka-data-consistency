@@ -5,6 +5,9 @@
 </div>
 
 <mf-contract :contract-id="model.id"></mf-contract>
+<div v-if="model.contract.offeredBy">Offered by {{model.contract.offeredBy}} at {{model.contract.offeredAt}}</div>
+<div v-if="model.contract.acceptedBy">Accepted by {{model.contract.acceptedBy}} at {{model.contract.acceptedAt}}</div>
+<div v-if="model.contract.approvedBy">Approved by {{model.contract.approvedBy}} at {{model.contract.approvedAt}}</div>
 <hr>
 <mf-partner v-for="partnerRelationship in model.partnerRelationships"
             :partner-id="partnerRelationship.partnerId"
@@ -80,8 +83,8 @@ const App = {
     },
     approveContract() {
         let self = this;
-        let url = CONTRACTS_BASE_URL + "/contracts/approve" + this.model.id;
-        let contract$ = fetchIt(url, "GET", this).then(r => {
+        let url = CONTRACTS_BASE_URL + "/contracts/approve/" + this.model.id;
+        let contract$ = fetchIt(url, "PUT", this).then(r => {
             self.timeTaken = new Date().getTime() - self.start;
             if(r.ok) {
                 console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);

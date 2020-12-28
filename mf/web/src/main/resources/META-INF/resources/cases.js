@@ -19,13 +19,13 @@ var template =
     <div>
         {{task.state}}
     </div>
-    <div v-if="security.getCurrentUser() == task.userId">
+    <div v-if="isTaskAssignedToUser(task)">
         Assigned to you
     </div>
     <div v-else>
         Assigned to: {{task.userId}}
     </div>
-    <div v-if="task.action && security.getCurrentUser() == task.userId">
+    <div v-if="task.action && isTaskAssignedToUser(task)">
         <button @click="callActionHandler(task)">{{getActionText(task.action)}}</button>
     </div>
 </div>
@@ -40,6 +40,9 @@ window.mfTask = {
     },
     callActionHandler(task) {
         cases.callActionHandler(task)
+    },
+    isTaskAssignedToUser(task) {
+        return security.getCurrentUser() == task.userId;
     }
   }
 }
