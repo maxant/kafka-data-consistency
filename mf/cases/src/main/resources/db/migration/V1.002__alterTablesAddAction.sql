@@ -1,0 +1,2 @@
+ALTER TABLE T_TASKS ADD COLUMN ACTION VARCHAR(50); -- an action which the UI can use to work out what to do when the task is clicked
+ALTER TABLE T_TASKS ADD COLUMN PARAMS JSON; -- Map<String,String> of data belonging to the task

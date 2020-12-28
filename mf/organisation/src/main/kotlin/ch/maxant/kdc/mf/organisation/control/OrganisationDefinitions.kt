@@ -25,7 +25,7 @@ object OUs {
 
     /** returns all staff, optionally matching the given role (null means all roles),
      * operating recursively down thru the kids of the given OU, or HEAD_OFFICE if none is provided */
-    fun getAllStaff(staffRole: StaffRole?, ou: OU = HEAD_OFFICE): MutableSet<Staff> {
+    fun getAllStaff(staffRole: StaffRole? = null, ou: OU = HEAD_OFFICE): MutableSet<Staff> {
         val staffList = mutableSetOf<Staff>()
         ou.getAllStaff(staffRole, staffList)
         return staffList

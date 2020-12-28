@@ -60,7 +60,9 @@ data class CreateTaskCommand(
         val referenceId: UUID, // used to locate the case
         val userId: String,
         val title: String,
-        val description: String
+        val description: String,
+        val action: String?,
+        val params: Map<String, String>
 )
 
 data class UpdateTaskCommand(

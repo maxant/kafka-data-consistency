@@ -2,9 +2,14 @@ package ch.maxant.kdc.mf.organisation.boundary
 
 import ch.maxant.kdc.mf.organisation.control.OUs
 import ch.maxant.kdc.mf.organisation.control.OUs.HEAD_OFFICE
+import ch.maxant.kdc.mf.organisation.control.Staff
 import ch.maxant.kdc.mf.organisation.control.StaffRole
 import org.eclipse.microprofile.openapi.annotations.Operation
+import org.eclipse.microprofile.openapi.annotations.media.Content
+import org.eclipse.microprofile.openapi.annotations.media.Schema
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses
 import java.util.*
 import javax.inject.Inject
 import javax.persistence.EntityManager
@@ -28,6 +33,17 @@ class OrganisationResource {
     @Path("/staffInRole/{role}")
     fun getStaffByRole(@Parameter(name = "role") @PathParam("role") role: StaffRole) =
         Response.ok(OUs.getAllStaff(role)).build()
+
+    @GET
+    @Operation(summary = "gets the staff member by the given partnerId")
+    @APIResponses(
+            APIResponse(description = "a staff member", responseCode = "200", content = [
+                Content(mediaType = MediaType.APPLICATION_JSON, schema = Schema(implementation = Staff::class))
+            ])
+    )
+    @Path("/staffByPartnerId/{partnerId}")
+    fun getStaffByPartnerId(@Parameter(name = "partnerId") @PathParam("partnerId") partnerId: UUID) =
+        Response.ok(OUs.getAllStaff().find { it.partnerId == partnerId }).build()
 
     @GET
     @Operation(summary = "gets all staff in a given role who can service the given postcode",

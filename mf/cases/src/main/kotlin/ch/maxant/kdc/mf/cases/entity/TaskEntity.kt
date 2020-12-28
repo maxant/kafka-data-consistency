@@ -31,10 +31,16 @@ class TaskEntity(
 
     @Column(name = "STATE", nullable = false)
     @Enumerated(EnumType.STRING)
-    var state: State
+    var state: State,
+
+    @Column(name = "ACTION")
+    var action: String?,
+
+    @Column(name = "PARAMS")
+    var params: String?
 
 ) {
-    constructor() : this(UUID.randomUUID(), UUID.randomUUID(), "", "", "", State.OPEN)
+    constructor() : this(UUID.randomUUID(), UUID.randomUUID(), "", "", "", State.OPEN, null, null)
 
     object NqSelectByCaseIds {
         const val name = "selectTaskByCaseIds"
@@ -60,6 +66,5 @@ class TaskEntity(
 
 enum class State {
     OPEN,
-
     DONE
 }

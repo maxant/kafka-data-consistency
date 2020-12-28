@@ -8,7 +8,10 @@ import ch.maxant.kdc.mf.cases.entity.CaseType
 import ch.maxant.kdc.mf.cases.entity.State
 import ch.maxant.kdc.mf.cases.entity.TaskEntity
 import ch.maxant.kdc.mf.library.AsyncContextAware
+import ch.maxant.kdc.mf.library.JacksonConfig
 import ch.maxant.kdc.mf.library.MessageBuilder
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.jboss.logging.Logger
@@ -18,6 +21,7 @@ import java.util.concurrent.CompletionStage
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
 import javax.persistence.EntityManager
+import kotlin.collections.HashMap
 
 @ApplicationScoped
 @SuppressWarnings("unused")
@@ -26,7 +30,10 @@ class CasesService(
         var em: EntityManager,
 
         @Inject
-        var messageBuilder: MessageBuilder
+        var messageBuilder: MessageBuilder,
+
+        @Inject
+        var om: ObjectMapper
 ) {
     @Inject // this doesnt appear to work in the constructor
     @Channel("cases-out")
@@ -52,7 +59,8 @@ class CasesService(
         val case = CaseEntity.Queries.selectByReferenceId(em, taskCommand.referenceId)
 
         val task = TaskEntity(UUID.randomUUID(), case.id, taskCommand.userId,
-                taskCommand.title, taskCommand.description, State.OPEN)
+                taskCommand.title, taskCommand.description, State.OPEN, taskCommand.action,
+                om.writeValueAsString(taskCommand.params))
 
         em.persist(task)
 
@@ -102,7 +110,13 @@ data class TaskDto(
         val userId: String,
         val title: String,
         val description: String,
-        val state: State
+        val state: State,
+        val action: String?,
+        val params: Map<String, String>?
 ) {
-    constructor(task: TaskEntity) : this(task.id, task.userId, task.title, task.description, task.state)
+    constructor(task: TaskEntity) : this(task.id, task.userId, task.title, task.description, task.state, task.action, toMap(task.params))
+}
+
+private fun toMap(s: String?): Map<String, String> {
+    return JacksonConfig.om.readValue<HashMap<String, String>>(s?:"{}")
 }

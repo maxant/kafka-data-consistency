@@ -6,5 +6,12 @@ data class CreateTaskCommand(
         val referenceId: UUID,
         val userId: String,
         val title: String,
-        val description: String
-)
+        val description: String,
+        val action: Action,
+        val params: Map<String, String>
+) {
+    enum class Action {
+        APPROVE_CONTRACT
+    }
+}
+

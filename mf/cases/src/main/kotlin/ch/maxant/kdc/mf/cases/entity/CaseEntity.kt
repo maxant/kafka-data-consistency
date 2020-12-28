@@ -35,7 +35,7 @@ class CaseEntity(
 
     object Queries {
         fun selectByReferenceId(em: EntityManager, referenceId: UUID) =
-                selectByReferenceIds(em, listOf(referenceId)).get(0)
+                selectByReferenceIds(em, listOf(referenceId)).first()
 
         fun selectByReferenceIds(em: EntityManager, referenceIds: List<UUID>): List<CaseEntity> {
             return em.createNamedQuery(NqSelectByReferenceIds.name, CaseEntity::class.java)

@@ -1,9 +1,9 @@
 package ch.maxant.kdc.mf.contracts.boundary
 
+import ch.maxant.kdc.mf.contracts.adapter.OrganisationAdapter
 import ch.maxant.kdc.mf.contracts.adapter.PartnerRelationshipsAdapter
 import ch.maxant.kdc.mf.contracts.adapter.PricingAdapter
 import ch.maxant.kdc.mf.contracts.control.EventBus
-import ch.maxant.kdc.mf.contracts.dto.CreateCaseCommand
 import ch.maxant.kdc.mf.contracts.dto.CreatePartnerRelationshipCommand
 import ch.maxant.kdc.mf.contracts.dto.CreateTaskCommand
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
@@ -17,7 +17,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import org.eclipse.microprofile.rest.client.inject.RestClient
 import org.jboss.logging.Logger
 import java.math.BigDecimal
-import java.net.URI
 import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
@@ -46,6 +45,10 @@ class ContractResource(
     @RestClient // bizarrely this doesnt work with constructor injection
     lateinit var pricingAdapter: PricingAdapter
 
+    @Inject
+    @RestClient // bizarrely this doesnt work with constructor injection
+    lateinit var organisationAdapter: OrganisationAdapter
+
     @ConfigProperty(name = "ch.maxant.kdc.mf.contracts.auto-approval-user", defaultValue = "auto-approval-user")
     lateinit var autoApprovalUser: String
 
@@ -55,10 +58,10 @@ class ContractResource(
     private val log = Logger.getLogger(this.javaClass)
 
     @GET
-    @Path("/{id}")
+    @Path("/{contractId}")
     @Secure
-    fun getById(@PathParam("id") id: UUID): Response {
-        val contract = em.find(ContractEntity::class.java, id)
+    fun getById(@PathParam("contractId") contractId: UUID): Response {
+        val contract = em.find(ContractEntity::class.java, contractId)
 /* TODO        CUSTOMER_OWNS_CONTRACT,
         OU_OWNS_CONTRACT,
         USER_IN_HEAD_OFFICE])
@@ -67,37 +70,43 @@ class ContractResource(
     }
 
     @PUT
-    @Path("/accept/{id}")
+    @Path("/accept/{contractId}")
     @Secure
     @Transactional
-    fun acceptOffer(@PathParam("id") id: UUID) = doByHandlingValidationExceptions {
+    fun acceptOffer(@PathParam("contractId") contractId: UUID) = doByHandlingValidationExceptions {
 
-        abacEnsureUserIsContractHolder(id)
+        abacEnsureUserIsContractHolder(contractId)
 
         // TODO validate like when offering? i guess only if stuff changed?
 
-        val contract = em.find(ContractEntity::class.java, id)
+        val contract = em.find(ContractEntity::class.java, contractId)
 
         acceptOffer(contract)
 
-        val rootComponentId = ComponentEntity.Queries.selectByContractId(em, id).find { it.parentId == null }!!.id
+        val rootComponentId = ComponentEntity.Queries.selectByContractId(em, contractId).find { it.parentId == null }!!.id
 
         if(pricingAdapter.totalPrice(listOf(rootComponentId), contract.end).total > BigDecimal("3.00")) {
             contract.contractState = ContractState.AWAITING_APPROVAL
-            log.info("contract $id too expensive for auto-approval")
-            // TODO needs a key, so the UI can do something with it!
-            // TODO assign to ?? based on org!
-            eventBus.publish(CreateTaskCommand(contract.id, "TODO_FROM_ORG", "Approve Contract", "Please approve contract $id"))
+            log.info("contract $contractId too expensive for auto-approval")
+            eventBus.publish(
+                    CreateTaskCommand(contract.id, getSalesRepUsername(contractId),
+                            "Approve Contract", "Please approve contract $contractId",
+                            CreateTaskCommand.Action.APPROVE_CONTRACT,
+                            mapOf(Pair("contractId", contractId.toString()))
+                    )
+            )
         } else {
             approveContract(contract, autoApprovalUser)
-            log.info("auto-approved contract $id")
+            log.info("auto-approved contract $contractId")
         }
 
         Response.ok(contract).build()
     }
 
     private fun acceptOffer(contract: ContractEntity) {
-        require(contract.contractState == ContractState.OFFERED) { "Contract is not in state ${ContractState.OFFERED}, but in state ${contract.contractState}" }
+        require(contract.contractState == ContractState.OFFERED) {
+            "Contract is not in state ${ContractState.OFFERED}, but in state ${contract.contractState}"
+        }
         contract.acceptedAt = LocalDateTime.now()
         contract.acceptedBy = context.user
         contract.contractState = ContractState.ACCEPTED
@@ -111,22 +120,19 @@ class ContractResource(
         contract.contractState = ContractState.RUNNING
     }
 
-    private fun abacEnsureUserIsContractHolder(id: UUID) {
+    private fun abacEnsureUserIsContractHolder(contractId: UUID) {
         val partnerId = context.jwt!!.claim<String>("partnerId").orElse(null)
         val role = CreatePartnerRelationshipCommand.Role.CONTRACT_HOLDER
-        if (!partnerRelationshipsAdapter.latestByForeignIdAndRole(id, role)
+        if (!partnerRelationshipsAdapter.latestByForeignIdAndRole(contractId, role)
                         .all { it.partnerId.toString() == partnerId }) {
-            throw NotAuthorizedException("you are not the contract holder of contract $id. " +
+            throw NotAuthorizedException("you are not the contract holder of contract $contractId. " +
                     "Only the contract holder may accept the contract.")
         }
     }
 
-    // TODO who calls this?!?! delete it
-    @POST
-    @Transactional
-    fun create(contractEntity: ContractEntity): Response {
-        em.persist(contractEntity)
-        return Response.created(URI.create("/${contractEntity.id}")).entity(contractEntity).build()
+    private fun getSalesRepUsername(contractId: UUID): String {
+        val role = CreatePartnerRelationshipCommand.Role.SALES_REP
+        val partnerId = partnerRelationshipsAdapter.latestByForeignIdAndRole(contractId, role).first().partnerId
+        return organisationAdapter.getStaffByPartnerId(partnerId).un
     }
-
 }

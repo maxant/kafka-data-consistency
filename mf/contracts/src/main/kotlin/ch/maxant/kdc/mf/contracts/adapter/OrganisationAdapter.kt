@@ -1,6 +1,5 @@
-package ch.maxant.kdc.mf.partners.adapter
+package ch.maxant.kdc.mf.contracts.adapter
 
-import ch.maxant.kdc.mf.partners.entity.Role
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient
 import java.util.*
 import javax.ws.rs.*
@@ -13,10 +12,11 @@ import javax.ws.rs.core.MediaType
 interface OrganisationAdapter {
 
     @GET
-    @Path("/staffInRole/{role}/{postcode}")
-    fun getStaffByRoleAndPostCode(@PathParam("role") role: Role, @PathParam("postcode") postcode: String): Staff
+    @Path("/staffByPartnerId/{partnerId}")
+    fun getStaffByPartnerId(@PathParam("partnerId") partnerId: UUID): Staff
 }
 
 data class Staff(
-    val partnerId: UUID
+    val partnerId: UUID,
+    val un: String
 )

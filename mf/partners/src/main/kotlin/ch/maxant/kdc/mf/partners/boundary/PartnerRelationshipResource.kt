@@ -56,7 +56,7 @@ class PartnerRelationshipResource(
         val latest = HashMap<String, PartnerRelationshipEntity>()
         allRelationships.forEach { r ->
             val key = r.foreignId + r.role
-            latest.computeIfAbsent(key) { _ -> r }
+            latest.computeIfAbsent(key) { r }
             latest.computeIfPresent(key) { _, existing -> if (existing.end > r.end) existing else r }
         }
         if(idsOnly) {
