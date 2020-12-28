@@ -15,7 +15,7 @@ object OUs {
     val FINANCES = OU(DN("Finances", listOf("finances")), listOf(
         // note how john is here, but also in head office
         JOHN
-    ), listOf(), listOf(), HEAD_OFFICE)
+    ), listOf(StaffRole.FINANCE_SPECIALIST), listOf(), HEAD_OFFICE)
     val BERN = OU(DN("Bern", listOf("bern")), listOf(
         JANE
     ), listOf(), listOf("3000"), HEAD_OFFICE)
@@ -60,7 +60,7 @@ class Staff(dn: DN, partnerId: UUID, staffRoles: List<StaffRole>, un: String, ps
 
     companion object {
         val JOHN = Staff(DN("John", listOf("")), fromString("3cd5b3b1-e740-4533-a526-2fa274350586"),
-                listOf(StaffRole.SALES_REP, StaffRole.FINANCE_SPECIALIST), "john.smith", "asdf"
+                listOf(StaffRole.SALES_REP), "john.smith", "asdf"
         )
         val JANE = Staff(DN("Jane", listOf("")), fromString("6c5aa3cd-0a07-4055-9cec-955900c6bea0"),
                 listOf(StaffRole.SALES_REP, StaffRole.ORDER_COMPLETION_CONSULTANT), "jane.smith", "asdf"
