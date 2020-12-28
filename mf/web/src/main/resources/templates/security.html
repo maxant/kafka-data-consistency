@@ -28,8 +28,7 @@ var overviewTable = {
   data: function(){
     return {
       model: { expandedKeys: {}, root: [] },
-      requestId: uuidv4(),
-      users
+      requestId: uuidv4()
     }
   },
   mounted() {
@@ -62,8 +61,14 @@ var overviewTable = {
 };
 
 const App = {
+  data: function(){
+    return {
+      users
+    }
+  },
   components: {
-    'overview-table': overviewTable
+    'overview-table': overviewTable,
+    'mf-users': mfUsers
   }
 }
 const app = Vue.createApp(App)

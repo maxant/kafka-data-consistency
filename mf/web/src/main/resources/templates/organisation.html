@@ -59,7 +59,7 @@ function setupModel(nodes, parentKey) {
         node.data = {
             name: node.dn.cn,
             inheritableRoles: node.inheritableRoles.join(";"),
-            staff: _(node.staff).map(s => s.dn.cn + " (" + s.roles.join(";") + ")").join("<br>"),
+            staff: _(node.staff).map(s => s.dn.cn + " (roles: " + s.roles.join(",") + "; inherited roles: " + _.difference(s.allStaffRolesInclInherited, s.roles).join(",") + ")").join("<br>"),
             postcodes: node.postcodes.join(",")
         };
         setupModel(node.children, node.key);
