@@ -22,7 +22,7 @@ class CorsFilter : Filter {
             // unclear if it belongs in allow-headers, or expose-headers: https://stackoverflow.com/a/44816592/458370
             res.addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, HEAD")
             res.addHeader("Access-Control-Allow-Headers", "www-authenticate, ${SecurityHeaderName}, content-type, elastic-apm-traceparent, $REQUEST_ID, $DEMO_CONTEXT")
-            res.addHeader("access-control-expose-headers", "www-authenticate, $REQUEST_ID")
+            res.addHeader("access-control-expose-headers", "www-authenticate, $REQUEST_ID") // TODO this doesnt work - no access to www-authenticate header :-(
             res.status = 200
         } else {
             chain.doFilter(request, response)
