@@ -67,6 +67,23 @@ class PartnerTemplate {
 }
 
 @ApplicationScoped
+@Path("/contract")
+@Produces(MediaType.TEXT_HTML)
+class ContractTemplate {
+
+    @Inject
+    lateinit var contract: Template
+
+    @GET
+    fun get(): TemplateInstance =
+            contract.instance()
+            .addStandardLibraries()
+            .addPvWidgets(listOf("dropdown"))
+            .addMfWidgets(listOf(Components.Contracts, Components.Partners))
+            .addMfComponents()
+}
+
+@ApplicationScoped
 @Path("/sales")
 @Produces(MediaType.TEXT_HTML)
 class SalesTemplate {
