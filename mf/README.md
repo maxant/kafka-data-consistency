@@ -161,15 +161,26 @@ Worth alerting on:
 - SEC-001 no process steps / roles found in security model that are capable of calling $fqMethodName. 
   If this method is called, it will always end in a security exception. To resolve this issue, update 
   the security model or delete the method, if it is no longer required.
+- SEC-002 TODO
+- SEC-003 TODO
 
 ## TODO
 
-- accept offer => event to billing
+- ES via kafka and then the relevant component, rather than a dedicated one
 - add partner (inline widget)
+  - add them to ES too
+- allow changing the quantity in the offer, so you can get under the approval threshold
+- billing
+  - accept offer => event to billing
+  - billing is an orchestrator which keeps its model in a global ktable and which uses tombstone records and compaction
+  - billing publishes event to world to inform contract component that the contract is active?
+  - add duration, day in year to bill, billing frequency => make customer pay for first period until next billing period according to config
+  - add daily billing job
+- search (based ES, so partners need to be in there too!)
+  - should we also have partner relations in there? so that if i search for augustus, i see all his contracts?
+  - nah, just start simple, add partners, so you can search them. then from the partner view you get their contracts
 - display existing draft so that you can continue working from there
 - change from external to internal, if you arent sure and need a consultation
-- allow changing the quantity in the offer, so you can get under the approval threshold
-- security and abac - finish impl checks for who can read a contract
 - add createdAt/By to all entities and order partner relationships by that and load only the latest ones
 - add a partner in postcode 3000 and see if jane becomes salesRep. same for janet in 1000.
 - timestamp - if we attempt to insert but a new version has already been applied, we need to ignore it and log it for alerting. or fail with an error? why not just use optimistic locking. whats on my bit of paper?
@@ -178,15 +189,15 @@ Worth alerting on:
 - pep, pip?, pdp
 - put some stuff into internal package in lib - does kotlin have support for this so that you cannot access it outside of the module?
 - show fat content and other params in portal
-- use qute for other SPAs: home
+- use qute for other SPAs: bookmarks
 - move sse and other standard things into vue components
 - security: do a view of all methods, and the roles and therefore the users which can run them
 - finish security.html
-- customer portal - add view of my contracts
 - https://zipkin.io/
 - how do cases and then PARTNER RELATIONSHIPS end up in the client, when they use contractId? ok coz of requestId?
 - add accepting and do validation of prices at that point. TRANSPORT still with kafka!
 - add the ability to fix errors, so that the user isnt blocked.
+- call the contract validation service when we load the draft, and provide problems to the client
 - "Must be processed by time X" as a header on messages, after which they are disposed of, since we know 
   the UI will deal with the timeout: in online processes the user will get a timeout. At that stage you 
   don't want to have to say, hey no idea whats still going to happen, rather we want to have a 
@@ -198,29 +209,25 @@ Worth alerting on:
   - cancel
   - etc
 - UI should show progress of updating, calcing discounts, calcing prices, partner relationships. widget can have knowledge of last one it waits for
-- call the contract validation service when we load the draft, and provide problems to the client
-- config inheritance - but only certain stuff makes sense, the rest doesnt
-- config deviations in cases where the sales team needs to specifically deviate from a normal customisation and it needs to be explicitly mentioned in the contract
+- component config inheritance - but only certain stuff makes sense, the rest doesnt
+- component config deviations in cases where the sales team needs to specifically deviate from a normal customisation and it needs to be explicitly mentioned in the contract
 - remove support for string messages in the pimp interceptor
 - introduce discounts, which adds an extra event => choreography vs orchestration, whats it say about that above?
-- create contract pdf
+  - easier to just add an age based discount directly to the root price
+  - saying that, we arleady have a market price for milk, so that means you always need to update the price, before going on to bill for the next period
 - calendar to select startTimestamp (rename start to startTimestamp too, coz of conflict in UI)
 - ok, we want pricing to listen to draft, and we dont want to orchestrate that from the UI. or do we?
 - add action to execute when task is completed or started (ie open UI, or do something)
-- billing
-  - billing is an orchestrator which keeps its model in a global ktable and which uses tombstone records and compaction
+- create contract pdf?
 - output
 - requisition orders
 - replace my cors with quarkus cors? can it do everything i need?
-- make sales ui sexier
 - components diff for warning user after changing to a different product release
 - additional info - to hang stuff external to the contract onto components
-- billing publishes event to world to inform contract component that the contract is active?
 - add a structure rule to components, to ensure there is always a bottle or container in a milk product
-- add duration, day in year to bill, billing frequency => make customer pay for first period until next billing period according to config
-- add daily billing job
 - error handling - https://github.com/cloudstark/quarkus-zalando-problem-extension
 - https://quarkus.io/guides/rest-data-panache
+- make sales ui sexier
 - use noArgs for jpa => in pom, but hot deploy doesnt work with mods to entity class
 - quarkus extension for lib in order to avoid reflection when loading @Secure - a) it wasnt working and b) this is a killer: Local Quarkus extension dependency ch.maxant.kdc.mf:library will not be hot-reloadable
 
