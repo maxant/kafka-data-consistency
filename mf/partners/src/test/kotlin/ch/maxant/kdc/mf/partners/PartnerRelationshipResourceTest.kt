@@ -58,7 +58,7 @@ class PartnerRelationshipResourceTest {
         }
 
         // when - contract holder
-        var response = sut.latestByForeignIdAndRole(false, foreignId, Role.CONTRACT_HOLDER)
+        var response = sut.latestByForeignIdAndRole(false, foreignId, Role.CONTRACT_HOLDER.toString())
 
         // then - contract holder
         var relationships = response.entity as List<PartnerRelationshipDetails>
@@ -69,7 +69,7 @@ class PartnerRelationshipResourceTest {
         assertEquals(p1id, relationships[0].partner!!.id)
 
         // when - sales rep
-        response = sut.latestByForeignIdAndRole(false, foreignId, Role.SALES_REP)
+        response = sut.latestByForeignIdAndRole(false, foreignId, Role.SALES_REP.toString())
 
         // then - sales rep
         relationships = response.entity as List<PartnerRelationshipDetails>
