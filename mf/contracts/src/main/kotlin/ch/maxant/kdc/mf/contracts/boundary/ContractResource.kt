@@ -4,6 +4,7 @@ import ch.maxant.kdc.mf.contracts.adapter.ESAdapter
 import ch.maxant.kdc.mf.contracts.adapter.OrganisationAdapter
 import ch.maxant.kdc.mf.contracts.adapter.PartnerRelationshipsAdapter
 import ch.maxant.kdc.mf.contracts.adapter.PricingAdapter
+import ch.maxant.kdc.mf.contracts.control.Abac
 import ch.maxant.kdc.mf.contracts.control.EventBus
 import ch.maxant.kdc.mf.contracts.dto.CompleteTasksCommand
 import ch.maxant.kdc.mf.contracts.dto.CreatePartnerRelationshipCommand
@@ -60,6 +61,9 @@ class ContractResource(
     @Inject
     lateinit var esAdapter: ESAdapter
 
+    @Inject
+    lateinit var abac: Abac
+
     private val log = Logger.getLogger(this.javaClass)
 
     @GET
@@ -67,10 +71,9 @@ class ContractResource(
     @Secure
     fun getById(@PathParam("contractId") contractId: UUID): Response {
         val contract = em.find(ContractEntity::class.java, contractId)
-/* TODO        CUSTOMER_OWNS_CONTRACT,
-        OU_OWNS_CONTRACT,
-        USER_IN_HEAD_OFFICE])
-   */
+
+        abac.ensureUserIsContractHolderOrUsersOuOwnsContractOrUserInHeadOffice(contractId)
+
         return Response.ok(contract).build()
     }
 
@@ -80,7 +83,7 @@ class ContractResource(
     @Transactional
     fun acceptOffer(@PathParam("contractId") contractId: UUID) = doByHandlingValidationExceptions {
 
-        abacEnsureUserIsContractHolder(contractId)
+        abac.ensureUserIsContractHolder(contractId)
 
         // TODO validate like when offering? i guess only if stuff changed?
 
@@ -127,26 +130,6 @@ class ContractResource(
         contract.contractState = ContractState.RUNNING
     }
 
-    private fun abacEnsureUserIsContractHolder(contractId: UUID) {
-        val partnerId = context.jwt!!.claim<String>("partnerId").orElse(null)
-        val role = CreatePartnerRelationshipCommand.Role.CONTRACT_HOLDER
-        if (!partnerRelationshipsAdapter.latestByForeignIdAndRole(contractId, role)
-                        .all { it.partnerId.toString() == partnerId }) {
-            throw NotAuthorizedException("you are not the contract holder of contract $contractId. " +
-                    "Only the contract holder may accept the contract.")
-        }
-    }
-
-    private fun abacEnsureUserIsSalesRep(contractId: UUID) {
-        val partnerId = context.jwt!!.claim<String>("partnerId").orElse(null)
-        val role = CreatePartnerRelationshipCommand.Role.SALES_REP
-        if (!partnerRelationshipsAdapter.latestByForeignIdAndRole(contractId, role)
-                        .all { it.partnerId.toString() == partnerId }) {
-            throw NotAuthorizedException("you are not the sales rep of contract $contractId. " +
-                    "Only the sales rep may approve the contract.")
-        }
-    }
-
     private fun getSalesRepUsername(contractId: UUID): String {
         val role = CreatePartnerRelationshipCommand.Role.SALES_REP
         val partnerId = partnerRelationshipsAdapter.latestByForeignIdAndRole(contractId, role).first().partnerId
@@ -159,7 +142,7 @@ class ContractResource(
     @Transactional
     fun approve(@PathParam("contractId") contractId: UUID) = doByHandlingValidationExceptions {
 
-        abacEnsureUserIsSalesRep(contractId)
+        abac.ensureUserIsSalesRep(contractId)
 
         // TODO validate like when offering? i guess only if stuff changed?
 

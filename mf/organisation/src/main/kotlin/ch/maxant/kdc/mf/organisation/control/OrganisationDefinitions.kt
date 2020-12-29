@@ -42,7 +42,7 @@ class DN(val cn: String, val dcs: List<String>)
 /**
  * @param un username
  */
-abstract class User(val dn: DN, val partnerId: UUID, val un: String, val pswd: String, val roles: List<Role>)
+abstract class User(val dn: DN, val partnerId: UUID, val un: String, @get:JsonIgnore val pswd: String, val roles: List<Role>)
 
 class Staff(dn: DN, partnerId: UUID, staffRoles: List<StaffRole>, un: String, pswd: String): User(dn, partnerId, un, pswd, staffRoles) {
     @get:JsonIgnore val ous = mutableListOf<OU>() // ignored since its a relationship back up to the parent which could cause infinite loops during serialisation
