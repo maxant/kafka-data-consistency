@@ -42,7 +42,7 @@ window.mfTask = {
         cases.callActionHandler(task)
     },
     isTaskAssignedToUser(task) {
-        return security.getCurrentUser() == task.userId;
+        return security.getCurrentUsername() == task.userId;
     }
   }
 }

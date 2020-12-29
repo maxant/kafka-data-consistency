@@ -17,16 +17,22 @@ private fun TemplateInstance.addStandardLibraries() =
         // also checkout the footer of this: https://primefaces.org/primevue/showcase/#/theming,
         // it says: PrimeVue 3.1.1 on Vue 3.0.3 by PrimeTek
         this.data("pvversion", "@3.1.1")
-            .data("vueversion", "3.0.4")
+            .data("vueversion", "@3.0.4")
+            .data("vuerouterversion", "@4.0.2")
             .data("primeiconsversion", "@4.1.0")
+            .data("rxjsversion", "@6.6.3")
 
 /** adds the given primevue widgets */
 private fun TemplateInstance.addPvWidgets(pvcomponents: List<String>) =
         this.data("pvcomponents", pvcomponents)
 
 /** adds the given milk factory widgets */
-private fun TemplateInstance.addMfWidgets(components: List<Components>) =
-        this.data("mfwidgets", listOf("users.js") + components.map { "${it.uiWidgetsJavascript}" })
+private fun TemplateInstance.addMfWidgets(components: List<Components>, additionalComponents: List<String> = listOf()) =
+        this.data("mfwidgets",
+                listOf("users.js")
+                    + components.map { "${it.uiWidgetsJavascript}" }
+                    + additionalComponents.map { "$it.js" }
+        )
 
 /** adds all the constants for the various microservice components in the landscape */
 private fun TemplateInstance.addMfComponents() =
@@ -44,8 +50,8 @@ class PortalTemplate {
     fun get(): TemplateInstance =
         portal.instance()
             .addStandardLibraries()
-            .addPvWidgets(listOf("calendar", "dropdown"))
-            .addMfWidgets(listOf(Components.Contracts, Components.Partners))
+            .addPvWidgets(listOf("calendar", "dropdown", "tabview", "tabpanel"))
+            .addMfWidgets(listOf(Components.Contracts, Components.Partners), listOf("portal-home", "portal-sales"))
             .addMfComponents()
 }
 

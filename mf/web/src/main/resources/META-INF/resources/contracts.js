@@ -1,4 +1,5 @@
 (function(){
+
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // display
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -6,7 +7,7 @@
 const template =
 // start template
 `
-<div style="border: 1px solid #999999; width: 350px; margin-bottom: 5px;">
+<div style="border: 1px solid #999999; width: 350px; margin-bottom: 5px;" v-if="fetchedContract && (fetchedContract.contractState != 'DRAFT' || !hideDrafts)">
     <div>
         <div v-if="fetchedContract">
             Contract: {{fetchedContract.id}}
@@ -36,62 +37,86 @@ const template =
                 State: {{fetchedContract.contractState}}
                 <i v-if="clickable" class="pi pi-eye" @click="navigateToContract()"></i>
             </div>
+            <div v-if="allowAcceptOffer && fetchedContract.contractState == 'OFFERED'">
+                <button @click="acceptOffer()">accept offer</button>
+            </div>
         </div>
     </div>
 </div>
 ` // end template
 
 window.mfContractTile = {
-  props: ['contractId', 'contract', 'clickable'],
-  template,
-  watch: {
-    contractId(newContractId, oldContractId) {
-        this.loadContract();
-    },
-    contract(newContract, oldContract) {
-        this.fetchedContract = newContract;
-    }
-  },
-  data() {
-    return {
-        fetchedContract: null,
-        error: null,
-        requestId: uuidv4()
-    }
-  },
-  mounted() {
-    if(!!this.contract) {
-        this.fetchedContract = this.contract;
-    } else if(!this.contractId) {
-        throw new Error("neither a contract nor a contractId was supplied to the contract widget");
-    } else { // client provided an ID and no model, so lets load it
-        return this.loadContract$();
-    }
-  },
-  methods: {
-    loadContract$: function() {
-      this.fetchedContract = null;
-      this.error = null;
-      let self = this;
-      let url = CONTRACTS_BASE_URL + "/contracts/" + this.contractId;
-      return fetchIt(url, "GET", this).then(r => {
-        if(r.ok) {
-            console.log("got contract " + self.contractId + " for requestId " + self.requestId);
-            self.fetchedContract = r.payload;
-        } else {
-            let msg = "Failed to get contract " + self.contractId + ": " + r.payload;
-            self.error = msg;
-            console.error(msg);
+    props: ['contractId', // if set, then the contract is loaded
+            'contract', // an object used to display the contract, in lieu of loading the contract from this widget
+            'clickable', // if true, then the widget has an icon for clicking on, to open it in the contract view
+            'allowAcceptOffer', // if true, then offers can be accepted with the click of a button
+            'hideDrafts' // if true, then drafts are not shown
+            ],
+    template,
+    watch: {
+        contractId(newContractId, oldContractId) {
+            this.loadContract$();
+        },
+        contract(newContract, oldContract) {
+            this.fetchedContract = newContract;
         }
-      }).catch(error => {
-        self.error = error;
-        console.log("received error: " + error);
-      });
     },
-    navigateToContract() {
-        window.location.href = '/contract?id=' + this.fetchedContract.id;
+    data() {
+        return {
+            fetchedContract: null,
+            error: null,
+            requestId: uuidv4()
+        }
+    },
+    mounted() {
+        if(!!this.contract) {
+            this.fetchedContract = this.contract;
+        } else if(!this.contractId) {
+            throw new Error("neither a contract nor a contractId was supplied to the contract widget");
+        } else { // client provided an ID and no model, so lets load it
+            return this.loadContract$();
+        }
+    },
+    methods: {
+        loadContract$: function() {
+            this.fetchedContract = null;
+            this.error = null;
+            let self = this;
+            let url = CONTRACTS_BASE_URL + "/contracts/" + this.contractId;
+            return fetchIt(url, "GET", this).then(r => {
+                if(r.ok) {
+                    console.log("got contract " + self.contractId + " for requestId " + self.requestId);
+                    self.fetchedContract = r.payload;
+                } else {
+                    let msg = "Failed to get contract " + self.contractId + ": " + r.payload;
+                    self.error = msg;
+                    console.error(msg);
+                }
+            }).catch(error => {
+                self.error = error;
+                console.log("received error: " + error);
+            });
+        },
+        navigateToContract() {
+            window.location.href = '/contract?id=' + this.fetchedContract.id;
+        },
+        acceptOffer() {
+            let self = this;
+            let url = CONTRACTS_BASE_URL + "/contracts/accept/" + this.fetchedContract.id;
+            fetchIt(url, "PUT", this).then(r => {
+                if(r.ok) {
+                    console.log("accepted contract " + this.fetchedContract.id + ", for requestId " + self.requestId);
+                    self.fetchedContract = r.payload;
+                } else {
+                    let msg = "Failed to accept contract: " + r.payload;
+                    console.error(msg);
+                    alert(msg);
+                }
+            }).catch(error => {
+                alert("received error: " + error);
+            });
+        }
     }
-  }
 }
 
 if(window.cases) { // not required in every UI which uses this library

@@ -85,8 +85,12 @@
             return currentJwt ? parseJwt(currentJwt) : undefined
         },
 
-        getCurrentUser: function() {
+        getCurrentUsername: function() {
             return currentUsername;
+        },
+
+        getCurrentUser: function() {
+            return _.find(users, u => u.un == currentUsername)
         }
     };
 })();

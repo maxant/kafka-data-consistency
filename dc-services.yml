@@ -18,6 +18,14 @@ services:
       - ./mf/cases/target:/project
     command:
       java -jar cases-1.0-SNAPSHOT-runner.jar -Xmx300m
+    extra_hosts:
+      - "contracts:192.168.1.151"
+      - "pricing:192.168.1.151"
+      - "web:192.168.1.151"
+      - "partners:192.168.1.213"
+      - "cases:192.168.1.213"
+      - "waitingroom:192.168.1.213"
+      - "organisation:192.168.1.213"
 
   kdc-mf-waitingroom:
     image: maxant/jdkrp
@@ -30,6 +38,14 @@ services:
       - ./mf/waitingroom/target:/project
     command:
       java -jar waitingroom-1.0-SNAPSHOT-runner.jar -Xmx300m
+    extra_hosts:
+      - "contracts:192.168.1.151"
+      - "pricing:192.168.1.151"
+      - "web:192.168.1.151"
+      - "partners:192.168.1.213"
+      - "cases:192.168.1.213"
+      - "waitingroom:192.168.1.213"
+      - "organisation:192.168.1.213"
 
   kdc-mf-organisation:
     image: maxant/jdkrp
@@ -42,3 +58,11 @@ services:
       - ./mf/organisation/target:/project
     command:
       java -jar organisation-1.0-SNAPSHOT-runner.jar -Xmx300m
+    extra_hosts:
+      - "contracts:192.168.1.151"
+      - "pricing:192.168.1.151"
+      - "web:192.168.1.151"
+      - "partners:192.168.1.213"
+      - "cases:192.168.1.213"
+      - "waitingroom:192.168.1.213"
+      - "organisation:192.168.1.213"

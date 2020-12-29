@@ -32,7 +32,7 @@ class Tokens {
                 .upn("${user.un}")
                 .subject(user.un)
                 .groups(user.roles.map { it.toString() }.toMutableSet())
-                .expiresAt(toInstant(now.plusMinutes(1)))
+                .expiresAt(toInstant(now.plusMinutes(15)))
                 .issuedAt(toInstant(now))
                 .claim("partnerId", user.partnerId)
         if(user is Partner) {

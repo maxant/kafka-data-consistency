@@ -35,7 +35,8 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.20/lodash.min.js"></script>
 
-    <script src="https://unpkg.com/vue@{vueversion}/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/vue{vueversion}/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/vue-router{vuerouterversion}/dist/vue-router.global.js"></script>
 
     <link href="https://unpkg.com/primevue{pvversion}/resources/themes/saga-blue/theme.css" rel="stylesheet">
     <link href="https://unpkg.com/primevue{pvversion}/resources/primevue.min.css" rel="stylesheet">
@@ -46,6 +47,8 @@
     <script src="https://unpkg.com/primevue{pvversion}/components/{pvc}/{pvc}.umd.min.js"></script>
     {/for}
 
+    <script src="https://unpkg.com/rxjs{rxjsversion}/bundles/rxjs.umd.min.js"></script>
+
     {#for mfw in mfwidgets }
     <script src="./{mfw}"></script>
     {/for}
@@ -54,9 +57,9 @@
 <h2>The Milk Factory :: {title}</h2>
 <div id="app">
     <div style="width: 100%; text-align: right; font-size: small;">
-        | <a href='/'>home</a>
-        | <a href='/sales'>sales</a>
+        | <a href='/'>bookmarks</a>
         | <a href='#' onclick="pingAll()">reload all microservices</a>
         | <mf-users :users="users"></mf-users>
         |
     </div>
+    <hr>
