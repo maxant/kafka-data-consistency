@@ -16,6 +16,7 @@ import ch.maxant.kdc.mf.library.Context
 import ch.maxant.kdc.mf.library.Secure
 import ch.maxant.kdc.mf.library.doByHandlingValidationExceptions
 import org.eclipse.microprofile.config.inject.ConfigProperty
+import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import org.eclipse.microprofile.rest.client.inject.RestClient
 import org.jboss.logging.Logger
@@ -64,6 +65,9 @@ class ContractResource(
     @Inject
     lateinit var abac: Abac
 
+    @Inject
+    lateinit var draftsResource: DraftsResource
+
     private val log = Logger.getLogger(this.javaClass)
 
     @GET
@@ -75,6 +79,17 @@ class ContractResource(
         abac.ensureUserIsContractHolderOrUsersOuOwnsContractOrUserInHeadOffice(contractId)
 
         return Response.ok(contract).build()
+    }
+
+    @PUT
+    @Path("/offerAndAccept/{contractId}")
+    @Operation(summary = "convenience method for contract holder so that they can offer and accept the contract in one step. can only be executed by the contract holder.")
+    @Secure
+    @Transactional
+    fun offerDraftAndAcceptOffer(@PathParam("contractId") contractId: UUID) = doByHandlingValidationExceptions {
+        abac.ensureUserIsContractHolder(contractId)
+        draftsResource.offerDraft(contractId)
+        this.acceptOffer(contractId)
     }
 
     @PUT
@@ -132,7 +147,7 @@ class ContractResource(
 
     private fun getSalesRepUsername(contractId: UUID): String {
         val role = CreatePartnerRelationshipCommand.Role.SALES_REP
-        val partnerId = partnerRelationshipsAdapter.latestByForeignIdAndRole(contractId, role).first().partnerId
+        val partnerId = partnerRelationshipsAdapter.latestByForeignIdAndRole(contractId, role.toString()).first().partnerId
         return organisationAdapter.getStaffByPartnerId(partnerId).un
     }
 

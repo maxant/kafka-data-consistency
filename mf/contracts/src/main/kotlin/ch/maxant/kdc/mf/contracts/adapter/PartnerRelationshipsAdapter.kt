@@ -24,11 +24,12 @@ interface PartnerRelationshipsAdapter {
     @Path("/latestByForeignId/{foreignId}/{role}")
     fun latestByForeignIdAndRole(
             @PathParam("foreignId") foreignId: UUID,
-            @PathParam("role") role: CreatePartnerRelationshipCommand.Role,
+            @PathParam("role") role: String,
             @QueryParam("idsOnly") idsOnly: Boolean = false
     ): List<PartnerRelationship>
 }
 
 data class PartnerRelationship(
-        val partnerId: UUID
+        val partnerId: UUID,
+        val role: String
 )

@@ -73,7 +73,8 @@ enum class ProcessSteps(val fqMethodNames: Set<String>) {
     )),
     OFFER(setOf(
         "ch.maxant.kdc.mf.contracts.boundary.ContractResource#getById",
-        "ch.maxant.kdc.mf.contracts.boundary.DraftsResource#offerDraft"
+        "ch.maxant.kdc.mf.contracts.boundary.DraftsResource#offerDraft",
+        "ch.maxant.kdc.mf.contracts.boundary.ContractResource#offerDraftAndAcceptOffer"
     )),
     ACCEPT(setOf(
         "ch.maxant.kdc.mf.contracts.boundary.ContractResource#getById",

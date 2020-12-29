@@ -86,10 +86,13 @@ const App = {
         console.log("offering contract...")
         this.currentAction = {action: "offerDraft"}
         let self = this;
-        let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/offer";
+        let url = CONTRACTS_BASE_URL + "/contracts/offerAndAccept/" + this.model.draft.contract.id;
         fetchIt(url, "PUT", this).then(r => {
-            if(r.ok) console.log("offered contract with id " + r.payload.id + ", for requestId " + self.requestId);
-            else {
+            if(r.ok) {
+                console.log("offered and accepted contract with id " + r.payload.id + ", for requestId " + self.requestId);
+alert("TODO navigate to external users home to view new offer, rather than jumping to the internal page!");
+                window.location.href = '/partner?id=' + self.user.id;
+            } else {
                 if(r.payload.class == "ch.maxant.kdc.mf.partners.boundary.NoRelationshipsFoundValidationException") {
                     alert("No partner relationships exist, please create a new offer");
                 } else if(r.payload.class == "ch.maxant.kdc.mf.partners.boundary.NotEnoughRelationshipsForForeignIdTypeValidationException") {
@@ -101,22 +104,6 @@ const App = {
                 }
                 ameliorateCurrentAction(self)
             }
-        }).then(offer => {
-            console.log("accepting offer");
-            self.allowOffer = false;
-            self.currentAction = {action: "acceptOffer"}
-            let url = CONTRACTS_BASE_URL + "/contracts/accept/" + self.model.draft.contract.id
-            return fetchIt(url, "PUT", self).then(r => {
-                if(r.ok) {
-                    console.log("accepted offer with id " + r.id + ", for requestId " + self.requestId);
-alert("TODO navigate to external users home to view new offer, rather than jumping to internal page!");
-                    window.location.href = '/partner?id=' + self.user.id;
-                } else {
-                    let msg = "Failed to accept offer: " + r.payload;
-                    console.error(msg);
-                    alert(msg);
-                }
-            });
         }).catch(error => {
             console.error("received error: " + error);
             ameliorateCurrentAction(self)

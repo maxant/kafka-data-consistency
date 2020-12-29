@@ -97,7 +97,6 @@ enum class Role(val minCardinality: Int, val maxCardinality: Int, val foreignIdT
     SALES_REP(1, Int.MAX_VALUE, ForeignIdType.CONTRACT),
     MARKETING_RECIPIENT(0, Int.MAX_VALUE, ForeignIdType.CONTRACT),
     ORDER_RECIPIENT(1, Int.MAX_VALUE, ForeignIdType.ORDER),
-    AFTER_SALES_REP(1, Int.MAX_VALUE, ForeignIdType.ORDER),
     SUPPLIER(1, Int.MAX_VALUE, ForeignIdType.ADDITIONAL_INFORMATION),
 }
 
