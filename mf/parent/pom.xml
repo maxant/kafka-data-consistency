@@ -190,7 +190,7 @@
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
-                    <jvmArgs>-Xmx200m</jvmArgs>
+                    <jvmArgs>-Xmx400m</jvmArgs>
                 </configuration>
                 <executions>
                     <execution>
