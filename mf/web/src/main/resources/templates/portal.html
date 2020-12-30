@@ -4,6 +4,7 @@
     <div id='nav'>
         | <router-link :to='{ name: "home" }'>Home</router-link>
         | <router-link :to='{ name: "sales"}'>Sales</router-link>
+        | <router-link :to='{ name: "demo"}'>Demo</router-link>
         |
     </div>
     <hr>
@@ -24,11 +25,15 @@ const App = {
 }
 
 const router = VueRouter.createRouter({
-  history: VueRouter.createWebHashHistory(),
+  history: VueRouter.createWebHashHistory(), // HASH => so that we dont have to use server support
   base: "/portal/",
   routes: [
-    { name: 'sales', path: '/sales',          component: mfPortalSales },
-    { name: 'home',  path: '/',               component: mfPortalHome  }
+    { name: 'sales',            path: '/sales',                        component: mfPortalSales           },
+    { name: 'order',            path: '/order',                        component: mfPortalOrder           },
+    { name: 'contract-details', path: '/contract-details/:contractId', component: mfPortalContractDetails },
+    { name: 'order-details',    path: '/order-details/:orderId',       component: mfPortalOrderDetails    },
+    { name: 'demo',             path: '/demo',                         component: mfPortalDemo            },
+    { name: 'home',             path: '/',                             component: mfPortalHome            }
   ]
 });
 

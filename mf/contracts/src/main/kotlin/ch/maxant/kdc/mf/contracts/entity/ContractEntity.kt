@@ -50,7 +50,6 @@ open class ContractEntity( // add open, rather than rely on maven plugin, becaus
 
         @Column(name = "APPROVED_BY")
         open var approvedBy: String?
-
 ) {
     /** for hibernate */
     constructor() : this(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, ContractState.DRAFT, 0, LocalDateTime.now(), "", null, null, null, null, null, null)
@@ -58,4 +57,7 @@ open class ContractEntity( // add open, rather than rely on maven plugin, becaus
     /** for initially creating a draft */
     constructor(id: UUID, start: LocalDateTime, end: LocalDateTime, createdBy: String) :
             this(id, start, end, ContractState.DRAFT, System.currentTimeMillis(), LocalDateTime.now(), createdBy, null, null, null, null, null, null)
+
+    @Transient
+    var components: List<ComponentEntity>? = null
 }

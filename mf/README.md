@@ -166,6 +166,7 @@ Worth alerting on:
 
 ## TODO
 
+- slot doesnt react to changes in underlying model
 - ES via kafka and then the relevant component, rather than a dedicated one
 - add partner (inline widget)
   - add them to ES too

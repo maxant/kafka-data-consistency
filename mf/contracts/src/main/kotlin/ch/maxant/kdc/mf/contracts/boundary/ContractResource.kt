@@ -73,10 +73,16 @@ class ContractResource(
     @GET
     @Path("/{contractId}")
     @Secure
-    fun getById(@PathParam("contractId") contractId: UUID): Response {
+    fun getById(@PathParam("contractId") contractId: UUID,
+                @QueryParam("withDetails") withDetails: Boolean = false
+    ): Response {
         val contract = em.find(ContractEntity::class.java, contractId)
 
         abac.ensureUserIsContractHolderOrUsersOuOwnsContractOrUserInHeadOffice(contractId)
+
+        if(withDetails) {
+            // TODO
+        }
 
         return Response.ok(contract).build()
     }

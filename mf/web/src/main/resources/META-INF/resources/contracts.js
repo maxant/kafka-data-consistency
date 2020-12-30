@@ -42,6 +42,7 @@ const template =
             </div>
         </div>
     </div>
+    <slot :theContract="fetchedContract"></slot>
 </div>
 ` // end template
 
@@ -50,8 +51,9 @@ window.mfContractTile = {
             'contract', // an object used to display the contract, in lieu of loading the contract from this widget
             'clickable', // if true, then the widget has an icon for clicking on, to open it in the contract view
             'allowAcceptOffer', // if true, then offers can be accepted with the click of a button
-            'hideDrafts' // if true, then drafts are not shown
-            ],
+            'hideDrafts', // if true, then drafts are not shown
+            'withDetails' // if true, then details are also fetched. none are displayed, but the slot can access them using "theContract"
+        ],
     template,
     watch: {
         contractId(newContractId, oldContractId) {
@@ -82,7 +84,7 @@ window.mfContractTile = {
             this.fetchedContract = null;
             this.error = null;
             let self = this;
-            let url = CONTRACTS_BASE_URL + "/contracts/" + this.contractId;
+            let url = CONTRACTS_BASE_URL + "/contracts/" + this.contractId + "?withDetails=" + (withDetails?true:false);
             return fetchIt(url, "GET", this).then(r => {
                 if(r.ok) {
                     console.log("got contract " + self.contractId + " for requestId " + self.requestId);

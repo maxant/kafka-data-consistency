@@ -22,7 +22,15 @@ var template =
 <mf-contract v-for="contractId in model.contractIds"
             :contract-id="contractId"
             allowAcceptOffer="true"
-            hideDrafts="true" >
+            hideDrafts="true"
+            #default="sp">
+    <div v-if="sp.theContract.contractState == 'RUNNING'">
+        <button @click="details(sp.theContract)">details</button>
+        &nbsp;
+        <button @click="terminate(sp.theContract)">terminate</button>
+        &nbsp;
+        <button @click="order(sp.theContract)">order</button>
+    </div>
 </mf-contract>
 
 ` // end template
@@ -84,6 +92,15 @@ window.mfPortalHome = {
             });
 
             return Promise.all([partner$, partnerRelationships$]);
+        },
+        details(contract){
+            this.$router.push({ name: 'contract-details', params: {contractId: contract.id } });
+        },
+        order(contract){
+            this.$router.push({ name: 'order', params: {contractId: contract.id } });
+        },
+        terminate(contract){
+            alert("TODO - terminate " + contract.id);
         }
     },
     components: {
