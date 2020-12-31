@@ -84,7 +84,7 @@ window.mfContractTile = {
             this.fetchedContract = null;
             this.error = null;
             let self = this;
-            let url = CONTRACTS_BASE_URL + "/contracts/" + this.contractId + "?withDetails=" + (withDetails?true:false);
+            let url = CONTRACTS_BASE_URL + "/contracts/" + this.contractId + "?withDetails=" + (this.withDetails?true:false);
             return fetchIt(url, "GET", this).then(r => {
                 if(r.ok) {
                     console.log("got contract " + self.contractId + " for requestId " + self.requestId);

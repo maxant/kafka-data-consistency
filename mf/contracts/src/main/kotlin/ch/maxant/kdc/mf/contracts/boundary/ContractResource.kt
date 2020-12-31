@@ -6,7 +6,9 @@ import ch.maxant.kdc.mf.contracts.adapter.PartnerRelationshipsAdapter
 import ch.maxant.kdc.mf.contracts.adapter.PricingAdapter
 import ch.maxant.kdc.mf.contracts.control.Abac
 import ch.maxant.kdc.mf.contracts.control.EventBus
+import ch.maxant.kdc.mf.contracts.definitions.Configuration
 import ch.maxant.kdc.mf.contracts.dto.CompleteTasksCommand
+import ch.maxant.kdc.mf.contracts.dto.Component
 import ch.maxant.kdc.mf.contracts.dto.CreatePartnerRelationshipCommand
 import ch.maxant.kdc.mf.contracts.dto.CreateTaskCommand
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
@@ -15,6 +17,8 @@ import ch.maxant.kdc.mf.contracts.entity.ContractState
 import ch.maxant.kdc.mf.library.Context
 import ch.maxant.kdc.mf.library.Secure
 import ch.maxant.kdc.mf.library.doByHandlingValidationExceptions
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
@@ -68,6 +72,9 @@ class ContractResource(
     @Inject
     lateinit var draftsResource: DraftsResource
 
+    @Inject
+    lateinit var om: ObjectMapper
+
     private val log = Logger.getLogger(this.javaClass)
 
     @GET
@@ -81,7 +88,10 @@ class ContractResource(
         abac.ensureUserIsContractHolderOrUsersOuOwnsContractOrUserInHeadOffice(contractId)
 
         if(withDetails) {
-            // TODO
+            contract.components = ComponentEntity
+                    .Queries
+                    .selectByContractId(em, contractId)
+                    .map { Component(om, it) }
         }
 
         return Response.ok(contract).build()

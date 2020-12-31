@@ -166,7 +166,6 @@ Worth alerting on:
 
 ## TODO
 
-- slot doesnt react to changes in underlying model
 - ES via kafka and then the relevant component, rather than a dedicated one
 - add partner (inline widget)
   - add them to ES too
@@ -433,7 +432,7 @@ Create new:
 
 ## Running tips
 
-    export MAVEN_OPTS="-Xmx700m"
+    export MAVEN_OPTS="-Xmx400m"
     mvn quarkus:dev -Ddebug=5006
 
     export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.9.11-0.el7_9.x86_64

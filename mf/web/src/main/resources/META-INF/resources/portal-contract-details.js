@@ -23,7 +23,16 @@ Contract Details - {{ $route.params.contractId }}
     <div>
         Approved by {{sp.theContract.approvedBy}} on {{sp.theContract.approvedAt}}
     </div>
-    <
+    <div>
+        <ul>
+            <li v-for="component in sp.theContract.components">
+                <div>{{component.componentDefinitionId}}</div>
+                <ul>
+                    <li v-for="config in component.configs">{{config.name}} {{config.value}} {{config.units}}</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
 </mf-contract>
 
 ` // end template
