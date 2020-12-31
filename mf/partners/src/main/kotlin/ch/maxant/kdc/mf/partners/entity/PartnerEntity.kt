@@ -41,6 +41,9 @@ class PartnerEntity(
 ) {
     constructor() : this(UUID.randomUUID(), "", "", PersonType.PERSON, LocalDate.now(), "", "")
 
+    @OneToMany(cascade = [CascadeType.PERSIST], orphanRemoval = false, fetch = FetchType.LAZY, mappedBy = "partner")
+    var addresses: MutableList<AddressEntity>? = null
+
     object NqSelectByFirstNameOrLastNameOrDobOrEmailOrPhone {
         const val name = "selectPartnerByFirstNameOrLastNameOrDobOrEmailOrPhone"
         const val firstNameParam = "firstName"

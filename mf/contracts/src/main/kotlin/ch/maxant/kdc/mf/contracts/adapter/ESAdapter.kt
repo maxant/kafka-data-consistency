@@ -6,6 +6,7 @@ import ch.maxant.kdc.mf.contracts.dto.Component
 import ch.maxant.kdc.mf.contracts.dto.Draft
 import ch.maxant.kdc.mf.contracts.entity.ContractState
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.eclipse.microprofile.faulttolerance.Retry
 import org.elasticsearch.client.Request
 import org.elasticsearch.client.RestClient
 import org.jboss.logging.Logger
@@ -27,6 +28,7 @@ class ESAdapter {
 
     val log: Logger = Logger.getLogger(this.javaClass)
 
+    @Retry(delay = 1000)
     fun createOffer(draft: Draft, partnerId: UUID?) {
         val request = Request(
                 "PUT",
@@ -34,6 +36,7 @@ class ESAdapter {
         val esContract = EsContract(draft, partnerId, flatten(draft.pack))
         request.setJsonEntity(om.writeValueAsString(esContract))
         performRequest(request, draft.contract.id)
+        log.info("inserted contract ${draft.contract.id} in elasticsearch")
     }
 
     private fun flatten(defn: ComponentDefinition, result: MutableList<ESComponent> = mutableListOf()): MutableList<ESComponent> {
@@ -42,6 +45,7 @@ class ESAdapter {
         return result
     }
 
+    @Retry(delay = 1000)
     fun updateOffer(contractId: UUID, allComponents: List<Component>) {
         val request = Request(
                 "POST",
@@ -68,8 +72,10 @@ class ESAdapter {
         params.replace("components", components)
         request.setJsonEntity(om.writeValueAsString(root))
         performRequest(request, contractId)
+        log.info("updated components of contract $contractId in elasticsearch")
     }
 
+    @Retry(delay = 1000)
     fun updateOffer(contractId: UUID, newState: ContractState) {
         val request = Request(
                 "POST",
@@ -84,6 +90,7 @@ class ESAdapter {
         params.put("state", newState.toString())
         request.setJsonEntity(om.writeValueAsString(root))
         performRequest(request, contractId)
+        log.info("updated status of contract $contractId in elasticsearch")
     }
 
     private fun performRequest(request: Request, contractId: UUID) {
@@ -94,9 +101,8 @@ class ESAdapter {
             if(statusCode < 200 || statusCode >= 300) {
                 throw WebApplicationException("failed to index contract in ES. ($statusCode) ${response.entity}")
             }
-            log.info("updated contract components $contractId in elasticsearch")
         } catch(e: ConnectException) {
-            throw WebApplicationException("failed to index contract in ES. no connection")
+            throw WebApplicationException("failed to index contract in ES. no connection", e)
         } catch(e: Exception) {
             if(e is WebApplicationException){
                 throw e

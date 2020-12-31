@@ -52,7 +52,9 @@ class PartnerService(
                 val primaryAddress = AddressEntity.Queries
                         .selectByPartnerId(em, command.partnerId)
                         .find { address -> address.type == AddressType.PRIMARY }
-                        ?: throw PartnerHasNoPrimaryAddressValidationException("Partner ${command.partnerId} has no primary address")
+                        ?: throw PartnerHasNoPrimaryAddressValidationException(
+                                "Partner ${command.partnerId} has no primary address " +
+                                        "and so no sales rep can be selected")
 
                 val salesRep = organisationAdapter.getStaffByRoleAndPostCode(Role.SALES_REP, primaryAddress.postcode)
 

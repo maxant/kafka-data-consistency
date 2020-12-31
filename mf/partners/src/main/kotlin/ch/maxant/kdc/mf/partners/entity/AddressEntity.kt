@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.partners.entity
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import org.hibernate.annotations.Type
 import java.time.LocalDate
 import java.util.*
@@ -17,9 +18,11 @@ class AddressEntity(
     @Type(type = "uuid-char")
     var id: UUID = UUID.randomUUID(),
 
-    @Column(name = "PARTNER_ID", updatable = false, nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "PARTNER_ID", updatable = false, nullable = false)
     @Type(type = "uuid-char")
-    var partnerId: UUID,
+    @field:JsonIgnore
+    var partner: PartnerEntity?,
 
     @Column(name = "STREET", nullable = false)
     var street: String,
@@ -44,14 +47,14 @@ class AddressEntity(
     var type: AddressType
 
 ) {
-    constructor() : this(UUID.randomUUID(), UUID.randomUUID(), "", "", "", "", "", "", AddressType.PRIMARY)
+    constructor() : this(UUID.randomUUID(), PartnerEntity(), "", "", "", "", "", "", AddressType.PRIMARY)
 
     object NqSelectByPartnerId {
         const val name = "selectAddressByPartnerId"
         const val partnerIdParam = "partnerId"
         const val query = """
                 from AddressEntity a
-                where a.partnerId = :$partnerIdParam
+                where a.partner.id = :$partnerIdParam
                 """
     }
 

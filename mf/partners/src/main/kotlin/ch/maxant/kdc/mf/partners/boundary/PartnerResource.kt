@@ -1,5 +1,7 @@
 package ch.maxant.kdc.mf.partners.boundary
 
+import ch.maxant.kdc.mf.library.doByHandlingValidationExceptions
+import ch.maxant.kdc.mf.partners.adapter.ESAdapter
 import ch.maxant.kdc.mf.partners.entity.AddressEntity
 import ch.maxant.kdc.mf.partners.entity.PartnerEntity
 import org.eclipse.microprofile.openapi.annotations.Operation
@@ -10,6 +12,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import org.eclipse.microprofile.openapi.annotations.tags.Tags
+import org.jboss.logging.Logger
 import java.net.URI
 import java.time.LocalDate
 import java.util.*
@@ -26,8 +29,12 @@ import javax.ws.rs.core.Response
 @Produces(MediaType.APPLICATION_JSON)
 class PartnerResource(
     @Inject
-    var em: EntityManager
+    var em: EntityManager,
+
+        @Inject
+        var esAdapter: ESAdapter
 ) {
+    val log: Logger = Logger.getLogger(this.javaClass)
 
     @GET
     @Path("/{id}")
@@ -68,10 +75,20 @@ class PartnerResource(
     )
     @Transactional
     @Produces(MediaType.TEXT_PLAIN)
-    fun create(@Parameter(name = "partner", required = true) partner: PartnerEntity) =
-        Response.created(URI("/partners/${partner.id}"))
-                .entity(fun (): UUID{ em.persist(partner); return partner.id }())
-                .build()!!
+    fun create(@Parameter(name = "partner", required = true) partner: PartnerEntity) = doByHandlingValidationExceptions {
+
+        log.info("creating new partner with id ${partner.id}")
+
+        partner.addresses?.forEach { it.partner = partner } // ensure references are setup
+
+        em.persist(partner)
+
+        // TODO use transactional outbox. or just use a command via kafka, since once its in there, we have a retry. we need to subscribe to it as we dont
+        // have any infrastructure to send kafka to ES
+        esAdapter.createPartner(partner)
+
+        Response.created(URI("/partners/${partner.id}")).entity(partner.id).build()!!
+    }
 }
 
 class DateOfBirth(dob: String?) {

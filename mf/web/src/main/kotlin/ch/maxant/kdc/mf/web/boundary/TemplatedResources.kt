@@ -70,7 +70,7 @@ class PartnerTemplate {
     fun get(): TemplateInstance =
             partner.instance()
             .addStandardLibraries()
-            .addPvWidgets(listOf("calendar", "dropdown"))
+            .addPvWidgets(listOf("calendar", "dropdown", "inputtext", "button"))
             .addMfWidgets(listOf(Components.Cases, Components.Contracts, Components.Partners))
             .addMfComponents()
 }
@@ -87,7 +87,7 @@ class ContractTemplate {
     fun get(): TemplateInstance =
             contract.instance()
             .addStandardLibraries()
-            .addPvWidgets(listOf("dropdown"))
+            .addPvWidgets(listOf("calendar", "dropdown", "inputtext", "button"))
             .addMfWidgets(listOf(Components.Contracts, Components.Partners))
             .addMfComponents()
 }
@@ -104,7 +104,7 @@ class SalesTemplate {
     fun get(): TemplateInstance =
             sales.instance()
             .addStandardLibraries()
-            .addPvWidgets(listOf("calendar", "dropdown"))
+            .addPvWidgets(listOf("calendar", "dropdown", "inputtext", "button"))
             .addMfWidgets(listOf(Components.Contracts, Components.Partners))
             .addMfComponents()
 }

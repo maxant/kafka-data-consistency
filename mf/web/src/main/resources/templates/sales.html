@@ -8,7 +8,9 @@
 </div>
 
 <div>
-    <mf-partner-select v-model="partner"></mf-partner-select>
+    <mf-partner-select :allow-create-new="true"
+                       @selected="partnerSelected" >
+    </mf-partner-select>
 </div>
 <div>
     <p-calendar v-model="model.startDate" :showIcon="true" placeholder="Select a date for your order"></p-calendar>
@@ -57,6 +59,9 @@
     (test if locked: <button @click="offerDraft()">offer draft</button>)
 </div>
 
+</span>
+</div>
+
 </div> |}{! end of app div !}{|
 <script>
 const forcibleErrors = [ {label: 'none', value: 'none'},
@@ -66,83 +71,49 @@ const forcibleErrors = [ {label: 'none', value: 'none'},
                         {label: 'technical error in pricing (Kafka)', value: 'technicalErrorInPricing'} ];
 
 const App = {
-  data() {
-    return {
-      partner: null,
-      model: {"draft": {"prices": {}}, "startDate": new Date(), salesRep: null},
-      start: 0,
-      timeTaken: 0,
-      requestId: uuidv4(),
-      source: null,
-      currentAction: null,
-      forcibleErrors,
-      forceError: forcibleErrors[0],
-      allowOffer: false,
-      users
-    }
-  },
-  mounted() {
-    window.model = this.model; // just for debugging purposes
-  },
-  methods: {
-    newDraft() {
-        if(!this.partner) {
-            alert("please select a partner");
-            return;
+    data() {
+        return {
+            partner: null,
+            model: {"draft": {"prices": {}}, "startDate": new Date(), salesRep: null},
+            start: 0,
+            timeTaken: 0,
+            requestId: uuidv4(),
+            source: null,
+            currentAction: null,
+            forcibleErrors,
+            forceError: forcibleErrors[0],
+            allowOffer: false,
+            users
         }
-
-        this.allowOffer = false;
-        let body = {
-          "productId": "COOKIES_MILKSHAKE",
-          "start": new Date(new Date().getTime() + 24*3600000).toISOString().substr(0,10),
-          "partnerId": this.partner.id
-        }
-        this.currentAction = {action: "newDraft"}
-
-        // subscribe before sending request to server, to ensure we receive ALL of the events, and any errors
-        sse(this.requestId, this);
-
-        let self = this;
-        let url = CONTRACTS_BASE_URL + "/drafts"
-        fetchIt(url, "POST", this, body).then(r => {
-            if(r.ok) console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
-            else {
-                let msg = "Failed to offer contract: " + r.payload;
-                console.error(msg);
-                alert(msg);
-                ameliorateCurrentAction(self)
+    },
+    mounted() {
+        window.model = this.model; // just for debugging purposes
+    },
+    methods: {
+        partnerSelected(partner) {
+            this.partner = partner;
+        },
+        newDraft() {
+            if(!this.partner) {
+                alert("please select a partner");
+                return;
             }
-        }).catch(error => {
-            console.error("received error: " + error);
-            ameliorateCurrentAction(self)
-        });
-    },
-    get(obj, path) {
-        // vue3 doesnt like seeing underscores in attribute values => so lets create an alias with this method
-        return _.get(obj, path);
-    },
-    getDistinctParamNames(configPossibilities) {
-        return _(configPossibilities).map("name").uniq().value()
-    },
-    getParamOptions(paramName, component) {
-        let vals = _(component.configPossibilities)
-                    .filter(c => c.name === paramName)
-                    .map("value")
-                    .value()
-        return vals;
-    },
-    changeParam(component, paramName, e) {
-        this.allowOffer = false;
-        let newValue = component.$configs[paramName].value
-        let oldValue = _(component.configs).find(c => c.name === paramName).value
-        if(newValue != oldValue) {
-            component.$configs[paramName].waiting = true // causes disabled
-            console.log("change param " + paramName + " on component " + component.componentId + " to " + newValue)
-            this.currentAction = {action: "changeParam", paramName, componentId: component.componentId, oldValue, newValue}
+
+            this.allowOffer = false;
+            let body = {
+                "productId": "COOKIES_MILKSHAKE",
+                "start": new Date(new Date().getTime() + 24*3600000).toISOString().substr(0,10),
+                "partnerId": this.partner.id
+            }
+            this.currentAction = {action: "newDraft"}
+
+            // subscribe before sending request to server, to ensure we receive ALL of the events, and any errors
+            sse(this.requestId, this);
+
             let self = this;
-            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/" + component.componentId + "/" + paramName + "/" + newValue;
-            fetchIt(url, "PUT", this).then(r => {
-                if(r.ok) console.log("updated contract with id " + r.payload.id + ", for requestId " + self.requestId);
+            let url = CONTRACTS_BASE_URL + "/drafts"
+            fetchIt(url, "POST", this, body).then(r => {
+                if(r.ok) console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
                 else {
                     let msg = "Failed to offer contract: " + r.payload;
                     console.error(msg);
@@ -153,48 +124,85 @@ const App = {
                 console.error("received error: " + error);
                 ameliorateCurrentAction(self)
             });
+        },
+        get(obj, path) {
+            // vue3 doesnt like seeing underscores in attribute values => so lets create an alias with this method
+            return _.get(obj, path);
+        },
+        getDistinctParamNames(configPossibilities) {
+            return _(configPossibilities).map("name").uniq().value()
+        },
+        getParamOptions(paramName, component) {
+            let vals = _(component.configPossibilities)
+                        .filter(c => c.name === paramName)
+                        .map("value")
+                        .value()
+            return vals;
+        },
+        changeParam(component, paramName, e) {
+            this.allowOffer = false;
+            let newValue = component.$configs[paramName].value
+            let oldValue = _(component.configs).find(c => c.name === paramName).value
+            if(newValue != oldValue) {
+                component.$configs[paramName].waiting = true // causes disabled
+                console.log("change param " + paramName + " on component " + component.componentId + " to " + newValue)
+                this.currentAction = {action: "changeParam", paramName, componentId: component.componentId, oldValue, newValue}
+                let self = this;
+                let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/" + component.componentId + "/" + paramName + "/" + newValue;
+                fetchIt(url, "PUT", this).then(r => {
+                    if(r.ok) console.log("updated contract with id " + r.payload.id + ", for requestId " + self.requestId);
+                    else {
+                        let msg = "Failed to offer contract: " + r.payload;
+                        console.error(msg);
+                        alert(msg);
+                        ameliorateCurrentAction(self)
+                    }
+                }).catch(error => {
+                    console.error("received error: " + error);
+                    ameliorateCurrentAction(self)
+                });
+            }
+        },
+        offerDraft() {
+            this.allowOffer = false;
+            console.log("offering contract...")
+            this.currentAction = {action: "offerDraft"}
+            let self = this;
+            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/offer";
+            fetchIt(url, "PUT", this).then(r => {
+                if(r.ok) console.log("offered contract with id " + r.payload.id + ", for requestId " + self.requestId);
+                else {
+                    if(r.payload.class == "ch.maxant.kdc.mf.partners.boundary.NoRelationshipsFoundValidationException") {
+                        alert("No partner relationships exist, please create a new offer");
+                    } else if(r.payload.class == "ch.maxant.kdc.mf.partners.boundary.NotEnoughRelationshipsForForeignIdTypeValidationException") {
+                        alert("A partner relationship is missing: " + r.payload.data);
+                    } else {
+                        let msg = "Failed to offer contract: " + r.payload;
+                        console.error(msg);
+                        alert(msg);
+                    }
+                    ameliorateCurrentAction(self)
+                }
+            }).catch(error => {
+                console.error("received error: " + error);
+                ameliorateCurrentAction(self)
+            });
+        },
+        getDemoContext() {
+            return JSON.stringify( { forceError: this.forceError.value } )
         }
     },
-    offerDraft() {
-        this.allowOffer = false;
-        console.log("offering contract...")
-        this.currentAction = {action: "offerDraft"}
-        let self = this;
-        let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/offer";
-        fetchIt(url, "PUT", this).then(r => {
-            if(r.ok) console.log("offered contract with id " + r.payload.id + ", for requestId " + self.requestId);
-            else {
-                if(r.payload.class == "ch.maxant.kdc.mf.partners.boundary.NoRelationshipsFoundValidationException") {
-                    alert("No partner relationships exist, please create a new offer");
-                } else if(r.payload.class == "ch.maxant.kdc.mf.partners.boundary.NotEnoughRelationshipsForForeignIdTypeValidationException") {
-                    alert("A partner relationship is missing: " + r.payload.data);
-                } else {
-                    let msg = "Failed to offer contract: " + r.payload;
-                    console.error(msg);
-                    alert(msg);
-                }
-                ameliorateCurrentAction(self)
-            }
-        }).catch(error => {
-            console.error("received error: " + error);
-            ameliorateCurrentAction(self)
-        });
-    },
-    getDemoContext() {
-        return JSON.stringify( { forceError: this.forceError.value } )
+    components: {
+        'p-calendar': calendar,
+        'p-dropdown': dropdown,
+        'mf-partner-select': mfPartnerSelect,
+        'mf-partner': mfPartnerTile,
+        'mf-contract': mfContractTile,
+        'mf-users': mfUsers
     }
-  },
-  components: {
-    'p-calendar': calendar,
-    'p-dropdown': dropdown,
-    'mf-partner-select': mfPartnerSelect,
-    'mf-partner': mfPartnerTile,
-    'mf-contract': mfContractTile,
-    'mf-users': mfUsers
-  }
 }
 const app = Vue.createApp(App)
-app.use(primevue);
+app.use(primevue, {ripple: true});
 app.mount("#app")
 
 function addPrice(component, id, price) {

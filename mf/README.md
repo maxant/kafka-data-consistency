@@ -166,9 +166,6 @@ Worth alerting on:
 
 ## TODO
 
-- ES via kafka and then the relevant component, rather than a dedicated one
-- add partner (inline widget)
-  - add them to ES too
 - allow changing the quantity in the offer, so you can get under the approval threshold
 - billing
   - accept offer => event to billing
@@ -179,6 +176,7 @@ Worth alerting on:
 - search (based ES, so partners need to be in there too!)
   - should we also have partner relations in there? so that if i search for augustus, i see all his contracts?
   - nah, just start simple, add partners, so you can search them. then from the partner view you get their contracts
+- ES via kafka and then the relevant component, rather than a dedicated one
 - display existing draft so that you can continue working from there
 - change from external to internal, if you arent sure and need a consultation
 - add createdAt/By to all entities and order partner relationships by that and load only the latest ones
@@ -423,7 +421,19 @@ Create new:
                 "dob": { "type": "date", "format": "strict_date" },
                 "email": { "type": "text", "analyzer": "ants_analyzer" },
                 "phone": { "type": "text", "analyzer": "ants_analyzer" },
-                "type": { "type": "text", "analyzer": "ants_analyzer" }
+                "type": { "type": "text", "analyzer": "ants_analyzer" },
+                "addresses": {
+                    "type": "nested",
+                    "properties": {
+                        "street": { "type": "text", "analyzer": "ants_analyzer" },
+                        "houseNumber": { "type": "text" },
+                        "postcode": { "type": "text" },
+                        "city": { "type": "text", "analyzer": "ants_analyzer" },
+                        "state": { "type": "text", "analyzer": "ants_analyzer" },
+                        "country": { "type": "text", "analyzer": "ants_analyzer" },
+                        "type": { "type": "text" }
+                    }
+                }
             }
         }
     }

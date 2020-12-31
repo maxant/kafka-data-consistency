@@ -5,53 +5,179 @@
 var template =
 // start template
 `
-<p-dropdown :options="partners"
-           optionLabel="$name"
-           v-model="partner"
-           placeholder="Select a partner"
->
-</p-dropdown>
+<div>
+    <p-dropdown :options="partners"
+               optionLabel="$name"
+               v-model="partner"
+               placeholder="Select a partner"
+    >
+    </p-dropdown>
+    <div v-if="partner && partner.id === 0">
+        <h3>Add a new partner</h3>
+        <div class="p-field">
+            <label for="firstName">First Name</label>
+            <p-inputtext id="firstName" v-model="newPartner.firstName" required />
+            <small v-show="newPartner.$validationErrors.firstName && newPartner.$submitted" class="p-error"><br>First name is required.</small>
+        </div>
+        <div class="p-field">
+            <label for="lastname">Last Name</label>
+            <p-inputtext id="lastname" v-model="newPartner.lastName" />
+            <small v-show="newPartner.$validationErrors.lastName && newPartner.$submitted" class="p-error"><br>Last name is required.</small>
+        </div>
+        <div class="p-field">
+            <label for="dob">Date of birth</label>
+            <p-calendar id="dob" v-model="newPartner.dob" :showIcon="true"></p-calendar>
+            <small v-show="newPartner.$validationErrors.dob && newPartner.$submitted" class="p-error"><br>Date of birth is required.</small>
+        </div>
+        <div class="p-field">
+            <label for="street">Street</label>
+            <p-calendar id="street" v-model="newPartner.addresses[0].street" :showIcon="true"></p-calendar>
+            <small v-show="newPartner.$validationErrors.street && newPartner.$submitted" class="p-error"><br>Street is required.</small>
+        </div>
+        <div class="p-field">
+            <label for="postcode">Postcode</label>
+            <p-dropdown :options="['1000', '3000', '7000']"
+                       v-model="newPartner.addresses[0].postcode"
+                       placeholder="Select a postcode"
+            >
+            </p-dropdown>
+            <small v-show="newPartner.$validationErrors.postcode && newPartner.$submitted" class="p-error"><br>Postcode is required.</small>
+        </div>
+        <div class="p-field">
+            <span>
+                <p-button label="ok" @click="createNewPartner()"/>
+            </span>
+            <span>
+                <p-button label="cancel" @click="partner = null"/>
+            </span>
+        </div>
+    </div>
+</div>
 ` // end template
 
 window.mfPartnerSelect = {
-  template,
-  data: function(){
-    return {
-        partners: [],
-        partner: null,
-        requestId: uuidv4()
-    }
-  },
-  mounted() {
-    this.initialise();
-  },
-  methods: {
-    initialise() {
-      let self = this;
-      let url = PARTNERS_BASE_URL + "/partners/search"
-      fetchIt(url, "GET", this).then(r => {
-          if(r.ok) {
-              console.log("got partners for requestId " + this.requestId);
-              let ps = _.sortBy(r.payload, ['lastName', 'firstName', 'dob']);
-              _.forEach(ps, p => p.$name = p.firstName + " " + p.lastName + " (" + p.dob + " - " + p.id + ")")
-              self.partners = ps;
-          } else {
-              let msg = "Failed to get partners: " + r.payload;
-              console.error(msg);
-              alert(msg);
-          }
-      }).catch(error => {
-          console.error("received error: " + error);
-      });
+    props: ['allowCreateNew' // if true, then there is an option to add a new partner, at the top of the list
+    ],
+    template,
+    watch: {
+        partner(newPartner, oldPartner) {
+            if(newPartner && newPartner.id !== 0) {
+                this.$emit('selected', newPartner);
+            }
+        }
     },
-  },
-  components: {
-    'p-dropdown': dropdown
-  }
+    data() {
+        return {
+            partners: [],
+            partner: null,
+            newPartner: {
+                firstName: '',
+                lastName: '',
+                type: 'PERSON',
+                dob: new Date(1980, 0, 1, 12),
+                email: '',
+                phone: '',
+                addresses: [{
+                    street: 'Surlough Street',
+                    houseNumber: '4b',
+                    postcode: '3000',
+                    city: 'Llandudno',
+                    state: 'Wales',
+                    country: 'UK',
+                    type: 'PRIMARY'
+                }],
+                $validationErrors: {},
+                $submitted: false
+            },
+            requestId: uuidv4()
+        }
+    },
+    mounted() {
+        this.initialise();
+    },
+    methods: {
+        initialise() {
+            let self = this;
+            let url = PARTNERS_BASE_URL + "/partners/search"
+            return fetchIt(url, "GET", this).then(r => {
+                if(r.ok) {
+                    console.log("got partners for requestId " + this.requestId);
+                    let ps = _.sortBy(r.payload, ['lastName', 'firstName', 'dob']);
+                    _.forEach(ps, p => p.$name = p.firstName + " " + p.lastName + " (" + p.dob + " - " + p.id + ")");
+                    if(this.allowCreateNew) {
+                        ps.unshift({$name: "create new...", id: 0});
+                    }
+                    self.partners = ps;
+                } else {
+                    let msg = "Failed to get partners: " + r.payload;
+                    console.error(msg);
+                    alert(msg);
+                }
+            }).catch(error => {
+                console.error("received error: " + error);
+            });
+        },
+        createNewPartner() {
+            this.newPartner.$submitted = true;
+            if (this.validateForm()) {
+                let self = this;
+                let url = PARTNERS_BASE_URL + "/partners"
+                return fetchIt(url, "POST", this, this.newPartner, true).then(r => {
+                    if(r.ok) {
+                        console.log("created new partner " + r.payload + " for requestId " + this.requestId);
+                        return this.initialise.call(self).then(() => {
+                            // now select the new partner in the dropdown
+                            self.partner = _.find(self.partners, (p) => { return p.id == r.payload });
+                        });
+                    } else {
+                        let msg = "Failed to create partner: " + r.payload;
+                        console.error(msg);
+                        alert(msg);
+                    }
+                }).catch(error => {
+                    console.error("received error: " + error);
+                });
+            }
+        },
+        validateForm() {
+            if (!this.newPartner.firstName.trim())
+                this.newPartner.$validationErrors.firstName = true;
+            else
+                delete this.newPartner.$validationErrors.firstName;
+
+            if (!this.newPartner.lastName.trim())
+                this.newPartner.$validationErrors.lastName = true;
+            else
+                delete this.newPartner.$validationErrors.lastName;
+
+            if (!this.newPartner.dob)
+                this.newPartner.$validationErrors.dob = true;
+            else
+                delete this.newPartner.$validationErrors.dob;
+
+            if (!this.newPartner.addresses[0].street)
+                this.newPartner.$validationErrors.street = true;
+            else
+                delete this.newPartner.$validationErrors.street;
+
+            if (!this.newPartner.addresses[0].postcode)
+                this.newPartner.$validationErrors.postcode = true;
+            else
+                delete this.newPartner.$validationErrors.postcode;
+
+            return !Object.keys(this.newPartner.$validationErrors).length;
+        }
+    },
+    components: {
+        'p-dropdown': dropdown,
+        'p-calendar': calendar,
+        'p-inputtext': inputtext,
+        'p-button': button
+    }
 }
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// display
+// display partner tile
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // TODO responsive, columns, etc.
 template =
