@@ -4,7 +4,7 @@
     Fetched in {{ timeTaken }}ms
 </div>
 
-<mf-contract v-if="model.contract.id" :contract="model.contract"></mf-contract>
+<mf-contract v-if="model.contract.id" :contract="model.contract" allow-accept-offer="true"></mf-contract>
 <div v-if="model.contract.offeredBy">Offered by {{model.contract.offeredBy}} at {{model.contract.offeredAt}}</div>
 <div v-if="model.contract.acceptedBy">Accepted by {{model.contract.acceptedBy}} at {{model.contract.acceptedAt}}</div>
 <div v-if="model.contract.approvedBy">Approved by {{model.contract.approvedBy}} at {{model.contract.approvedAt}}</div>
@@ -29,81 +29,81 @@ var id = urlParams.get('id');
 console.log("using id from url: " + id);
 
 const App = {
-  data() {
-    return {
-      model: { id, contract: {}, tasks: [] },
-      start: 0,
-      timeTaken: 0,
-      requestId: uuidv4(),
-      users
-    }
-  },
-  mounted() {
-    window.model = this.model; // just for debugging purposes
-    eventHub.on(LOGGED_IN, (username) => {
-        // re-fetch when trying a different user, to e.g. re-render how tasks are shown for
-        // that user, as well as re-check security
-        this.fetchContract();
-    });
-  },
-  methods: {
-    fetchContract() {
-        let self = this;
-        let url = CONTRACTS_BASE_URL + "/contracts/" + this.model.id;
-        let contract$ = fetchIt(url, "GET", this).then(r => {
-            self.timeTaken = new Date().getTime() - self.start;
-            if(r.ok) {
-                console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
-                self.model.contract = r.payload;
-            } else {
-                let msg = "Failed to get contract: " + r.payload;
-                console.error(msg);
-                alert(msg);
-            }
-        }).catch(error => {
-            alert("received error: " + error);
-        });
-
-        url = PARTNERS_BASE_URL + "/partner-relationships/latestByForeignId/" + this.model.id + "/*?idsOnly=false";
-        let partnerRelationships$ = fetchIt(url, "GET", this).then(r => {
-            self.timeTaken = new Date().getTime() - self.start;
-            if(r.ok) {
-                console.log("got partner-relationships, for requestId " + self.requestId);
-                self.model.partnerRelationships = r.payload;
-            } else {
-                let msg = "Failed to get partner relationships: " + r.payload;
-                console.error(msg);
-                alert(msg);
-            }
-        }).catch(error => {
-            alert("received error: " + error);
-        });
-
-        return Promise.all([contract$, partnerRelationships$]);
+    data() {
+        return {
+            model: { id, contract: {}, tasks: [] },
+            start: 0,
+            timeTaken: 0,
+            requestId: uuidv4(),
+            users
+        }
     },
-    approveContract() {
-        let self = this;
-        let url = CONTRACTS_BASE_URL + "/contracts/approve/" + this.model.id;
-        let contract$ = fetchIt(url, "PUT", this).then(r => {
-            self.timeTaken = new Date().getTime() - self.start;
-            if(r.ok) {
-                console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
-                self.model.contract = r.payload;
-            } else {
-                let msg = "Failed to get contract: " + r.payload;
-                console.error(msg);
-                alert(msg);
-            }
-        }).catch(error => {
-            alert("received error: " + error);
+    mounted() {
+        window.model = this.model; // just for debugging purposes
+        eventHub.on(LOGGED_IN, (username) => {
+            // re-fetch when trying a different user, to e.g. re-render how tasks are shown for
+            // that user, as well as re-check security
+            this.fetchContract();
         });
+    },
+    methods: {
+        fetchContract() {
+            let self = this;
+            let url = CONTRACTS_BASE_URL + "/contracts/" + this.model.id;
+            let contract$ = fetchIt(url, "GET", this).then(r => {
+                self.timeTaken = new Date().getTime() - self.start;
+                if(r.ok) {
+                    console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
+                    self.model.contract = r.payload;
+                } else {
+                    let msg = "Failed to get contract: " + r.payload;
+                    console.error(msg);
+                    alert(msg);
+                }
+            }).catch(error => {
+                alert("received error: " + error);
+            });
+
+            url = PARTNERS_BASE_URL + "/partner-relationships/latestByForeignId/" + this.model.id + "/*?idsOnly=false";
+            let partnerRelationships$ = fetchIt(url, "GET", this).then(r => {
+                self.timeTaken = new Date().getTime() - self.start;
+                if(r.ok) {
+                    console.log("got partner-relationships, for requestId " + self.requestId);
+                    self.model.partnerRelationships = r.payload;
+                } else {
+                    let msg = "Failed to get partner relationships: " + r.payload;
+                    console.error(msg);
+                    alert(msg);
+                }
+            }).catch(error => {
+                alert("received error: " + error);
+            });
+
+            return Promise.all([contract$, partnerRelationships$]);
+        },
+        approveContract() {
+            let self = this;
+            let url = CONTRACTS_BASE_URL + "/contracts/approve/" + this.model.id;
+            let contract$ = fetchIt(url, "PUT", this).then(r => {
+                self.timeTaken = new Date().getTime() - self.start;
+                if(r.ok) {
+                    console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
+                    self.model.contract = r.payload;
+                } else {
+                    let msg = "Failed to get contract: " + r.payload;
+                    console.error(msg);
+                    alert(msg);
+                }
+            }).catch(error => {
+                alert("received error: " + error);
+            });
+        }
+    },
+    components: {
+        'mf-partner': mfPartnerTile,
+        'mf-contract': mfContractTile,
+        'mf-users': mfUsers
     }
-  },
-  components: {
-    'mf-partner': mfPartnerTile,
-    'mf-contract': mfContractTile,
-    'mf-users': mfUsers
-  }
 }
 const app = Vue.createApp(App)
 app.use(primevue);

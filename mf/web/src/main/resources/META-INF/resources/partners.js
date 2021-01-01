@@ -6,14 +6,16 @@ var template =
 // start template
 `
 <div>
-    <p-dropdown
+    <p-autocomplete
                id="partnerselectdropdown"
-               :options="partners"
-               optionLabel="$name"
                v-model="partner"
+               :suggestions="partners"
+               @complete="search($event)"
+               field="$name"
                placeholder="Select a partner"
+               minLength=3
     >
-    </p-dropdown>
+    </p-autocomplete>
     <div v-if="partner && partner.id === 0">
         <h3>Add a new partner</h3>
         <div class="p-field">
@@ -72,7 +74,7 @@ window.mfPartnerSelect = {
     template,
     watch: {
         partner(newPartner, oldPartner) {
-            if(newPartner && newPartner.id !== 0) {
+            if(newPartner && newPartner.id) {
                 this.$emit('selected', newPartner);
             }
         }
@@ -110,32 +112,37 @@ window.mfPartnerSelect = {
         this.maxDob.setFullYear(this.maxDob.getFullYear() - 18);
         this.dobYearRange = this.minDob.getFullYear() + ":" + this.maxDob.getFullYear();
     },
-    mounted() {
-        this.initialise();
-    },
     methods: {
-        initialise() {
-            let self = this;
-            let url = PARTNERS_BASE_URL + "/partners/search"
-            return fetchIt(url, "GET", this).then(r => {
-                if(r.ok) {
-                    console.log("got partners for requestId " + this.requestId);
-                    let ps = _.sortBy(r.payload, ['lastName', 'firstName', 'dob']);
-                    _.forEach(ps, p => p.$name = p.firstName + " " + p.lastName + " (" + p.dob + " - " + p.id + ")");
-                    if(this.allowCreateNew) {
-                        ps.unshift({$name: "create new...", id: 0});
-                    }
-                    self.partners = ps;
+		search(event) {
+            const self = this;
+            return fetch(ELASTICSEARCH_BASE_URL + "/partners/_search?q=" + encodeURIComponent(event.query), {"method": "GET"})
+            .then( r => {
+                if(r.status >= 200 && r.status < 300) {
+                    return r.json().then(body => {
+                        console.log("got partners");
+                        let ps = _.sortBy(body.hits.hits, ['lastName', 'firstName', 'dob']);
+                        ps = _.map(ps, p => p._source);
+                        _.forEach(ps, p => p.id = p.partnerId);
+                        _.forEach(ps, p => p.$name = getName(p));
+                        if(this.allowCreateNew) {
+                            ps.unshift({$name: "create new...", id: 0});
+                        }
+                        self.partners = ps;
+                    });
                 } else {
-                    let msg = "Failed to get partners: " + r.payload;
-                    console.error(msg);
-                    alert(msg);
+                    return r.text().then(body => {
+                        console.error("error getting search results. please try again"); // TODO handle this better
+                    });
                 }
             }).catch(error => {
-                console.error("received error: " + error);
+                console.error("error getting search results: " + error + ". please try again"); // TODO handle this better
             });
-        },
+		},
         createNewPartner() {
+            // if we already created one, it has an ID which we need to remove, so that the server can start from scratch
+            delete this.newPartner.id;
+            delete this.newPartner.partnerId;
+
             this.newPartner.$submitted = true;
             if (this.validateForm()) {
                 let self = this;
@@ -143,10 +150,11 @@ window.mfPartnerSelect = {
                 return fetchIt(url, "POST", this, this.newPartner, true).then(r => {
                     if(r.ok) {
                         console.log("created new partner " + r.payload + " for requestId " + this.requestId);
-                        return this.initialise.call(self).then(() => {
-                            // now select the new partner in the dropdown
-                            self.partner = _.find(self.partners, (p) => { return p.id == r.payload });
-                        });
+                        // now select the new partner in the dropdown
+                        self.newPartner.partnerId = r.payload;
+                        self.newPartner.id = self.newPartner.partnerId;
+                        self.newPartner.$name = getName(self.newPartner);
+                        self.partner = self.newPartner;
                     } else {
                         let msg = "Failed to create partner: " + r.payload;
                         console.error(msg);
@@ -188,10 +196,19 @@ window.mfPartnerSelect = {
     },
     components: {
         'p-dropdown': dropdown,
+        'p-autocomplete': autocomplete,
         'p-calendar': calendar,
         'p-inputtext': inputtext,
         'p-button': button
     }
+}
+
+function getName(p) {
+    let dob = p.dob;
+    if(typeof dob == "object") {
+        dob = dob.toISOString().substr(0, 10);
+    }
+    return p.firstName + " " + p.lastName + " (" + dob + " - " + p.id + ")";
 }
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -201,7 +218,7 @@ window.mfPartnerSelect = {
 template =
 // start template
 `
-<div style="border: 1px solid #999999; width: 350px; margin-top: 3px; margin-bottom: 5px;">
+<div style="border: 1px solid #999999; width: 450px; margin-top: 3px; margin-bottom: 5px;">
     <div v-if="error">
         Error loading partner<br>
         {{error}}
@@ -210,6 +227,10 @@ template =
         loading...
     </div>
     <div v-else>
+        <div>
+        <i class="pi pi-user"></i>
+        Partner: {{partnerId}}
+        </div>
         <div v-if="isSalesRep()">
             Sales Representative: {{partner.firstName}} {{partner.lastName}}
         </div>

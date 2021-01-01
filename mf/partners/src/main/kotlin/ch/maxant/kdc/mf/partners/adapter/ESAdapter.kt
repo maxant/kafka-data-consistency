@@ -33,11 +33,11 @@ class ESAdapter {
                 "/partners/_doc/" + partner.id)
         val esPartner = EsPartner(partner)
         request.setJsonEntity(om.writeValueAsString(esPartner))
-        performRequest(request, partner.id)
+        performRequest(request)
         log.info("inserted partner ${partner.id} in elasticsearch")
     }
 
-    private fun performRequest(request: Request, partnerId: UUID) {
+    private fun performRequest(request: Request) {
         try {
             val response = restClient.performRequest(request)
             // TODO tidy up exception handling. status code isnt returned if the server returns an error, eg 4xx coz of bad request

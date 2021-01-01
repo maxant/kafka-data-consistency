@@ -92,6 +92,7 @@ enum class Processes(val processSteps: Set<ProcessSteps>) {
 enum class RoleMappings(val role: Role, val processStep: ProcessSteps) {
     SALES_REP___DRAFT(SALES_REP, DRAFT),
     SALES_REP___OFFER(SALES_REP, OFFER),
+    SALES_REP___ACCEPT(SALES_REP, ACCEPT), // abac => only john can do this, for testing purposes!
     SALES_REP___APPROVE(SALES_REP, APPROVE),
     CUSTOMER___DRAFT(CUSTOMER, DRAFT),
     CUSTOMER___OFFER(CUSTOMER, OFFER),

@@ -6,7 +6,7 @@
 var template =
 // start template
 `
-<div style="border: 1px solid #999999; width: 350px; margin-bottom: 5px;">
+<div style="border: 1px solid #999999; width: 450px; margin-bottom: 5px;">
     <div>
         {{task.title}}
     </div>

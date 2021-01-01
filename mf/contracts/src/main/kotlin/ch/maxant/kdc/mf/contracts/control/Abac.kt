@@ -6,6 +6,7 @@ import ch.maxant.kdc.mf.contracts.adapter.PartnerRelationshipsAdapter
 import ch.maxant.kdc.mf.contracts.dto.CreatePartnerRelationshipCommand.Role
 import ch.maxant.kdc.mf.library.Context
 import org.eclipse.microprofile.rest.client.inject.RestClient
+import org.jboss.logging.Logger
 import java.util.*
 import javax.enterprise.context.Dependent
 import javax.inject.Inject
@@ -26,8 +27,15 @@ class Abac {
     @RestClient // bizarrely this doesnt work with constructor injection
     lateinit var organisationAdapter: OrganisationAdapter
 
+    private val log = Logger.getLogger(this.javaClass)
+
     fun ensureUserIsContractHolder(contractId: UUID) {
         val partnerId = getPartnerIdOfUser()
+        if(partnerId.toString() == "c642e4c8-bdcf-4b34-96d4-6a45df2cbf22") {
+            // john can accept all offers, because we cant currently add new partners as users, and we dont want to
+            log.warn("John is acting as the contract holder!")
+            return
+        }
         val role = Role.CONTRACT_HOLDER
         if (!partnerRelationshipsAdapter.latestByForeignIdAndRole(contractId, role.toString())
                         .all { it.partnerId == partnerId }) {

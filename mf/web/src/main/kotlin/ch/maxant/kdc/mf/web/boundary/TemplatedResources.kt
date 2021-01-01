@@ -50,7 +50,7 @@ class PortalTemplate {
     fun get(): TemplateInstance =
         portal.instance()
             .addStandardLibraries()
-            .addPvWidgets(listOf("calendar", "dropdown", "tabview", "tabpanel"))
+            .addPvWidgets(listOf("calendar", "dropdown", "autocomplete", "tabview", "tabpanel"))
             .addMfWidgets(listOf(Components.Contracts, Components.Partners),
                     listOf("vue-rxjs", "portal-home", "portal-sales",
                             "portal-order", "portal-order-details",
@@ -70,7 +70,7 @@ class PartnerTemplate {
     fun get(): TemplateInstance =
             partner.instance()
             .addStandardLibraries()
-            .addPvWidgets(listOf("calendar", "dropdown", "inputtext", "button"))
+            .addPvWidgets(listOf("calendar", "dropdown", "autocomplete", "inputtext", "button"))
             .addMfWidgets(listOf(Components.Cases, Components.Contracts, Components.Partners))
             .addMfComponents()
 }
@@ -87,7 +87,7 @@ class ContractTemplate {
     fun get(): TemplateInstance =
             contract.instance()
             .addStandardLibraries()
-            .addPvWidgets(listOf("calendar", "dropdown", "inputtext", "button"))
+            .addPvWidgets(listOf("calendar", "dropdown", "autocomplete", "inputtext", "button"))
             .addMfWidgets(listOf(Components.Contracts, Components.Partners))
             .addMfComponents()
 }
@@ -104,7 +104,7 @@ class SalesTemplate {
     fun get(): TemplateInstance =
             sales.instance()
             .addStandardLibraries()
-            .addPvWidgets(listOf("calendar", "dropdown", "inputtext", "button"))
+            .addPvWidgets(listOf("calendar", "dropdown", "autocomplete", "inputtext", "button"))
             .addMfWidgets(listOf(Components.Contracts, Components.Partners))
             .addMfComponents()
 }
@@ -121,7 +121,7 @@ class SearchTemplate {
     fun get(): TemplateInstance =
             search.instance()
             .addStandardLibraries()
-            .addPvWidgets(listOf("calendar", "dropdown", "inputtext", "button"))
+            .addPvWidgets(listOf("calendar", "dropdown", "autocomplete", "inputtext", "button"))
             .addMfWidgets(listOf(Components.Contracts, Components.Partners),
                 listOf("vue-rxjs")
             )
@@ -140,7 +140,7 @@ class OrganisationTemplate {
     fun get(): TemplateInstance =
             organisation.instance()
             .addStandardLibraries()
-            .addPvWidgets(listOf("dropdown", "treetable", "column"))
+            .addPvWidgets(listOf("dropdown", "autocomplete", "treetable", "column"))
             .addMfWidgets(listOf())
             .addMfComponents()
 }
@@ -157,7 +157,7 @@ class SecurityTemplate {
     fun get(): TemplateInstance =
             security.instance()
             .addStandardLibraries()
-            .addPvWidgets(listOf("dropdown", "treetable", "column"))
+            .addPvWidgets(listOf("dropdown", "autocomplete", "treetable", "column"))
             .addMfWidgets(listOf())
             .addMfComponents()
 }

@@ -97,7 +97,7 @@ const App = {
         }
     },
     created() {
-        this.minStartDate = new Date();
+        this.minStartDate = new Date(new Date().getTime() - 3600000);
         this.maxStartDate = new Date();
         this.maxStartDate.setFullYear(this.maxStartDate.getFullYear() + 1);
     },

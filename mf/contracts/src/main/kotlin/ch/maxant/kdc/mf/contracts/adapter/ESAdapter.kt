@@ -35,7 +35,7 @@ class ESAdapter {
                 "/contracts/_doc/" + draft.contract.id)
         val esContract = EsContract(draft, partnerId, flatten(draft.pack))
         request.setJsonEntity(om.writeValueAsString(esContract))
-        performRequest(request, draft.contract.id)
+        performRequest(request)
         log.info("inserted contract ${draft.contract.id} in elasticsearch")
     }
 
@@ -71,7 +71,7 @@ class ESAdapter {
         val components = om.readTree(om.writeValueAsString(allComponents.map { ESComponent(it) }))
         params.replace("components", components)
         request.setJsonEntity(om.writeValueAsString(root))
-        performRequest(request, contractId)
+        performRequest(request)
         log.info("updated components of contract $contractId in elasticsearch")
     }
 
@@ -89,11 +89,11 @@ class ESAdapter {
         script.replace("params", params)
         params.put("state", newState.toString())
         request.setJsonEntity(om.writeValueAsString(root))
-        performRequest(request, contractId)
+        performRequest(request)
         log.info("updated status of contract $contractId in elasticsearch")
     }
 
-    private fun performRequest(request: Request, contractId: UUID) {
+    private fun performRequest(request: Request) {
         try {
             val response = restClient.performRequest(request)
             // TODO tidy up exception handling. status code isnt returned if the server returns an error, eg 4xx coz of bad request

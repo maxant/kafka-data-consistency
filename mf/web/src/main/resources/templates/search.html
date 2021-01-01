@@ -6,9 +6,6 @@
     greater than that value. You can even do crazy shit like this: <code>date:<2018-12-31 AND date:>2018-05-31</code>
 </small>
 
-{{searchResult}}
-
-|}{!
 <div>
     <div v-if="!!searchResult.timed_out">
         Timed out...
@@ -23,12 +20,12 @@
 </div>
 <div v-if="!!searchResult.hits">
     <div v-for="hit in searchResult.hits.hits">
-        <mf-contract v-if="hit._index === 'claims'" :contract="hit._source" ></mf-contract>
-        <div v-else><b>Unexpected type</b><br>{{hit._source}}</div>
+        <mf-contract v-if="hit._index == 'contracts'" :contract-id="hit._id" clickable="true"></mf-contract>
+        <mf-partner  v-else-if="hit._index == 'partners'"  :partner-id="hit._id"  clickable="true"></mf-partner>
+        <div v-else><b>Unexpected type: '{{hit._index}}'</b><br>{{hit._source}}</div>
     </div>
 </div>
 
-!}{|
 
 </span>
 </div>
@@ -65,13 +62,17 @@ const App = {
     methods: {
         changed(term) {
             const self = this;
-            return fetchIt(ELASTICSEARCH_BASE_URL + "/contracts,partners/_search?q=" + encodeURIComponent(term), "GET", this)
-            .then( response => {
-                if(response.status === 200) {
-                    return response.data;
+            return fetch(ELASTICSEARCH_BASE_URL + "/contracts,partners/_search?q=" + encodeURIComponent(term), {"method": "GET"})
+            .then( r => {
+                if(r.status >= 200 && r.status < 300) {
+                    return r.json().then(body => {
+                        return body;
+                    });
                 } else {
-                    console.error("error getting search results. please try again"); // TODO handle this better
-                    return {};
+                    return r.text().then(body => {
+                        console.error("error getting search results. please try again"); // TODO handle this better
+                        return {};
+                    });
                 }
             }).catch(error => {
                 console.error("error getting search results: " + error + ". please try again"); // TODO handle this better

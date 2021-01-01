@@ -7,8 +7,9 @@
 const template =
 // start template
 `
-<div style="border: 1px solid #999999; width: 350px; margin-bottom: 5px;" v-if="fetchedContract && (fetchedContract.contractState != 'DRAFT' || !hideDrafts)">
+<div style="border: 1px solid #999999; width: 450px; margin-bottom: 5px;" v-if="fetchedContract && (fetchedContract.contractState != 'DRAFT' || !hideDrafts)">
     <div>
+        <i class="pi pi-file"></i>
         <div v-if="fetchedContract">
             Contract: {{fetchedContract.id}}
         </div>
