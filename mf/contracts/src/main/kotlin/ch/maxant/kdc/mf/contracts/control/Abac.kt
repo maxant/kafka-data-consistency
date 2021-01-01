@@ -31,7 +31,7 @@ class Abac {
 
     fun ensureUserIsContractHolder(contractId: UUID) {
         val partnerId = getPartnerIdOfUser()
-        if(partnerId.toString() == "c642e4c8-bdcf-4b34-96d4-6a45df2cbf22") {
+        if(partnerId.toString() == "3cd5b3b1-e740-4533-a526-2fa274350586") {
             // john can accept all offers, because we cant currently add new partners as users, and we dont want to
             log.warn("John is acting as the contract holder!")
             return

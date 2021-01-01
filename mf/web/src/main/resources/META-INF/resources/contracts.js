@@ -9,11 +9,12 @@ const template =
 `
 <div style="border: 1px solid #999999; width: 450px; margin-bottom: 5px;" v-if="fetchedContract && (fetchedContract.contractState != 'DRAFT' || !hideDrafts)">
     <div>
-        <i class="pi pi-file"></i>
         <div v-if="fetchedContract">
+            <i class="pi pi-file"></i>
             Contract: {{fetchedContract.id}}
         </div>
         <div v-else-if="contractId">
+            <i class="pi pi-file"></i>
             Contract: {{contractId}}
         </div>
         <div v-else>
