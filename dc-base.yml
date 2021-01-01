@@ -179,7 +179,7 @@ services:
       "http.cors.allow-origin": "*"
       "http.cors.enabled": "true"
       "http.cors.allow-headers": "X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization"
-      "http.cors.allow-credentials: "true"
+      "http.cors.allow-credentials": "true"
     volumes:
       - ./es-data:/usr/share/elasticsearch/data
   logstash:
