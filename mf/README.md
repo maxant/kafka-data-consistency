@@ -164,8 +164,15 @@ Worth alerting on:
 - SEC-002 TODO
 - SEC-003 TODO
 
+## Cypress Testing
+
+https://docs.cypress.io/guides/getting-started/installing-cypress.html
+
+    npx cypress open
+
 ## TODO
 
+- create masses of data
 - allow changing the quantity in the offer, so you can get under the approval threshold
 - billing
   - accept offer => event to billing

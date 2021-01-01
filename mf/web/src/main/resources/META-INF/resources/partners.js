@@ -6,7 +6,9 @@ var template =
 // start template
 `
 <div>
-    <p-dropdown :options="partners"
+    <p-dropdown
+               id="partnerselectdropdown"
+               :options="partners"
                optionLabel="$name"
                v-model="partner"
                placeholder="Select a partner"
@@ -21,17 +23,26 @@ var template =
         </div>
         <div class="p-field">
             <label for="lastname">Last Name</label>
-            <p-inputtext id="lastname" v-model="newPartner.lastName" />
+            <p-inputtext id="lastName" v-model="newPartner.lastName" />
             <small v-show="newPartner.$validationErrors.lastName && newPartner.$submitted" class="p-error"><br>Last name is required.</small>
         </div>
         <div class="p-field">
             <label for="dob">Date of birth</label>
-            <p-calendar id="dob" v-model="newPartner.dob" :showIcon="true"></p-calendar>
+            <p-calendar id="dob"
+                        v-model="newPartner.dob"
+                        :showIcon="true"
+                        dateFormat="yy-mm-dd"
+                        :minDate="minDob"
+                        :maxDate="maxDob"
+                        :yearNavigator="true"
+                        :yearRange="dobYearRange"
+                        selectOtherMonths="true"
+            ></p-calendar>
             <small v-show="newPartner.$validationErrors.dob && newPartner.$submitted" class="p-error"><br>Date of birth is required.</small>
         </div>
         <div class="p-field">
             <label for="street">Street</label>
-            <p-calendar id="street" v-model="newPartner.addresses[0].street" :showIcon="true"></p-calendar>
+            <p-inputtext id="street" v-model="newPartner.addresses[0].street" />
             <small v-show="newPartner.$validationErrors.street && newPartner.$submitted" class="p-error"><br>Street is required.</small>
         </div>
         <div class="p-field">
@@ -45,10 +56,10 @@ var template =
         </div>
         <div class="p-field">
             <span>
-                <p-button label="ok" @click="createNewPartner()"/>
+                <p-button id="newPartnerOk" label="ok" @click="createNewPartner()"/>
             </span>
             <span>
-                <p-button label="cancel" @click="partner = null"/>
+                <p-button id="newPartnerCancel" label="cancel" @click="partner = null"/>
             </span>
         </div>
     </div>
@@ -91,6 +102,13 @@ window.mfPartnerSelect = {
             },
             requestId: uuidv4()
         }
+    },
+    created() {
+        this.minDob = new Date();
+        this.minDob.setFullYear(this.minDob.getFullYear() - 100);
+        this.maxDob = new Date();
+        this.maxDob.setFullYear(this.maxDob.getFullYear() - 18);
+        this.dobYearRange = this.minDob.getFullYear() + ":" + this.maxDob.getFullYear();
     },
     mounted() {
         this.initialise();

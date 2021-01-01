@@ -13,7 +13,16 @@
     </mf-partner-select>
 </div>
 <div>
-    <p-calendar v-model="model.startDate" :showIcon="true" placeholder="Select a date for your order"></p-calendar>
+    <p-calendar id="startDate"
+                v-model="model.startDate"
+                :show-icon="true"
+                placeholder="Select a date for your order"
+                date-format="yy-mm-dd"
+                :min-date="minStartDate"
+                :max-date="maxStartDate"
+                :show-button-bar="true"
+                select-other-months="true"
+    ></p-calendar>
     <button @click="newDraft()">get new draft</button>
 </div>
 <div style="font-size: small;">
@@ -37,7 +46,8 @@
                     {{ child2.componentDefinitionId }}: {{ child2.$price.total }} CHF
                     <div v-if="child2.configPossibilities && child2.configPossibilities.length > 0">
                         <div v-for="paramName in getDistinctParamNames(child2.configPossibilities)">
-                            {{paramName}}: <p-dropdown :options="getParamOptions(paramName, child2)"
+                            {{paramName}}: <p-dropdown :id="getId(paramName, 'config-param')"
+                                                       :options="getParamOptions(paramName, child2)"
                                                        v-model="child2.$configs[paramName].value"
                                                        @change="changeParam(child2, paramName, $event)"
                                                        :disabled="child2.$configs[paramName].waiting"
@@ -55,7 +65,7 @@
     </ul>
 </div>
 <div>
-    <button :disabled="!allowOffer" @click="offerDraft()">offer draft</button>
+    <button id="offerDraft" :disabled="!allowOffer" @click="offerDraft()">offer draft</button>
     (test if locked: <button @click="offerDraft()">offer draft</button>)
 </div>
 
@@ -86,16 +96,42 @@ const App = {
             users
         }
     },
+    created() {
+        this.minStartDate = new Date();
+        this.maxStartDate = new Date();
+        this.maxStartDate.setFullYear(this.maxStartDate.getFullYear() + 1);
+    },
     mounted() {
         window.model = this.model; // just for debugging purposes
     },
     methods: {
+        getId(paramName, prefix) {
+            return paramName + "-" + prefix;
+        },
         partnerSelected(partner) {
             this.partner = partner;
         },
-        newDraft() {
+        validate() {
             if(!this.partner) {
                 alert("please select a partner");
+                return false;
+            }
+            if(!this.model.startDate) {
+                alert("start date is required");
+                return false;
+            }
+            if(this.model.startDate.getTime() > this.maxStartDate.getTime()) {
+                alert("start date too high");
+                return false;
+            }
+            if(this.model.startDate.getTime() < this.minStartDate.getTime()) {
+                alert("start date too low");
+                return false;
+            }
+            return true;
+        },
+        newDraft() {
+            if(!this.validate()) {
                 return;
             }
 
