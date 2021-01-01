@@ -169,6 +169,7 @@ Worth alerting on:
 https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
     npx cypress open
+    npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
 
@@ -313,6 +314,7 @@ Kibana searches:
 
     components:{ componentDefinitionId: CardboardBox }
     components:{ configs:{ name: FAT_CONTENT AND value: 1.8 } }
+    start:[2020-01-01 TO 2020-12-31]
 
 Check existing:
 

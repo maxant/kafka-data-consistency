@@ -12,12 +12,13 @@
 <mf-partner v-for="partnerRelationship in model.partnerRelationships"
             :partner-id="partnerRelationship.partnerId"
             :role="partnerRelationship.role"
-            clickable="true">
+            clickable="true"
+            @loaded="partnerLoaded">
 </mf-partner>
 <hr>
 <div v-if="model.contract.contractState == 'AWAITING_APPROVAL'">
     |}{! TODO add a text field where the user can justify this !}{|
-    <button @click="approveContract()">Approve contract</button>
+    <button id="approveContractButton" @click="approveContract()">Approve contract</button>
 </div>
 
 </span>
@@ -97,6 +98,9 @@ const App = {
             }).catch(error => {
                 alert("received error: " + error);
             });
+        },
+        partnerLoaded() {
+            this.timeTaken = new Date().getTime() - this.start;
         }
     },
     components: {

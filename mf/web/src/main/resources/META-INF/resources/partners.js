@@ -261,7 +261,7 @@ window.mfPartnerTile = {
   template,
   watch: {
     partnerId(newPartnerId, oldPartnerId) {
-        this.loadPartner();
+        this.loadPartner$();
     }
   },
   data() {
@@ -272,18 +272,19 @@ window.mfPartnerTile = {
     }
   },
   mounted() {
-    this.loadPartner();
+    this.loadPartner$();
   },
   methods: {
-    loadPartner() {
+    loadPartner$() {
       this.partner = null;
       this.error = null;
       let self = this;
       let url = PARTNERS_BASE_URL + "/partners/" + this.partnerId;
-      fetchIt(url, "GET", this).then(r => {
+      return fetchIt(url, "GET", this).then(r => {
         if(r.ok) {
             console.log("got partner " + self.partnerId + " for requestId " + self.requestId);
             self.partner = r.payload;
+            self.$emit('loaded', null);
         } else {
             let msg = "Failed to get partner " + self.partnerId + ": " + r.payload;
             self.error = msg;

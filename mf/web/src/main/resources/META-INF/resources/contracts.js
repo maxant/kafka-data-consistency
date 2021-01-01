@@ -37,10 +37,10 @@ const template =
             </div>
             <div>
                 State: {{fetchedContract.contractState}}
-                <i v-if="clickable" class="pi pi-eye" @click="navigateToContract()"></i>
+                <i v-if="clickable" id="viewContractIcon" class="pi pi-eye" @click="navigateToContract()"></i>
             </div>
             <div v-if="allowAcceptOffer && fetchedContract.contractState == 'OFFERED'">
-                <button @click="acceptOffer()">accept offer</button>
+                <button id="acceptOfferButton" @click="acceptOffer()">accept offer</button>
             </div>
         </div>
     </div>
@@ -82,7 +82,7 @@ window.mfContractTile = {
         }
     },
     methods: {
-        loadContract$: function() {
+        loadContract$() {
             this.fetchedContract = null;
             this.error = null;
             let self = this;
@@ -91,6 +91,7 @@ window.mfContractTile = {
                 if(r.ok) {
                     console.log("got contract " + self.contractId + " for requestId " + self.requestId);
                     self.fetchedContract = r.payload;
+                    self.$emit('loaded', null);
                 } else {
                     let msg = "Failed to get contract " + self.contractId + ": " + r.payload;
                     self.error = msg;
