@@ -19,8 +19,11 @@ describe('Create Partner and Draft', () => {
  //       cy.contains((28*Math.random()).toFixed(0)).click()
 
         // test validation...
-//        cy.get('#newPartnerOk').click({force: true})
-//        cy.contains("Street is required.")
+        cy.get('#street').click({force: true})
+        cy.get('#street').clear()
+        cy.get('#street').should('have.value', '')
+        cy.get('#newPartnerOk').click()
+        cy.contains("Street is required.")
         cy.get('#street').type("asdf road")
         cy.get('#newPartnerOk').click()
 

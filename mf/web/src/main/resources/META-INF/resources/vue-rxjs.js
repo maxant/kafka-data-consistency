@@ -4,7 +4,6 @@
 window.rxjsMixin = {
     created() {
         if(!rxjs) throw new Error("please add rxjs to your dependencies");
-        if(!this.$options.subscriptions) throw new Error("please add a function called 'subscriptions' to the options object");
         let state = {
             subscriptions: []
         };
@@ -27,8 +26,8 @@ window.rxjsMixin = {
         let state = this.$data.$rxjsMixinState;
         if (state.observables) {
             _.forEach(state.observables, (v, k) => {
-                let subscription = v.subscribe(data => {
-                    this.$data[k] = data;
+                let subscription = v.subscribe(e => {
+                    this.$data[k] = e;
                 });
                 state.subscriptions.push(subscription);
             });
@@ -41,5 +40,11 @@ window.rxjsMixin = {
         });
     }
 }
+
+window.vuerxjsstream = {
+    mounted(el, binding, vnode) {
+        binding.instance.$data[binding.value] = fromEvent(el, binding.arg)
+    }
+};
 
 })();

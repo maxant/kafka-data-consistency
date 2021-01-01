@@ -1,0 +1,97 @@
+{#include internalheader title="Search" /}{|
+
+<input ref="searchTerm" id="searchTerm" v-stream:keyup="'searchRequest$'" /><br>
+<small>
+    Use * for wildcard searches e.g. when searching for an ID, or <code>reserve:>999"</code> to search for entities with that field <br>
+    greater than that value. You can even do crazy shit like this: <code>date:<2018-12-31 AND date:>2018-05-31</code>
+</small>
+
+{{searchResult}}
+
+|}{!
+<div>
+    <div v-if="!!searchResult.timed_out">
+        Timed out...
+    </div>
+    <div v-if="!!searchResult.hits" style="color: darkblue;">
+        <small>Found {{searchResult.hits.total.relation === 'eq' ? '' : 'more than'}}
+            {{searchResult.hits.total.value}}
+            result{{searchResult.hits.total.value===1?'':'s'}} in
+            {{searchResult.took}}ms
+        </small>
+    </div>
+</div>
+<div v-if="!!searchResult.hits">
+    <div v-for="hit in searchResult.hits.hits">
+        <mf-contract v-if="hit._index === 'claims'" :contract="hit._source" ></mf-contract>
+        <div v-else><b>Unexpected type</b><br>{{hit._source}}</div>
+    </div>
+</div>
+
+!}{|
+
+</span>
+</div>
+
+</div> |}{! end of app div !}{|
+<script>
+const { fromEvent } = rxjs;
+const { map, filter, debounceTime, distinctUntilChanged, switchMap } = rxjs.operators;
+
+const App = {
+    mixins: [rxjsMixin],
+    data() {
+        return {
+            start: 0,
+            timeTaken: 0,
+            requestId: uuidv4(),
+            users,
+            searchTerm: "",
+            searchResult: {}
+        }
+    },
+    mounted() {
+        this.searchRequest$.pipe(
+            map(e => e.target.value),
+            map(text => {this.searchTerm = text;  return text}),
+            filter(text => text.length > 2),
+            debounceTime(300),
+            distinctUntilChanged(),
+            switchMap(this.changed)
+        ).subscribe(e => this.searchResult = e);
+
+        this.$refs.searchTerm.focus(); // `autofocus` doesnt work unless you reload the page
+    },
+    methods: {
+        changed(term) {
+            const self = this;
+            return fetchIt(ELASTICSEARCH_BASE_URL + "/contracts,partners/_search?q=" + encodeURIComponent(term), "GET", this)
+            .then( response => {
+                if(response.status === 200) {
+                    return response.data;
+                } else {
+                    console.error("error getting search results. please try again"); // TODO handle this better
+                    return {};
+                }
+            }).catch(error => {
+                console.error("error getting search results: " + error + ". please try again"); // TODO handle this better
+                return {};
+            });
+        }
+    },
+    components: {
+        'p-calendar': calendar,
+        'p-dropdown': dropdown,
+        'mf-partner': mfPartnerTile,
+        'mf-contract': mfContractTile,
+        'mf-users': mfUsers
+    }
+}
+const app = Vue.createApp(App)
+app.use(primevue, {ripple: true});
+app.directive('stream', vuerxjsstream);
+app.mount("#app")
+
+</script>
+
+|}{#include internalfooter /}
