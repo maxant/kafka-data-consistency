@@ -48,7 +48,7 @@ class WebResource {
                 }
     }
 
-    @Incoming("event-bus-in")
+//    @Incoming("event-bus-in")
     @PimpedAndWithDltAndAck
     fun processEventBus(message: Message<String>)= process(message)
 

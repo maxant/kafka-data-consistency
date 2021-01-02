@@ -34,7 +34,7 @@ You can then execute your native executable with: `./target/waitingroom-1.0-SNAP
 ## Functional docs
 
 This component offers two topics which records can be sent to. If you want to make the record wait at least 1 second,
-send it to `waitingroom-01`, otherwise to wait for 10 seconds, send it to `waitingroom-10`. It MUST have a header named
+send it to `waitingroom01`, otherwise to wait for 10 seconds, send it to `waitingroom10`. It MUST have a header named
 `DELAY_UNTIL` set to the epoch millisecond timestamp containing the minimum time at which the record may again be sent
 back to the original topic. It must also contain the header `ORIGINAL_TOPIC` with the name of it's ultimate destination.
 Once sent back to the destination, it will contain the header `RETRY_COUNT` which is always incremented, should it 

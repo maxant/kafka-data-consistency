@@ -3,6 +3,7 @@ package ch.maxant.kdc.mf.pricing.boundary
 import ch.maxant.kdc.mf.library.Context
 import ch.maxant.kdc.mf.library.MessageBuilder
 import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
+import ch.maxant.kdc.mf.library.withMdcSet
 import ch.maxant.kdc.mf.pricing.control.PricingResult
 import ch.maxant.kdc.mf.pricing.control.PricingService
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -44,7 +45,7 @@ class DraftsConsumer(
 
     private val log = Logger.getLogger(this.javaClass)
 
-    @Incoming("event-bus-in")
+    // @Incoming("event-bus-in")
     @Transactional
     @PimpedAndWithDltAndAck
     fun process(msg: Message<String>): CompletionStage<*> {
@@ -58,7 +59,11 @@ class DraftsConsumer(
                         sendEvent(it)
                     }
             }
-            else -> completedFuture(Unit) // ignore other messages
+            else -> {
+                // ignore other messages
+                log.info("skipping irrelevant message ${context.event}")
+                completedFuture(Unit)
+            }
         }
     }
 
@@ -74,7 +79,9 @@ class DraftsConsumer(
         // since this is happening async after the transaction, and we don't return anything,
         // we just pass a new CompletableFuture and don't care what happens with it
         eventBus.send(messageBuilder.build(prices.contractId, prices, CompletableFuture(), event = "UPDATED_PRICES"))
-        log.info("published prices $prices")
+        withMdcSet(context) {
+            log.info("published prices for contractId ${prices.contractId}")
+        }
     }
 
 }

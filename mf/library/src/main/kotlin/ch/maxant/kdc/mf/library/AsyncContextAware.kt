@@ -29,13 +29,13 @@ annotation class AsyncContextAware
 @SuppressWarnings("unused")
 class AsyncContextAwareInterceptor(
         @Inject
-        var threadContext: ThreadContext,
+        val threadContext: ThreadContext,
 
         @Inject
-        var managedExecutor: ManagedExecutor,
+        val managedExecutor: ManagedExecutor,
 
         @Inject
-        var context: Context
+        val context: Context
 ) {
     @AroundInvoke
     fun invoke(ctx: InvocationContext): Any {
