@@ -19,13 +19,13 @@ services:
     command:
       java -jar contracts-1.0-SNAPSHOT-runner.jar -Xmx300m
     extra_hosts:
-      - "contracts:127.0.0.1"
-      - "pricing:127.0.0.1"
-      - "web:127.0.0.1"
-      - "partners:127.0.0.1"
-      - "cases:127.0.0.1"
-      - "waitingroom:127.0.0.1"
-      - "organisation:127.0.0.1"
+      - "contracts:217.172.187.46"
+      - "pricing:217.172.187.46"
+      - "web:217.172.187.46"
+      - "partners:217.172.187.46"
+      - "cases:217.172.187.46"
+      - "waitingroom:217.172.187.46"
+      - "organisation:217.172.187.46"
 
   kdc-mf-pricing:
     image: maxant/jdk
@@ -39,13 +39,13 @@ services:
     command:
       java -jar pricing-1.0-SNAPSHOT-runner.jar -Xmx300m
     extra_hosts:
-      - "contracts:127.0.0.1"
-      - "pricing:127.0.0.1"
-      - "web:127.0.0.1"
-      - "partners:127.0.0.1"
-      - "cases:127.0.0.1"
-      - "waitingroom:127.0.0.1"
-      - "organisation:127.0.0.1"
+      - "contracts:217.172.187.46"
+      - "pricing:217.172.187.46"
+      - "web:217.172.187.46"
+      - "partners:217.172.187.46"
+      - "cases:217.172.187.46"
+      - "waitingroom:217.172.187.46"
+      - "organisation:217.172.187.46"
 
   kdc-mf-web:
     image: maxant/jdk
@@ -59,13 +59,13 @@ services:
     command:
       java -jar web-1.0-SNAPSHOT-runner.jar -Xmx300m
     extra_hosts:
-      - "contracts:127.0.0.1"
-      - "pricing:127.0.0.1"
-      - "web:127.0.0.1"
-      - "partners:127.0.0.1"
-      - "cases:127.0.0.1"
-      - "waitingroom:127.0.0.1"
-      - "organisation:127.0.0.1"
+      - "contracts:217.172.187.46"
+      - "pricing:217.172.187.46"
+      - "web:217.172.187.46"
+      - "partners:217.172.187.46"
+      - "cases:217.172.187.46"
+      - "waitingroom:217.172.187.46"
+      - "organisation:217.172.187.46"
 
   kdc-mf-partners:
     image: maxant/jdk
@@ -79,13 +79,13 @@ services:
     command:
       java -jar partners-1.0-SNAPSHOT-runner.jar -Xmx300m
     extra_hosts:
-      - "contracts:127.0.0.1"
-      - "pricing:127.0.0.1"
-      - "web:127.0.0.1"
-      - "partners:127.0.0.1"
-      - "cases:127.0.0.1"
-      - "waitingroom:127.0.0.1"
-      - "organisation:127.0.0.1"
+      - "contracts:217.172.187.46"
+      - "pricing:217.172.187.46"
+      - "web:217.172.187.46"
+      - "partners:217.172.187.46"
+      - "cases:217.172.187.46"
+      - "waitingroom:217.172.187.46"
+      - "organisation:217.172.187.46"
 
   kdc-mf-cases:
     image: maxant/jdk
@@ -99,13 +99,13 @@ services:
     command:
       java -jar cases-1.0-SNAPSHOT-runner.jar -Xmx300m
     extra_hosts:
-      - "contracts:127.0.0.1"
-      - "pricing:127.0.0.1"
-      - "web:127.0.0.1"
-      - "partners:127.0.0.1"
-      - "cases:127.0.0.1"
-      - "waitingroom:127.0.0.1"
-      - "organisation:127.0.0.1"
+      - "contracts:217.172.187.46"
+      - "pricing:217.172.187.46"
+      - "web:217.172.187.46"
+      - "partners:217.172.187.46"
+      - "cases:217.172.187.46"
+      - "waitingroom:217.172.187.46"
+      - "organisation:217.172.187.46"
 
   kdc-mf-waitingroom:
     image: maxant/jdk
@@ -119,13 +119,13 @@ services:
     command:
       java -jar waitingroom-1.0-SNAPSHOT-runner.jar -Xmx300m
     extra_hosts:
-      - "contracts:127.0.0.1"
-      - "pricing:127.0.0.1"
-      - "web:127.0.0.1"
-      - "partners:127.0.0.1"
-      - "cases:127.0.0.1"
-      - "waitingroom:127.0.0.1"
-      - "organisation:127.0.0.1"
+      - "contracts:217.172.187.46"
+      - "pricing:217.172.187.46"
+      - "web:217.172.187.46"
+      - "partners:217.172.187.46"
+      - "cases:217.172.187.46"
+      - "waitingroom:217.172.187.46"
+      - "organisation:217.172.187.46"
 
   kdc-mf-organisation:
     image: maxant/jdk
@@ -139,10 +139,10 @@ services:
     command:
       java -jar organisation-1.0-SNAPSHOT-runner.jar -Xmx300m
     extra_hosts:
-      - "contracts:127.0.0.1"
-      - "pricing:127.0.0.1"
-      - "web:127.0.0.1"
-      - "partners:127.0.0.1"
-      - "cases:127.0.0.1"
-      - "waitingroom:127.0.0.1"
-      - "organisation:127.0.0.1"
+      - "contracts:217.172.187.46"
+      - "pricing:217.172.187.46"
+      - "web:217.172.187.46"
+      - "partners:217.172.187.46"
+      - "cases:217.172.187.46"
+      - "waitingroom:217.172.187.46"
+      - "organisation:217.172.187.46"
