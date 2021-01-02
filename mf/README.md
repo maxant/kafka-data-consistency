@@ -162,7 +162,7 @@ Also known as entry points, process components or UIs.
     docker-compose -f dc-base.yml exec kdc-mysql tail -f /var/lib/mysql/a1a9fa654596.log
 
     # afterwards:
-    SET GLOBAL general_log = 'ON';
+    SET GLOBAL general_log = 'OFF';
 
 
 ## Headers, Topcs, Command, Events
@@ -508,3 +508,43 @@ Create new:
     CREATE DATABASE mfcontracts CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
     GRANT ALL PRIVILEGES ON mfcontracts.* TO mfcontracts@'%' IDENTIFIED BY 'the_password';
 
+## Bugs
+
+=============================================== 21 :: errors=0
+using requestId 849e23d0-35fc-4d20-a230-51ac07e02db6
+got token for john
+created partner a70a344b-cd20-4228-8530-19d4309a33a8
+got draft ddb8775f-4787-45ce-9697-3e99a6905ef3
+event: created draft 1
+event: changed case
+event: changed partner relationship
+event: changed partner relationship
+event: updated prices 1
+modified content to 1.8: 201
+event: updated draft 1
+event: updated prices 2
+offering draft ddb8775f-4787-45ce-9697-3e99a6905ef3 on requestId 849e23d0-35fc-4d20-a230-51ac07e02db6
+offered draft: 201
+event: offered draft
+accepting contract
+event: updated prices 3
+accepted contract: 200
+switching to jane in order to approve
+event: changed case
+got token for jane, now approving
+approved contract: 200
+reading contract
+event: changed case
+got contract: RUNNING
+completed in 6925ms
+
+
+using requestId 4cd7b6c5-8a37-45a1-b8eb-0ad4cc0c5bc2
+got token for john
+created partner 1ee571ff-1a4a-422a-bf11-1e6caff274ae
+got draft 38148806-e6a8-4d60-ab27-3dde5649448c
+event: created draft 1
+event: changed case
+event: changed partner relationship
+event: changed partner relationship
+>>>> missing event for prices. seems to have arrived in the other load test client, see above

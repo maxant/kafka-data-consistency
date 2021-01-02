@@ -92,15 +92,17 @@ class KafkaConsumers(
     }
 
     private fun <V> run(consumer: KafkaConsumer<*,*>, handler: Handler<V>) {
+        var closed = false
         while(true) {
             try {
                 if(consumersToClose.any { it.first == consumer }) {
                     log.info("closing consumer")
                     consumer.close()
+                    closed = true
                     consumersToClose.filter { it.first == consumer }.forEach { it.second.countDown() } // signal that we're done
                     log.info("closed and informed")
                     break
-                } else {
+                } else if(!closed) {
                     log.info("polling for new records")
                     val records = consumer.poll(Duration.ofMinutes(1))
                     log.info("got records: ${records.count()}")
@@ -108,6 +110,8 @@ class KafkaConsumers(
                         handler.handle(toMessage(record) as Message<V>) //.toCompletableFuture().get()
                     }
                     log.info("records handled successfully")
+                } else if(closed) {
+                    break // not really necessary, but just incase
                 }
             } catch (e: Exception) {
                 log.error("Failed to process records because of an error. Records will be skipped. " +

@@ -31,18 +31,8 @@ class DraftsConsumer(
         var pricingService: PricingService,
 
         @Inject
-        var context: Context,
-
-        @Inject
-        var messageBuilder: MessageBuilder
+        var context: Context
 ) {
-    @Inject
-    @Channel("event-bus-out")
-    lateinit var eventBus: Emitter<String>
-
-    @Inject
-    private lateinit var pricingResultEvent: javax.enterprise.event.Event<PricingResult>
-
     private val log = Logger.getLogger(this.javaClass)
 
     // @Incoming("event-bus-in")
@@ -55,9 +45,14 @@ class DraftsConsumer(
                 log.info("pricing draft")
                 pricingService
                     .priceDraft(draft)
+                        /*
+//                        TODO i think this is where the shit happens. the context wont be the same, and might be randomly picked up
                     .thenCompose {
+
+
                         sendEvent(it)
                     }
+                    */
             }
             else -> {
                 // ignore other messages
@@ -66,22 +61,4 @@ class DraftsConsumer(
             }
         }
     }
-
-    private fun sendEvent(prices: PricingResult): CompletableFuture<Unit> {
-        val ack = CompletableFuture<Unit>()
-        ack.complete(null)
-        pricingResultEvent.fire(prices)
-        return ack
-    }
-
-    private fun send(@Observes(during = TransactionPhase.AFTER_SUCCESS) prices: PricingResult) {
-        // TODO transactional outbox
-        // since this is happening async after the transaction, and we don't return anything,
-        // we just pass a new CompletableFuture and don't care what happens with it
-        eventBus.send(messageBuilder.build(prices.contractId, prices, CompletableFuture(), event = "UPDATED_PRICES"))
-        withMdcSet(context) {
-            log.info("published prices for contractId ${prices.contractId}")
-        }
-    }
-
 }

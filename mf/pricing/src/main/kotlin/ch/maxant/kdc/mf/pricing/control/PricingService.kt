@@ -2,6 +2,8 @@ package ch.maxant.kdc.mf.pricing.control
 
 import ch.maxant.kdc.mf.library.AsyncContextAware
 import ch.maxant.kdc.mf.library.Context
+import ch.maxant.kdc.mf.library.MessageBuilder
+import ch.maxant.kdc.mf.library.withMdcSet
 import ch.maxant.kdc.mf.pricing.definitions.Price
 import ch.maxant.kdc.mf.pricing.definitions.Prices
 import ch.maxant.kdc.mf.pricing.dto.Configuration
@@ -13,12 +15,17 @@ import ch.maxant.kdc.mf.pricing.entity.PriceEntity.Queries.deleteByContractId
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import org.eclipse.microprofile.reactive.messaging.Channel
+import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.jboss.logging.Logger
 import java.time.LocalDateTime
 import java.util.*
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletableFuture.completedFuture
 import java.util.concurrent.CompletionStage
 import javax.enterprise.context.ApplicationScoped
+import javax.enterprise.event.Observes
+import javax.enterprise.event.TransactionPhase
 import javax.inject.Inject
 import javax.persistence.EntityManager
 import kotlin.collections.HashMap
@@ -33,8 +40,18 @@ class PricingService(
         var om: ObjectMapper,
 
         @Inject
-        var context: Context
+        var context: Context,
+
+        @Inject
+        var messageBuilder: MessageBuilder
 ) {
+    @Inject
+    @Channel("event-bus-out")
+    lateinit var eventBus: Emitter<String>
+
+    @Inject
+    private lateinit var pricingResultEvent: javax.enterprise.event.Event<PricingResult>
+
     private val log = Logger.getLogger(this.javaClass)
 
     @AsyncContextAware
@@ -112,7 +129,12 @@ class PricingService(
                 em.persist(pe)
             }
         })
-        return PricingResult(contractId, prices)
+
+        val result = PricingResult(contractId, prices)
+
+        sendEvent(result)
+
+        return result
 
         /*
 {"draft":
@@ -129,6 +151,21 @@ class PricingService(
                 "children":[
                     {"productId":"COOKIES_MILKSHAKE","componentDefinitionId":"Milkshake",
         */
+    }
+
+    private fun sendEvent(prices: PricingResult) {
+        pricingResultEvent.fire(prices)
+    }
+
+    @SuppressWarnings("unused")
+    private fun send(@Observes(during = TransactionPhase.AFTER_SUCCESS) prices: PricingResult) {
+        // TODO transactional outbox
+        // since this is happening async after the transaction, and we don't return anything,
+        // we just pass a new CompletableFuture and don't care what happens with it
+        eventBus.send(messageBuilder.build(prices.contractId, prices, CompletableFuture(), event = "UPDATED_PRICES"))
+        withMdcSet(context) {
+            log.info("published prices for contractId ${prices.contractId}")
+        }
     }
 }
 

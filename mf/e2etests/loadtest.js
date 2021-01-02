@@ -24,6 +24,7 @@ function randomDate(start, end) {
 var setTimeoutPromise = ms => new Promise(resolve => setTimeout(resolve, ( (ms < 0) ? 0 : ms) ));
 
 var i = 0;
+var numErrors = 0;
 
 function createPartnerAndContract(){
     var requestId = uuidv4();
@@ -44,18 +45,19 @@ function createPartnerAndContract(){
         if(msg["request-id"] != requestId) {
             console.error(">>>>>>>>>> ERROR!!! - got event for request-id " + msg["request-id"]
                 + "on source for requestId " + requestId + " so dumping it");
-                return;
+            numErrors++;
+            return;
         }
         if(msg.event == "CREATED_DRAFT") {
-            console.log("event: created draft");
             createdDraft++;
+            console.log("event: created draft " + createdDraft);
             componentIdWithFatContent = getComponentIdWithFatContent(msg)
         } else if(msg.event == "UPDATED_DRAFT") {
-            console.log("event: updated draft");
             updatedDraft++; // have to wait for updated prices before offering, otherwise we get a validation error because the contract isnt in sync
+            console.log("event: updated draft " + updatedDraft);
         } else if(msg.event == "UPDATED_PRICES") {
-            console.log("event: updated prices");
             updatedPrices++;
+            console.log("event: updated prices " + updatedPrices);
 
             // prices are always updated after draft creation/update, and are published on the same topic, so arrive
             // AFTER those events. but before we continue with the process, lets just check everything is as expected
@@ -88,6 +90,10 @@ function createPartnerAndContract(){
             // restart after timeout
             source.close();
             console.error(">>>>>>>>>> ERROR!!! - timeout on request, so restarting. rquestId: " + requestId);
+            numErrors++;
+            console.info("");
+            console.info("restarting...");
+            console.info("");
             createPartnerAndContract();
         }
     }, 30000);
@@ -193,13 +199,14 @@ function createPartnerAndContract(){
         .then(contract => {
             console.log("got contract: " + contract.contractState);
             if(contract.contractState != "RUNNING") {
-                console.error("CONTRACT STATE IS NOT RUNNING!");
+                console.error(">>>>>>>>>>>>>> CONTRACT STATE IS NOT RUNNING!");
+                numErrors++;
             }
             console.log("completed in " + (new Date().getTime() - start) + "ms");
             source.close();
             source.$completed = true;
 
-            console.log("=============================================== " + i++);
+            console.log("=============================================== " + i++ + " :: errors=" + numErrors);
             createPartnerAndContract();
         })
     }
