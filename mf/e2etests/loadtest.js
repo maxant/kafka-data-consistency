@@ -37,7 +37,7 @@ function createPartnerAndContract(){
 
     console.log("using requestId " + requestId);
 
-    var source = new EventSource('http://localhost:8082/web/stream/' + requestId);
+    var source = new EventSource('http://web:8082/web/stream/' + requestId);
     source.onmessage = function (event) {
         let msg = JSON.parse(event.data);
         if(msg["request-id"] != requestId) {

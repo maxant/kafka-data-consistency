@@ -7,6 +7,9 @@ services:
 #    ports:
 #      - "30601:8086"
 
+# TODO the following use extra_hosts, but its not necessary for locally deployed services. we should rename
+# the services kdc-mf-*, so that it works inside DC as well as outside
+
   kdc-mf-contracts:
     image: maxant/jdk
     container_name: kdc-mf-contracts

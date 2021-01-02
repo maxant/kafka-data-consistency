@@ -15,6 +15,8 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletableFuture.completedFuture
 import java.util.concurrent.CompletionStage
 import javax.enterprise.context.ApplicationScoped
+import javax.enterprise.event.Observes
+import javax.enterprise.event.TransactionPhase
 import javax.inject.Inject
 import javax.transaction.Transactional
 
@@ -36,6 +38,9 @@ class DraftsConsumer(
     @Inject
     @Channel("event-bus-out")
     lateinit var eventBus: Emitter<String>
+
+    @Inject
+    private lateinit var pricingResultEvent: javax.enterprise.event.Event<PricingResult>
 
     private val log = Logger.getLogger(this.javaClass)
 
@@ -59,8 +64,16 @@ class DraftsConsumer(
 
     private fun sendEvent(prices: PricingResult): CompletableFuture<Unit> {
         val ack = CompletableFuture<Unit>()
-        eventBus.send(messageBuilder.build(prices.contractId, prices, ack, event = "UPDATED_PRICES"))
+        ack.complete(null)
+        pricingResultEvent.fire(prices)
         return ack
+    }
+
+    private fun send(@Observes(during = TransactionPhase.AFTER_SUCCESS) prices: PricingResult) {
+        // since this is happening async after the transaction, and we don't return anything,
+        // we just pass a new CompletableFuture and don't care what happens with it
+        eventBus.send(messageBuilder.build(prices.contractId, prices, CompletableFuture(), event = "UPDATED_PRICES"))
+        log.info("published prices $prices")
     }
 
 }
