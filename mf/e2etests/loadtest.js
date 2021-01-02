@@ -24,7 +24,6 @@ function randomDate(start, end) {
 var setTimeoutPromise = ms => new Promise(resolve => setTimeout(resolve, ( (ms < 0) ? 0 : ms) ));
 
 var i = 0;
-var waitForPricing = 500;
 
 function createPartnerAndContract(){
     var requestId = uuidv4();
@@ -55,8 +54,7 @@ function createPartnerAndContract(){
             console.log("event: updated prices");
             updatedPrices++;
             if(updatedDraft == 1 && updatedPrices == 2) {
-                // wait just a tiny bit since the message is sent before commit!
-                setTimeout(offerDraft, waitForPricing);
+                offerDraft();
             }
         } else if(msg.event == "OFFERED_DRAFT") {
             console.log("event: offered draft");
@@ -76,6 +74,15 @@ function createPartnerAndContract(){
         if(source && source.readyState != EventSource.CLOSED) source.close();
         source = null;
     }
+
+    setTimeout(() => {
+        if(source && !source.$completed) {
+            // restart after timeout
+            source.close();
+            console.error(">>>>>>>>>> ERROR!!! - timeout on request, so restarting. rquestId: " + requestId);
+            createPartnerAndContract();
+        }
+    }, 30000);
 
     function modifyFatContent(msg) {
         var componentId = _.find(msg.payload.pack.children[0].children, child => child.componentDefinitionId == "Milk").componentId;
@@ -111,13 +118,7 @@ function createPartnerAndContract(){
         .then(r => {
             console.log("offered draft: " + r.status);
             if(r.status == 400) {
-                // TODO not sure why we need to do this... probably because the price event is sent before the prices are committed
-                waitForPricing += 100;
-                console.log("waitForPricing increased to " + waitForPricing);
-                return setTimeoutPromise(waitForPricing).then(offerDraft);
-            } else {
-                waitForPricing -= 100;
-                console.log("waitForPricing decreased to " + waitForPricing);
+                return offerDraft();
             }
         })
     }
@@ -185,6 +186,7 @@ function createPartnerAndContract(){
             }
             console.log("completed in " + (new Date().getTime() - start) + "ms");
             source.close();
+            source.$completed = true;
 
             console.log("=============================================== " + i++);
             createPartnerAndContract();

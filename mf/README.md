@@ -70,7 +70,7 @@ not just for the UI, rather for the entire landscape.
   - additional information
   - discounts
   - pricing
-  - billing
+- billing
 - partners
   - partners, including addresses and partner relationships (to contracts, orders, etc.)
 - cases (human workflow, including tasks)
@@ -97,6 +97,8 @@ not just for the UI, rather for the entire landscape.
     - organise distribution if this is a one-off contract
   - terminate contract
   - replace contract
+- Billing
+  - initial, as well as recurring
 - Requisition Order
   - choose component
   - organise distribution
@@ -117,9 +119,51 @@ Also known as entry points, process components or UIs.
   - Partner view
   - Contract view
   - Requisition orders
+  - Billing?
 - External
   - My Account - an overview of a customers contracts and requisition orders
   - Sales - purchasing new products or making changes to existing contracts by replacing them
+
+## Billing
+
+    select CONTRACT_ID, STARTTIME, PRICE, TAX 
+    from mfpricing.T_PRICES WHERE COMPONENT_ID IN (
+        select component.ID 
+        from mfcontracts.T_COMPONENTS component, mfcontracts.T_CONTRACTS contract 
+        where contract.STATE = 'RUNNING' 
+          AND component.CONTRACT_ID = contract.ID
+          AND component.PARENT_ID is null
+          AND contract.STARTTIME = '2021-12-17 00:00:00.000'
+    )
+    limit 10;
+
+    select price.CONTRACT_ID, price.STARTTIME, price.PRICE, price.TAX 
+    from mfpricing.T_PRICES price, mfcontracts.T_COMPONENTS component, mfcontracts.T_CONTRACTS contract 
+    where price.COMPONENT_ID = component.ID
+      AND component.CONTRACT_ID = contract.ID 
+      AND contract.STATE = 'RUNNING' 
+      AND component.PARENT_ID is null
+      AND contract.STARTTIME = '2021-12-17 00:00:00.000'
+    limit 10;
+
+    docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p
+    SHOW VARIABLES LIKE "general_log%";
+    +------------------+---------------------------------+
+    | Variable_name    | Value                           |
+    +------------------+---------------------------------+
+    | general_log      | OFF                             |
+    | general_log_file | /var/lib/mysql/a1a9fa654596.log |
+    +------------------+---------------------------------+
+    2 rows in set (2.29 sec)
+    
+    SET GLOBAL general_log = 'ON';
+
+    # using the filename above =>
+    docker-compose -f dc-base.yml exec kdc-mysql tail -f /var/lib/mysql/a1a9fa654596.log
+
+    # afterwards:
+    SET GLOBAL general_log = 'ON';
+
 
 ## Headers, Topcs, Command, Events
 
