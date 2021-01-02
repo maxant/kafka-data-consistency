@@ -70,6 +70,7 @@ class DraftsConsumer(
     }
 
     private fun send(@Observes(during = TransactionPhase.AFTER_SUCCESS) prices: PricingResult) {
+        // TODO transactional outbox
         // since this is happening async after the transaction, and we don't return anything,
         // we just pass a new CompletableFuture and don't care what happens with it
         eventBus.send(messageBuilder.build(prices.contractId, prices, CompletableFuture(), event = "UPDATED_PRICES"))
