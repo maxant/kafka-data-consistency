@@ -8,7 +8,7 @@ services:
 #      - "30601:8086"
 
   kdc-mf-cases:
-    image: maxant/jdk
+    image: maxant/jdkrp
     container_name: kdc-mf-cases
     ports:
       - "8084:8084"
@@ -28,7 +28,7 @@ services:
       - "organisation:192.168.1.213"
 
   kdc-mf-waitingroom:
-    image: maxant/jdk
+    image: maxant/jdkrp
     container_name: kdc-mf-waitingroom
     ports:
       - "8085:8085"
@@ -48,7 +48,7 @@ services:
       - "organisation:192.168.1.213"
 
   kdc-mf-organisation:
-    image: maxant/jdk
+    image: maxant/jdkrp
     container_name: kdc-mf-organisation
     ports:
       - "8086:8086"

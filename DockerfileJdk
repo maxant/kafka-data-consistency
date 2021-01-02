@@ -6,9 +6,10 @@
 FROM openjdk:11.0.9-slim-buster
 
 RUN apt update
-RUN apt upgrade
+RUN apt autoremove -y
+RUN apt upgrade -y
 RUN apt install -y curl
-RUN apt install -y wget
+# RUN apt install -y wget
 RUN apt install -y less
 
 WORKDIR /usr/local

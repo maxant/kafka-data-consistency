@@ -21,16 +21,18 @@ function randomDate(start, end) {
 }
 
 // https://stackoverflow.com/a/52174349/458370
-var setTimeoutPromise = ms => new Promise(resolve => setTimeout(resolve, ms))
+var setTimeoutPromise = ms => new Promise(resolve => setTimeout(resolve, ( (ms < 0) ? 0 : ms) ));
 
 var i = 0;
+var waitForPricing = 500;
 
 function createPartnerAndContract(){
     var requestId = uuidv4();
     var token;
     var partnerId;
     var contractId;
-    var updatedDraft = false;
+    var updatedDraft = 0;
+    var updatedPrices = 0;
     var start = new Date().getTime();
 
     console.log("using requestId " + requestId);
@@ -38,17 +40,23 @@ function createPartnerAndContract(){
     var source = new EventSource('http://localhost:8082/web/stream/' + requestId);
     source.onmessage = function (event) {
         let msg = JSON.parse(event.data);
+        if(msg["request-id"] != requestId) {
+            console.error(">>>>>>>>>> ERROR!!! - got event for request-id " + msg["request-id"]
+                + "on source for requestId " + requestId + " so dumping it");
+                return;
+        }
         if(msg.event == "CREATED_DRAFT") {
             console.log("event: created draft");
             modifyFatContent(msg);
         } else if(msg.event == "UPDATED_DRAFT") {
             console.log("event: updated draft");
-            updatedDraft = true; // have to wait for updated prices before offering, otherwise we get a validation error because the contract isnt in sync
+            updatedDraft++; // have to wait for updated prices before offering, otherwise we get a validation error because the contract isnt in sync
         } else if(msg.event == "UPDATED_PRICES") {
             console.log("event: updated prices");
-            if(updatedDraft) {
+            updatedPrices++;
+            if(updatedDraft == 1 && updatedPrices == 2) {
                 // wait just a tiny bit since the message is sent before commit!
-                setTimeoutPromise(300).then(offer);
+                setTimeout(offerDraft, waitForPricing);
             }
         } else if(msg.event == "OFFERED_DRAFT") {
             console.log("event: offered draft");
@@ -88,8 +96,8 @@ function createPartnerAndContract(){
         });
     }
 
-    function offer() {
-        console.log("offering contract");
+    function offerDraft() {
+        console.log("offering draft " + contractId + " on requestId " + requestId);
         return fetch("http://contracts:8080/drafts/" + contractId + "/offer", {
           "headers": {
             "content-type": "application/json",
@@ -101,10 +109,15 @@ function createPartnerAndContract(){
           "method": "PUT"
         })
         .then(r => {
-            console.log("offered contract: " + r.status);
+            console.log("offered draft: " + r.status);
             if(r.status == 400) {
                 // TODO not sure why we need to do this... probably because the price event is sent before the prices are committed
-                return setTimeoutPromise(100).then(offer);
+                waitForPricing += 100;
+                console.log("waitForPricing increased to " + waitForPricing);
+                return setTimeoutPromise(waitForPricing).then(offerDraft);
+            } else {
+                waitForPricing -= 100;
+                console.log("waitForPricing decreased to " + waitForPricing);
             }
         })
     }
@@ -125,6 +138,7 @@ function createPartnerAndContract(){
         })
         .then(approveContract);
     }
+
     function approveContract(){
         console.log("switching to jane in order to approve");
         return fetch("http://organisation:8086/security/token/jane.smith", {
