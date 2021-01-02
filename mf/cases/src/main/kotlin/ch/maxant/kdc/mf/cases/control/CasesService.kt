@@ -92,7 +92,7 @@ class CasesService(
     fun completeTasks(tasksCommand: CompleteTasksCommand): CompletionStage<*> {
         log.info("completing tasks: $tasksCommand")
 
-        val case = CaseEntity.Queries.selectByCaseId(em, tasksCommand.referenceId)
+        val case = CaseEntity.Queries.selectByReferenceId(em, tasksCommand.referenceId)
 
         val allTasks = TaskEntity.Queries.selectByCaseId(em, case.id)
         allTasks.filter { tasksCommand.action == it.action }.forEach { it.state = State.DONE }

@@ -146,7 +146,7 @@ const App = {
             this.allowOffer = false;
             let body = {
                 "productId": "COOKIES_MILKSHAKE",
-                "start": new Date(new Date().getTime() + 24*3600000).toISOString().substr(0,10),
+                "start": this.model.startDate.toISOString().substr(0,10),
                 "partnerId": this.partner.id
             }
             this.currentAction = {action: "newDraft"}

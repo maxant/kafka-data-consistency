@@ -175,6 +175,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
 - create masses of data
 - allow changing the quantity in the offer, so you can get under the approval threshold
+- event bus is per application! so the existing one is for contracts only and needs renaming
 - billing
   - accept offer => event to billing
   - billing is an orchestrator which keeps its model in a global ktable and which uses tombstone records and compaction
