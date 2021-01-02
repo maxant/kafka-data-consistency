@@ -30,8 +30,10 @@ function createPartnerAndContract(){
     var token;
     var partnerId;
     var contractId;
+    var createdDraft = 0;
     var updatedDraft = 0;
     var updatedPrices = 0;
+    var componentIdWithFatContent;
     var start = new Date().getTime();
 
     console.log("using requestId " + requestId);
@@ -46,14 +48,20 @@ function createPartnerAndContract(){
         }
         if(msg.event == "CREATED_DRAFT") {
             console.log("event: created draft");
-            modifyFatContent(msg);
+            createdDraft++;
+            componentIdWithFatContent = getComponentIdWithFatContent(msg)
         } else if(msg.event == "UPDATED_DRAFT") {
             console.log("event: updated draft");
             updatedDraft++; // have to wait for updated prices before offering, otherwise we get a validation error because the contract isnt in sync
         } else if(msg.event == "UPDATED_PRICES") {
             console.log("event: updated prices");
             updatedPrices++;
-            if(updatedDraft == 1 && updatedPrices == 2) {
+
+            // prices are always updated after draft creation/update, and are published on the same topic, so arrive
+            // AFTER those events. but before we continue with the process, lets just check everything is as expected
+            if(createdDraft == 1 && updatedPrices == 1) {
+                modifyFatContent(componentIdWithFatContent);
+            } else if(updatedDraft == 1 && updatedPrices == 2) {
                 offerDraft();
             }
         } else if(msg.event == "OFFERED_DRAFT") {
@@ -84,8 +92,11 @@ function createPartnerAndContract(){
         }
     }, 30000);
 
-    function modifyFatContent(msg) {
-        var componentId = _.find(msg.payload.pack.children[0].children, child => child.componentDefinitionId == "Milk").componentId;
+    function getComponentIdWithFatContent(msg) {
+        return _.find(msg.payload.pack.children[0].children, child => child.componentDefinitionId == "Milk").componentId;
+    }
+
+    function modifyFatContent(componentId) {
         var fatContents = ['0.2', '1.8', '3.5'];
         var newFatContent = fatContents[getRandomInt(0, 3)];
         fetch("http://contracts:8080/drafts/" + contractId + "/" + componentId + "/FAT_CONTENT/" + newFatContent, {

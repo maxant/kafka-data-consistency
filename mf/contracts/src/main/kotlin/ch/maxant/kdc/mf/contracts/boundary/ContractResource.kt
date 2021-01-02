@@ -124,7 +124,8 @@ class ContractResource(
 
         val rootComponentId = ComponentEntity.Queries.selectByContractId(em, contractId).find { it.parentId == null }!!.id
 
-        if(pricingAdapter.totalPrice(listOf(rootComponentId), contract.end).total > BigDecimal("3.00")) {
+        // TODO fix timing problems related to zones. the contract seems to be valid a couple hours longer than the prices! => take a day off below
+        if(pricingAdapter.totalPrice(listOf(rootComponentId), contract.end.minusDays(1)).total > BigDecimal("3.00")) {
             contract.contractState = ContractState.AWAITING_APPROVAL
             log.info("contract $contractId too expensive for auto-approval")
             eventBus.publish(

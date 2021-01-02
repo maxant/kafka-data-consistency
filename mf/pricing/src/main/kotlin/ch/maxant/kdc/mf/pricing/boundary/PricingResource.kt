@@ -3,6 +3,7 @@ package ch.maxant.kdc.mf.pricing.boundary
 import ch.maxant.kdc.mf.pricing.definitions.Price
 import ch.maxant.kdc.mf.pricing.entity.PriceEntity
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
+import java.lang.IllegalStateException
 import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
@@ -31,6 +32,7 @@ class PricingResource(
                    @QueryParam("dateTime") dateTimeString: String
     ): Response {
         val entities = PriceEntity.Queries.selectByComponentIdsAndDateTime(em, componentIds, LocalDateTime.parse(dateTimeString))
+        if(entities.isEmpty()) throw IllegalStateException("no prices sound for componentIds $componentIds and date $dateTimeString")
         val price = entities.map{ it.price }.reduce{ acc, price -> acc.add(price) }
         val tax = entities.map{ it.tax }.reduce{ acc, tax -> acc.add(tax) }
         return Response.ok(Price(price, tax)).build()
