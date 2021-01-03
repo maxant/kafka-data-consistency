@@ -4,6 +4,8 @@ import ch.maxant.kdc.mf.library.ContextInitialised
 import ch.maxant.kdc.mf.library.Secure
 import ch.maxant.kdc.mf.organisation.control.*
 import com.google.common.hash.Hashing
+import org.eclipse.microprofile.metrics.MetricUnits
+import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.jboss.logging.Logger
@@ -39,12 +41,14 @@ class SecurityResource {
     @GET
     @Path("/definitions")
     @Operation(summary = "gets the security configuration as a tree of processes, process steps, methods, roles, users")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun getSecurityConfiguration(@QueryParam("includeUsers") @Parameter(name = "includeUsers") includeUsers: Boolean?) =
         Response.ok(securityDefinitions.getDefinitions(includeUsers)).build()
 
     @POST // not get, because URLs are often logged, and so we want the password to be hidden
     @Path("/token/{username}/")
     @Operation(summary = "gets a JWT for the given user if the password matches the user")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun getToken(@Parameter(name = "username") @PathParam("username") username: String,
             @Parameter(name = "password") password: String) =
         Response.ok(tokens.generate(login(username, password))).build()
@@ -72,11 +76,13 @@ class SecurityResource {
 
     @GET
     @Path("/broadcastModel")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun broadcastSecurityModel() = Response.ok(securityModelPublisher.init(object: ContextInitialised{})).build()
 
     @GET
     @Path("/testSecurity")
     @Secure // just to check that we get a warning at boot time
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun testSecureChecks(): Response {
         return Response.ok().build()
     }

@@ -1,6 +1,8 @@
 package ch.maxant.kdc.mf.contracts.adapter
 
 import ch.maxant.kdc.mf.contracts.dto.CreatePartnerRelationshipCommand
+import org.eclipse.microprofile.metrics.MetricUnits
+import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient
 import java.util.*
@@ -15,6 +17,7 @@ interface PartnerRelationshipsAdapter {
 
     @GET
     @Path("/validate/{contractId}")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun validate(
             @PathParam("contractId") foreignId: UUID,
             @QueryParam("rolesThatCanBeMissing") rolesThatCanBeMissing: List<String>
@@ -22,6 +25,7 @@ interface PartnerRelationshipsAdapter {
 
     @GET
     @Path("/latestByForeignId/{foreignId}/{role}")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun latestByForeignIdAndRole(
             @PathParam("foreignId") foreignId: UUID,
             @PathParam("role") role: String,

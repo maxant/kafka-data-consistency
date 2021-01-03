@@ -6,6 +6,8 @@ import ch.maxant.kdc.mf.partners.entity.PartnerEntity
 import ch.maxant.kdc.mf.partners.entity.PersonType
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.eclipse.microprofile.faulttolerance.Retry
+import org.eclipse.microprofile.metrics.MetricUnits
+import org.eclipse.microprofile.metrics.annotation.Timed
 import org.elasticsearch.client.Request
 import org.elasticsearch.client.RestClient
 import org.jboss.logging.Logger
@@ -27,6 +29,7 @@ class ESAdapter {
     val log: Logger = Logger.getLogger(this.javaClass)
 
     @Retry(delay = 1000)
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun createPartner(partner: PartnerEntity) {
         val request = Request(
                 "PUT",

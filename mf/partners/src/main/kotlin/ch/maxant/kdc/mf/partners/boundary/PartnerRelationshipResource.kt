@@ -6,6 +6,8 @@ import ch.maxant.kdc.mf.partners.entity.ForeignIdType
 import ch.maxant.kdc.mf.partners.entity.PartnerEntity
 import ch.maxant.kdc.mf.partners.entity.PartnerRelationshipEntity
 import ch.maxant.kdc.mf.partners.entity.Role
+import org.eclipse.microprofile.metrics.MetricUnits
+import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType
 import org.eclipse.microprofile.openapi.annotations.media.Content
@@ -43,6 +45,7 @@ class PartnerRelationshipResource(
             ])
     )
     @Path("/latestByForeignId/{foreignId}/{role}")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun latestByForeignIdAndRole(
             @Parameter(name = "idsOnly", description = "if true, then the result is an array of IDs rather than PartnerEntities")
             @QueryParam("idsOnly") idsOnly: Boolean = false,
@@ -83,6 +86,7 @@ class PartnerRelationshipResource(
             ])
     )
     @Path("/allByPartnerId/{partnerId}")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun allByPartnerId(
             @Parameter(name = "idsOnly", description = "if true, then the result is an array of IDs rather than PartnerEntities")
             @QueryParam("idsOnly") idsOnly: Boolean = false,
@@ -115,6 +119,7 @@ class PartnerRelationshipResource(
             ])
     )
     @Path("/validate/{foreignId}")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun validate(
             @Parameter(name = "foreignId", description = "the id of say the contract, to which the partner has a relationship")
             @PathParam("foreignId") foreignId: String,

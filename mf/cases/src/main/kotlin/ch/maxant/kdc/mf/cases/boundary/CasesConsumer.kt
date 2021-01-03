@@ -6,6 +6,8 @@ import ch.maxant.kdc.mf.cases.entity.State
 import ch.maxant.kdc.mf.library.Context
 import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.eclipse.microprofile.metrics.MetricUnits
+import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.reactive.messaging.Incoming
 import org.eclipse.microprofile.reactive.messaging.Message
 import java.util.*
@@ -30,6 +32,7 @@ class CasesConsumer(
     @Transactional
     @PimpedAndWithDltAndAck
     @SuppressWarnings("unused")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun process(msg: Message<String>): CompletionStage<*> {
         val command = Command.valueOf(context.command!!)
         return when {

@@ -7,6 +7,8 @@ import ch.maxant.kdc.mf.contracts.dto.Draft
 import ch.maxant.kdc.mf.contracts.entity.ContractState
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.eclipse.microprofile.faulttolerance.Retry
+import org.eclipse.microprofile.metrics.MetricUnits
+import org.eclipse.microprofile.metrics.annotation.Timed
 import org.elasticsearch.client.Request
 import org.elasticsearch.client.RestClient
 import org.jboss.logging.Logger
@@ -29,6 +31,7 @@ class ESAdapter {
     val log: Logger = Logger.getLogger(this.javaClass)
 
     @Retry(delay = 1000)
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun createOffer(draft: Draft, partnerId: UUID?) {
         val request = Request(
                 "PUT",
@@ -46,6 +49,7 @@ class ESAdapter {
     }
 
     @Retry(delay = 1000)
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun updateOffer(contractId: UUID, allComponents: List<Component>) {
         val request = Request(
                 "POST",
@@ -76,6 +80,7 @@ class ESAdapter {
     }
 
     @Retry(delay = 1000)
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun updateOffer(contractId: UUID, newState: ContractState) {
         val request = Request(
                 "POST",

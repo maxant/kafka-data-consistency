@@ -4,6 +4,8 @@ import ch.maxant.kdc.mf.library.doByHandlingValidationExceptions
 import ch.maxant.kdc.mf.partners.adapter.ESAdapter
 import ch.maxant.kdc.mf.partners.entity.AddressEntity
 import ch.maxant.kdc.mf.partners.entity.PartnerEntity
+import org.eclipse.microprofile.metrics.MetricUnits
+import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.media.Content
 import org.eclipse.microprofile.openapi.annotations.media.Schema
@@ -38,11 +40,13 @@ class PartnerResource(
 
     @GET
     @Path("/{id}")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun getById(@PathParam("id") id: UUID) =
         Response.ok(em.find(PartnerEntity::class.java, id)).build()!!
 
     @GET
     @Path("/search")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun search(
             @QueryParam("firstName") firstName: String?,
             @QueryParam("lastName") lastName: String?,
@@ -59,6 +63,7 @@ class PartnerResource(
     @GET
     @Operation(summary = "gets all addresses of the partner")
     @Path("/addresses/{partnerId}")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun getAddresses(
             @Parameter(name = "partnerId") @PathParam("partnerId") partnerId: UUID
     ) =
@@ -75,6 +80,7 @@ class PartnerResource(
     )
     @Transactional
     @Produces(MediaType.TEXT_PLAIN)
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun create(@Parameter(name = "partner", required = true) partner: PartnerEntity) = doByHandlingValidationExceptions {
 
         log.info("creating new partner with id ${partner.id}")

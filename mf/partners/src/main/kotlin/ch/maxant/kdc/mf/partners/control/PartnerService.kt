@@ -5,6 +5,8 @@ import ch.maxant.kdc.mf.library.MessageBuilder
 import ch.maxant.kdc.mf.partners.adapter.OrganisationAdapter
 import ch.maxant.kdc.mf.partners.boundary.CreatePartnerRelationshipCommand
 import ch.maxant.kdc.mf.partners.entity.*
+import org.eclipse.microprofile.metrics.MetricUnits
+import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.eclipse.microprofile.rest.client.inject.RestClient
@@ -38,6 +40,7 @@ class PartnerService(
     private val log = Logger.getLogger(this.javaClass)
 
     @AsyncContextAware
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun createRelationship(command: CreatePartnerRelationshipCommand): CompletionStage<*> {
         log.info("creating a partner relationship: $command")
 

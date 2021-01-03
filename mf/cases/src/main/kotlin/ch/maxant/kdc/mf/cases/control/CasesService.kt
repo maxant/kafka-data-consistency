@@ -13,6 +13,8 @@ import ch.maxant.kdc.mf.library.JacksonConfig
 import ch.maxant.kdc.mf.library.MessageBuilder
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import org.eclipse.microprofile.metrics.MetricUnits
+import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.jboss.logging.Logger
@@ -43,6 +45,7 @@ class CasesService(
     private val log = Logger.getLogger(this.javaClass)
 
     @AsyncContextAware
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun createCase(caseCommand: CreateCaseCommand): CompletionStage<*> {
         log.info("creating a case: $caseCommand")
 
@@ -54,6 +57,7 @@ class CasesService(
     }
 
     @AsyncContextAware
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun createTask(taskCommand: CreateTaskCommand): CompletionStage<*> {
         log.info("creating a task: $taskCommand")
 
@@ -72,6 +76,7 @@ class CasesService(
     }
 
     @AsyncContextAware
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun updateTask(taskCommand: UpdateTaskCommand): CompletionStage<*> {
         log.info("updating a task: $taskCommand")
 
@@ -89,6 +94,7 @@ class CasesService(
     }
 
     @AsyncContextAware
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun completeTasks(tasksCommand: CompleteTasksCommand): CompletionStage<*> {
         log.info("completing tasks: $tasksCommand")
 

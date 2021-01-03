@@ -4,6 +4,8 @@ import ch.maxant.kdc.mf.organisation.control.OUs
 import ch.maxant.kdc.mf.organisation.control.OUs.HEAD_OFFICE
 import ch.maxant.kdc.mf.organisation.control.Staff
 import ch.maxant.kdc.mf.organisation.control.StaffRole
+import org.eclipse.microprofile.metrics.MetricUnits
+import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.media.Content
 import org.eclipse.microprofile.openapi.annotations.media.Schema
@@ -25,12 +27,14 @@ class OrganisationResource {
     @GET
     @Operation(summary = "gets all staff roles")
     @Path("/staffRoles")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun getStaffRoles() =
         Response.ok(StaffRole.values()).build()
 
     @GET
     @Operation(summary = "gets all staff in a given role")
     @Path("/staffInRole/{role}")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun getStaffByRole(@Parameter(name = "role") @PathParam("role") role: StaffRole) =
         Response.ok(OUs.getAllStaff(role)).build()
 
@@ -42,6 +46,7 @@ class OrganisationResource {
             ])
     )
     @Path("/staffByPartnerId/{partnerId}")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun getStaffByPartnerId(@Parameter(name = "partnerId") @PathParam("partnerId") partnerId: UUID) =
         Response.ok(OUs.getAllStaff().find { it.partnerId == partnerId }).build()
 
@@ -49,6 +54,7 @@ class OrganisationResource {
     @Operation(summary = "gets all staff in a given role who can service the given postcode",
             description = "if none is explicitly attached to the postcode, then someone from head office takes over.")
     @Path("/staffInRole/{role}/{postcode}")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun getStaffByRoleAndPostCode(@Parameter(name = "role") @PathParam("role") role: StaffRole,
                                   @Parameter(name = "postcode") @PathParam("postcode") postcode: String): Response {
         val staffInRole = OUs.getAllStaff(role)
@@ -60,6 +66,7 @@ class OrganisationResource {
 
     @GET
     @Operation(summary = "gets the organisation as a tree")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun getOrganisation() =
         Response.ok(HEAD_OFFICE).build()
 

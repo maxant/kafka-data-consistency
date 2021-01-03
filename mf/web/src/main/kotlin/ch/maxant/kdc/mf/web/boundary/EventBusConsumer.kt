@@ -5,6 +5,8 @@ import ch.maxant.kdc.mf.library.Context.Companion.DEMO_CONTEXT
 import ch.maxant.kdc.mf.library.KafkaHandler
 import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
 import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.eclipse.microprofile.metrics.MetricUnits
+import org.eclipse.microprofile.metrics.annotation.Timed
 import org.jboss.logging.Logger
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
@@ -25,6 +27,7 @@ class EventBusConsumer : KafkaHandler {
     override fun getTopic() = "event-bus"
 
     @PimpedAndWithDltAndAck
+    @Timed(unit = MetricUnits.MILLISECONDS)
     override fun handle(record: ConsumerRecord<String, String>) {
         var headers = // coz its a string of json that needs its quotes escaping and isnt useful to the web client, as it came from there
                 record

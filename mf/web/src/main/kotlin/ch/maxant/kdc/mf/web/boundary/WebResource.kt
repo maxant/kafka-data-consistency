@@ -10,6 +10,8 @@ import io.smallrye.mutiny.subscription.MultiEmitter
 import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecordMetadata
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.header.Header
+import org.eclipse.microprofile.metrics.MetricUnits
+import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import org.eclipse.microprofile.reactive.messaging.Incoming
 import org.eclipse.microprofile.reactive.messaging.Message
@@ -52,14 +54,17 @@ class WebResource {
 
     @Incoming("cases-in")
     @PimpedAndWithDltAndAck
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun processCases(message: Message<String>) = process(message)
 
     @Incoming("partners-in")
     @PimpedAndWithDltAndAck
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun processPartners(message: Message<String>) = process(message)
 
     @Incoming("errors-in")
     @PimpedAndWithDltAndAck
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun processErrors(message: Message<String>) = process(message)
 
     @Deprecated(message = "use native kafka record")

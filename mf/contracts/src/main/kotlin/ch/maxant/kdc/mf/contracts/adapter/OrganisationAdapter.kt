@@ -1,6 +1,8 @@
 package ch.maxant.kdc.mf.contracts.adapter
 
 import com.fasterxml.jackson.annotation.JsonIgnore
+import org.eclipse.microprofile.metrics.MetricUnits
+import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient
 import java.util.*
 import javax.ws.rs.*
@@ -14,9 +16,11 @@ interface OrganisationAdapter {
 
     @GET
     @Path("/staffByPartnerId/{partnerId}")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun getStaffByPartnerId(@PathParam("partnerId") partnerId: UUID): Staff
 
     @GET
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun getOrganisation(): OU
 }
 

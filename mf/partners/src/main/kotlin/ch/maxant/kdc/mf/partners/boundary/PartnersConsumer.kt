@@ -5,6 +5,8 @@ import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
 import ch.maxant.kdc.mf.partners.control.PartnerService
 import ch.maxant.kdc.mf.partners.entity.Role
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.eclipse.microprofile.metrics.MetricUnits
+import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.reactive.messaging.Incoming
 import org.eclipse.microprofile.reactive.messaging.Message
 import java.time.LocalDateTime
@@ -16,7 +18,7 @@ import javax.transaction.Transactional
 
 @ApplicationScoped
 @SuppressWarnings("unused")
-class CasesConsumer(
+class PartnersConsumer(
         @Inject
         var om: ObjectMapper,
 
@@ -30,6 +32,7 @@ class CasesConsumer(
     @Transactional
     @PimpedAndWithDltAndAck
     @SuppressWarnings("unused")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun process(msg: Message<String>): CompletionStage<*> {
         val command = Command.valueOf(context.command!!)
         return when {
