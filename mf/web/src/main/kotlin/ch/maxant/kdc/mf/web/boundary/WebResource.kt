@@ -2,11 +2,13 @@ package ch.maxant.kdc.mf.web.boundary
 
 import ch.maxant.kdc.mf.library.Context
 import ch.maxant.kdc.mf.library.Context.Companion.DEMO_CONTEXT
+import ch.maxant.kdc.mf.library.KafkaHandler
 import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
 import ch.maxant.kdc.mf.library.RequestId
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.subscription.MultiEmitter
 import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecordMetadata
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.header.Header
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import org.eclipse.microprofile.reactive.messaging.Incoming
@@ -27,12 +29,14 @@ import javax.ws.rs.core.Response
 @Tag(name = "web")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-class WebResource {
+class WebResource : KafkaHandler {
 
     val log: Logger = Logger.getLogger(this.javaClass)
 
     @Inject
     lateinit var context: Context
+
+    override fun getTopic() = "event-bus"
 
     // TODO tidy the entries up when they are no longer in use!
     val subscriptions: HashMap<String, MultiEmitter<in String?>> = HashMap()
@@ -48,9 +52,8 @@ class WebResource {
                 }
     }
 
-//    @Incoming("event-bus-in")
     @PimpedAndWithDltAndAck
-    fun processEventBus(message: Message<String>)= process(message)
+    override fun handle(record: ConsumerRecord<String, String>) = process(record)
 
     @Incoming("cases-in")
     @PimpedAndWithDltAndAck
@@ -64,24 +67,40 @@ class WebResource {
     @PimpedAndWithDltAndAck
     fun processErrors(message: Message<String>) = process(message)
 
+    @Deprecated(message = "use native kafka record")
     private fun process(message: Message<String>): CompletionStage<*> {
         log.info("handling message for requestId ${context.requestId}")
 
-        var headers = (message
-                .getMetadata(IncomingKafkaRecordMetadata::class.java)
-                .orElse(null)
-                ?.headers?: emptyList<Header>())
-                .toList()
-                .filter { it.key() != DEMO_CONTEXT } // coz its a string of json that needs its quotes escaping and isnt useful to the web client, as it came from there
-                .map { """ "${it.key()}": "${String(it.value())}" """ }
-                .joinToString()
+        var headers = // coz its a string of json that needs its quotes escaping and isnt useful to the web client, as it came from there
+                (message
+                        .getMetadata(IncomingKafkaRecordMetadata::class.java)
+                        .orElse(null)
+                        ?.headers ?: emptyList<Header>())
+                        .toList()
+                        .filter { it.key() != DEMO_CONTEXT }
+                        .joinToString { """ "${it.key()}": "${String(it.value())}" """ }
         headers = if(headers.isEmpty()) "" else "$headers,"
-
 
         val json = """{ $headers "payload": ${message.payload} }"""
 
         sendToSubscribers(context.requestId, json)
         return CompletableFuture.completedFuture(Unit)
+    }
+
+    private fun process(record: ConsumerRecord<String, String>) {
+        log.info("handling message for requestId ${context.requestId}")
+
+        var headers = // coz its a string of json that needs its quotes escaping and isnt useful to the web client, as it came from there
+                record
+                        .headers()
+                        .toList()
+                        .filter { it.key() != DEMO_CONTEXT }
+                        .joinToString { """ "${it.key()}": "${String(it.value())}" """ }
+        headers = if(headers.isEmpty()) "" else "$headers,"
+
+        val json = """{ $headers "payload": ${record.value()} }"""
+
+        sendToSubscribers(context.requestId, json)
     }
 
     @GET
