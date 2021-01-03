@@ -40,7 +40,6 @@ import javax.ws.rs.core.Response
 @Tag(name = "contracts")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-@Timed(unit = MetricUnits.MILLISECONDS)
 class ContractResource(
     @Inject
     var em: EntityManager
@@ -83,6 +82,7 @@ class ContractResource(
     @GET
     @Path("/{contractId}")
     @Secure
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun getById(@PathParam("contractId") contractId: UUID,
                 @QueryParam("withDetails") withDetails: Boolean = false
     ): Response {
@@ -105,6 +105,7 @@ class ContractResource(
     @Operation(summary = "convenience method for contract holder so that they can offer and accept the contract in one step. can only be executed by the contract holder.")
     @Secure
     @Transactional
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun offerDraftAndAcceptOffer(@PathParam("contractId") contractId: UUID) = doByHandlingValidationExceptions {
         abac.ensureUserIsContractHolder(contractId)
         draftsResource.offerDraft(contractId)
@@ -115,6 +116,7 @@ class ContractResource(
     @Path("/accept/{contractId}")
     @Secure
     @Transactional
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun acceptOffer(@PathParam("contractId") contractId: UUID) = doByHandlingValidationExceptions {
 
         abac.ensureUserIsContractHolder(contractId)
@@ -175,6 +177,7 @@ class ContractResource(
     @Path("/approve/{contractId}")
     @Secure
     @Transactional
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun approve(@PathParam("contractId") contractId: UUID) = doByHandlingValidationExceptions {
 
         abac.ensureUserIsSalesRep(contractId)
