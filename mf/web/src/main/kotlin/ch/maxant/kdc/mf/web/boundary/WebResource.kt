@@ -39,10 +39,10 @@ class WebResource {
     // TODO tidy the entries up when they are no longer in use! tip: see isCancelled below - altho theyre already removed with onterminate at the bottom?
     val subscriptions: HashMap<String, MultiEmitter<in String?>> = HashMap()
 
-    fun sendToSubscribers(requestId: RequestId, json: String) {
+    fun sendToSubscribers(requestId: String, json: String) {
         subscriptions
                 .entries
-                .filter { it.key == requestId.toString() }
+                .filter { it.key == requestId }
                 .filter { !it.value.isCancelled }
                 .forEach {
                     log.info("emitting request $requestId to subscriber ${it.key}: $json. context.requestId is ${context.getRequestIdSafely().requestId}")
@@ -64,21 +64,30 @@ class WebResource {
 
     @Deprecated(message = "use native kafka record")
     private fun process(message: Message<String>): CompletionStage<*> {
-        log.info("handling message for requestId ${context.requestId}")
-
         var headers = // coz its a string of json that needs its quotes escaping and isnt useful to the web client, as it came from there
                 (message
                         .getMetadata(IncomingKafkaRecordMetadata::class.java)
                         .orElse(null)
                         ?.headers ?: emptyList<Header>())
                         .toList()
+
+        val requestId = headers
+                .filter { it.key() == Context.REQUEST_ID }
+                .map { String(it.value()) }
+                .firstOrNull()?:context.getRequestIdSafely().toString()
+
+        log.info("handling message for requestId $requestId")
+
+        var headers2 = headers
                         .filter { it.key() != DEMO_CONTEXT }
                         .joinToString { """ "${it.key()}": "${String(it.value())}" """ }
-        headers = if(headers.isEmpty()) "" else "$headers,"
 
-        val json = """{ $headers "payload": ${message.payload} }"""
+        headers2 = if(headers2.isEmpty()) "" else "$headers2,"
 
-        sendToSubscribers(context.requestId, json)
+        val json = """{ $headers2 "payload": ${message.payload} }"""
+
+        sendToSubscribers(requestId, json)
+
         return CompletableFuture.completedFuture(Unit)
     }
 

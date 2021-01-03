@@ -26,18 +26,26 @@ class EventBusConsumer : KafkaHandler {
 
     @PimpedAndWithDltAndAck
     override fun handle(record: ConsumerRecord<String, String>) {
-        log.info("handling message for requestId ${context.requestId}")
-
         var headers = // coz its a string of json that needs its quotes escaping and isnt useful to the web client, as it came from there
                 record
-                        .headers()
-                        .toList()
+                    .headers()
+                    .toList()
+
+        val requestId = headers
+                .filter { it.key() == Context.REQUEST_ID }
+                .map { String(it.value()) }
+                .firstOrNull()?:context.getRequestIdSafely().toString()
+
+        log.info("handling message for requestId $requestId")
+
+        var headers2 = headers
                         .filter { it.key() != DEMO_CONTEXT }
                         .joinToString { """ "${it.key()}": "${String(it.value())}" """ }
-        headers = if(headers.isEmpty()) "" else "$headers,"
 
-        val json = """{ $headers "payload": ${record.value()} }"""
+        headers2 = if(headers2.isEmpty()) "" else "$headers2,"
 
-        webResource.sendToSubscribers(context.requestId, json)
+        val json = """{ $headers2 "payload": ${record.value()} }"""
+
+        webResource.sendToSubscribers(requestId, json)
     }
 }

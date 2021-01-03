@@ -510,41 +510,50 @@ Create new:
 
 ## Bugs
 
-=============================================== 21 :: errors=0
-using requestId 849e23d0-35fc-4d20-a230-51ac07e02db6
-got token for john
-created partner a70a344b-cd20-4228-8530-19d4309a33a8
-got draft ddb8775f-4787-45ce-9697-3e99a6905ef3
-event: created draft 1
-event: changed case
-event: changed partner relationship
-event: changed partner relationship
-event: updated prices 1
-modified content to 1.8: 201
-event: updated draft 1
-event: updated prices 2
-offering draft ddb8775f-4787-45ce-9697-3e99a6905ef3 on requestId 849e23d0-35fc-4d20-a230-51ac07e02db6
-offered draft: 201
-event: offered draft
-accepting contract
-event: updated prices 3
-accepted contract: 200
-switching to jane in order to approve
-event: changed case
-got token for jane, now approving
-approved contract: 200
-reading contract
-event: changed case
-got contract: RUNNING
-completed in 6925ms
+2021-01-03 15:26:32,356 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] >>> APP.CREATED ch.maxant.kdc.mf.library.Other@4c4e20cd
+2021-01-03 15:26:32,358 INFO  [ch.max.kdc.mf.lib.State] (thread-1) [request-id: c: e:] >>> STATE.CREATED ch.maxant.kdc.mf.library.State@383485ef
+2021-01-03 15:26:32,359 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] set state to 1
+2021-01-03 15:26:32,358 INFO  [ch.max.kdc.mf.lib.State] (thread-2) [request-id: c: e:] >>> STATE.CREATED ch.maxant.kdc.mf.library.State@7220eab1
+2021-01-03 15:26:32,361 INFO  [ch.max.kdc.mf.lib.Other] (thread-2) [request-id: c: e:] set state to 2
+2021-01-03 15:26:32,367 INFO  [ch.max.kdc.mf.lib.State] (Quarkus Main Thread) [request-id: c: e:] >>> STATE.DESTROYING ch.maxant.kdc.mf.library.State@7220eab1
+2021-01-03 15:26:32,899 INFO  [ch.max.kdc.mf.lib.State] (thread-1) [request-id: c: e:] >>> STATE.CREATED ch.maxant.kdc.mf.library.State@72dd4f0f
+2021-01-03 15:26:32,901 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] doing it, state is asdf
+
+2021-01-03 15:30:00,609 INFO  [ch.max.kdc.mf.lib.Other] (Quarkus Main Thread) [request-id: c: e:] >>> APP.DESTROYING ch.maxant.kdc.mf.library.Other@4c4e20cd
+
+2021-01-03 15:30:03,386 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] >>> APP.CREATED ch.maxant.kdc.mf.library.Other@331de08a
+2021-01-03 15:30:03,388 INFO  [ch.max.kdc.mf.lib.State] (thread-1) [request-id: c: e:] >>> STATE.CREATED ch.maxant.kdc.mf.library.State@77643847
+2021-01-03 15:30:03,388 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] set state to 1
+2021-01-03 15:30:03,389 INFO  [ch.max.kdc.mf.lib.Other] (thread-2) [request-id: c: e:] set state to 2
+2021-01-03 15:30:03,647 INFO  [ch.max.kdc.mf.lib.State] (Quarkus Main Thread) [request-id: c: e:] >>> STATE.DESTROYING ch.maxant.kdc.mf.library.State@77643847
+2021-01-03 15:30:03,938 INFO  [ch.max.kdc.mf.lib.State] (thread-2) [request-id: c: e:] >>> STATE.CREATED ch.maxant.kdc.mf.library.State@706039eb
 
 
-using requestId 4cd7b6c5-8a37-45a1-b8eb-0ad4cc0c5bc2
-got token for john
-created partner 1ee571ff-1a4a-422a-bf11-1e6caff274ae
-got draft 38148806-e6a8-4d60-ab27-3dde5649448c
-event: created draft 1
-event: changed case
-event: changed partner relationship
-event: changed partner relationship
->>>> missing event for prices. seems to have arrived in the other load test client, see above
+2021-01-03 15:37:17,253 INFO  [ch.max.kdc.mf.lib.Service] (thread-2) [request-id: c: e:] >>> SERVICE.CREATED ch.maxant.kdc.mf.library.Service@5192c8c2
+2021-01-03 15:37:17,254 INFO  [ch.max.kdc.mf.lib.KafkaConsumers] (Quarkus Main Thread) [request-id: c: e:] kafka subscriptions setup completed
+2021-01-03 15:37:17,254 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] >>> APP.CREATED ch.maxant.kdc.mf.library.Other@f77b711
+2021-01-03 15:37:17,255 INFO  [ch.max.kdc.mf.lib.State] (thread-1) [request-id: c: e:] >>> STATE.CREATED ch.maxant.kdc.mf.library.State@53321fc5
+2021-01-03 15:37:17,256 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] set state to 1
+2021-01-03 15:37:17,257 INFO  [ch.max.kdc.mf.lib.Other] (thread-2) [request-id: c: e:] set state to 2
+2021-01-03 15:37:18,387 INFO  [ch.max.kdc.mf.lib.Other] (thread-2) [request-id: c: e:] doing it, state is 2
+2021-01-03 15:37:20,194 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] doing it, state is 2
+2021-01-03 15:37:20,731 INFO  [ch.max.kdc.mf.lib.Other] (thread-2) [request-id: c: e:] doing it, state is 2
+2021-01-03 15:37:21,812 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] doing it, state is 2
+
+27676 thread 1 value 
+27667 thread 2 27673map
+
+
+https://quarkusio.zulipchat.com/#narrow/stream/187030-users/topic/Does.20.40RequestScoped.20only.20work.20with.20web.20requests.3F
+
+    2021-01-03 16:23:14,880 INFO  [ch.max.kdc.mf.lib.Service] (thread-1) [request-id: c: e:] >>> SERVICE.CREATED ch.maxant.kdc.mf.library.Service@4384aed5
+    2021-01-03 16:23:14,882 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] >>> APP.CREATED ch.maxant.kdc.mf.library.Other@29789459
+    2021-01-03 16:23:14,882 INFO  [ch.max.kdc.mf.lib.State] (thread-1) [request-id: c: e:] >>> STATE.CREATED ch.maxant.kdc.mf.library.State@374a5f6e
+    2021-01-03 16:23:14,883 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] set state to 1 on ch.maxant.kdc.mf.library.State@374a5f6e
+    2021-01-03 16:23:15,561 INFO  [ch.max.kdc.mf.lib.Other] (thread-2) [request-id: c: e:] set state to 2 on ch.maxant.kdc.mf.library.State@374a5f6e
+    2021-01-03 16:23:15,821 INFO  [ch.max.kdc.mf.lib.State] (Quarkus Main Thread) [request-id: c: e:] >>> STATE.DESTROYING ch.maxant.kdc.mf.library.State@374a5f6e
+    2021-01-03 16:23:16,959 INFO  [ch.max.kdc.mf.lib.State] (thread-2) [request-id: c: e:] >>> STATE.CREATED ch.maxant.kdc.mf.library.State@2d584ec8
+    2021-01-03 16:23:16,960 INFO  [ch.max.kdc.mf.lib.Other] (thread-2) [request-id: c: e:] doing it, state is asdf on ch.maxant.kdc.mf.library.State@2d584ec8
+    2021-01-03 16:23:18,388 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] doing it, state is asdf on ch.maxant.kdc.mf.library.State@2d584ec8
+    2021-01-03 16:23:20,062 INFO  [ch.max.kdc.mf.lib.Other] (thread-2) [request-id: c: e:] doing it, state is asdf on ch.maxant.kdc.mf.library.State@2d584ec8
+    2021-01-03 16:23:20,978 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] doing it, state is asdf on ch.maxant.kdc.mf.library.State@2d584ec8

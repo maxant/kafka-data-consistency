@@ -43,8 +43,8 @@ function createPartnerAndContract(){
     source.onmessage = function (event) {
         let msg = JSON.parse(event.data);
         if(msg["request-id"] != requestId) {
-            console.error(">>>>>>>>>> ERROR!!! - got event for request-id " + msg["request-id"]
-                + "on source for requestId " + requestId + " so dumping it");
+            console.error(">>>>>>>>>> ERROR!!! - got event " + msg.event + " for request-id " + msg["request-id"]
+                + " on source for requestId " + requestId + " so dumping it");
             numErrors++;
             return;
         }

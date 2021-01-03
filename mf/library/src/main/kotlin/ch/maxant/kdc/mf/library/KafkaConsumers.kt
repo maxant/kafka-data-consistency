@@ -6,21 +6,25 @@ import io.smallrye.reactive.messaging.kafka.commit.KafkaIgnoreCommit
 import io.smallrye.reactive.messaging.kafka.fault.KafkaIgnoreFailure
 import io.vertx.kafka.client.consumer.impl.KafkaConsumerRecordImpl
 import io.vertx.mutiny.kafka.client.consumer.KafkaConsumerRecord
+import org.apache.commons.lang3.mutable.MutableBoolean
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.eclipse.microprofile.config.ConfigProvider
 import org.eclipse.microprofile.config.inject.ConfigProperty
+import org.eclipse.microprofile.context.ManagedExecutor
 import org.eclipse.microprofile.context.ThreadContext
 import org.eclipse.microprofile.reactive.messaging.Message
 import org.jboss.logging.Logger
 import java.time.Duration
 import java.util.*
-import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Future
 import javax.annotation.PreDestroy
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.event.Observes
+import javax.enterprise.inject.Disposes
 import javax.enterprise.inject.Instance
+import javax.enterprise.inject.Produces
 import javax.inject.Inject
 
 @ApplicationScoped
@@ -29,10 +33,10 @@ class KafkaConsumers(
         @ConfigProperty(name = "kafka.bootstrap.servers")
         val kafkaBootstrapServers: String,
 
+        @WithFreshContext
         @Inject
-        val threadContext: ThreadContext
+        val managedExecutor: ManagedExecutor
 ) {
-
     @Inject
     lateinit var topicHandlers: Instance<KafkaHandler>
 
@@ -40,14 +44,12 @@ class KafkaConsumers(
 
     private val prefixIncoming = "mf.messaging.incoming."
 
-    private val consumers = mutableListOf<KafkaConsumer<String, String>>()
-    private val consumersToClose = mutableListOf<Pair<KafkaConsumer<String, String>, CountDownLatch>>()
+    private val consumers = mutableListOf<Pair<MutableBoolean, Future<*>>>()
 
     @PreDestroy
     fun destroy() {
-        consumersToClose.addAll(consumers.map { it to CountDownLatch(1) })
-        consumersToClose.forEach { it.second.await() } // wait for them to all close on their respective thread
-        consumersToClose.clear()
+        consumers.forEach { it.first.setTrue() }
+        consumers.forEach { it.second.get() }
         consumers.clear()
     }
 
@@ -77,63 +79,53 @@ class KafkaConsumers(
             if(handlers.isEmpty()) throw IllegalArgumentException("No topic handler configured for topic '$topic'")
             if(handlers.size > 1) throw IllegalArgumentException("More than one topic handler configured for topic '$topic'")
 
-            val t = Thread(threadContext.contextualRunnable {
+            val die = MutableBoolean(false)
+            val f = managedExecutor.supplyAsync {
+                Thread.currentThread().name = "kfkcnsmr::$topic"
                 val consumer = KafkaConsumer<String, String>(props, StringDeserializer(), StringDeserializer())
-                consumers.add(consumer)
                 consumer.subscribe(listOf(topic))
                 log.info("subscribed to $topic")
-                run(consumer, handlers[0])
-            })
-            t.isDaemon = true
-            t.name = "$topic::consumer"
-            t.start()
+                run(die, consumer, handlers[0])
+            }
+            consumers.add(die to f)
         }
         log.info("kafka subscriptions setup completed")
     }
 
-    private fun run(consumer: KafkaConsumer<String, String>, handler: KafkaHandler) {
-        var closed = false
-        while(true) {
+    private fun run(die: MutableBoolean, consumer: KafkaConsumer<String, String>, handler: KafkaHandler) {
+        while(die.isFalse) {
             try {
-                if(consumersToClose.any { it.first == consumer }) {
-                    log.info("closing consumer")
-                    consumer.close()
-                    closed = true
-                    consumersToClose.filter { it.first == consumer }.forEach { it.second.countDown() } // signal that we're done
-                    log.info("closed and notified")
-                    break
-                } else if(!closed) {
-                    log.debug("polling for new records")
-                    try {
-                        val records = consumer.poll(Duration.ofSeconds(1)) // so that we don't wait too long for closing
-                        log.debug("got records: ${records.count()}")
-                        if(records.count() > 0) {
-                            log.info("got records: ${records.count()}")
-                        }
-                        for (record in records) {
-                            handler.handle(record)
-                            handler.handle(toMessage(record)) //.toCompletableFuture().get()
-                        }
-                        consumer.commitSync()
-                        log.debug("records handled successfully")
-                    } catch (e: IllegalStateException) {
-                        if("This consumer has already been closed." == e.message) {
-                            log.info("consumer is already closed! breaking from polling")
-                            break
-                        }
-                        throw e
+                log.debug("polling for new records")
+                try {
+                    val records = consumer.poll(Duration.ofSeconds(1)) // so that we don't wait too long for closing
+                    log.debug("got records: ${records.count()}")
+                    if(records.count() > 0) {
+                        log.info("got records: ${records.count()}")
                     }
-                } else if(closed) {
-                    break // not really necessary, but just incase
+                    for (record in records) {
+                        handler.handle(record)
+                        handler.handle(toMessage(record)) //.toCompletableFuture().get()
+                    }
+                    consumer.commitSync()
+                    log.debug("records handled successfully")
+                } catch (e: IllegalStateException) {
+                    if("This consumer has already been closed." == e.message) {
+                        log.info("consumer is already closed! breaking from polling")
+                        break
+                    }
+                    throw e
                 }
             } catch (e: Exception) {
                 log.error("Failed to process records because of an error. Records will be skipped. " +
                         "This should not happen, because you should catch exceptions in your business code or let them " +
                         "be handled using @PimpedAndWithDltAndAck", e)
             } finally {
-                log.debug("done with this poll loop")
+                log.debug("done with this poll loop, going round again")
             }
         }
+        log.info("closing consumer")
+        consumer.close()
+        log.info("closed consumer")
     }
 
     private fun toMessage(record: ConsumerRecord<String, String>?): Message<String> {
@@ -142,3 +134,22 @@ class KafkaConsumers(
     }
 }
 
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.FIELD, AnnotationTarget.VALUE_PARAMETER)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class WithFreshContext
+
+@ApplicationScoped
+class ManagedExecutorWithFreshContextProducer {
+
+    @Produces @ApplicationScoped @WithFreshContext
+    fun createExecutor(): ManagedExecutor {
+        return ManagedExecutor.builder()
+                .propagated(ThreadContext.TRANSACTION)
+                .cleared(ThreadContext.CDI)
+                .build();
+    }
+
+    fun disposeExecutor(@Disposes @WithFreshContext exec: ManagedExecutor) {
+        exec.shutdownNow();
+    }
+}

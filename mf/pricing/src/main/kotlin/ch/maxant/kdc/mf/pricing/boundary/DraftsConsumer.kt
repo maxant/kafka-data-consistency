@@ -1,17 +1,17 @@
 package ch.maxant.kdc.mf.pricing.boundary
 
-import ch.maxant.kdc.mf.library.*
+import ch.maxant.kdc.mf.library.Context
+import ch.maxant.kdc.mf.library.KafkaHandler
+import ch.maxant.kdc.mf.library.MessageBuilder
+import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
 import ch.maxant.kdc.mf.pricing.control.PricingResult
 import ch.maxant.kdc.mf.pricing.control.PricingService
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
-import org.eclipse.microprofile.reactive.messaging.Message
 import org.jboss.logging.Logger
-import java.lang.IllegalStateException
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionStage
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.event.Observes
 import javax.enterprise.event.TransactionPhase
@@ -73,8 +73,6 @@ class DraftsConsumer(
         // since this is happening async after the transaction, and we don't return anything,
         // we just pass a new CompletableFuture and don't care what happens with it
         eventBus.send(messageBuilder.build(prices.contractId, prices, CompletableFuture(), event = "UPDATED_PRICES"))
-        withMdcSet(context) {
-            log.info("published prices for contractId ${prices.contractId}")
-        }
+        log.info("published prices for contractId ${prices.contractId}")
     }
 }
