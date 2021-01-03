@@ -2,7 +2,6 @@ package ch.maxant.kdc.mf.web.boundary
 
 import ch.maxant.kdc.mf.library.Context
 import ch.maxant.kdc.mf.library.Context.Companion.DEMO_CONTEXT
-import ch.maxant.kdc.mf.library.KafkaHandler
 import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
 import ch.maxant.kdc.mf.library.RequestId
 import io.smallrye.mutiny.Multi
@@ -29,14 +28,12 @@ import javax.ws.rs.core.Response
 @Tag(name = "web")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-class WebResource : KafkaHandler {
+class WebResource {
 
     val log: Logger = Logger.getLogger(this.javaClass)
 
     @Inject
     lateinit var context: Context
-
-    override fun getTopic() = "event-bus"
 
     // TODO tidy the entries up when they are no longer in use!
     val subscriptions: HashMap<String, MultiEmitter<in String?>> = HashMap()
@@ -51,9 +48,6 @@ class WebResource : KafkaHandler {
                     it.value.emit(json)
                 }
     }
-
-    @PimpedAndWithDltAndAck
-    override fun handle(record: ConsumerRecord<String, String>) = process(record)
 
     @Incoming("cases-in")
     @PimpedAndWithDltAndAck

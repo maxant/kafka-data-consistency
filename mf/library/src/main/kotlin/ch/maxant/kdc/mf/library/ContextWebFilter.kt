@@ -56,7 +56,7 @@ class ContextWebFilter: Filter {
         else {
             // it might already be in the request from another filter
             val rId2 = context.getRequestIdSafely().requestId
-            log.info("creating new requestId as it is missing in the request: $rId2")
+            log.info("creating new requestId as it is missing in the request: $rId2 on path ${request.method} ${request.requestURI}")
             rId2
         }
         return RequestId(rId)
