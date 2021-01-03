@@ -3,6 +3,7 @@ package ch.maxant.kdc.mf.library
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecordMetadata
 import org.apache.commons.lang3.exception.ExceptionUtils
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.header.internals.RecordHeader
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
@@ -54,11 +55,13 @@ class ErrorHandler {
         val value = when(originalMessage) {
             is String -> om.writeValueAsString(Error(unwrapped, originalMessage))
             is Message<*> -> om.writeValueAsString(Error(unwrapped, originalMessage.payload as String))
+            is ConsumerRecord<*, *> -> om.writeValueAsString(Error(unwrapped, originalMessage.value() as String))
             else -> throw UnsupportedOperationException("unexpected first parameter type ${originalMessage::class.java.name}")
         }
         val key = when(originalMessage) {
             is String -> null
             is Message<*> -> getKey(originalMessage)
+            is ConsumerRecord<*, *> -> getKey(originalMessage)
             else -> throw UnsupportedOperationException("unexpected first parameter type ${originalMessage::class.java.name}")
         }
 
@@ -88,11 +91,24 @@ class ErrorHandler {
             val waitShort = numRetries == 0
             val record = originalMessage.getMetadata(IncomingKafkaRecordMetadata::class.java).get()
             val rhs = mutableListOf<RecordHeader>()
-            rhs.add(RecordHeader(DELAY_UNTIL, (System.currentTimeMillis() + (if(waitShort) 1_000 else 10_000)).toString().toByteArray()))
+            rhs.add(RecordHeader(DELAY_UNTIL, (System.currentTimeMillis() + (if (waitShort) 1_000 else 10_000)).toString().toByteArray()))
             rhs.add(RecordHeader(ORIGINAL_TOPIC, record.topic.toByteArray()))
             record.headers.forEach { rhs.add(RecordHeader(it.key(), it.value())) }
             val ack = CompletableFuture<Unit>()
             val msg = messageWithMetadata(record.key as String, originalMessage.payload as String, rhs, ack)
+
+            if (waitShort) waitingroom01.send(msg)
+            else waitingroom10.send(msg)
+            return ack
+        } else if(originalMessage is ConsumerRecord<*, *>) {
+            val waitShort = numRetries == 0
+            val record = originalMessage
+            val rhs = mutableListOf<RecordHeader>()
+            rhs.add(RecordHeader(DELAY_UNTIL, (System.currentTimeMillis() + (if(waitShort) 1_000 else 10_000)).toString().toByteArray()))
+            rhs.add(RecordHeader(ORIGINAL_TOPIC, record.topic().toByteArray()))
+            record.headers().forEach { rhs.add(RecordHeader(it.key(), it.value())) }
+            val ack = CompletableFuture<Unit>()
+            val msg = messageWithMetadata(record.key().toString(), originalMessage.value().toString(), rhs, ack)
 
             if(waitShort) waitingroom01.send(msg)
             else waitingroom10.send(msg)
@@ -102,6 +118,9 @@ class ErrorHandler {
 
     private fun getKey(m: Message<*>) =
             m.getMetadata(IncomingKafkaRecordMetadata::class.java).get().key?.toString()
+
+    private fun getKey(r: ConsumerRecord<*, *>) =
+            r.key().toString()
 
     companion object {
         const val DELAY_UNTIL = "DELAY_UNTIL"

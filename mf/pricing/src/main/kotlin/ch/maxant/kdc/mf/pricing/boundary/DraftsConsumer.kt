@@ -1,19 +1,16 @@
 package ch.maxant.kdc.mf.pricing.boundary
 
-import ch.maxant.kdc.mf.library.Context
-import ch.maxant.kdc.mf.library.MessageBuilder
-import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
-import ch.maxant.kdc.mf.library.withMdcSet
+import ch.maxant.kdc.mf.library.*
 import ch.maxant.kdc.mf.pricing.control.PricingResult
 import ch.maxant.kdc.mf.pricing.control.PricingService
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
-import org.eclipse.microprofile.reactive.messaging.Incoming
 import org.eclipse.microprofile.reactive.messaging.Message
 import org.jboss.logging.Logger
+import java.lang.IllegalStateException
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletableFuture.completedFuture
 import java.util.concurrent.CompletionStage
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.event.Observes
@@ -31,34 +28,53 @@ class DraftsConsumer(
         var pricingService: PricingService,
 
         @Inject
-        var context: Context
-) {
+        var context: Context,
+
+        @Inject
+        var messageBuilder: MessageBuilder
+
+) : KafkaHandler {
+
+    @Inject
+    @Channel("event-bus-out")
+    lateinit var eventBus: Emitter<String>
+
+    @Inject
+    private lateinit var pricingResultEvent: javax.enterprise.event.Event<PricingResult>
+
     private val log = Logger.getLogger(this.javaClass)
 
-    // @Incoming("event-bus-in")
+    override fun getTopic() = "event-bus"
+
     @Transactional
     @PimpedAndWithDltAndAck
-    fun process(msg: Message<String>): CompletionStage<*> {
-        val draft = om.readTree(msg.payload)
+    override fun handle(record: ConsumerRecord<String, String>) {
+        val draft = om.readTree(record.value())
         return when (context.event) {
             "CREATED_DRAFT", "UPDATED_DRAFT" -> {
                 log.info("pricing draft")
-                pricingService
-                    .priceDraft(draft, context.getRequestIdSafely().requestId)
-                        /*
-//                        TODO i think this is where the shit happens. the context wont be the same, and might be randomly picked up
-                    .thenCompose {
-
-
-                        sendEvent(it)
-                    }
-                    */
+                val result = pricingService.priceDraft(draft)
+                sendEvent(result)
             }
             else -> {
                 // ignore other messages
                 log.info("skipping irrelevant message ${context.event}")
-                completedFuture(Unit)
             }
+        }
+    }
+
+    private fun sendEvent(prices: PricingResult) {
+        pricingResultEvent.fire(prices)
+    }
+
+    @SuppressWarnings("unused")
+    private fun send(@Observes(during = TransactionPhase.AFTER_SUCCESS) prices: PricingResult) {
+        // TODO transactional outbox
+        // since this is happening async after the transaction, and we don't return anything,
+        // we just pass a new CompletableFuture and don't care what happens with it
+        eventBus.send(messageBuilder.build(prices.contractId, prices, CompletableFuture(), event = "UPDATED_PRICES"))
+        withMdcSet(context) {
+            log.info("published prices for contractId ${prices.contractId}")
         }
     }
 }

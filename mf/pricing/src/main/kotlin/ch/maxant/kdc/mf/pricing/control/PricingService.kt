@@ -1,9 +1,6 @@
 package ch.maxant.kdc.mf.pricing.control
 
-import ch.maxant.kdc.mf.library.AsyncContextAware
 import ch.maxant.kdc.mf.library.Context
-import ch.maxant.kdc.mf.library.MessageBuilder
-import ch.maxant.kdc.mf.library.withMdcSet
 import ch.maxant.kdc.mf.pricing.definitions.Price
 import ch.maxant.kdc.mf.pricing.definitions.Prices
 import ch.maxant.kdc.mf.pricing.dto.Configuration
@@ -12,22 +9,13 @@ import ch.maxant.kdc.mf.pricing.dto.TreeComponent
 import ch.maxant.kdc.mf.pricing.dto.Visitor
 import ch.maxant.kdc.mf.pricing.entity.PriceEntity
 import ch.maxant.kdc.mf.pricing.entity.PriceEntity.Queries.deleteByContractId
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import org.eclipse.microprofile.reactive.messaging.Channel
-import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.jboss.logging.Logger
-import java.lang.IllegalStateException
 import java.time.LocalDateTime
 import java.util.*
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletableFuture.completedFuture
-import java.util.concurrent.CompletionStage
 import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.event.Observes
-import javax.enterprise.event.TransactionPhase
 import javax.inject.Inject
 import javax.persistence.EntityManager
 import kotlin.collections.HashMap
@@ -42,23 +30,11 @@ class PricingService(
         var om: ObjectMapper,
 
         @Inject
-        var context: Context,
-
-        @Inject
-        var messageBuilder: MessageBuilder
+        var context: Context
 ) {
-    @Inject
-    @Channel("event-bus-out")
-    lateinit var eventBus: Emitter<String>
-
-    @Inject
-    private lateinit var pricingResultEvent: javax.enterprise.event.Event<PricingResult>
-
     private val log = Logger.getLogger(this.javaClass)
 
-    @AsyncContextAware
-    fun priceDraft(draft: JsonNode, requestId: String): CompletionStage<PricingResult> {
-        if(context.getRequestIdSafely().requestId != requestId) throw IllegalStateException("request ID changed from $requestId to ${context.getRequestIdSafely().requestId}")
+    fun priceDraft(draft: JsonNode): PricingResult {
         // TODO add extension method to make this fetchable via a path => ur use JsonPath?
         // TODO replace with DTO
         val contract = draft.get("contract")
@@ -69,11 +45,11 @@ class PricingService(
         if(draft.has("pack")) {
             val pack = draft.get("pack").toString()
             val root = om.readValue(pack, TreeComponent::class.java)
-            return completedFuture(priceDraft(contractId, syncTimestamp, start, end, root))
+            return priceDraft(contractId, syncTimestamp, start, end, root)
         } else if(draft.has("allComponents")) {
             val allComponents = draft.get("allComponents").toString()
             val list = om.readValue<ArrayList<FlatComponent>>(allComponents)
-            return completedFuture(priceDraft(contractId, syncTimestamp, start, end, toTree(list)))
+            return priceDraft(contractId, syncTimestamp, start, end, toTree(list))
         } else {
             throw IllegalArgumentException("unexpected draft structure")
         }
@@ -133,48 +109,27 @@ class PricingService(
             }
         })
 
-        val result = PricingResult(contractId, prices, context.getRequestIdSafely().requestId)
-
-        sendEvent(result)
-
-        return result
+        return PricingResult(contractId, prices)
 
         /*
-{"draft":
-    {"contract":
-        { "id":"82e49c2d-24e3-426b-b20d-b5691f7e44b6",
-          "start":"2020-10-26T00:00:00","end":"2022-10-16T00:00:00","state":"DRAFT"},
-        "pack":
-            { "componentDefinitionId":"CardboardBox",
-              "componentId": "<aUuid>"
-              "configs":[
-                {"name":"SPACES","value":10,"units":"NONE","type":"int"},
-                {"name":"QUANTITY","value":10,"units":"PIECES","type":"int"},
-                {"name":"MATERIAL","value":"CARDBOARD","units":"NONE","type":"ch.maxant.kdc.mf.contracts.definitions.Material"}],
-                "children":[
-                    {"productId":"COOKIES_MILKSHAKE","componentDefinitionId":"Milkshake",
+        {"draft":
+            {"contract":
+                { "id":"82e49c2d-24e3-426b-b20d-b5691f7e44b6",
+                  "start":"2020-10-26T00:00:00","end":"2022-10-16T00:00:00","state":"DRAFT"},
+                "pack":
+                    { "componentDefinitionId":"CardboardBox",
+                      "componentId": "<aUuid>"
+                      "configs":[
+                        {"name":"SPACES","value":10,"units":"NONE","type":"int"},
+                        {"name":"QUANTITY","value":10,"units":"PIECES","type":"int"},
+                        {"name":"MATERIAL","value":"CARDBOARD","units":"NONE","type":"ch.maxant.kdc.mf.contracts.definitions.Material"}],
+                        "children":[
+                            {"productId":"COOKIES_MILKSHAKE","componentDefinitionId":"Milkshake",
         */
-    }
-
-    private fun sendEvent(prices: PricingResult) {
-        pricingResultEvent.fire(prices)
-    }
-
-    @SuppressWarnings("unused")
-    private fun send(@Observes(during = TransactionPhase.AFTER_SUCCESS) prices: PricingResult) {
-        if(context.getRequestIdSafely().requestId != prices.requestId) throw IllegalStateException("request ID changed #2 from $prices.requestId to ${context.getRequestIdSafely().requestId}")
-        // TODO transactional outbox
-        // since this is happening async after the transaction, and we don't return anything,
-        // we just pass a new CompletableFuture and don't care what happens with it
-        eventBus.send(messageBuilder.build(prices.contractId, prices, CompletableFuture(), event = "UPDATED_PRICES"))
-        withMdcSet(context) {
-            log.info("published prices for contractId ${prices.contractId}")
-        }
     }
 }
 
 data class PricingResult(
         val contractId: UUID,
-        val priceByComponentId: Map<UUID, Price>,
-        @field:JsonIgnore val requestId: String
+        val priceByComponentId: Map<UUID, Price>
 )

@@ -12,6 +12,7 @@ import io.smallrye.reactive.messaging.kafka.OutgoingKafkaRecordMetadata
 import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.StringUtils.isNotEmpty
 import org.apache.commons.lang3.exception.ExceptionUtils
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.header.internals.RecordHeader
 import org.eclipse.microprofile.reactive.messaging.Message
 import org.jboss.logging.Logger
@@ -62,7 +63,7 @@ class PimpedAndWithDltAndAckInterceptor(
     fun invoke(ctx: InvocationContext): Any? {
         require(ctx.parameters.size == 1) { "EH001 @PimpedAndWithDltAndAck on method ${ctx.target.javaClass.name}::${ctx.method.name} must contain exactly one parameter" }
         val firstParam = ctx.parameters[0]
-        require((firstParam is String) || (firstParam is Message<*>)) { "EH002 @PimpedAndWithDltAndAck on method ${ctx.target.javaClass.name}::${ctx.method.name} must contain one String/Message parameter" }
+        require((firstParam is String) || (firstParam is Message<*>) || (firstParam is ConsumerRecord<*, *>)) { "EH002 @PimpedAndWithDltAndAck on method ${ctx.target.javaClass.name}::${ctx.method.name} must contain one String/Message/ConsumerRecord parameter" }
 
         // set context into request scoped bean, so downstream can use it. also works with quarkus context propogation
         setContext(firstParam)
@@ -87,10 +88,10 @@ class PimpedAndWithDltAndAckInterceptor(
             return if (ret is CompletionStage<*>) {
                 ret.handle { s, t -> ResultAndError(s, t) }
                    .thenCompose { rae -> dealWithExceptionIfNecessary(rae.throwable, ctx, copyOfContext) }
-                   .thenCompose { (firstParam as Message<*>).ack() }
+                   .thenCompose { (firstParam as Message<*>).ack() } // this will fail with a ConsumerRecord, but who cares! we're deprecating this async stuff
                    .thenRun { withMdcSet(copyOfContext) { log.debug("kafka acked message") } }
             } else {
-                // quarkus will ack for us
+                // quarkus will ack for us; our kafka consumer lib will ack for us
                 ret
             }
         } catch (e: Exception) {
@@ -98,7 +99,8 @@ class PimpedAndWithDltAndAckInterceptor(
             return when (firstParam) {
                 is String -> cf1.get() // we have no choice but to block, or skip, (since we can't return a CS) but if downstream fails, we should too; quarkus will ack the incoming message for us as the interface is string base
                 is Message<*> -> cf1.thenCompose { firstParam.ack() }.thenRun { log.debug("kafka acked message") }
-                else -> throw java.lang.RuntimeException("EH007 unexpected parameter type should have been caught on method entry")
+                is ConsumerRecord<*,*> -> cf1.get() // is normally completed because its all implemented sync!
+                else -> throw RuntimeException("EH007 unexpected parameter type should have been caught on method entry")
             }
         }
     }
@@ -167,21 +169,26 @@ class PimpedAndWithDltAndAckInterceptor(
 
     private fun isRetryableException(firstParam: Any, t: Throwable) =
             when (firstParam) {
-                is String -> false // we have no way of checking how often the message has been retried, so cannot
+                is String -> false  // YES, this check is independent of the actual data. we just dont bother retrying in this case:
+                                    // we have no way of checking how often the message has been retried, so cannot
                                    // give up => we simply dont support retry when you use basic strings instead of message objects
-                is Message<*> -> {
-                    val throwables = ExceptionUtils.getThrowableList(t).map { it::class.java }
-                    !throwables.any {
-                        ValidationException::class.java.isAssignableFrom(it)
-                            || ConstraintViolationException::class.java.isAssignableFrom(it)
-                            || IllegalArgumentException::class.java.isAssignableFrom(it)
-                    }
-                }
+                is Message<*> -> isRetryableException(t)
+                is ConsumerRecord<*,*> -> isRetryableException(t)
                 else -> throw UnsupportedOperationException("unexpected first parameter type ${firstParam::class.java.name}")
             }
 
+    private fun isRetryableException(t: Throwable): Boolean {
+        val throwables = ExceptionUtils.getThrowableList(t).map { it::class.java }
+        return !throwables.any {
+            ValidationException::class.java.isAssignableFrom(it)
+                    || ConstraintViolationException::class.java.isAssignableFrom(it)
+                    || IllegalArgumentException::class.java.isAssignableFrom(it)
+        }
+    }
+
     private fun asString(a: Any?): String = when (a) {
         is Message<*> -> a.payload as String
+        is ConsumerRecord<*, *> -> a.value() as String
         else -> java.lang.String.valueOf(a)
     }
 }
@@ -218,6 +225,14 @@ fun getHeader(om: ObjectMapper, firstParam: Any, header: String): String = when 
                 .getMetadata(IncomingKafkaRecordMetadata::class.java)
                 .orElse(null)
                 ?.headers
+                ?.find { it.key() == header }
+                ?.value()
+                ?: byteArrayOf(),
+                Charsets.UTF_8)
+
+    is ConsumerRecord<*, *> ->
+        String(firstParam
+                ?.headers()
                 ?.find { it.key() == header }
                 ?.value()
                 ?: byteArrayOf(),

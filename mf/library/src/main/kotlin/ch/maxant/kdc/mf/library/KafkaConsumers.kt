@@ -16,7 +16,6 @@ import org.eclipse.microprofile.reactive.messaging.Message
 import org.jboss.logging.Logger
 import java.time.Duration
 import java.util.*
-import java.util.concurrent.CompletionStage
 import java.util.concurrent.CountDownLatch
 import javax.annotation.PreDestroy
 import javax.enterprise.context.ApplicationScoped
@@ -35,7 +34,7 @@ class KafkaConsumers(
 ) {
 
     @Inject
-    lateinit var topicHandlers: Instance<Handler<*>>
+    lateinit var topicHandlers: Instance<KafkaHandler>
 
     private val log = Logger.getLogger(this.javaClass)
 
@@ -45,8 +44,8 @@ class KafkaConsumers(
     private val consumersToClose = mutableListOf<Pair<KafkaConsumer<String, String>, CountDownLatch>>()
 
     @PreDestroy
-    fun down() {
-        consumersToClose.addAll(consumers.map { it.to(CountDownLatch(1)) })
+    fun destroy() {
+        consumersToClose.addAll(consumers.map { it to CountDownLatch(1) })
         consumersToClose.forEach { it.second.await() } // wait for them to all close on their respective thread
         consumersToClose.clear()
         consumers.clear()
@@ -70,10 +69,11 @@ class KafkaConsumers(
             if(autoOffsetReset.isPresent) {
                 props["auto.offset.reset"] = autoOffsetReset.get()
             }
-            props["enable.auto.commit"] = "true"
-            props["auto.commit.interval.ms"] = "1000"
+            props["enable.auto.commit"] = "false"
+            //props["enable.auto.commit"] = "true"
+            //props["auto.commit.interval.ms"] = "1000"
             val topic = config.getValue("$prefixIncoming$cg.topic", String::class.java)
-            val handlers = topicHandlers.filter { it.getTopic() == topic }
+            val handlers = topicHandlers.filter { it.topic == topic }
             if(handlers.isEmpty()) throw IllegalArgumentException("No topic handler configured for topic '$topic'")
             if(handlers.size > 1) throw IllegalArgumentException("More than one topic handler configured for topic '$topic'")
 
@@ -91,7 +91,7 @@ class KafkaConsumers(
         log.info("kafka subscriptions setup completed")
     }
 
-    private fun <V> run(consumer: KafkaConsumer<*,*>, handler: Handler<V>) {
+    private fun run(consumer: KafkaConsumer<String, String>, handler: KafkaHandler) {
         var closed = false
         while(true) {
             try {
@@ -100,23 +100,28 @@ class KafkaConsumers(
                     consumer.close()
                     closed = true
                     consumersToClose.filter { it.first == consumer }.forEach { it.second.countDown() } // signal that we're done
-                    log.info("closed and informed")
+                    log.info("closed and notified")
                     break
                 } else if(!closed) {
-                    log.info("polling for new records")
+                    log.debug("polling for new records")
                     try {
-                        val records = consumer.poll(Duration.ofMinutes(1))
-                        log.info("got records: ${records.count()}")
-                        for (record in records) {
-                            handler.handle(toMessage(record) as Message<V>) //.toCompletableFuture().get()
+                        val records = consumer.poll(Duration.ofSeconds(1)) // so that we don't wait too long for closing
+                        log.debug("got records: ${records.count()}")
+                        if(records.count() > 0) {
+                            log.info("got records: ${records.count()}")
                         }
-                        log.info("records handled successfully")
+                        for (record in records) {
+                            handler.handle(record)
+                            handler.handle(toMessage(record)) //.toCompletableFuture().get()
+                        }
+                        consumer.commitSync()
+                        log.debug("records handled successfully")
                     } catch (e: IllegalStateException) {
-                        if("This consumer has already been closed.".equals(e.message)) {
+                        if("This consumer has already been closed." == e.message) {
                             log.info("consumer is already closed! breaking from polling")
                             break
                         }
-                        throw e;
+                        throw e
                     }
                 } else if(closed) {
                     break // not really necessary, but just incase
@@ -126,18 +131,14 @@ class KafkaConsumers(
                         "This should not happen, because you should catch exceptions in your business code or let them " +
                         "be handled using @PimpedAndWithDltAndAck", e)
             } finally {
-                log.info("done with this poll loop")
+                log.debug("done with this poll loop")
             }
         }
     }
 
-    private fun toMessage(record: ConsumerRecord<out Any, out Any>?): Message<Any> {
-        val r = KafkaConsumerRecord<Any,Any>(KafkaConsumerRecordImpl(record))
+    private fun toMessage(record: ConsumerRecord<String, String>?): Message<String> {
+        val r = KafkaConsumerRecord<String, String>(KafkaConsumerRecordImpl(record))
         return IncomingKafkaRecord(r, KafkaIgnoreCommit(), KafkaIgnoreFailure("TODO"), false, false)
     }
 }
 
-interface Handler<V> {
-    fun handle(message: Message<V>): CompletionStage<*>
-    fun getTopic(): String
-}
