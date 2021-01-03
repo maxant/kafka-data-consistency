@@ -37,6 +37,30 @@ scrape_configs:
     static_configs:
       - targets: ['kdc-kafka-1:9876']
 
-  - job_name: 'kdc-objects'
+  - job_name: 'kdc-mf-contracts'
     static_configs:
-      - targets: ['kdc-objects:8086']
+      - targets: ['kdc-mf-contracts:8080']
+
+  - job_name: 'kdc-mf-pricing'
+    static_configs:
+      - targets: ['kdc-mf-pricing:8081']
+
+  - job_name: 'kdc-mf-web'
+    static_configs:
+      - targets: ['kdc-mf-web:8082']
+
+  - job_name: 'kdc-mf-partners'
+    static_configs:
+      - targets: ['kdc-mf-partners:8083']
+
+  - job_name: 'kdc-mf-cases'
+    static_configs:
+      - targets: ['kdc-mf-cases:8084']
+
+  - job_name: 'kdc-mf-waitingroom'
+    static_configs:
+      - targets: ['kdc-mf-waitingroom:8085']
+
+  - job_name: 'kdc-mf-organisation'
+    static_configs:
+      - targets: ['kdc-mf-organisation:8086']
