@@ -44,7 +44,7 @@ class DraftsConsumer(
             "CREATED_DRAFT", "UPDATED_DRAFT" -> {
                 log.info("pricing draft")
                 pricingService
-                    .priceDraft(draft)
+                    .priceDraft(draft, context.getRequestIdSafely().requestId)
                         /*
 //                        TODO i think this is where the shit happens. the context wont be the same, and might be randomly picked up
                     .thenCompose {

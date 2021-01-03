@@ -12,12 +12,14 @@ import ch.maxant.kdc.mf.pricing.dto.TreeComponent
 import ch.maxant.kdc.mf.pricing.dto.Visitor
 import ch.maxant.kdc.mf.pricing.entity.PriceEntity
 import ch.maxant.kdc.mf.pricing.entity.PriceEntity.Queries.deleteByContractId
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.jboss.logging.Logger
+import java.lang.IllegalStateException
 import java.time.LocalDateTime
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -55,7 +57,8 @@ class PricingService(
     private val log = Logger.getLogger(this.javaClass)
 
     @AsyncContextAware
-    fun priceDraft(draft: JsonNode): CompletionStage<PricingResult> {
+    fun priceDraft(draft: JsonNode, requestId: String): CompletionStage<PricingResult> {
+        if(context.getRequestIdSafely().requestId != requestId) throw IllegalStateException("request ID changed from $requestId to ${context.getRequestIdSafely().requestId}")
         // TODO add extension method to make this fetchable via a path => ur use JsonPath?
         // TODO replace with DTO
         val contract = draft.get("contract")
@@ -130,7 +133,7 @@ class PricingService(
             }
         })
 
-        val result = PricingResult(contractId, prices)
+        val result = PricingResult(contractId, prices, context.getRequestIdSafely().requestId)
 
         sendEvent(result)
 
@@ -159,6 +162,7 @@ class PricingService(
 
     @SuppressWarnings("unused")
     private fun send(@Observes(during = TransactionPhase.AFTER_SUCCESS) prices: PricingResult) {
+        if(context.getRequestIdSafely().requestId != prices.requestId) throw IllegalStateException("request ID changed #2 from $prices.requestId to ${context.getRequestIdSafely().requestId}")
         // TODO transactional outbox
         // since this is happening async after the transaction, and we don't return anything,
         // we just pass a new CompletableFuture and don't care what happens with it
@@ -171,5 +175,6 @@ class PricingService(
 
 data class PricingResult(
         val contractId: UUID,
-        val priceByComponentId: Map<UUID, Price>
+        val priceByComponentId: Map<UUID, Price>,
+        @field:JsonIgnore val requestId: String
 )

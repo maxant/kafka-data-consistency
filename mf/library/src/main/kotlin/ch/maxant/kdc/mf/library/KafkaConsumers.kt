@@ -104,12 +104,20 @@ class KafkaConsumers(
                     break
                 } else if(!closed) {
                     log.info("polling for new records")
-                    val records = consumer.poll(Duration.ofMinutes(1))
-                    log.info("got records: ${records.count()}")
-                    for (record in records) {
-                        handler.handle(toMessage(record) as Message<V>) //.toCompletableFuture().get()
+                    try {
+                        val records = consumer.poll(Duration.ofMinutes(1))
+                        log.info("got records: ${records.count()}")
+                        for (record in records) {
+                            handler.handle(toMessage(record) as Message<V>) //.toCompletableFuture().get()
+                        }
+                        log.info("records handled successfully")
+                    } catch (e: IllegalStateException) {
+                        if("This consumer has already been closed.".equals(e.message)) {
+                            log.info("consumer is already closed! breaking from polling")
+                            break
+                        }
+                        throw e;
                     }
-                    log.info("records handled successfully")
                 } else if(closed) {
                     break // not really necessary, but just incase
                 }
