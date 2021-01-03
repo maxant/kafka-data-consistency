@@ -20,6 +20,8 @@ import ch.maxant.kdc.mf.library.doByHandlingValidationExceptions
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.eclipse.microprofile.config.inject.ConfigProperty
+import org.eclipse.microprofile.metrics.MetricUnits
+import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import org.eclipse.microprofile.rest.client.inject.RestClient
@@ -38,6 +40,7 @@ import javax.ws.rs.core.Response
 @Tag(name = "contracts")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
+@Timed(unit = MetricUnits.MILLISECONDS)
 class ContractResource(
     @Inject
     var em: EntityManager

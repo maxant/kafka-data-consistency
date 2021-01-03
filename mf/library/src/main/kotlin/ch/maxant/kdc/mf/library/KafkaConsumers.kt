@@ -124,8 +124,12 @@ class KafkaConsumers(
             }
         }
         log.info("closing consumer")
-        consumer.close()
-        log.info("closed consumer")
+        try {
+            consumer.close()
+            log.info("closed consumer")
+        } catch (e: Exception) {
+            log.warn("closing consumer failed: ${e.message}")
+        }
     }
 
     private fun toMessage(record: ConsumerRecord<String, String>?): Message<String> {
@@ -144,8 +148,8 @@ class ManagedExecutorWithFreshContextProducer {
     @Produces @ApplicationScoped @WithFreshContext
     fun createExecutor(): ManagedExecutor {
         return ManagedExecutor.builder()
-                .propagated(ThreadContext.TRANSACTION)
-                .cleared(ThreadContext.CDI)
+                .propagated(*ThreadContext.NONE)
+                .cleared(ThreadContext.ALL_REMAINING)
                 .build();
     }
 

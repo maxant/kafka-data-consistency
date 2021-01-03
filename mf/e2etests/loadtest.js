@@ -37,6 +37,10 @@ function createPartnerAndContract(){
     var componentIdWithFatContent;
     var start = new Date().getTime();
 
+    function getMsSinceStart() {
+        return new Date().getTime() - start;
+    }
+
     console.log("using requestId " + requestId);
 
     var source = new EventSource('http://web:8082/web/stream/' + requestId);
@@ -50,14 +54,14 @@ function createPartnerAndContract(){
         }
         if(msg.event == "CREATED_DRAFT") {
             createdDraft++;
-            console.log("event: created draft " + createdDraft);
+            console.log("event: created draft " + createdDraft + " - " + getMsSinceStart() + "msFromStart");
             componentIdWithFatContent = getComponentIdWithFatContent(msg)
         } else if(msg.event == "UPDATED_DRAFT") {
             updatedDraft++; // have to wait for updated prices before offering, otherwise we get a validation error because the contract isnt in sync
-            console.log("event: updated draft " + updatedDraft);
+            console.log("event: updated draft " + updatedDraft + " - " + getMsSinceStart() + "msFromStart");
         } else if(msg.event == "UPDATED_PRICES") {
             updatedPrices++;
-            console.log("event: updated prices " + updatedPrices);
+            console.log("event: updated prices " + updatedPrices + " - " + getMsSinceStart() + "msFromStart");
 
             // prices are always updated after draft creation/update, and are published on the same topic, so arrive
             // AFTER those events. but before we continue with the process, lets just check everything is as expected
@@ -67,20 +71,21 @@ function createPartnerAndContract(){
                 offerDraft();
             }
         } else if(msg.event == "OFFERED_DRAFT") {
-            console.log("event: offered draft");
+            console.log("event: offered draft" + " - " + getMsSinceStart() + "msFromStart");
             acceptContract();
         } else if(msg.event == "CHANGED_PARTNER_RELATIONSHIP") {
-            console.log("event: changed partner relationship");
+            console.log("event: changed partner relationship" + " - " + getMsSinceStart() + "msFromStart");
         } else if(msg.event == "CHANGED_CASE") {
-            console.log("event: changed case");
+            console.log("event: changed case" + " - " + getMsSinceStart() + "msFromStart");
         } else if(msg.event == "ERROR") {
-            console.log("event: error");
+            console.log(">>>>>> event: error" + " - " + getMsSinceStart() + "msFromStart");
+            numErrors++;
         } else {
-            console.log("event: other");
+            console.log(">>>>>> event: other" + " - " + getMsSinceStart() + "msFromStart");
         }
     };
     source.onerror = function (event) {
-        console.log("sse error " + event);
+        console.log("sse error " + event + " - " + getMsSinceStart() + "msFromStart");
         if(source && source.readyState != EventSource.CLOSED) source.close();
         source = null;
     }
@@ -89,7 +94,7 @@ function createPartnerAndContract(){
         if(source && !source.$completed) {
             // restart after timeout
             source.close();
-            console.error(">>>>>>>>>> ERROR!!! - timeout on request, so restarting. rquestId: " + requestId);
+            console.error(">>>>>>>>>> ERROR!!! - timeout on request, so restarting. rquestId: " + requestId + " - " + getMsSinceStart() + "msFromStart");
             numErrors++;
             console.info("");
             console.info("restarting...");
@@ -116,12 +121,12 @@ function createPartnerAndContract(){
           "method": "PUT"
         })
         .then(r => {
-            console.log("modified content to " + newFatContent + ": " + r.status);
+            console.log("modified content to " + newFatContent + ": " + r.status + " - " + getMsSinceStart() + "msFromStart");
         });
     }
 
     function offerDraft() {
-        console.log("offering draft " + contractId + " on requestId " + requestId);
+        console.log("offering draft " + contractId + " on requestId " + requestId + " - " + getMsSinceStart() + "msFromStart");
         return fetch("http://contracts:8080/drafts/" + contractId + "/offer", {
           "headers": {
             "content-type": "application/json",
@@ -133,7 +138,7 @@ function createPartnerAndContract(){
           "method": "PUT"
         })
         .then(r => {
-            console.log("offered draft: " + r.status);
+            console.log("offered draft: " + r.status + " - " + getMsSinceStart() + "msFromStart");
             if(r.status == 400) {
                 return offerDraft();
             }
@@ -141,7 +146,7 @@ function createPartnerAndContract(){
     }
 
     function acceptContract() {
-        console.log("accepting contract");
+        console.log("accepting contract" + " - " + getMsSinceStart() + "msFromStart");
         return fetch("http://contracts:8080/contracts/accept/" + contractId, {
           "headers": {
             "content-type": "application/json",
@@ -152,13 +157,13 @@ function createPartnerAndContract(){
           "method": "PUT"
         })
         .then(r => {
-            console.log("accepted contract: " + r.status);
+            console.log("accepted contract: " + r.status + " - " + getMsSinceStart() + "msFromStart");
         })
         .then(approveContract);
     }
 
     function approveContract(){
-        console.log("switching to jane in order to approve");
+        console.log("switching to jane in order to approve" + " - " + getMsSinceStart() + "msFromStart");
         return fetch("http://organisation:8086/security/token/jane.smith", {
           "headers": {
             "content-type": "application/json"
@@ -169,7 +174,7 @@ function createPartnerAndContract(){
         .then(r => r.text())
         .then(t => {
             token = t;
-            console.log("got token for jane, now approving");
+            console.log("got token for jane, now approving" + " - " + getMsSinceStart() + "msFromStart");
 
             return fetch("http://contracts:8080/contracts/approve/" + contractId, {
               "headers": {
@@ -182,8 +187,8 @@ function createPartnerAndContract(){
             });
         })
         .then(r => {
-            console.log("approved contract: " + r.status);
-            console.log("reading contract");
+            console.log("approved contract: " + r.status + " - " + getMsSinceStart() + "msFromStart");
+            console.log("reading contract" + " - " + getMsSinceStart() + "msFromStart");
 
             return fetch("http://contracts:8080/contracts/" + contractId, {
               "headers": {
@@ -197,9 +202,9 @@ function createPartnerAndContract(){
         })
         .then(r => r.json())
         .then(contract => {
-            console.log("got contract: " + contract.contractState);
+            console.log("got contract: " + contract.contractState + " - " + getMsSinceStart() + "msFromStart");
             if(contract.contractState != "RUNNING") {
-                console.error(">>>>>>>>>>>>>> CONTRACT STATE IS NOT RUNNING!");
+                console.error(">>>>>>>>>>>>>> CONTRACT STATE IS NOT RUNNING!" + " - " + getMsSinceStart() + "msFromStart");
                 numErrors++;
             }
             console.log("completed in " + (new Date().getTime() - start) + "ms");
@@ -223,7 +228,7 @@ function createPartnerAndContract(){
     .then(r => r.text())
     .then(t => {
         token = t;
-        console.log("got token for john");
+        console.log("got token for john" + " - " + getMsSinceStart() + "msFromStart");
         return fetch("http://partners:8083/partners", {
           "headers": {
             "content-type": "application/json",
@@ -242,7 +247,7 @@ function createPartnerAndContract(){
     .then(r => r.text())
     .then(pid => {
         partnerId = pid;
-        console.log("created partner " + partnerId);
+        console.log("created partner " + partnerId + " - " + getMsSinceStart() + "msFromStart");
         return fetch("http://contracts:8080/drafts", {
           "headers": {
             "content-type": "application/json",
@@ -259,7 +264,7 @@ function createPartnerAndContract(){
     .then(r => r.json())
     .then(draft => {
         contractId = draft.id;
-        console.log("got draft " + contractId);
+        console.log("got draft " + contractId + " - " + getMsSinceStart() + "msFromStart");
     });
 }
 

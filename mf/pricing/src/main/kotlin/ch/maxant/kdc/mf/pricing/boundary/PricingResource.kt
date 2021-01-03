@@ -2,6 +2,8 @@ package ch.maxant.kdc.mf.pricing.boundary
 
 import ch.maxant.kdc.mf.pricing.definitions.Price
 import ch.maxant.kdc.mf.pricing.entity.PriceEntity
+import org.eclipse.microprofile.metrics.MetricUnits
+import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import java.lang.IllegalStateException
 import java.time.LocalDateTime
@@ -23,11 +25,13 @@ class PricingResource(
 
     @GET
     @Path("/countNotSameSyncTime/{contractId}/{syncTimestamp}")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun validateSyncTime(@PathParam("contractId") contractId: UUID, @PathParam("syncTimestamp") syncTimestamp: Long) =
             Response.ok(PriceEntity.Queries.countByContractIdAndNotSyncTimestamp(em, contractId, syncTimestamp)).build()
 
     @GET
     @Path("/totalPrice")
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun totalPrice(@QueryParam("componentIds") componentIds: List<UUID>,
                    @QueryParam("dateTime") dateTimeString: String
     ): Response {

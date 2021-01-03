@@ -12,12 +12,15 @@ import ch.maxant.kdc.mf.pricing.entity.PriceEntity.Queries.deleteByContractId
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import org.eclipse.microprofile.metrics.MetricUnits
+import org.eclipse.microprofile.metrics.annotation.Timed
 import org.jboss.logging.Logger
 import java.time.LocalDateTime
 import java.util.*
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
 import javax.persistence.EntityManager
+import javax.transaction.Transactional
 import kotlin.collections.HashMap
 
 @ApplicationScoped
@@ -34,6 +37,8 @@ class PricingService(
 ) {
     private val log = Logger.getLogger(this.javaClass)
 
+    @Transactional
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun priceDraft(draft: JsonNode): PricingResult {
         // TODO add extension method to make this fetchable via a path => ur use JsonPath?
         // TODO replace with DTO

@@ -1,13 +1,12 @@
 package ch.maxant.kdc.mf.pricing.boundary
 
-import ch.maxant.kdc.mf.library.Context
-import ch.maxant.kdc.mf.library.KafkaHandler
-import ch.maxant.kdc.mf.library.MessageBuilder
-import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
+import ch.maxant.kdc.mf.library.*
 import ch.maxant.kdc.mf.pricing.control.PricingResult
 import ch.maxant.kdc.mf.pricing.control.PricingService
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.eclipse.microprofile.context.ManagedExecutor
+import org.eclipse.microprofile.context.ThreadContext
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.jboss.logging.Logger
@@ -31,6 +30,10 @@ class DraftsConsumer(
         var context: Context,
 
         @Inject
+        @WithFreshContext
+        var managedExecutor: ManagedExecutor,
+
+        @Inject
         var messageBuilder: MessageBuilder
 
 ) : KafkaHandler {
@@ -46,15 +49,22 @@ class DraftsConsumer(
 
     override fun getTopic() = "event-bus"
 
-    @Transactional
     @PimpedAndWithDltAndAck
     override fun handle(record: ConsumerRecord<String, String>) {
+        val contextCopy = Context.of(context)
         val draft = om.readTree(record.value())
-        return when (context.event) {
+        when (context.event) {
             "CREATED_DRAFT", "UPDATED_DRAFT" -> {
-                log.info("pricing draft")
-                val result = pricingService.priceDraft(draft)
-                sendEvent(result)
+                managedExecutor.supplyAsync {
+                    try {
+                        context.setup(contextCopy) // since we're running on a new thread with no context, lets copy the context across
+                        log.info("pricing draft")
+                        val result = pricingService.priceDraft(draft)
+                        sendEvent(result)
+                    } catch (e: Exception) {
+                        log.error("FAILED TO PRICE", e)
+                    }
+                }
             }
             else -> {
                 // ignore other messages

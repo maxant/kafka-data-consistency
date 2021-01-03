@@ -78,6 +78,15 @@ class Context {
             }
         }
     }
+
+    fun setup(copy: Context) {
+        this.requestId = copy.getRequestIdSafely()
+        this.originalMessage = copy.originalMessage
+        this.command = copy.command
+        this.event = copy.event
+        this.demoContext = copy.demoContext
+        this.retryCount = copy.retryCount
+    }
 }
 
 class DemoContext(

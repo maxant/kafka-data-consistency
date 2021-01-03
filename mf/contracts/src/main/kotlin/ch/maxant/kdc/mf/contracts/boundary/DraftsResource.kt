@@ -11,6 +11,8 @@ import ch.maxant.kdc.mf.contracts.entity.ContractState
 import ch.maxant.kdc.mf.library.Context
 import ch.maxant.kdc.mf.library.Secure
 import ch.maxant.kdc.mf.library.doByHandlingValidationExceptions
+import org.eclipse.microprofile.metrics.MetricUnits
+import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.media.Content
 import org.eclipse.microprofile.openapi.annotations.media.Schema
@@ -66,6 +68,7 @@ class DraftsResource(
     @POST
     @Secure
     @Transactional
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun create(
             @Parameter(name = "draftRequest", required = true)
             @Valid
@@ -132,6 +135,7 @@ class DraftsResource(
     @PUT
     @Path("/{contractId}/{componentId}/{param}/{newValue}")
     @Transactional
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun updateConfig(
             @PathParam("contractId") @Parameter(name = "contractId", required = true) contractId: UUID,
             @PathParam("componentId") @Parameter(name = "componentId", required = true) componentId: UUID,
@@ -172,6 +176,7 @@ class DraftsResource(
     @Path("/{contractId}/offer")
     @Secure
     @Transactional
+    @Timed(unit = MetricUnits.MILLISECONDS)
     fun offerDraft(
             @PathParam("contractId") @Parameter(name = "contractId", required = true) contractId: UUID
     ): Response = doByHandlingValidationExceptions {
