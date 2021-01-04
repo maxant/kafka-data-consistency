@@ -10,19 +10,21 @@ services:
     ports:
       - "8080:8080"
     environment:
-      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+      quarkus.datasource.jdbc.url: "jdbc:mysql://kdc-mysql:30300/mfcontracts"
+      kafka.bootstrap.servers: "kdc-kafka-1:30001,kdc-kafka-2:30002"
+      quarkus.log.handler.gelf.host: "logstash"
     volumes:
       - ./mf/contracts/target:/project
     command:
       java -jar contracts-1.0-SNAPSHOT-runner.jar -Xmx300m
     extra_hosts:
-      - "contracts:217.172.187.46"
-      - "pricing:217.172.187.46"
-      - "web:217.172.187.46"
-      - "partners:217.172.187.46"
-      - "cases:217.172.187.46"
-      - "waitingroom:217.172.187.46"
-      - "organisation:217.172.187.46"
+      - "contracts:127.0.0.1"
+      - "pricing:127.0.0.1"
+      - "web:127.0.0.1"
+      - "partners:127.0.0.1"
+      - "cases:127.0.0.1"
+      - "waitingroom:127.0.0.1"
+      - "organisation:127.0.0.1"
 
   kdc-mf-pricing:
     image: maxant/jdk
@@ -30,19 +32,21 @@ services:
     ports:
       - "8081:8081"
     environment:
-      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+      quarkus.datasource.jdbc.url: "jdbc:mysql://kdc-mysql:30300/mfpricing"
+      kafka.bootstrap.servers: "kdc-kafka-1:30001,kdc-kafka-2:30002"
+      quarkus.log.handler.gelf.host: "logstash"
     volumes:
       - ./mf/pricing/target:/project
     command:
       java -jar pricing-1.0-SNAPSHOT-runner.jar -Xmx300m
     extra_hosts:
-      - "contracts:217.172.187.46"
-      - "pricing:217.172.187.46"
-      - "web:217.172.187.46"
-      - "partners:217.172.187.46"
-      - "cases:217.172.187.46"
-      - "waitingroom:217.172.187.46"
-      - "organisation:217.172.187.46"
+      - "contracts:127.0.0.1"
+      - "pricing:127.0.0.1"
+      - "web:127.0.0.1"
+      - "partners:127.0.0.1"
+      - "cases:127.0.0.1"
+      - "waitingroom:127.0.0.1"
+      - "organisation:127.0.0.1"
 
   kdc-mf-web:
     image: maxant/jdk
@@ -50,19 +54,20 @@ services:
     ports:
       - "8082:8082"
     environment:
-      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+      kafka.bootstrap.servers: "kdc-kafka-1:30001,kdc-kafka-2:30002"
+      quarkus.log.handler.gelf.host: "logstash"
     volumes:
       - ./mf/web/target:/project
     command:
       java -jar web-1.0-SNAPSHOT-runner.jar -Xmx300m
     extra_hosts:
-      - "contracts:217.172.187.46"
-      - "pricing:217.172.187.46"
-      - "web:217.172.187.46"
-      - "partners:217.172.187.46"
-      - "cases:217.172.187.46"
-      - "waitingroom:217.172.187.46"
-      - "organisation:217.172.187.46"
+      - "contracts:127.0.0.1"
+      - "pricing:127.0.0.1"
+      - "web:127.0.0.1"
+      - "partners:127.0.0.1"
+      - "cases:127.0.0.1"
+      - "waitingroom:127.0.0.1"
+      - "organisation:127.0.0.1"
 
   kdc-mf-partners:
     image: maxant/jdk
@@ -70,19 +75,21 @@ services:
     ports:
       - "8083:8083"
     environment:
-      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+      quarkus.datasource.jdbc.url: "jdbc:mysql://kdc-mysql:30300/mfpartners"
+      kafka.bootstrap.servers: "kdc-kafka-1:30001,kdc-kafka-2:30002"
+      quarkus.log.handler.gelf.host: "logstash"
     volumes:
       - ./mf/partners/target:/project
     command:
       java -jar partners-1.0-SNAPSHOT-runner.jar -Xmx300m
     extra_hosts:
-      - "contracts:217.172.187.46"
-      - "pricing:217.172.187.46"
-      - "web:217.172.187.46"
-      - "partners:217.172.187.46"
-      - "cases:217.172.187.46"
-      - "waitingroom:217.172.187.46"
-      - "organisation:217.172.187.46"
+      - "contracts:127.0.0.1"
+      - "pricing:127.0.0.1"
+      - "web:127.0.0.1"
+      - "partners:127.0.0.1"
+      - "cases:127.0.0.1"
+      - "waitingroom:127.0.0.1"
+      - "organisation:127.0.0.1"
 
   kdc-mf-cases:
     image: maxant/jdk
@@ -90,19 +97,21 @@ services:
     ports:
       - "8084:8084"
     environment:
-      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+      quarkus.datasource.jdbc.url: "jdbc:mysql://kdc-mysql:30300/mfcases"
+      kafka.bootstrap.servers: "kdc-kafka-1:30001,kdc-kafka-2:30002"
+      quarkus.log.handler.gelf.host: "logstash"
     volumes:
       - ./mf/cases/target:/project
     command:
       java -jar cases-1.0-SNAPSHOT-runner.jar -Xmx300m
     extra_hosts:
-      - "contracts:217.172.187.46"
-      - "pricing:217.172.187.46"
-      - "web:217.172.187.46"
-      - "partners:217.172.187.46"
-      - "cases:217.172.187.46"
-      - "waitingroom:217.172.187.46"
-      - "organisation:217.172.187.46"
+      - "contracts:127.0.0.1"
+      - "pricing:127.0.0.1"
+      - "web:127.0.0.1"
+      - "partners:127.0.0.1"
+      - "cases:127.0.0.1"
+      - "waitingroom:127.0.0.1"
+      - "organisation:127.0.0.1"
 
   kdc-mf-waitingroom:
     image: maxant/jdk
@@ -110,19 +119,20 @@ services:
     ports:
       - "8085:8085"
     environment:
-      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+      kafka.bootstrap.servers: "kdc-kafka-1:30001,kdc-kafka-2:30002"
+      quarkus.log.handler.gelf.host: "logstash"
     volumes:
       - ./mf/waitingroom/target:/project
     command:
       java -jar waitingroom-1.0-SNAPSHOT-runner.jar -Xmx300m
     extra_hosts:
-      - "contracts:217.172.187.46"
-      - "pricing:217.172.187.46"
-      - "web:217.172.187.46"
-      - "partners:217.172.187.46"
-      - "cases:217.172.187.46"
-      - "waitingroom:217.172.187.46"
-      - "organisation:217.172.187.46"
+      - "contracts:127.0.0.1"
+      - "pricing:127.0.0.1"
+      - "web:127.0.0.1"
+      - "partners:127.0.0.1"
+      - "cases:127.0.0.1"
+      - "waitingroom:127.0.0.1"
+      - "organisation:127.0.0.1"
 
   kdc-mf-organisation:
     image: maxant/jdk
@@ -130,16 +140,17 @@ services:
     ports:
       - "8086:8086"
     environment:
-      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+      kafka.bootstrap.servers: "kdc-kafka-1:30001,kdc-kafka-2:30002"
+      quarkus.log.handler.gelf.host: "logstash"
     volumes:
       - ./mf/organisation/target:/project
     command:
       java -jar organisation-1.0-SNAPSHOT-runner.jar -Xmx300m
     extra_hosts:
-      - "contracts:217.172.187.46"
-      - "pricing:217.172.187.46"
-      - "web:217.172.187.46"
-      - "partners:217.172.187.46"
-      - "cases:217.172.187.46"
-      - "waitingroom:217.172.187.46"
-      - "organisation:217.172.187.46"
+      - "contracts:127.0.0.1"
+      - "pricing:127.0.0.1"
+      - "web:127.0.0.1"
+      - "partners:127.0.0.1"
+      - "cases:127.0.0.1"
+      - "waitingroom:127.0.0.1"
+      - "organisation:127.0.0.1"
