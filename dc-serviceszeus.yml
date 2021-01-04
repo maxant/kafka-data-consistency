@@ -10,10 +10,11 @@ services:
     ports:
       - "8080:8080"
     environment:
-      quarkus.datasource.jdbc.url: "jdbc:mysql://kdc-mysql:30300/mfcontracts"
-      kafka.bootstrap.servers: "kdc-kafka-1:30001,kdc-kafka-2:30002"
+      quarkus.datasource.jdbc.url: "jdbc:mysql://kdc-mysql:3306/mfcontracts"
+      kafka.bootstrap.servers: "kdc-kafka-1:9092,kdc-kafka-2:9092"
       quarkus.log.handler.gelf.host: "logstash"
-      quarkus.elasticsearch.hosts: "elasticsearch:30050"
+      quarkus.log.handler.gelf.port: "12201"
+      quarkus.elasticsearch.hosts: "elasticsearch:9200"
     volumes:
       - ./mf/contracts/target:/project
     command:
