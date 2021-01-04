@@ -18,6 +18,7 @@ import org.eclipse.microprofile.reactive.messaging.Message
 import org.jboss.logging.Logger
 import java.time.Duration
 import java.util.*
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 import javax.annotation.PreDestroy
 import javax.enterprise.context.ApplicationScoped
@@ -55,27 +56,27 @@ class KafkaConsumers(
 
     fun init(@Observes e: StartupEvent) {
         val config = ConfigProvider.getConfig()
-        val configs = config.propertyNames
+        val keys = config.propertyNames
                 .filter { it.startsWith(prefixIncoming) }
                 .map { it.substring(prefixIncoming.length) }
                 .map { it.substring(0, it.indexOf(".")) }
                 .distinct()
 
-        log.info("creating kafka consumers for these configs: $configs")
+        log.info("creating kafka consumers for these keys: $keys")
 
-        for (cg in configs) {
+        for (key in keys) {
             val props = Properties()
             props["bootstrap.servers"] = kafkaBootstrapServers
-            props["group.id"] = config.getValue("$prefixIncoming$cg.group.id", String::class.java)
-            val autoOffsetReset = config.getOptionalValue("$prefixIncoming$cg.auto.offset.reset", String::class.java)
+            props["group.id"] = config.getValue("$prefixIncoming$key.group.id", String::class.java)
+            val autoOffsetReset = config.getOptionalValue("$prefixIncoming$key.auto.offset.reset", String::class.java)
             if(autoOffsetReset.isPresent) {
                 props["auto.offset.reset"] = autoOffsetReset.get()
             }
             props["enable.auto.commit"] = "false"
             //props["enable.auto.commit"] = "true"
             //props["auto.commit.interval.ms"] = "1000"
-            val topic = config.getValue("$prefixIncoming$cg.topic", String::class.java)
-            val handlers = topicHandlers.filter { it.topic == topic }
+            val topic = config.getValue("$prefixIncoming$key.topic", String::class.java)
+            val handlers = topicHandlers.filter { it.key == key }
             if(handlers.isEmpty()) throw IllegalArgumentException("No topic handler configured for topic '$topic'")
             if(handlers.size > 1) throw IllegalArgumentException("More than one topic handler configured for topic '$topic'")
 
@@ -102,10 +103,15 @@ class KafkaConsumers(
                     if(records.count() > 0) {
                         log.info("got records: ${records.count()}")
                     }
+                    val completions = mutableListOf<CompletableFuture<*>>()
                     for (record in records) {
-                        handler.handle(record)
-                        handler.handle(toMessage(record)) //.toCompletableFuture().get()
+                        if(handler.runInParallel) {
+                            completions += managedExecutor.supplyAsync { handler.handle(record) }
+                        } else {
+                            handler.handle(record)
+                        }
                     }
+                    completions.forEach { it.get() } // we block because we want to commit them all together
                     consumer.commitSync()
                     log.debug("records handled successfully")
                 } catch (e: IllegalStateException) {

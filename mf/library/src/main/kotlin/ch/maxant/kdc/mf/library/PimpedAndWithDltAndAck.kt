@@ -232,7 +232,7 @@ fun getHeader(om: ObjectMapper, firstParam: Any, header: String): String = when 
 
     is ConsumerRecord<*, *> ->
         String(firstParam
-                ?.headers()
+                .headers()
                 ?.find { it.key() == header }
                 ?.value()
                 ?: byteArrayOf(),
@@ -266,9 +266,9 @@ data class Headers(val requestId: RequestId,
 /**
  * @param ack a future which will be completed when the message is acked
  */
+@Deprecated(message = "use the one without ack")
 fun messageWithMetadata(key: String?, value: String, headers: Headers,
                         ack: CompletableFuture<Unit>): Message<String> {
-//println("sending value: $value")
     val headersList = mutableListOf(RecordHeader(REQUEST_ID, headers.requestId.toString().toByteArray()))
     if(headers.demoContext != null) headersList.add(RecordHeader(DEMO_CONTEXT, (headers.demoContext.json?:"").toByteArray()))
     if(isNotEmpty(headers.command)) headersList.add(RecordHeader(COMMAND, headers.command!!.toByteArray()))
@@ -278,9 +278,20 @@ fun messageWithMetadata(key: String?, value: String, headers: Headers,
     return messageWithMetadata(key, value, headersList, ack)
 }
 
+fun messageWithMetadata(key: String?, value: String, headers: Headers): Message<String> {
+    val headersList = mutableListOf(RecordHeader(REQUEST_ID, headers.requestId.toString().toByteArray()))
+    if(headers.demoContext != null) headersList.add(RecordHeader(DEMO_CONTEXT, (headers.demoContext.json?:"").toByteArray()))
+    if(isNotEmpty(headers.command)) headersList.add(RecordHeader(COMMAND, headers.command!!.toByteArray()))
+    if(isNotEmpty(headers.event)) headersList.add(RecordHeader(EVENT, headers.event!!.toByteArray()))
+    if(isNotEmpty(headers.originalCommand)) headersList.add(RecordHeader("originalCommand", headers.originalCommand!!.toByteArray()))
+    if(isNotEmpty(headers.originalEvent)) headersList.add(RecordHeader("originalEvent", headers.originalEvent!!.toByteArray()))
+    return messageWithMetadata(key, value, headersList)
+}
+
 /**
  * @param ack a future which will be completed when the message is acked
  */
+@Deprecated(message = "use one without ack")
 fun messageWithMetadata(key: String?, value: String, headers: List<RecordHeader>,
                         ack: CompletableFuture<Unit>): Message<String> {
 //println("sending value: $value")
@@ -290,6 +301,15 @@ fun messageWithMetadata(key: String?, value: String, headers: List<RecordHeader>
             .build()
     val ackSupplier: () -> CompletableFuture<Void> = { ack.complete(null); completedFuture(null) }
     return Message.of(value, ackSupplier).addMetadata(metadata)
+
+}
+
+fun messageWithMetadata(key: String?, value: String, headers: List<RecordHeader>): Message<String> {
+    val metadata = OutgoingKafkaRecordMetadata.builder<Any>()
+            .withKey(key)
+            .withHeaders(headers)
+            .build()
+    return Message.of(value).addMetadata(metadata)
 
 }
 

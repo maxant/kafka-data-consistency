@@ -30,10 +30,6 @@ class DraftsConsumer(
         var context: Context,
 
         @Inject
-        @WithFreshContext
-        var managedExecutor: ManagedExecutor,
-
-        @Inject
         var messageBuilder: MessageBuilder
 
 ) : KafkaHandler {
@@ -47,35 +43,21 @@ class DraftsConsumer(
 
     private val log = Logger.getLogger(this.javaClass)
 
-    override fun getTopic() = "event-bus"
+    override fun getKey() = "event-bus-in"
+
+    override fun getRunInParallel() = true
 
     @PimpedAndWithDltAndAck
     override fun handle(record: ConsumerRecord<String, String>) {
-        val contextCopy = Context.of(context)
         val draft = om.readTree(record.value())
         when (context.event) {
             "CREATED_DRAFT", "UPDATED_DRAFT" -> {
-                // note that from a performance point of view the following isnt necessary, as this component performance well enough without having to scale
-                managedExecutor.supplyAsync { // NOTE: this executor has thie @WithFreshContext annotation!! Without that, we get problems with lost messages! prolly coz scope is overwritten by contending threads
-                    try {
-                        // since we're running on a new thread with no context, lets copy the context across
-                        // NOTE: we dont want to use the same context as before, because the request scoped beans
-                        // are NOT dependent on the thread, rather on the request and quarkus won't see this as a new
-                        // request! see https://quarkusio.zulipchat.com/#narrow/stream/187030-users/topic/Does.20.40RequestScoped.20only.20work.20with.20web.20requests.3F
-                        // this is kind of like when we use @Asynchronous with EJBs and we need to copy the request
-                        // scoped state manually into the new context running async.
-                        // its not clear to me when the request scope is created and cleared up. certainly when a
-                        // web request comes in. probably from the point at which the request scoped bean is
-                        // instantiated to the point in time when that frame is popped from the stack, but that
-                        // is unclear for async stuff!
-                        context.setup(contextCopy)
-
-                        log.info("pricing draft")
-                        val result = pricingService.priceDraft(draft)
-                        sendEvent(result)
-                    } catch (e: Exception) {
-                        log.error("FAILED TO PRICE", e)
-                    }
+                try {
+                    log.info("pricing draft")
+                    val result = pricingService.priceDraft(draft)
+                    sendEvent(result)
+                } catch (e: Exception) {
+                    log.error("FAILED TO PRICE", e)
                 }
             }
             else -> {

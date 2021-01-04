@@ -1,20 +1,18 @@
 package ch.maxant.kdc.mf.partners.boundary
 
 import ch.maxant.kdc.mf.library.Context
+import ch.maxant.kdc.mf.library.KafkaHandler
 import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
 import ch.maxant.kdc.mf.partners.control.PartnerService
 import ch.maxant.kdc.mf.partners.entity.Role
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
-import org.eclipse.microprofile.reactive.messaging.Incoming
-import org.eclipse.microprofile.reactive.messaging.Message
 import java.time.LocalDateTime
 import java.util.*
-import java.util.concurrent.CompletionStage
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
-import javax.transaction.Transactional
 
 @ApplicationScoped
 @SuppressWarnings("unused")
@@ -27,19 +25,20 @@ class PartnersConsumer(
 
         @Inject
         var partnerService: PartnerService
-) {
-    @Incoming("partners-in")
-    @Transactional
+) : KafkaHandler {
+
+    override fun getKey() = "partners-in"
+
+    override fun getRunInParallel() = true
+
     @PimpedAndWithDltAndAck
     @SuppressWarnings("unused")
     @Timed(unit = MetricUnits.MILLISECONDS)
-    fun process(msg: Message<String>): CompletionStage<*> {
-        val command = Command.valueOf(context.command!!)
-        return when {
-            Command.CREATE_PARTNER_RELATIONSHIP == command ->
-                partnerService.createRelationship(om.readValue(msg.payload, CreatePartnerRelationshipCommand::class.java))
-            else -> throw RuntimeException("unexpected command $command: $msg")
-       }
+    override fun handle(record: ConsumerRecord<String, String>) {
+        when (Command.valueOf(context.command!!)) {
+            Command.CREATE_PARTNER_RELATIONSHIP ->
+                partnerService.createRelationship(om.readValue(record.value(), CreatePartnerRelationshipCommand::class.java))
+        }
     }
 }
 

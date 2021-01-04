@@ -24,7 +24,9 @@ class EventBusConsumer : KafkaHandler {
 
     val log: Logger = Logger.getLogger(this.javaClass)
 
-    override fun getTopic() = "event-bus"
+    override fun getKey() = "event-bus-in"
+
+    override fun getRunInParallel() = true
 
     @PimpedAndWithDltAndAck
     @Timed(unit = MetricUnits.MILLISECONDS)

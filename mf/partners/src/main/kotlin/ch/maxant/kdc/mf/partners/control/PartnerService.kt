@@ -1,23 +1,25 @@
 package ch.maxant.kdc.mf.partners.control
 
-import ch.maxant.kdc.mf.library.AsyncContextAware
 import ch.maxant.kdc.mf.library.MessageBuilder
 import ch.maxant.kdc.mf.partners.adapter.OrganisationAdapter
 import ch.maxant.kdc.mf.partners.boundary.CreatePartnerRelationshipCommand
-import ch.maxant.kdc.mf.partners.entity.*
+import ch.maxant.kdc.mf.partners.entity.AddressEntity
+import ch.maxant.kdc.mf.partners.entity.AddressType
+import ch.maxant.kdc.mf.partners.entity.PartnerRelationshipEntity
+import ch.maxant.kdc.mf.partners.entity.Role
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.eclipse.microprofile.rest.client.inject.RestClient
 import org.jboss.logging.Logger
-import java.lang.IllegalArgumentException
 import java.util.*
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionStage
 import javax.enterprise.context.ApplicationScoped
+import javax.enterprise.event.Observes
+import javax.enterprise.event.TransactionPhase
 import javax.inject.Inject
 import javax.persistence.EntityManager
+import javax.transaction.Transactional
 import javax.validation.ValidationException
 
 @ApplicationScoped
@@ -37,11 +39,14 @@ class PartnerService(
     @Channel("partners-out")
     lateinit var partnersOut: Emitter<String>
 
+    @Inject
+    private lateinit var partnerRelationshipEvent: javax.enterprise.event.Event<PartnerRelationshipEntity>
+
     private val log = Logger.getLogger(this.javaClass)
 
-    @AsyncContextAware
+    @Transactional
     @Timed(unit = MetricUnits.MILLISECONDS)
-    fun createRelationship(command: CreatePartnerRelationshipCommand): CompletionStage<*> {
+    fun createRelationship(command: CreatePartnerRelationshipCommand) {
         log.info("creating a partner relationship: $command")
 
         val relationships = mutableListOf<PartnerRelationshipEntity>()
@@ -70,20 +75,19 @@ class PartnerService(
         log.info("persisting relationships")
         relationships.forEach { em.persist(it) }
 
-        return CompletableFuture.allOf(*relationships
-                .map { sendPartnerRelationshipChangedEvent(it) }
-                .map { it.toCompletableFuture() }
-                .toTypedArray())
+        relationships.forEach { sendPartnerRelationshipChangedEvent(it) }
     }
 
-    private fun sendPartnerRelationshipChangedEvent(relationship: PartnerRelationshipEntity): CompletionStage<*> {
+    private fun sendPartnerRelationshipChangedEvent(relationship: PartnerRelationshipEntity) {
+        partnerRelationshipEvent.fire(relationship)
+    }
+
+    @SuppressWarnings("unused")
+    private fun send(@Observes(during = TransactionPhase.AFTER_SUCCESS) relationship: PartnerRelationshipEntity) {
         val prce = PartnerRelationshipChangedEvent(relationship.partnerId, relationship.foreignId, relationship.role)
-        val ack = CompletableFuture<Unit>()
-        val msg = messageBuilder.build(relationship.foreignId, prce, ack, event = "CHANGED_PARTNER_RELATIONSHIP")
+        val msg = messageBuilder.build(relationship.foreignId, prce, event = "CHANGED_PARTNER_RELATIONSHIP")
         partnersOut.send(msg) // relationships also go on the same topic as actual partner changes
-        return ack
     }
-
 }
 
 data class PartnerRelationshipChangedEvent(

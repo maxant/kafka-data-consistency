@@ -1,18 +1,17 @@
 package ch.maxant.kdc.mf.library;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.eclipse.microprofile.reactive.messaging.Message;
 
 public interface KafkaHandler {
-    String getTopic();
+
+    /** the key used in the config which then contains all the consumer configs */
+    String getKey();
+
+    /** if true, then all records from a single poll are processed in parallel. default is false. */
+    default Boolean getRunInParallel() { return false; }
 
     default void handle(ConsumerRecord<String, String> record) {
         // noop
     }
 
-    /** use {@link #handle(ConsumerRecord)} instead */
-    @Deprecated(forRemoval = true)
-    default void handle(Message<String> message) {
-        // noop
-    }
 }

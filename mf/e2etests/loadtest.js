@@ -34,6 +34,8 @@ function createPartnerAndContract(){
     var createdDraft = 0;
     var updatedDraft = 0;
     var updatedPrices = 0;
+    var relationshipCreated = 0;
+    var offeredDraft = false;
     var componentIdWithFatContent;
     var start = new Date().getTime();
 
@@ -67,14 +69,18 @@ function createPartnerAndContract(){
             // AFTER those events. but before we continue with the process, lets just check everything is as expected
             if(createdDraft == 1 && updatedPrices == 1) {
                 modifyFatContent(componentIdWithFatContent);
-            } else if(updatedDraft == 1 && updatedPrices == 2) {
+            } else if(updatedDraft == 1 && updatedPrices == 2 && relationshipCreated == 2 && !offeredDraft) {
                 offerDraft();
             }
         } else if(msg.event == "OFFERED_DRAFT") {
             console.log("event: offered draft" + " - " + getMsSinceStart() + "msFromStart");
             acceptContract();
         } else if(msg.event == "CHANGED_PARTNER_RELATIONSHIP") {
-            console.log("event: changed partner relationship" + " - " + getMsSinceStart() + "msFromStart");
+            relationshipCreated++;
+            console.log("event: changed partner relationship " + relationshipCreated + " - " + getMsSinceStart() + "msFromStart");
+            if(updatedDraft == 1 && updatedPrices == 2 && relationshipCreated == 2 && !offeredDraft) {
+                offerDraft();
+            }
         } else if(msg.event == "CHANGED_CASE") {
             console.log("event: changed case" + " - " + getMsSinceStart() + "msFromStart");
         } else if(msg.event == "ERROR") {
@@ -127,6 +133,7 @@ function createPartnerAndContract(){
     }
 
     function offerDraft() {
+        offeredDraft = true;
         console.log("offering draft " + contractId + " on requestId " + requestId + " - " + getMsSinceStart() + "msFromStart");
         var go = new Date().getTime();
         return fetch("http://contracts:8080/drafts/" + contractId + "/offer", {

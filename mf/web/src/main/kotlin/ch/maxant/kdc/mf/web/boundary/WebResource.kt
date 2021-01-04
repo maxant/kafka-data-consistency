@@ -39,16 +39,28 @@ class WebResource {
     lateinit var context: Context
 
     // TODO tidy the entries up when they are no longer in use! tip: see isCancelled below - altho theyre already removed with onterminate at the bottom?
-    val subscriptions: HashMap<String, MultiEmitter<in String?>> = HashMap()
+    val subscriptions: HashMap<String, EmitterState> = HashMap()
 
     fun sendToSubscribers(requestId: String, json: String) {
         subscriptions
                 .entries
-                .filter { it.key == requestId }
-                .filter { !it.value.isCancelled }
+                .filter { it.value.isExpiredOrCancelled() }
                 .forEach {
-                    log.info("emitting request $requestId to subscriber ${it.key}: $json. context.requestId is ${context.getRequestIdSafely().requestId}")
-                    it.value.emit(json)
+                    synchronized(it.value.emitter) { // TODO is this necessary? does it hurt??
+                        log.info("closing cancelled/expired emitter for request $requestId. cancelled: ${it.value.emitter.isCancelled}, expired: ${it.value.isExpired()}")
+                        it.value.emitter.complete()
+                    }
+                }
+
+        subscriptions
+                .entries
+                .filter { it.key == requestId }
+                .filter { !it.value.isExpiredOrCancelled() }
+                .forEach {
+                    synchronized(it.value) { // TODO is this necessary? does it hurt??
+                        log.info("emitting request $requestId to subscriber ${it.key}: $json. context.requestId is ${context.getRequestIdSafely().requestId}")
+                        it.value.emitter.emit(json)
+                    }
                 }
     }
 
@@ -103,7 +115,7 @@ class WebResource {
     fun stream(@PathParam("requestId") requestId: String): Multi<String?>? =
         Multi.createFrom()
                 .emitter { e: MultiEmitter<in String?> ->
-                    subscriptions[requestId] = e
+                    subscriptions[requestId] = EmitterState(e, System.currentTimeMillis())
                     e.onTermination {
                         e.complete()
                         subscriptions.remove(requestId)
@@ -116,4 +128,13 @@ class WebResource {
         { "subscriptionsCount": ${this.subscriptions.size},
           "subscriptions": ${this.subscriptions.keys} 
         }""".trimIndent().replace(" ", "").replace("\r", "").replace("\n", "")).build()
+}
+
+data class EmitterState(val emitter: MultiEmitter<in String?>, val created: Long) {
+    val FIVE_MINUTES = 5 * 3_600_000
+
+    fun isExpired() = System.currentTimeMillis() - this.created > FIVE_MINUTES
+
+    fun isExpiredOrCancelled() = this.emitter.isCancelled || isExpired()
+
 }
