@@ -110,6 +110,7 @@ function createPartnerAndContract(){
     function modifyFatContent(componentId) {
         var fatContents = ['0.2', '1.8', '3.5'];
         var newFatContent = fatContents[getRandomInt(0, 3)];
+        var go = new Date().getTime();
         fetch("http://contracts:8080/drafts/" + contractId + "/" + componentId + "/FAT_CONTENT/" + newFatContent, {
           "headers": {
             "content-type": "application/json",
@@ -121,12 +122,13 @@ function createPartnerAndContract(){
           "method": "PUT"
         })
         .then(r => {
-            console.log("modified content to " + newFatContent + ": " + r.status + " - " + getMsSinceStart() + "msFromStart");
+            console.log("modified content to " + newFatContent + ": " + r.status + " - " + getMsSinceStart() + "msFromStart - " + (new Date().getTime() - go) + "ms");
         });
     }
 
     function offerDraft() {
         console.log("offering draft " + contractId + " on requestId " + requestId + " - " + getMsSinceStart() + "msFromStart");
+        var go = new Date().getTime();
         return fetch("http://contracts:8080/drafts/" + contractId + "/offer", {
           "headers": {
             "content-type": "application/json",
@@ -138,7 +140,7 @@ function createPartnerAndContract(){
           "method": "PUT"
         })
         .then(r => {
-            console.log("offered draft: " + r.status + " - " + getMsSinceStart() + "msFromStart");
+            console.log("offered draft: " + r.status + " - " + getMsSinceStart() + "msFromStart - " + (new Date().getTime() - go) + "ms");
             if(r.status == 400) {
                 return offerDraft();
             }
@@ -147,6 +149,7 @@ function createPartnerAndContract(){
 
     function acceptContract() {
         console.log("accepting contract" + " - " + getMsSinceStart() + "msFromStart");
+        var go = new Date().getTime();
         return fetch("http://contracts:8080/contracts/accept/" + contractId, {
           "headers": {
             "content-type": "application/json",
@@ -157,13 +160,14 @@ function createPartnerAndContract(){
           "method": "PUT"
         })
         .then(r => {
-            console.log("accepted contract: " + r.status + " - " + getMsSinceStart() + "msFromStart");
+            console.log("accepted contract: " + r.status + " - " + getMsSinceStart() + "msFromStart - " + (new Date().getTime() - go) + "ms");
         })
         .then(approveContract);
     }
 
     function approveContract(){
         console.log("switching to jane in order to approve" + " - " + getMsSinceStart() + "msFromStart");
+        var go = new Date().getTime();
         return fetch("http://organisation:8086/security/token/jane.smith", {
           "headers": {
             "content-type": "application/json"
@@ -174,8 +178,8 @@ function createPartnerAndContract(){
         .then(r => r.text())
         .then(t => {
             token = t;
-            console.log("got token for jane, now approving" + " - " + getMsSinceStart() + "msFromStart");
-
+            console.log("got token for jane, now approving" + " - " + getMsSinceStart() + "msFromStart - " + (new Date().getTime() - go) + "ms");
+            go = new Date().getTime();
             return fetch("http://contracts:8080/contracts/approve/" + contractId, {
               "headers": {
                 "content-type": "application/json",
@@ -187,9 +191,8 @@ function createPartnerAndContract(){
             });
         })
         .then(r => {
-            console.log("approved contract: " + r.status + " - " + getMsSinceStart() + "msFromStart");
-            console.log("reading contract" + " - " + getMsSinceStart() + "msFromStart");
-
+            console.log("approved contract: " + r.status + " - " + getMsSinceStart() + "msFromStart - " + (new Date().getTime() - go) + "ms");
+            go = new Date().getTime();
             return fetch("http://contracts:8080/contracts/" + contractId, {
               "headers": {
                 "content-type": "application/json",
@@ -202,7 +205,7 @@ function createPartnerAndContract(){
         })
         .then(r => r.json())
         .then(contract => {
-            console.log("got contract: " + contract.contractState + " - " + getMsSinceStart() + "msFromStart");
+            console.log("got contract: " + contract.contractState + " - " + getMsSinceStart() + "msFromStart - " + (new Date().getTime() - go) + "ms");
             if(contract.contractState != "RUNNING") {
                 console.error(">>>>>>>>>>>>>> CONTRACT STATE IS NOT RUNNING!" + " - " + getMsSinceStart() + "msFromStart");
                 numErrors++;
@@ -217,6 +220,7 @@ function createPartnerAndContract(){
     }
 
 
+    var go = new Date().getTime();
     fetch("http://organisation:8086/security/token/john.smith", {
       "headers": {
         "content-type": "application/json",
@@ -228,7 +232,8 @@ function createPartnerAndContract(){
     .then(r => r.text())
     .then(t => {
         token = t;
-        console.log("got token for john" + " - " + getMsSinceStart() + "msFromStart");
+        console.log("got token for john" + " - " + getMsSinceStart() + "msFromStart - " + (new Date().getTime() - go) + "ms");
+        go = new Date().getTime();
         return fetch("http://partners:8083/partners", {
           "headers": {
             "content-type": "application/json",
@@ -247,7 +252,8 @@ function createPartnerAndContract(){
     .then(r => r.text())
     .then(pid => {
         partnerId = pid;
-        console.log("created partner " + partnerId + " - " + getMsSinceStart() + "msFromStart");
+        console.log("created partner " + partnerId + " - " + getMsSinceStart() + "msFromStart - " + (new Date().getTime() - go) + "ms");
+        go = new Date().getTime();
         return fetch("http://contracts:8080/drafts", {
           "headers": {
             "content-type": "application/json",
@@ -264,7 +270,7 @@ function createPartnerAndContract(){
     .then(r => r.json())
     .then(draft => {
         contractId = draft.id;
-        console.log("got draft " + contractId + " - " + getMsSinceStart() + "msFromStart");
+        console.log("got draft " + contractId + " - " + getMsSinceStart() + "msFromStart - " + (new Date().getTime() - go) + "ms");
     });
 }
 
