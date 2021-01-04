@@ -55,6 +55,7 @@ class DraftsConsumer(
         val draft = om.readTree(record.value())
         when (context.event) {
             "CREATED_DRAFT", "UPDATED_DRAFT" -> {
+                // note that from a performance point of view the following isnt necessary, as this component performance well enough without having to scale
                 managedExecutor.supplyAsync { // NOTE: this executor has thie @WithFreshContext annotation!! Without that, we get problems with lost messages! prolly coz scope is overwritten by contending threads
                     try {
                         // since we're running on a new thread with no context, lets copy the context across
