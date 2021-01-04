@@ -55,7 +55,7 @@ class DraftsConsumer(
         val draft = om.readTree(record.value())
         when (context.event) {
             "CREATED_DRAFT", "UPDATED_DRAFT" -> {
-                managedExecutor.supplyAsync {
+                managedExecutor.supplyAsync { // NOTE: this executor has thie @WithFreshContext annotation!! Without that, we get problems with lost messages! prolly coz scope is overwritten by contending threads
                     try {
                         // since we're running on a new thread with no context, lets copy the context across
                         // NOTE: we dont want to use the same context as before, because the request scoped beans
