@@ -16,6 +16,7 @@ import org.eclipse.microprofile.context.ManagedExecutor
 import org.eclipse.microprofile.context.ThreadContext
 import org.eclipse.microprofile.reactive.messaging.Message
 import org.jboss.logging.Logger
+import org.jboss.resteasy.core.ResteasyContext
 import java.time.Duration
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -82,6 +83,7 @@ class KafkaConsumers(
 
             val die = MutableBoolean(false)
             val f = managedExecutor.supplyAsync {
+                setupFreshContext()
                 Thread.currentThread().name = "kfkcnsmr::$topic"
                 val consumer = KafkaConsumer<String, String>(props, StringDeserializer(), StringDeserializer())
                 consumer.subscribe(listOf(topic))
@@ -91,6 +93,10 @@ class KafkaConsumers(
             consumers.add(die to f)
         }
         log.info("kafka subscriptions setup completed")
+    }
+
+    private fun setupFreshContext() {
+        ResteasyContext.pushContextDataMap(HashMap()) // otherwise an EmtpyMap is used, which causes the rest clients to fail
     }
 
     private fun run(die: MutableBoolean, consumer: KafkaConsumer<String, String>, handler: KafkaHandler) {
@@ -106,7 +112,10 @@ class KafkaConsumers(
                     val completions = mutableListOf<CompletableFuture<*>>()
                     for (record in records) {
                         if(handler.runInParallel) {
-                            completions += managedExecutor.supplyAsync { handler.handle(record) }
+                            completions += managedExecutor.supplyAsync {
+                                setupFreshContext()
+                                handler.handle(record)
+                            }
                         } else {
                             handler.handle(record)
                         }
@@ -122,9 +131,8 @@ class KafkaConsumers(
                     throw e
                 }
             } catch (e: Exception) {
-                log.error("Failed to process records because of an error. Records will be skipped. " +
-                        "This should not happen, because you should catch exceptions in your business code or let them " +
-                        "be handled using @PimpedAndWithDltAndAck", e)
+                log.error("Failed to process records because of an error. Please use @PimpedAndWithDltAndAck or catch " +
+                        "exceptions yourself, rather than letting exceptions be handled by this part of the framework", e)
             } finally {
                 log.debug("done with this poll loop, going round again")
             }

@@ -8,6 +8,9 @@ import javax.ws.rs.client.ClientRequestContext
 import javax.ws.rs.client.ClientRequestFilter
 import javax.ws.rs.ext.Provider
 
+/**
+ * sits between rest adapters and the network, and ensures the context is copied across
+ */
 @Provider
 class ContextClientRequestFilter : ClientRequestFilter {
 

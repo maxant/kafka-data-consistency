@@ -219,6 +219,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
 ## TODO
 
+- allow mf kafka thingy to add a uuid to the name, so we can start multiple components like web, at the same time
 - create masses of data
 - allow changing the quantity in the offer, so you can get under the approval threshold
 - event bus is per application! so the existing one is for contracts only and needs renaming

@@ -26,7 +26,7 @@ class EventBusConsumer : KafkaHandler {
 
     override fun getKey() = "event-bus-in"
 
-    override fun getRunInParallel() = false
+    override fun getRunInParallel() = true
 
     @PimpedAndWithDltAndAck
     @Timed(unit = MetricUnits.MILLISECONDS)

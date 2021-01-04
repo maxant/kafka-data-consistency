@@ -30,7 +30,7 @@ class PartnersConsumer(
 
     override fun getKey() = "partners-in"
 
-    override fun getRunInParallel() = false
+    override fun getRunInParallel() = true
 
     @PimpedAndWithDltAndAck
     @SuppressWarnings("unused")
