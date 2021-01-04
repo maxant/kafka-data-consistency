@@ -57,7 +57,18 @@ class DraftsConsumer(
             "CREATED_DRAFT", "UPDATED_DRAFT" -> {
                 managedExecutor.supplyAsync {
                     try {
-                        context.setup(contextCopy) // since we're running on a new thread with no context, lets copy the context across
+                        // since we're running on a new thread with no context, lets copy the context across
+                        // NOTE: we dont want to use the same context as before, because the request scoped beans
+                        // are NOT dependent on the thread, rather on the request and quarkus won't see this as a new
+                        // request! see https://quarkusio.zulipchat.com/#narrow/stream/187030-users/topic/Does.20.40RequestScoped.20only.20work.20with.20web.20requests.3F
+                        // this is kind of like when we use @Asynchronous with EJBs and we need to copy the request
+                        // scoped state manually into the new context running async.
+                        // its not clear to me when the request scope is created and cleared up. certainly when a
+                        // web request comes in. probably from the point at which the request scoped bean is
+                        // instantiated to the point in time when that frame is popped from the stack, but that
+                        // is unclear for async stuff!
+                        context.setup(contextCopy)
+
                         log.info("pricing draft")
                         val result = pricingService.priceDraft(draft)
                         sendEvent(result)
