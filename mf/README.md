@@ -207,6 +207,8 @@ Worth alerting on:
   the security model or delete the method, if it is no longer required.
 - SEC-002 TODO
 - SEC-003 TODO
+- CONES001 TODO
+- PARES001 TODO
 
 ## Cypress Testing
 
