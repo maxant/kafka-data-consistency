@@ -351,7 +351,7 @@ Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-co
 
 Restart nginx:
 
-    systemctl restart nginx
+    sudo systemctl restart nginx
 
 Create topics:
 

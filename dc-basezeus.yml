@@ -1,12 +1,28 @@
 # ##############################################################################################
 # see also https://github.com/simplesteph/kafka-stack-docker-compose/blob/master/full-stack.yml
 # ##############################################################################################
+# same as dc-base.yml except that there are no references to maxant.ch, but rather zeus.com, and
+# all entries have all extra_hosts, just in case
+# ##############################################################################################
 version: '3'
 services:
 
   kdc-zookeeper:
     image: "confluentinc/cp-zookeeper:5.5.0"
     container_name: "kdc-zookeeper"
+    extra_hosts:
+      - "zeus:192.168.1.215"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.kibana.zeus.com:192.168.1.215"
+      - "portainer.zeus.com:192.168.1.215"
+      - "kdc.kafdrop.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry-ui.zeus.com:192.168.1.215"
+      - "kdc.prometheus.zeus.com:192.168.1.215"
+      - "kdc.grafana.zeus.com:192.168.1.215"
+      - "dockerstats.zeus.com:192.168.1.215"
+      - "ksql.zeus.com:192.168.1.215"
     ports:
       - "30000:2181"
     environment:
@@ -22,6 +38,19 @@ services:
   kdc-kafka-1:
     image: "confluentinc/cp-kafka:5.5.0"
     container_name: "kdc-kafka-1"
+    extra_hosts:
+      - "zeus:192.168.1.215"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.kibana.zeus.com:192.168.1.215"
+      - "portainer.zeus.com:192.168.1.215"
+      - "kdc.kafdrop.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry-ui.zeus.com:192.168.1.215"
+      - "kdc.prometheus.zeus.com:192.168.1.215"
+      - "kdc.grafana.zeus.com:192.168.1.215"
+      - "dockerstats.zeus.com:192.168.1.215"
+      - "ksql.zeus.com:192.168.1.215"
     ports:
       - "30001:9092"
     depends_on:
@@ -33,7 +62,7 @@ services:
       # note that we MUST use "PLAINTEXT" as the name, so that schemaregistry and kafka-rest can connect.
       # see: https://github.com/confluentinc/schema-registry/issues/648
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://maxant.ch:30001
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://zeus.com:30001
       KAFKA_LISTENERS: PLAINTEXT://kdc-kafka-1:9092
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
@@ -54,6 +83,19 @@ services:
   kdc-kafka-2:
     image: "confluentinc/cp-kafka:5.5.0"
     container_name: "kdc-kafka-2"
+    extra_hosts:
+      - "zeus:192.168.1.215"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.kibana.zeus.com:192.168.1.215"
+      - "portainer.zeus.com:192.168.1.215"
+      - "kdc.kafdrop.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry-ui.zeus.com:192.168.1.215"
+      - "kdc.prometheus.zeus.com:192.168.1.215"
+      - "kdc.grafana.zeus.com:192.168.1.215"
+      - "dockerstats.zeus.com:192.168.1.215"
+      - "ksql.zeus.com:192.168.1.215"
     ports:
       - "30002:9092"
     depends_on:
@@ -63,7 +105,7 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: 'kdc-zookeeper:2181'
       # see notes for broker #1
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://maxant.ch:30002
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://zeus.com:30002
       KAFKA_LISTENERS: PLAINTEXT://kdc-kafka-2:9092
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
@@ -84,6 +126,19 @@ services:
   kdc-kafdrop:
     image: obsidiandynamics/kafdrop
     container_name: "kdc-kafdrop"
+    extra_hosts:
+      - "zeus:192.168.1.215"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.kibana.zeus.com:192.168.1.215"
+      - "portainer.zeus.com:192.168.1.215"
+      - "kdc.kafdrop.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry-ui.zeus.com:192.168.1.215"
+      - "kdc.prometheus.zeus.com:192.168.1.215"
+      - "kdc.grafana.zeus.com:192.168.1.215"
+      - "dockerstats.zeus.com:192.168.1.215"
+      - "ksql.zeus.com:192.168.1.215"
     ports:
       - "30060:9000"
     depends_on:
@@ -96,6 +151,19 @@ services:
   portainer:
     image: "portainer/portainer"
     container_name: "portainer"
+    extra_hosts:
+      - "zeus:192.168.1.215"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.kibana.zeus.com:192.168.1.215"
+      - "portainer.zeus.com:192.168.1.215"
+      - "kdc.kafdrop.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry-ui.zeus.com:192.168.1.215"
+      - "kdc.prometheus.zeus.com:192.168.1.215"
+      - "kdc.grafana.zeus.com:192.168.1.215"
+      - "dockerstats.zeus.com:192.168.1.215"
+      - "ksql.zeus.com:192.168.1.215"
     ports:
       - "29999:9000"
     volumes:
@@ -116,6 +184,19 @@ services:
   kdc-mysql:
     image: "mysql:8.0.19"
     container_name: "kdc-mysql"
+    extra_hosts:
+      - "zeus:192.168.1.215"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.kibana.zeus.com:192.168.1.215"
+      - "portainer.zeus.com:192.168.1.215"
+      - "kdc.kafdrop.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry-ui.zeus.com:192.168.1.215"
+      - "kdc.prometheus.zeus.com:192.168.1.215"
+      - "kdc.grafana.zeus.com:192.168.1.215"
+      - "dockerstats.zeus.com:192.168.1.215"
+      - "ksql.zeus.com:192.168.1.215"
     ports:
       - "30300:3306"
     environment:
@@ -127,6 +208,19 @@ services:
   kdc-schemaregistry:
     image: "confluentinc/cp-schema-registry:5.5.0"
     container_name: "kdc-schemaregistry"
+    extra_hosts:
+      - "zeus:192.168.1.215"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.kibana.zeus.com:192.168.1.215"
+      - "portainer.zeus.com:192.168.1.215"
+      - "kdc.kafdrop.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry-ui.zeus.com:192.168.1.215"
+      - "kdc.prometheus.zeus.com:192.168.1.215"
+      - "kdc.grafana.zeus.com:192.168.1.215"
+      - "dockerstats.zeus.com:192.168.1.215"
+      - "ksql.zeus.com:192.168.1.215"
     ports:
       - 30550:8085
     depends_on:
@@ -147,17 +241,43 @@ services:
   kdc-schemaregistry-ui:
     image: "landoop/schema-registry-ui:0.9.4"
     container_name: "kdc-schemaregistry-ui"
+    extra_hosts:
+      - "zeus:192.168.1.215"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.kibana.zeus.com:192.168.1.215"
+      - "portainer.zeus.com:192.168.1.215"
+      - "kdc.kafdrop.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry-ui.zeus.com:192.168.1.215"
+      - "kdc.prometheus.zeus.com:192.168.1.215"
+      - "kdc.grafana.zeus.com:192.168.1.215"
+      - "dockerstats.zeus.com:192.168.1.215"
+      - "ksql.zeus.com:192.168.1.215"
     ports:
       - "30555:8000"
     depends_on:
       - kdc-schemaregistry
     environment:
-      SCHEMAREGISTRY_URL: http://kdc.schemaregistry.maxant.ch/
+      SCHEMAREGISTRY_URL: http://kdc.schemaregistry.zeus.com/
       PROXY: "true"
 
   kdc-kafka-rest-proxy:
     image: "confluentinc/cp-kafka-rest:5.5.0"
     container_name: "kdc-kafka-rest-proxy"
+    extra_hosts:
+      - "zeus:192.168.1.215"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.kibana.zeus.com:192.168.1.215"
+      - "portainer.zeus.com:192.168.1.215"
+      - "kdc.kafdrop.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry-ui.zeus.com:192.168.1.215"
+      - "kdc.prometheus.zeus.com:192.168.1.215"
+      - "kdc.grafana.zeus.com:192.168.1.215"
+      - "dockerstats.zeus.com:192.168.1.215"
+      - "ksql.zeus.com:192.168.1.215"
     ports:
       - "30030:8082"
     depends_on:
@@ -173,6 +293,19 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
     container_name: "elasticsearch"
+    extra_hosts:
+      - "zeus:192.168.1.215"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.kibana.zeus.com:192.168.1.215"
+      - "portainer.zeus.com:192.168.1.215"
+      - "kdc.kafdrop.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry-ui.zeus.com:192.168.1.215"
+      - "kdc.prometheus.zeus.com:192.168.1.215"
+      - "kdc.grafana.zeus.com:192.168.1.215"
+      - "dockerstats.zeus.com:192.168.1.215"
+      - "ksql.zeus.com:192.168.1.215"
     ports:
       - "30050:9200"
       - "30051:9300"
@@ -190,6 +323,19 @@ services:
   logstash:
     image: docker.elastic.co/logstash/logstash:7.10.1
     container_name: "logstash"
+    extra_hosts:
+      - "zeus:192.168.1.215"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.kibana.zeus.com:192.168.1.215"
+      - "portainer.zeus.com:192.168.1.215"
+      - "kdc.kafdrop.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry-ui.zeus.com:192.168.1.215"
+      - "kdc.prometheus.zeus.com:192.168.1.215"
+      - "kdc.grafana.zeus.com:192.168.1.215"
+      - "dockerstats.zeus.com:192.168.1.215"
+      - "ksql.zeus.com:192.168.1.215"
     ports:
       - "30055:12201/udp"
       - "30056:5000"
@@ -201,11 +347,24 @@ services:
     #environment:
       # https://www.elastic.co/guide/en/logstash/7.10/docker-config.html#docker-env-config
       # not defined in oss image:
-      #"monitoring.elasticsearch.hosts": "http://kdc.elasticsearch.maxant.ch1"
-      #"MONITORING_ELASTICSEARCH_HOSTS": "http://kdc.elasticsearch.maxant.ch2"
+      #"monitoring.elasticsearch.hosts": "http://kdc.elasticsearch.zeus1"
+      #"MONITORING_ELASTICSEARCH_HOSTS": "http://kdc.elasticsearch.zeus2"
   kibana:
     image: docker.elastic.co/kibana/kibana:7.10.1
     container_name: "kibana"
+    extra_hosts:
+      - "zeus:192.168.1.215"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.kibana.zeus.com:192.168.1.215"
+      - "portainer.zeus.com:192.168.1.215"
+      - "kdc.kafdrop.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry-ui.zeus.com:192.168.1.215"
+      - "kdc.prometheus.zeus.com:192.168.1.215"
+      - "kdc.grafana.zeus.com:192.168.1.215"
+      - "dockerstats.zeus.com:192.168.1.215"
+      - "ksql.zeus.com:192.168.1.215"
     ports:
       - "30150:5601"
     depends_on:
@@ -214,8 +373,8 @@ services:
       - "elasticsearch:elasticsearch"
     #environment:
       # https://www.elastic.co/guide/en/kibana/current/settings.html
-      #"ELASTICSEARCH_HOSTS": "http://kdc.elasticsearch.maxant.ch"
-      #"ELASTICSEARCH_HOSTS": "http://maxant.ch:30050" => doesnt work entirely because somehow it still cannot connect. maybe to 9300 instead of 9200?
+      #"ELASTICSEARCH_HOSTS": "http://kdc.elasticsearch.zeus.com"
+      #"ELASTICSEARCH_HOSTS": "http://zeus.com:30050" => doesnt work entirely because somehow it still cannot connect. maybe to 9300 instead of 9200?
       #"XPACK_SECURITY_ENABLED": "false"
       # seems to work out of the box, when we name ES "elasticsearch"
     #https://www.elastic.co/guide/en/kibana/current/docker.html
@@ -225,6 +384,19 @@ services:
   prometheus:
     image: "prom/prometheus"
     container_name: "prometheus"
+    extra_hosts:
+      - "zeus:192.168.1.215"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.kibana.zeus.com:192.168.1.215"
+      - "portainer.zeus.com:192.168.1.215"
+      - "kdc.kafdrop.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry-ui.zeus.com:192.168.1.215"
+      - "kdc.prometheus.zeus.com:192.168.1.215"
+      - "kdc.grafana.zeus.com:192.168.1.215"
+      - "dockerstats.zeus.com:192.168.1.215"
+      - "ksql.zeus.com:192.168.1.215"
     ports:
       - "29996:9090/tcp"
     volumes:
@@ -233,6 +405,19 @@ services:
   grafana:
     image: "grafana/grafana"
     container_name: "grafana"
+    extra_hosts:
+      - "zeus:192.168.1.215"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.kibana.zeus.com:192.168.1.215"
+      - "portainer.zeus.com:192.168.1.215"
+      - "kdc.kafdrop.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry-ui.zeus.com:192.168.1.215"
+      - "kdc.prometheus.zeus.com:192.168.1.215"
+      - "kdc.grafana.zeus.com:192.168.1.215"
+      - "dockerstats.zeus.com:192.168.1.215"
+      - "ksql.zeus.com:192.168.1.215"
     ports:
       - 29993:3000
     depends_on:
@@ -244,7 +429,7 @@ services:
 # TODO https://docs.docker.com/compose/compose-file/#restart
 # TODO add kafka to prometheus
 # TODO add quarkus app to prometheus
-# TODO add a docker registry to maxant.ch?
+# TODO add a docker registry to zeus?
 # TODO JMX for other confluent components: https://docs.confluent.io/current/installation/docker/operations/monitoring.html#configure-other-cp-components
 # build a stream app and deploy using quarkus and integrate metrics - see also https://quarkus.io/guides/microprofile-metrics
 # use kafka-rest to add topics at deployment. whats this? https://docs.docker.com/compose/compose-file/compose-file-v2/#init
