@@ -6,9 +6,13 @@ import ch.maxant.kdc.mf.contracts.dto.Component
 import ch.maxant.kdc.mf.contracts.dto.Draft
 import ch.maxant.kdc.mf.contracts.entity.ContractState
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import org.eclipse.microprofile.faulttolerance.Retry
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
+import org.eclipse.microprofile.reactive.messaging.Channel
+import org.eclipse.microprofile.reactive.messaging.Emitter
+import org.eclipse.microprofile.reactive.messaging.Incoming
 import org.elasticsearch.client.Request
 import org.elasticsearch.client.RestClient
 import org.jboss.logging.Logger
@@ -23,23 +27,39 @@ import javax.ws.rs.WebApplicationException
 @ApplicationScoped
 class ESAdapter {
     @Inject
-    lateinit var restClient: RestClient
+    lateinit var om: ObjectMapper
 
     @Inject
-    lateinit var om: ObjectMapper
+    lateinit var sender: EsAdapterSender
+
+    @Inject
+    @Channel("contracts-es-out")
+    lateinit var esOut: Emitter<String>
 
     val log: Logger = Logger.getLogger(this.javaClass)
 
-    @Retry(delay = 1000)
+    data class EsRequest(val method: String, val path: String, val json: String)
+
+    @Timed(unit = MetricUnits.MILLISECONDS)
+    @Incoming("contracts-es-in")
+    fun upload(payload: String) {
+        try {
+            val r = om.readValue<EsRequest>(payload)
+            val request = Request(r.method, r.path)
+            request.setJsonEntity(r.json)
+            sender.performRequest(request)
+            log.info("called elasticsearch with request $r")
+        } catch(e: Exception) {
+            // TODO DLT?
+            log.error("CONES001 FAILED to send data to elastic. Will not be tried again. Please ensure it is entered manually. $payload")
+        }
+    }
+
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun createOffer(draft: Draft, partnerId: UUID?) {
-        val request = Request(
-                "PUT",
-                "/contracts/_doc/" + draft.contract.id)
         val esContract = EsContract(draft, partnerId, flatten(draft.pack))
-        request.setJsonEntity(om.writeValueAsString(esContract))
-        performRequest(request)
-        log.info("inserted contract ${draft.contract.id} in elasticsearch")
+        val r = EsRequest("PUT", "/contracts/_doc/${draft.contract.id}", om.writeValueAsString(esContract))
+        esOut.send(om.writeValueAsString(r))
     }
 
     private fun flatten(defn: ComponentDefinition, result: MutableList<ESComponent> = mutableListOf()): MutableList<ESComponent> {
@@ -48,12 +68,8 @@ class ESAdapter {
         return result
     }
 
-    @Retry(delay = 1000)
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun updateOffer(contractId: UUID, allComponents: List<Component>) {
-        val request = Request(
-                "POST",
-                "/contracts/_update/$contractId")
         /*
             {
               "script" : {
@@ -74,12 +90,8 @@ class ESAdapter {
         script.replace("params", params)
         val components = om.readTree(om.writeValueAsString(allComponents.map { ESComponent(it) }))
         params.replace("components", components)
-        request.setJsonEntity(om.writeValueAsString(root))
-        performRequest(request)
-        log.info("updated components of contract $contractId in elasticsearch")
     }
 
-    @Retry(delay = 1000)
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun updateOffer(contractId: UUID, newState: ContractState) {
         val request = Request(
@@ -93,27 +105,9 @@ class ESAdapter {
         script.put("lang", "painless")
         script.replace("params", params)
         params.put("state", newState.toString())
-        request.setJsonEntity(om.writeValueAsString(root))
-        performRequest(request)
-        log.info("updated status of contract $contractId in elasticsearch")
-    }
 
-    private fun performRequest(request: Request) {
-        try {
-            val response = restClient.performRequest(request)
-            // TODO tidy up exception handling. status code isnt returned if the server returns an error, eg 4xx coz of bad request
-            val statusCode = response.statusLine.statusCode
-            if(statusCode < 200 || statusCode >= 300) {
-                throw WebApplicationException("failed to index contract in ES. ($statusCode) ${response.entity}")
-            }
-        } catch(e: ConnectException) {
-            throw WebApplicationException("failed to index contract in ES. no connection", e)
-        } catch(e: Exception) {
-            if(e is WebApplicationException){
-                throw e
-            }
-            throw WebApplicationException("failed to index contract in ES", e)
-        }
+        val r = EsRequest("POST", "/contracts/_update/$contractId", om.writeValueAsString(root))
+        esOut.send(om.writeValueAsString(r))
     }
 
     data class EsContract(val partnerId: UUID?, val start: LocalDateTime, val end: LocalDateTime, val state: ContractState,
@@ -137,3 +131,29 @@ class ESAdapter {
     }
 }
 
+@ApplicationScoped
+class EsAdapterSender {
+
+    @Inject
+    lateinit var restClient: RestClient
+
+    @Retry(delay = 1000)
+    fun performRequest(request: Request) {
+        try {
+            val response = restClient.performRequest(request)
+            // TODO tidy up exception handling. status code isnt returned if the server returns an error, eg 4xx coz of bad request
+            val statusCode = response.statusLine.statusCode
+            if(statusCode < 200 || statusCode >= 300) {
+                throw WebApplicationException("failed to index contract in ES. ($statusCode) ${response.entity}")
+            }
+        } catch(e: ConnectException) {
+            throw WebApplicationException("failed to index contract in ES. no connection", e)
+        } catch(e: Exception) {
+            if(e is WebApplicationException){
+                throw e
+            }
+            throw WebApplicationException("failed to index contract in ES", e)
+        }
+    }
+
+}
