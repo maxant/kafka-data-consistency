@@ -180,9 +180,11 @@ class PimpedAndWithDltAndAckInterceptor(
     private fun isRetryableException(t: Throwable): Boolean {
         val throwables = ExceptionUtils.getThrowableList(t).map { it::class.java }
         return !throwables.any {
+            // the following wont work not matter how often you retry
             ValidationException::class.java.isAssignableFrom(it)
                     || ConstraintViolationException::class.java.isAssignableFrom(it)
                     || IllegalArgumentException::class.java.isAssignableFrom(it)
+                    || UnsupportedOperationException::class.java.isAssignableFrom(it)
         }
     }
 

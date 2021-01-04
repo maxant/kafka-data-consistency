@@ -25,11 +25,12 @@ class PartnersConsumer(
 
         @Inject
         var partnerService: PartnerService
+
 ) : KafkaHandler {
 
     override fun getKey() = "partners-in"
 
-    override fun getRunInParallel() = true
+    override fun getRunInParallel() = false
 
     @PimpedAndWithDltAndAck
     @SuppressWarnings("unused")

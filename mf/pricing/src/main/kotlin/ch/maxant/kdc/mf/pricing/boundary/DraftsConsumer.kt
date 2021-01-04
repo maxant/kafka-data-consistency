@@ -45,7 +45,7 @@ class DraftsConsumer(
 
     override fun getKey() = "event-bus-in"
 
-    override fun getRunInParallel() = true
+    override fun getRunInParallel() = false
 
     @PimpedAndWithDltAndAck
     override fun handle(record: ConsumerRecord<String, String>) {

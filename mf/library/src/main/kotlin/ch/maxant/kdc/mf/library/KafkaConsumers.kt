@@ -101,7 +101,7 @@ class KafkaConsumers(
                     val records = consumer.poll(Duration.ofSeconds(1)) // so that we don't wait too long for closing
                     log.debug("got records: ${records.count()}")
                     if(records.count() > 0) {
-                        log.info("got records: ${records.count()}")
+                        log.info("got records: ${records.count()} - dealing with them in parallel: ${handler.runInParallel}")
                     }
                     val completions = mutableListOf<CompletableFuture<*>>()
                     for (record in records) {

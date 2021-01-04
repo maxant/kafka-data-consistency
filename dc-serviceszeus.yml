@@ -1,0 +1,145 @@
+version: '3'
+services:
+
+# TODO the following use extra_hosts, but its not necessary for locally deployed services. we should rename
+# the services kdc-mf-*, so that it works inside DC as well as outside
+
+  kdc-mf-contracts:
+    image: maxant/jdk
+    container_name: kdc-mf-contracts
+    ports:
+      - "8080:8080"
+    environment:
+      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+    volumes:
+      - ./mf/contracts/target:/project
+    command:
+      java -jar contracts-1.0-SNAPSHOT-runner.jar -Xmx300m
+    extra_hosts:
+      - "contracts:217.172.187.46"
+      - "pricing:217.172.187.46"
+      - "web:217.172.187.46"
+      - "partners:217.172.187.46"
+      - "cases:217.172.187.46"
+      - "waitingroom:217.172.187.46"
+      - "organisation:217.172.187.46"
+
+  kdc-mf-pricing:
+    image: maxant/jdk
+    container_name: kdc-mf-pricing
+    ports:
+      - "8081:8081"
+    environment:
+      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+    volumes:
+      - ./mf/pricing/target:/project
+    command:
+      java -jar pricing-1.0-SNAPSHOT-runner.jar -Xmx300m
+    extra_hosts:
+      - "contracts:217.172.187.46"
+      - "pricing:217.172.187.46"
+      - "web:217.172.187.46"
+      - "partners:217.172.187.46"
+      - "cases:217.172.187.46"
+      - "waitingroom:217.172.187.46"
+      - "organisation:217.172.187.46"
+
+  kdc-mf-web:
+    image: maxant/jdk
+    container_name: kdc-mf-web
+    ports:
+      - "8082:8082"
+    environment:
+      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+    volumes:
+      - ./mf/web/target:/project
+    command:
+      java -jar web-1.0-SNAPSHOT-runner.jar -Xmx300m
+    extra_hosts:
+      - "contracts:217.172.187.46"
+      - "pricing:217.172.187.46"
+      - "web:217.172.187.46"
+      - "partners:217.172.187.46"
+      - "cases:217.172.187.46"
+      - "waitingroom:217.172.187.46"
+      - "organisation:217.172.187.46"
+
+  kdc-mf-partners:
+    image: maxant/jdk
+    container_name: kdc-mf-partners
+    ports:
+      - "8083:8083"
+    environment:
+      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+    volumes:
+      - ./mf/partners/target:/project
+    command:
+      java -jar partners-1.0-SNAPSHOT-runner.jar -Xmx300m
+    extra_hosts:
+      - "contracts:217.172.187.46"
+      - "pricing:217.172.187.46"
+      - "web:217.172.187.46"
+      - "partners:217.172.187.46"
+      - "cases:217.172.187.46"
+      - "waitingroom:217.172.187.46"
+      - "organisation:217.172.187.46"
+
+  kdc-mf-cases:
+    image: maxant/jdk
+    container_name: kdc-mf-cases
+    ports:
+      - "8084:8084"
+    environment:
+      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+    volumes:
+      - ./mf/cases/target:/project
+    command:
+      java -jar cases-1.0-SNAPSHOT-runner.jar -Xmx300m
+    extra_hosts:
+      - "contracts:217.172.187.46"
+      - "pricing:217.172.187.46"
+      - "web:217.172.187.46"
+      - "partners:217.172.187.46"
+      - "cases:217.172.187.46"
+      - "waitingroom:217.172.187.46"
+      - "organisation:217.172.187.46"
+
+  kdc-mf-waitingroom:
+    image: maxant/jdk
+    container_name: kdc-mf-waitingroom
+    ports:
+      - "8085:8085"
+    environment:
+      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+    volumes:
+      - ./mf/waitingroom/target:/project
+    command:
+      java -jar waitingroom-1.0-SNAPSHOT-runner.jar -Xmx300m
+    extra_hosts:
+      - "contracts:217.172.187.46"
+      - "pricing:217.172.187.46"
+      - "web:217.172.187.46"
+      - "partners:217.172.187.46"
+      - "cases:217.172.187.46"
+      - "waitingroom:217.172.187.46"
+      - "organisation:217.172.187.46"
+
+  kdc-mf-organisation:
+    image: maxant/jdk
+    container_name: kdc-mf-organisation
+    ports:
+      - "8086:8086"
+    environment:
+      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+    volumes:
+      - ./mf/organisation/target:/project
+    command:
+      java -jar organisation-1.0-SNAPSHOT-runner.jar -Xmx300m
+    extra_hosts:
+      - "contracts:217.172.187.46"
+      - "pricing:217.172.187.46"
+      - "web:217.172.187.46"
+      - "partners:217.172.187.46"
+      - "cases:217.172.187.46"
+      - "waitingroom:217.172.187.46"
+      - "organisation:217.172.187.46"

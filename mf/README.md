@@ -506,9 +506,15 @@ Create new:
 
 ## Infrastructure
 
-    CREATE USER 'mfcontracts'@'%' IDENTIFIED BY 'secret';
+    CREATE USER 'mf'@'%' IDENTIFIED BY 'secret';
     CREATE DATABASE mfcontracts CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
-    GRANT ALL PRIVILEGES ON mfcontracts.* TO mfcontracts@'%' IDENTIFIED BY 'the_password';
+    GRANT ALL PRIVILEGES ON mfcontracts.* TO mf@'%' IDENTIFIED BY 'the_password';
+    CREATE DATABASE mfpricing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+    GRANT ALL PRIVILEGES ON mfpricing.* TO mf@'%' IDENTIFIED BY 'the_password';
+    CREATE DATABASE mfcases CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+    GRANT ALL PRIVILEGES ON mfcases.* TO mf@'%' IDENTIFIED BY 'the_password';
+    CREATE DATABASE mfpartners CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+    GRANT ALL PRIVILEGES ON mfpartners.* TO mf@'%' IDENTIFIED BY 'the_password';
 
 ## Bugs
 
