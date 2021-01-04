@@ -13,6 +13,7 @@ services:
       quarkus.datasource.jdbc.url: "jdbc:mysql://kdc-mysql:30300/mfcontracts"
       kafka.bootstrap.servers: "kdc-kafka-1:30001,kdc-kafka-2:30002"
       quarkus.log.handler.gelf.host: "logstash"
+      quarkus.elasticsearch.hosts: "elasticsearch:30050"
     volumes:
       - ./mf/contracts/target:/project
     command:
@@ -78,6 +79,7 @@ services:
       quarkus.datasource.jdbc.url: "jdbc:mysql://kdc-mysql:30300/mfpartners"
       kafka.bootstrap.servers: "kdc-kafka-1:30001,kdc-kafka-2:30002"
       quarkus.log.handler.gelf.host: "logstash"
+      quarkus.elasticsearch.hosts: "elasticsearch:30050"
     volumes:
       - ./mf/partners/target:/project
     command:
