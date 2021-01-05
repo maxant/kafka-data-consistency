@@ -64,6 +64,7 @@ services:
     environment:
       kafka.bootstrap.servers: "zeus.com:30001,zeus.com:30002"
       quarkus.log.handler.gelf.host: "zeus.com"
+      ch.maxant.kdc.mf.components.elasticsearch.url: "http://kdc.elasticsearch.zeus.com"
     volumes:
       - ./mf/web/target:/project
     command:
