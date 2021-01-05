@@ -219,6 +219,7 @@ Worth alerting on:
 - CONES001 TODO
 - PARES001 TODO
 - KAF001 If this occurs, then something is no longer working with request scoped state management
+- KAF002 something failed in the consumer that needs to be investigated. probably at startup rather than during polling.
 
 ## Cypress Testing
 

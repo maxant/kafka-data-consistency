@@ -77,8 +77,12 @@ class KafkaConsumers(
             val die = MutableBoolean(false)
             log.info("handing off code for poll loop for $key")
             val f = managedExecutor.supplyAsync {
-                log.info("starting up poll loop for $key now")
-                pollingLoopRunner.run(topic, props, die, handlers[0])
+                try {
+                    log.info("starting up poll loop for $key now")
+                    pollingLoopRunner.run(topic, props, die, handlers[0])
+                } catch (e: Exception) {
+                    log.error("KAF002 Kafka consumer failed", e)
+                }
             }
             consumers.add(die to f)
         }
@@ -94,8 +98,8 @@ class KafkaConsumers(
                 .map { it to config.getValue(it, String::class.java) }
                 .forEach lit@{
                     val propValue = if (it.first.endsWith("group.id") && it.second.endsWith("{uniqueid}")) {
-                        it.second.replace("{uniqueid}", "-${UUID.randomUUID().toString()}")
-                    } else it
+                        it.second.replace("{uniqueid}", "-${UUID.randomUUID()}")
+                    } else it.second
 
                     val propName = it.first.substring(prefixIncoming.length + key.length + 1/*for the dot*/)
                     if (propName == "topic") {
