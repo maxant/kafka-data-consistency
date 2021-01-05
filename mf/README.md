@@ -210,6 +210,7 @@ Worth alerting on:
 - SEC-003 TODO
 - CONES001 TODO
 - PARES001 TODO
+- KAF001 If this occurs, then something is no longer working with request scoped state management
 
 ## Cypress Testing
 
@@ -220,8 +221,8 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
 ## TODO
 
+- count warnings in loadtest, if things arent as expected, eg too many events received
 - allow mf kafka thingy to add a uuid to the name, so we can start multiple components like web, at the same time
-- create masses of data
 - allow changing the quantity in the offer, so you can get under the approval threshold
 - event bus is per application! so the existing one is for contracts only and needs renaming
 - billing

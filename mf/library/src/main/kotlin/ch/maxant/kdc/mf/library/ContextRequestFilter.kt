@@ -31,9 +31,13 @@ class ContextRequestFilter : ContainerRequestFilter {
             requestId[0]
         else {
             // it might already be in the request from another filter
-            val rId2 = context.getRequestIdSafely().requestId
-            log.info("creating new requestId as it is missing in the request: $rId2 on path ${ctx.request.method} ${ctx.uriInfo.requestUri.path}")
-            rId2
+            if(context.isRequestIdAlreadySet()) {
+                context.requestId.requestId
+            } else {
+                val rId2 = context.getRequestIdSafely().requestId
+                log.info("creating new requestId as it is missing in the request: $rId2 on path ${ctx.request.method} ${ctx.uriInfo.requestUri.path}")
+                rId2
+            }
         }
         return RequestId(rId)
     }

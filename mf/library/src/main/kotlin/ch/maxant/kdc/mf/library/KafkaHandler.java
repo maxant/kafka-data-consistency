@@ -10,8 +10,6 @@ public interface KafkaHandler {
     /** if true, then all records from a single poll are processed in parallel. default is false. */
     default Boolean getRunInParallel() { return false; }
 
-    default void handle(ConsumerRecord<String, String> record) {
-        // noop
-    }
+    void handle(ConsumerRecord<String, String> record);
 
 }

@@ -28,35 +28,6 @@ class Context {
             requestId
         }
 
-    companion object {
-        const val REQUEST_ID = "request-id"
-        const val DEMO_CONTEXT = "demo-context"
-        const val COMMAND = "command"
-        const val EVENT = "event"
-        const val RETRY_COUNT = "RETRY_COUNT"
-
-        fun of(requestId: RequestId, originalMessage: Any?, command: String? = null, event: String? = null, demoContext: DemoContext? = null, retryCount: Int = 0): Context {
-            val context = Context()
-            context.requestId = requestId
-            context.originalMessage = originalMessage
-            context.command = command
-            context.event = event
-            context.demoContext = demoContext
-            context.retryCount = retryCount
-            return context
-        }
-        fun of(toCopy: Context): Context {
-            val context = Context()
-            context.requestId = toCopy.getRequestIdSafely()
-            context.originalMessage = toCopy.originalMessage
-            context.command = toCopy.command
-            context.event = toCopy.event
-            context.demoContext = toCopy.demoContext
-            context.retryCount = toCopy.retryCount
-            return context
-        }
-    }
-
     fun throwExceptionInContractsIfRequiredForDemo() {
         if(retryCount == 0) {
             val e = demoContext?.forceError?:DemoContext.ForcibleError.none
@@ -87,6 +58,44 @@ class Context {
         this.demoContext = copy.demoContext
         this.retryCount = copy.retryCount
     }
+
+    fun isRequestIdAlreadySet() =
+        try {
+            requestId != null
+        } catch(e: UninitializedPropertyAccessException) {
+            false
+        }
+
+
+    companion object {
+        const val REQUEST_ID = "request-id"
+        const val DEMO_CONTEXT = "demo-context"
+        const val COMMAND = "command"
+        const val EVENT = "event"
+        const val RETRY_COUNT = "RETRY_COUNT"
+
+        fun of(requestId: RequestId, originalMessage: Any?, command: String? = null, event: String? = null, demoContext: DemoContext? = null, retryCount: Int = 0): Context {
+            val context = Context()
+            context.requestId = requestId
+            context.originalMessage = originalMessage
+            context.command = command
+            context.event = event
+            context.demoContext = demoContext
+            context.retryCount = retryCount
+            return context
+        }
+        fun of(toCopy: Context): Context {
+            val context = Context()
+            context.requestId = toCopy.getRequestIdSafely()
+            context.originalMessage = toCopy.originalMessage
+            context.command = toCopy.command
+            context.event = toCopy.event
+            context.demoContext = toCopy.demoContext
+            context.retryCount = toCopy.retryCount
+            return context
+        }
+    }
+
 }
 
 class DemoContext(

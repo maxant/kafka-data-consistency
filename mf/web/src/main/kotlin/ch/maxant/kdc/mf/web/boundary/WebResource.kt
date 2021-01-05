@@ -136,7 +136,7 @@ class WebResource {
 }
 
 data class EmitterState(val emitter: MultiEmitter<in String?>, val created: Long) {
-    val FIVE_MINUTES = 5 * 3_600_000
+    val FIVE_MINUTES = 5 * 60 * 1_000
 
     fun isExpired() = System.currentTimeMillis() - this.created > FIVE_MINUTES
 
