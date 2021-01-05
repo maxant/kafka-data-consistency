@@ -96,7 +96,7 @@ class KafkaConsumers(
                 .map { it to config.getValue(it, String::class.java) }
                 .forEach lit@{
                     val propValue = if (it.first.endsWith("group.id") && it.second.endsWith("{uniqueid}")) {
-                        it.second.replace("{uniqueid}", UUID.randomUUID().toString())
+                        it.second.replace("{uniqueid}", "-${UUID.randomUUID().toString()}")
                     } else it
 
                     val propName = it.first.substring(prefixIncoming.length + key.length + 1/*for the dot*/)
