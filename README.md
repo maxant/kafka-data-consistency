@@ -197,7 +197,7 @@ Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-co
 
         server_name portainer.maxant.ch;
         location / {
-            proxy_pass http://localhost:9000/;
+            proxy_pass http://localhost:29999/;
         }
       }
 

@@ -12,11 +12,10 @@ services:
     ports:
       - "8080:8080"
     environment:
-      quarkus.datasource.jdbc.url: "jdbc:mysql://kdc-mysql:3306/mfcontracts"
-      kafka.bootstrap.servers: "kdc-kafka-1:9092,kdc-kafka-2:9092"
-      quarkus.log.handler.gelf.host: "logstash"
-      quarkus.log.handler.gelf.port: "12201"
-      quarkus.elasticsearch.hosts: "elasticsearch:9200"
+      quarkus.datasource.jdbc.url: "jdbc:mysql://zeus.com:30300/mfcontracts"
+      kafka.bootstrap.servers: "zeus.com:30001,zeus.com:30002"
+      quarkus.log.handler.gelf.host: "zeus.com"
+      quarkus.elasticsearch.hosts: "kdc.elasticsearch.zeus.com"
     volumes:
       - ./mf/contracts/target:/project
     command:
@@ -29,16 +28,18 @@ services:
       - "cases:127.0.0.1"
       - "waitingroom:127.0.0.1"
       - "organisation:127.0.0.1"
-
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
   kdc-mf-pricing:
     image: maxant/jdk
     container_name: kdc-mf-pricing
     ports:
       - "8081:8081"
     environment:
-      quarkus.datasource.jdbc.url: "jdbc:mysql://kdc-mysql:30300/mfpricing"
-      kafka.bootstrap.servers: "kdc-kafka-1:30001,kdc-kafka-2:30002"
-      quarkus.log.handler.gelf.host: "logstash"
+      quarkus.datasource.jdbc.url: "jdbc:mysql://zeus.com:30300/mfpricing"
+      kafka.bootstrap.servers: "zeus.com:30001,zeus.com:30002"
+      quarkus.log.handler.gelf.host: "zeus.com"
     volumes:
       - ./mf/pricing/target:/project
     command:
@@ -51,6 +52,9 @@ services:
       - "cases:127.0.0.1"
       - "waitingroom:127.0.0.1"
       - "organisation:127.0.0.1"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
 
   kdc-mf-web:
     image: maxant/jdk
@@ -58,8 +62,8 @@ services:
     ports:
       - "8082:8082"
     environment:
-      kafka.bootstrap.servers: "kdc-kafka-1:30001,kdc-kafka-2:30002"
-      quarkus.log.handler.gelf.host: "logstash"
+      kafka.bootstrap.servers: "zeus.com:30001,zeus.com:30002"
+      quarkus.log.handler.gelf.host: "zeus.com"
     volumes:
       - ./mf/web/target:/project
     command:
@@ -72,6 +76,9 @@ services:
       - "cases:127.0.0.1"
       - "waitingroom:127.0.0.1"
       - "organisation:127.0.0.1"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
 
   kdc-mf-partners:
     image: maxant/jdk
@@ -79,10 +86,10 @@ services:
     ports:
       - "8083:8083"
     environment:
-      quarkus.datasource.jdbc.url: "jdbc:mysql://kdc-mysql:30300/mfpartners"
-      kafka.bootstrap.servers: "kdc-kafka-1:30001,kdc-kafka-2:30002"
-      quarkus.log.handler.gelf.host: "logstash"
-      quarkus.elasticsearch.hosts: "elasticsearch:30050"
+      quarkus.datasource.jdbc.url: "jdbc:mysql://zeus.com:30300/mfpartners"
+      kafka.bootstrap.servers: "zeus.com:30001,zeus.com:30002"
+      quarkus.log.handler.gelf.host: "zeus.com"
+      quarkus.elasticsearch.hosts: "kdc.elasticsearch.zeus.com"
     volumes:
       - ./mf/partners/target:/project
     command:
@@ -95,6 +102,9 @@ services:
       - "cases:127.0.0.1"
       - "waitingroom:127.0.0.1"
       - "organisation:127.0.0.1"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
 
   kdc-mf-cases:
     image: maxant/jdk
@@ -102,9 +112,9 @@ services:
     ports:
       - "8084:8084"
     environment:
-      quarkus.datasource.jdbc.url: "jdbc:mysql://kdc-mysql:30300/mfcases"
-      kafka.bootstrap.servers: "kdc-kafka-1:30001,kdc-kafka-2:30002"
-      quarkus.log.handler.gelf.host: "logstash"
+      quarkus.datasource.jdbc.url: "jdbc:mysql://zeus.com:30300/mfcases"
+      kafka.bootstrap.servers: "zeus.com:30001,zeus.com:30002"
+      quarkus.log.handler.gelf.host: "zeus.com"
     volumes:
       - ./mf/cases/target:/project
     command:
@@ -117,6 +127,9 @@ services:
       - "cases:127.0.0.1"
       - "waitingroom:127.0.0.1"
       - "organisation:127.0.0.1"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
 
   kdc-mf-waitingroom:
     image: maxant/jdk
@@ -124,8 +137,8 @@ services:
     ports:
       - "8085:8085"
     environment:
-      kafka.bootstrap.servers: "kdc-kafka-1:30001,kdc-kafka-2:30002"
-      quarkus.log.handler.gelf.host: "logstash"
+      kafka.bootstrap.servers: "zeus.com:30001,zeus.com:30002"
+      quarkus.log.handler.gelf.host: "zeus.com"
     volumes:
       - ./mf/waitingroom/target:/project
     command:
@@ -138,6 +151,9 @@ services:
       - "cases:127.0.0.1"
       - "waitingroom:127.0.0.1"
       - "organisation:127.0.0.1"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
 
   kdc-mf-organisation:
     image: maxant/jdk
@@ -145,8 +161,8 @@ services:
     ports:
       - "8086:8086"
     environment:
-      kafka.bootstrap.servers: "kdc-kafka-1:30001,kdc-kafka-2:30002"
-      quarkus.log.handler.gelf.host: "logstash"
+      kafka.bootstrap.servers: "zeus.com:30001,zeus.com:30002"
+      quarkus.log.handler.gelf.host: "zeus.com"
     volumes:
       - ./mf/organisation/target:/project
     command:
@@ -159,3 +175,6 @@ services:
       - "cases:127.0.0.1"
       - "waitingroom:127.0.0.1"
       - "organisation:127.0.0.1"
+      - "zeus.com:192.168.1.215"
+      - "kdc.elasticsearch.zeus.com:192.168.1.215"
+      - "kdc.schemaregistry.zeus.com:192.168.1.215"
