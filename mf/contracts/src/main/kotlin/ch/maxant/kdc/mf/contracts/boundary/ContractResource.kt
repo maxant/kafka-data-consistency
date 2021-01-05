@@ -145,7 +145,6 @@ class ContractResource(
             log.info("auto-approved contract $contractId")
         }
 
-        // TODO use transactional outbox
         esAdapter.updateOffer(contractId, contract.contractState)
 
         Response.ok(contract).build()
@@ -197,7 +196,6 @@ class ContractResource(
         approveContract(contract, context.user)
         log.info("approved contract $contractId")
 
-        // TODO use transactional outbox
         esAdapter.updateOffer(contractId, contract.contractState)
 
         Response.ok(contract).build()

@@ -393,19 +393,7 @@ Create new:
                 "start": { "type": "date", "format": "date_hour_minute_second" },
                 "end": { "type": "date", "format": "date_hour_minute_second" },
                 "state": { "type": "text" },
-                "components": { 
-                    "type": "nested",
-                    "properties": {
-                        "componentDefinitionId": { "type": "text" },
-                        "configs": {
-                            "type": "nested",
-                            "properties": {
-                                "name": { "type": "text" },
-                                "value": { "type": "text" }
-                            }
-                        }
-                    }
-                }
+                "metainfo": { "type": "text" }
             }
         }
     }

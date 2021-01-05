@@ -85,10 +85,10 @@ class ESAdapter {
         val script = om.createObjectNode()
         val params = om.createObjectNode()
         root.replace("script", script)
-        script.put("source", "ctx._source.components = params.components")
+        script.put("source", "ctx._source.metainfo = params.metainfo")
         script.put("lang", "painless")
         script.replace("params", params)
-        val components = om.readTree(om.writeValueAsString(allComponents.map { ESComponent(it) }))
+        val components = om.readTree(om.writeValueAsString(allComponents.map { ESComponent(it) }.flatMap { it.toMetainfo() }))
         params.replace("components", components)
     }
 
@@ -107,23 +107,26 @@ class ESAdapter {
         params.put("state", newState.toString())
 
         val r = EsRequest("POST", "/contracts/_update/$contractId", om.writeValueAsString(root))
+        // TODO use transactional outbox
         esOut.send(om.writeValueAsString(r))
     }
 
     data class EsContract(val partnerId: UUID?, val start: LocalDateTime, val end: LocalDateTime, val state: ContractState,
-                          val components: List<ESComponent>, val totalPrice: BigDecimal = BigDecimal.ZERO) {
+                          val metainfo: List<String>, val totalPrice: BigDecimal = BigDecimal.ZERO) {
         constructor(draft: Draft, partnerId: UUID?, components: List<ESComponent>) : this(
                 partnerId,
                 draft.contract.start.withNano(0),
                 draft.contract.end.withNano(0),
                 draft.contract.contractState,
-                components
+                components.flatMap { it.toMetainfo() }
         )
     }
 
     data class ESComponent(val componentDefinitionId: String, val configs: List<ESConfiguration>) {
         constructor(defn: ComponentDefinition): this(defn.componentDefinitionId, defn.configs.map { ESConfiguration(it) })
         constructor(comp: Component): this(comp.componentDefinitionId, comp.configs.map { ESConfiguration(it) })
+
+        fun toMetainfo(): List<String> = configs.map { "$componentDefinitionId ${it.name} ${it.value}" }
     }
 
     data class ESConfiguration(val name: String, val value: String) {
