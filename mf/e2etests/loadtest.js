@@ -67,11 +67,11 @@ function createPartnerAndContract(){
             if(createdDraft >= 1 && updatedPrices >= 1 && !modifiedFatContent) {
                 modifyFatContent(componentIdWithFatContent);
             }
-            if(createdDraft >= 2) numWarns++;
+            if(createdDraft >= 2) numWarns++; // this happens just once
         } else if(msg.event == "UPDATED_DRAFT") {
             updatedDraft++; // have to wait for updated prices before offering, otherwise we get a validation error because the contract isnt in sync
             console.log("event: updated draft " + updatedDraft + " - " + getMsSinceStart() + "msFromStart");
-            if(updatedDraft >= 2) numWarns++;
+            if(updatedDraft >= 2) numWarns++; // this happens once
         } else if(msg.event == "UPDATED_PRICES") {
             updatedPrices++;
             console.log("event: updated prices " + updatedPrices + " - " + getMsSinceStart() + "msFromStart");
@@ -84,23 +84,23 @@ function createPartnerAndContract(){
             } else if(updatedDraft >= 1 && updatedPrices >= 2 && relationshipCreated >= 2 && !offeredDraft) {
                 offerDraft();
             }
-            if(updatedPrices >= 3) numWarns++;
+            if(updatedPrices >= 3) numWarns++; // created, updated
         } else if(msg.event == "OFFERED_DRAFT") {
             offeredDraftEvent++;
             console.log("event: offered draft" + " - " + getMsSinceStart() + "msFromStart");
             acceptContract();
-            if(offeredDraftEvent >= 2) numWarns++;
+            if(offeredDraftEvent >= 2) numWarns++; // this just happens once
         } else if(msg.event == "CHANGED_PARTNER_RELATIONSHIP") {
             relationshipCreated++;
             console.log("event: changed partner relationship " + relationshipCreated + " - " + getMsSinceStart() + "msFromStart");
             if(updatedDraft >= 1 && updatedPrices >= 2 && relationshipCreated >= 2 && !offeredDraft) {
                 offerDraft();
             }
-            if(relationshipCreated >= 3) numWarns++;
+            if(relationshipCreated >= 3) numWarns++; // sales rep, contract holder
         } else if(msg.event == "CHANGED_CASE") {
             changedCase++;
             console.log("event: changed case" + " - " + getMsSinceStart() + "msFromStart");
-            if(changedCase >= 3) numWarns++;
+            if(changedCase >= 4) numWarns++; // create case, create task, complete task
         } else if(msg.event == "ERROR") {
             console.log(">>>>>> event: error" + " - " + getMsSinceStart() + "msFromStart");
             numErrors++;

@@ -230,16 +230,25 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
 ## TODO
 
-- allow changing the quantity in the offer, so you can get under the approval threshold
 - billing
   - accept offer => event to billing
   - billing is an orchestrator which keeps its model in a global ktable and which uses tombstone records and compaction
   - billing publishes event to world to inform contract component that the contract is active?
   - add duration, day in year to bill, billing frequency => make customer pay for first period until next billing period according to config
   - add daily billing job
+    - group (and unfold on errors)
+    - update prices (due to market price on certain components)
+    - calculate bill for given period (regardless of what already exists)
+    - send output
+    - progress tracking
+  - send event back to UI so that the customer can pay directly for the first billed period
+- allow changing the quantity in the offer, so you can get under the approval threshold
+  - somethings not quite right - the price doesnt account for the quantity in the box!
 - display existing draft so that you can continue working from there
 - change from external to internal, if you arent sure and need a consultation
 - add createdAt/By to all entities and order partner relationships by that and load only the latest ones
+- sales uis should use a state object which is appended to when events arrive, and it is used to determine what buttons etc become available
+  - actually, thats kinda cool, coz cypress just has to wait til it can click the buttons?
 - timestamp - if we attempt to insert but a new version has already been applied, we need to ignore it and log it for alerting. or fail with an error? why not just use optimistic locking. whats on my bit of paper?
 - sessionId
 - web register for session, request, contract, etc. not just requestId
