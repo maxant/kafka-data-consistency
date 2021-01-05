@@ -35,6 +35,7 @@ function createPartnerAndContract(){
     var updatedDraft = 0;
     var updatedPrices = 0;
     var relationshipCreated = 0;
+    var modifiedFatContent = false;
     var offeredDraft = false;
     var componentIdWithFatContent;
     var start = new Date().getTime();
@@ -57,7 +58,12 @@ function createPartnerAndContract(){
         if(msg.event == "CREATED_DRAFT") {
             createdDraft++;
             console.log("event: created draft " + createdDraft + " - " + getMsSinceStart() + "msFromStart");
-            componentIdWithFatContent = getComponentIdWithFatContent(msg)
+            componentIdWithFatContent = getComponentIdWithFatContent(msg);
+
+            // see note below - prices can indeed arrive before, because we handle messages in web in parallel!
+            if(createdDraft >= 1 && updatedPrices >= 1 && !modifiedFatContent) {
+                modifyFatContent(componentIdWithFatContent);
+            }
         } else if(msg.event == "UPDATED_DRAFT") {
             updatedDraft++; // have to wait for updated prices before offering, otherwise we get a validation error because the contract isnt in sync
             console.log("event: updated draft " + updatedDraft + " - " + getMsSinceStart() + "msFromStart");
@@ -65,11 +71,12 @@ function createPartnerAndContract(){
             updatedPrices++;
             console.log("event: updated prices " + updatedPrices + " - " + getMsSinceStart() + "msFromStart");
 
+            // TODO hmmm the following isnt true! ah, because the web now handles these in parallel
             // prices are always updated after draft creation/update, and are published on the same topic, so arrive
             // AFTER those events. but before we continue with the process, lets just check everything is as expected
-            if(createdDraft == 1 && updatedPrices == 1) {
+            if(createdDraft >= 1 && updatedPrices >= 1 && !modifiedFatContent) {
                 modifyFatContent(componentIdWithFatContent);
-            } else if(updatedDraft == 1 && updatedPrices == 2 && relationshipCreated == 2 && !offeredDraft) {
+            } else if(updatedDraft >= 1 && updatedPrices >= 2 && relationshipCreated >= 2 && !offeredDraft) {
                 offerDraft();
             }
         } else if(msg.event == "OFFERED_DRAFT") {
@@ -78,7 +85,7 @@ function createPartnerAndContract(){
         } else if(msg.event == "CHANGED_PARTNER_RELATIONSHIP") {
             relationshipCreated++;
             console.log("event: changed partner relationship " + relationshipCreated + " - " + getMsSinceStart() + "msFromStart");
-            if(updatedDraft == 1 && updatedPrices == 2 && relationshipCreated == 2 && !offeredDraft) {
+            if(updatedDraft >= 1 && updatedPrices >= 2 && relationshipCreated >= 2 && !offeredDraft) {
                 offerDraft();
             }
         } else if(msg.event == "CHANGED_CASE") {
@@ -107,13 +114,14 @@ function createPartnerAndContract(){
             console.info("");
             createPartnerAndContract();
         }
-    }, 30000);
+    }, 15000);
 
     function getComponentIdWithFatContent(msg) {
         return _.find(msg.payload.pack.children[0].children, child => child.componentDefinitionId == "Milk").componentId;
     }
 
     function modifyFatContent(componentId) {
+        modifiedFatContent = true;
         var fatContents = ['0.2', '1.8', '3.5'];
         var newFatContent = fatContents[getRandomInt(0, 3)];
         var go = new Date().getTime();

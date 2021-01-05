@@ -19,6 +19,7 @@ import org.jboss.logging.Logger
 import org.jboss.resteasy.annotations.SseElementType
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
+import java.util.concurrent.ConcurrentHashMap
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
 import javax.ws.rs.*
@@ -39,9 +40,11 @@ class WebResource {
     lateinit var context: Context
 
     // TODO tidy the entries up when they are no longer in use! tip: see isCancelled below - altho theyre already removed with onterminate at the bottom?
-    val subscriptions: HashMap<String, EmitterState> = HashMap()
+    val subscriptions = ConcurrentHashMap<String, EmitterState>()
 
     fun sendToSubscribers(requestId: String, json: String) {
+
+        val toRemove = mutableSetOf<String>()
         subscriptions
                 .entries
                 .filter { it.value.isExpiredOrCancelled() }
@@ -49,8 +52,10 @@ class WebResource {
                     synchronized(it.value.emitter) { // TODO is this necessary? does it hurt??
                         log.info("closing cancelled/expired emitter for request $requestId. cancelled: ${it.value.emitter.isCancelled}, expired: ${it.value.isExpired()}")
                         it.value.emitter.complete()
+                        toRemove.add(it.key)
                     }
                 }
+        toRemove.forEach { subscriptions.remove(it) }
 
         subscriptions
                 .entries
