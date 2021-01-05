@@ -77,8 +77,6 @@ class KafkaConsumers(
             val die = MutableBoolean(false)
             log.info("handing off code for poll loop for $key")
             val f = managedExecutor.supplyAsync {
-                log.info("starting up poll loop for $key in 1 sec...")
-                Thread.sleep(1000) // wait for container to actually be ready
                 log.info("starting up poll loop for $key now")
                 pollingLoopRunner.run(topic, props, die, handlers[0])
             }
@@ -155,6 +153,7 @@ class PollingLoopRunner(
     fun run(topic: String, props: Properties, die: MutableBoolean, handler: KafkaHandler) {
         setup()
         Thread.currentThread().name = "kfkcnsmr::$topic"
+        log.info("creating consumer for $topic with these props $props")
         val consumer = KafkaConsumer<String, String>(props, StringDeserializer(), StringDeserializer())
         consumer.subscribe(listOf(topic))
         log.info("subscribed to $topic")
