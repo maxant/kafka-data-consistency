@@ -147,6 +147,7 @@ Also known as entry points, process components or UIs.
     limit 10;
 
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p
+    docker run -it --rm mysql mysql -h 192.168.1.215 --port 30300 -u root -p
     SHOW VARIABLES LIKE "general_log%";
     +------------------+---------------------------------+
     | Variable_name    | Value                           |
