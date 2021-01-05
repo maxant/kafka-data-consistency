@@ -229,23 +229,16 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
 ## TODO
 
-- allow mf kafka thingy to add a uuid to the name, so we can start multiple components like web, at the same time
 - allow changing the quantity in the offer, so you can get under the approval threshold
-- event bus is per application! so the existing one is for contracts only and needs renaming
 - billing
   - accept offer => event to billing
   - billing is an orchestrator which keeps its model in a global ktable and which uses tombstone records and compaction
   - billing publishes event to world to inform contract component that the contract is active?
   - add duration, day in year to bill, billing frequency => make customer pay for first period until next billing period according to config
   - add daily billing job
-- search (based ES, so partners need to be in there too!)
-  - should we also have partner relations in there? so that if i search for augustus, i see all his contracts?
-  - nah, just start simple, add partners, so you can search them. then from the partner view you get their contracts
-- ES via kafka and then the relevant component, rather than a dedicated one
 - display existing draft so that you can continue working from there
 - change from external to internal, if you arent sure and need a consultation
 - add createdAt/By to all entities and order partner relationships by that and load only the latest ones
-- add a partner in postcode 3000 and see if jane becomes salesRep. same for janet in 1000.
 - timestamp - if we attempt to insert but a new version has already been applied, we need to ignore it and log it for alerting. or fail with an error? why not just use optimistic locking. whats on my bit of paper?
 - sessionId
 - web register for session, request, contract, etc. not just requestId
