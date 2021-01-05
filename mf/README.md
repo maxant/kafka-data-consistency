@@ -173,10 +173,17 @@ Also known as entry points, process components or UIs.
   - either `event` or `command` describing what kind of record it is. Events may 
     also contain the `originalCommand` attribute which led to their publication.
 - Topics
-  - event-bus (generic for all closely-coupled components)
+  - contracts-event-bus (generic for all closely-coupled components)
+  - contracts-internal-es (for async load into ES)
   - cases-commands
   - cases-events
   - errors (for error propagation back to the client)
+  - organisation-events (events about changes to the organisation)
+  - partners-commands
+  - partners-events
+  - partners-internal-es (for async load into ES)
+  - waitingroom01 (a place for records to do wait for 1 second, before retrying)
+  - waitingroom10 (a place for records to do wait for 10 seconds, before retrying)
 - Commands (all have the attribute "command" at root level)
   - CREATE_CASE (cases-commands)
   - CREATE_TASK (cases-commands)
@@ -184,10 +191,11 @@ Also known as entry points, process components or UIs.
 - Events (all have the header "event")
   - ERROR (errors)
   - CHANGED_CASE (cases-events)
-  - CREATED_DRAFT (event-bus)
-  - UPDATED_DRAFT (event-bus)
-  - UPDATED_PRICES (event-bus)
+  - CREATED_DRAFT (contracts-event-bus)
+  - UPDATED_DRAFT (contracts-event-bus)
+  - UPDATED_PRICES (contracts-event-bus)
   - SECURITY_MODEL (organisation-events)
+  - PARTNER_CHANGED? (partner-events)
 
 ## Links
 
@@ -221,7 +229,6 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
 ## TODO
 
-- count warnings in loadtest, if things arent as expected, eg too many events received
 - allow mf kafka thingy to add a uuid to the name, so we can start multiple components like web, at the same time
 - allow changing the quantity in the offer, so you can get under the approval threshold
 - event bus is per application! so the existing one is for contracts only and needs renaming

@@ -5,6 +5,7 @@ import io.quarkus.runtime.StartupEvent
 import org.apache.commons.lang3.mutable.MutableBoolean
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.common.serialization.StringDeserializer
+import org.eclipse.microprofile.config.Config
 import org.eclipse.microprofile.config.ConfigProvider
 import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.eclipse.microprofile.context.ManagedExecutor
@@ -67,16 +68,7 @@ class KafkaConsumers(
         log.info("creating kafka consumers for these keys: $keys")
 
         for (key in keys) {
-            val props = Properties()
-            props["bootstrap.servers"] = kafkaBootstrapServers
-            props["group.id"] = config.getValue("$prefixIncoming$key.group.id", String::class.java)
-            val autoOffsetReset = config.getOptionalValue("$prefixIncoming$key.auto.offset.reset", String::class.java)
-            if(autoOffsetReset.isPresent) {
-                props["auto.offset.reset"] = autoOffsetReset.get()
-            }
-            props["enable.auto.commit"] = "false"
-            //props["enable.auto.commit"] = "true"
-            //props["auto.commit.interval.ms"] = "1000"
+            val props = getProps(config, key)
             val topic = config.getValue("$prefixIncoming$key.topic", String::class.java)
             val handlers = topicHandlers.filter { it.key == key }
             if(handlers.isEmpty()) throw IllegalArgumentException("No topic handler configured for topic '$topic'")
@@ -93,6 +85,30 @@ class KafkaConsumers(
             consumers.add(die to f)
         }
         log.info("kafka subscriptions setup completed")
+    }
+
+    private fun getProps(config: Config, key: String): Properties {
+        val props = Properties()
+        props["bootstrap.servers"] = kafkaBootstrapServers
+
+        config.propertyNames
+                .filter { it.startsWith("$prefixIncoming$key") }
+                .map { it to config.getValue(it, String::class.java) }
+                .forEach lit@{
+                    val propValue = if (it.first.endsWith("group.id") && it.second.endsWith("{uniqueid}")) {
+                        it.second.replace("{uniqueid}", UUID.randomUUID().toString())
+                    } else it
+
+                    val propName = it.first.substring(prefixIncoming.length + key.length + 1/*for the dot*/)
+                    if (propName == "topic") {
+                        return@lit // skip topic, not required in list of props
+                    }
+                    props[propName] = propValue
+                }
+
+        props["enable.auto.commit"] = "false"
+
+        return props
     }
 }
 

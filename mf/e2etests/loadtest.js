@@ -25,6 +25,7 @@ var setTimeoutPromise = ms => new Promise(resolve => setTimeout(resolve, ( (ms <
 
 var i = 0;
 var numErrors = 0;
+var numWarns = 0;
 
 function createPartnerAndContract(){
     var requestId = uuidv4();
@@ -35,8 +36,10 @@ function createPartnerAndContract(){
     var updatedDraft = 0;
     var updatedPrices = 0;
     var relationshipCreated = 0;
+    var changedCase = 0;
     var modifiedFatContent = false;
     var offeredDraft = false;
+    var offeredDraftEvent = 0;
     var componentIdWithFatContent;
     var start = new Date().getTime();
 
@@ -64,9 +67,11 @@ function createPartnerAndContract(){
             if(createdDraft >= 1 && updatedPrices >= 1 && !modifiedFatContent) {
                 modifyFatContent(componentIdWithFatContent);
             }
+            if(createdDraft >= 2) numWarns++;
         } else if(msg.event == "UPDATED_DRAFT") {
             updatedDraft++; // have to wait for updated prices before offering, otherwise we get a validation error because the contract isnt in sync
             console.log("event: updated draft " + updatedDraft + " - " + getMsSinceStart() + "msFromStart");
+            if(updatedDraft >= 2) numWarns++;
         } else if(msg.event == "UPDATED_PRICES") {
             updatedPrices++;
             console.log("event: updated prices " + updatedPrices + " - " + getMsSinceStart() + "msFromStart");
@@ -79,22 +84,29 @@ function createPartnerAndContract(){
             } else if(updatedDraft >= 1 && updatedPrices >= 2 && relationshipCreated >= 2 && !offeredDraft) {
                 offerDraft();
             }
+            if(updatedPrices >= 3) numWarns++;
         } else if(msg.event == "OFFERED_DRAFT") {
+            offeredDraftEvent++;
             console.log("event: offered draft" + " - " + getMsSinceStart() + "msFromStart");
             acceptContract();
+            if(offeredDraftEvent >= 2) numWarns++;
         } else if(msg.event == "CHANGED_PARTNER_RELATIONSHIP") {
             relationshipCreated++;
             console.log("event: changed partner relationship " + relationshipCreated + " - " + getMsSinceStart() + "msFromStart");
             if(updatedDraft >= 1 && updatedPrices >= 2 && relationshipCreated >= 2 && !offeredDraft) {
                 offerDraft();
             }
+            if(relationshipCreated >= 3) numWarns++;
         } else if(msg.event == "CHANGED_CASE") {
+            changedCase++;
             console.log("event: changed case" + " - " + getMsSinceStart() + "msFromStart");
+            if(changedCase >= 3) numWarns++;
         } else if(msg.event == "ERROR") {
             console.log(">>>>>> event: error" + " - " + getMsSinceStart() + "msFromStart");
             numErrors++;
         } else {
             console.log(">>>>>> event: other" + " - " + getMsSinceStart() + "msFromStart");
+            numErrors++;
         }
     };
     source.onerror = function (event) {
@@ -229,7 +241,7 @@ function createPartnerAndContract(){
             source.close();
             source.$completed = true;
 
-            console.log("=============================================== " + i++ + " :: errors=" + numErrors);
+            console.log("=============================================== " + (i++) + " :: warnings=" + numWarns + " :: errors=" + numErrors);
             createPartnerAndContract();
         })
     }
