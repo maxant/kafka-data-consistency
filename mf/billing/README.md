@@ -64,15 +64,12 @@ because it's scheduled. The trigger event includes the contract id so that the s
       - id
       - contractId
       - definitionId
-- Bill
+- Bill Chosen (this is what the customer pays)
   - Entity
   - Represents a single bill
   - Fields:
       - id
       - contractId
-      - base period from
-      - base period to
-      - base period price - this is just the basis of the calculation
       - chosen period from
       - chosen period to
       - chosen period price - this is what the customer must pay!
@@ -80,6 +77,25 @@ because it's scheduled. The trigger event includes the contract id so that the s
       - total price
       - state
         - BILLED, REMINDED, NEVER_PAID (customer refused, see other processes), PAID
+- Bill Base (this is the basis of the calculation)
+  - Entity
+  - Represents the base price(s)
+  - Fields:
+      - id
+      - base period from
+      - base period to
+      - base period price - this is just the basis of the calculation
+- Bill base to chosen
+  - Entity (join table)
+  - Represents the n:m relationship between chosen and base periods
+    - 1:1: base bill periodicity equals chosen bill periodicity, e.g. both "monthly"
+    - 1:m: e.g. a price fixed for a year is paid 12 times
+    - n:1: e.g. a price that changes monthly is paid once per year
+    - n:m: doesn't exist from the above perspective, although 1:m and n:1 are actually n:m when you think that you keep paying them, year on year
+  - Fields:
+      - id
+      - billChosenId
+      - billBaseId
 
 ## Running in dev mode
 

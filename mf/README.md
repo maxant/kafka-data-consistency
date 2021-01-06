@@ -234,6 +234,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
 ## TODO
 
+- discounts can be added to any component in the tree, as a child component! still not sure to which component these belong
 - fix external sales
 - billing
   - accept offer => event to billing
