@@ -316,9 +316,11 @@
         </profile>
     </profiles>
     <modules>
+        <module>../library</module>
+
+        <module>../billing</module>
         <module>../cases</module>
         <module>../contracts</module>
-        <module>../library</module>
         <module>../organisation</module>
         <module>../partners</module>
         <module>../pricing</module>

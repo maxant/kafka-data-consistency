@@ -221,6 +221,10 @@ Worth alerting on:
 - KAF001 If this occurs, then something is no longer working with request scoped state management
 - KAF002 something failed in the consumer that needs to be investigated. probably at startup rather than during polling.
 
+## Useful log searches
+
+    ("*Exception*" or "ERROR" or "WARN") AND NOT ensureUserIsContractHolder AND NOT EH004a AND NOT CONES001
+
 ## Cypress Testing
 
 https://docs.cypress.io/guides/getting-started/installing-cypress.html
@@ -230,6 +234,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
 ## TODO
 
+- fix external sales
 - billing
   - accept offer => event to billing
   - billing is an orchestrator which keeps its model in a global ktable and which uses tombstone records and compaction

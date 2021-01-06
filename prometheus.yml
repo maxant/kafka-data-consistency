@@ -26,12 +26,19 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'docker'
+  - job_name: 'docker-maxant'
       # metrics_path defaults to '/metrics'
     # scheme defaults to 'http'.
 
     static_configs:
       - targets: ['dockerstats.maxant.ch']
+
+  - job_name: 'docker-zeus'
+      # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+
+    static_configs:
+      - targets: ['dockerstats.zeus.com']
 
   - job_name: 'kdc-kafka-1'
     static_configs:
