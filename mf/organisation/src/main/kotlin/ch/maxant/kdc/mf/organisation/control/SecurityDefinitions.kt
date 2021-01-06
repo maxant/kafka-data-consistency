@@ -1,7 +1,7 @@
 package ch.maxant.kdc.mf.organisation.control
 
 import ch.maxant.kdc.mf.library.Role
-import ch.maxant.kdc.mf.organisation.control.ProcessSteps.*
+import ch.maxant.kdc.mf.organisation.control.ProcessStep.*
 import ch.maxant.kdc.mf.organisation.control.StaffRole.*
 import ch.maxant.kdc.mf.organisation.control.PartnerRole.*
 import javax.enterprise.context.Dependent
@@ -11,19 +11,19 @@ class SecurityDefinitions {
 
     fun getDefinitions(includeUsers: Boolean? = false): SecurityDefinitionResponse {
         return SecurityDefinitionResponse(
-                buildProcessSteps(includeUsers!!, Processes.values())
+                buildProcessSteps(includeUsers!!, Process.values())
         )
     }
 
-    private fun buildProcessSteps(includeUsers: Boolean, processes: Array<Processes>): List<Node> {
+    private fun buildProcessSteps(includeUsers: Boolean, processes: Array<Process>): List<Node> {
         return processes.map {
             Node(it.name, Data(it.name, "Process"), buildProcessSteps(includeUsers, it.processSteps, it.name))
         }
     }
-    private fun buildProcessSteps(includeUsers: Boolean, steps: Set<ProcessSteps>, parentKey: String): List<Node> {
+    private fun buildProcessSteps(includeUsers: Boolean, steps: Set<ProcessStep>, parentKey: String): List<Node> {
         return steps.map { ps ->
             val key = parentKey + "::" + ps.name
-            val relevantRoleMappings = RoleMappings.values()
+            val relevantRoleMappings = RoleMapping.values()
                     .filter { rm -> rm.processStep == ps }
             val userList: List<String> = if(includeUsers) {
                 val users: MutableList<User> = Partner.values().toMutableList()
@@ -65,7 +65,7 @@ enum class PartnerRole(private val description: String): Role {
     }
 }
 
-enum class ProcessSteps(val fqMethodNames: Set<String>) {
+enum class ProcessStep(val fqMethodNames: Set<String>) {
     DRAFT(setOf(
         "ch.maxant.kdc.mf.contracts.boundary.DraftsResource#create",
         "ch.maxant.kdc.mf.contracts.boundary.DraftsResource#updateConfig",
@@ -85,11 +85,11 @@ enum class ProcessSteps(val fqMethodNames: Set<String>) {
     ))
 }
 
-enum class Processes(val processSteps: Set<ProcessSteps>) {
+enum class Process(val processSteps: Set<ProcessStep>) {
     SALES(setOf(DRAFT, OFFER, ACCEPT, APPROVE))
 }
 
-enum class RoleMappings(val role: Role, val processStep: ProcessSteps) {
+enum class RoleMapping(val role: Role, val processStep: ProcessStep) {
     SALES_REP___DRAFT(SALES_REP, DRAFT),
     SALES_REP___OFFER(SALES_REP, OFFER),
     SALES_REP___ACCEPT(SALES_REP, ACCEPT), // abac => only john can do this, for testing purposes!

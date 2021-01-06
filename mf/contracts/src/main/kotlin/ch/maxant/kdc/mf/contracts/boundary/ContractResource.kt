@@ -6,11 +6,8 @@ import ch.maxant.kdc.mf.contracts.adapter.PartnerRelationshipsAdapter
 import ch.maxant.kdc.mf.contracts.adapter.PricingAdapter
 import ch.maxant.kdc.mf.contracts.control.Abac
 import ch.maxant.kdc.mf.contracts.control.EventBus
-import ch.maxant.kdc.mf.contracts.definitions.Configuration
-import ch.maxant.kdc.mf.contracts.dto.CompleteTasksCommand
-import ch.maxant.kdc.mf.contracts.dto.Component
-import ch.maxant.kdc.mf.contracts.dto.CreatePartnerRelationshipCommand
-import ch.maxant.kdc.mf.contracts.dto.CreateTaskCommand
+import ch.maxant.kdc.mf.contracts.definitions.ProductId
+import ch.maxant.kdc.mf.contracts.dto.*
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractState
@@ -18,7 +15,6 @@ import ch.maxant.kdc.mf.library.Context
 import ch.maxant.kdc.mf.library.Secure
 import ch.maxant.kdc.mf.library.doByHandlingValidationExceptions
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
@@ -127,7 +123,9 @@ class ContractResource(
 
         acceptOffer(contract)
 
-        val rootComponentId = ComponentEntity.Queries.selectByContractId(em, contractId).find { it.parentId == null }!!.id
+        val components = ComponentEntity.Queries.selectByContractId(em, contractId)
+        val rootComponentId = components.find { it.parentId == null }!!.id
+        val productId = components.find { it.productId != null }!!.productId!!
 
         // TODO fix timing problems related to zones. the contract seems to be valid a couple hours longer than the prices! => take a day off below
         if(pricingAdapter.totalPrice(listOf(rootComponentId), contract.end.minusDays(1)).total > BigDecimal("3.00")) {
@@ -141,7 +139,7 @@ class ContractResource(
                     )
             )
         } else {
-            approveContract(contract, autoApprovalUser)
+            approveContract(contract, autoApprovalUser, productId)
             log.info("auto-approved contract $contractId")
         }
 
@@ -159,11 +157,13 @@ class ContractResource(
         contract.contractState = ContractState.ACCEPTED
     }
 
-    private fun approveContract(contract: ContractEntity, userId: String) {
+    private fun approveContract(contract: ContractEntity, userId: String, productId: ProductId) {
         contract.approvedAt = LocalDateTime.now()
         contract.approvedBy = userId
         contract.contractState = ContractState.APPROVED // code just for completions sake
         contract.contractState = ContractState.RUNNING
+
+        eventBus.publish(ApprovedContract(contract, productId))
     }
 
     private fun getSalesRepUsername(contractId: UUID): String {
@@ -185,6 +185,9 @@ class ContractResource(
 
         val contract = em.find(ContractEntity::class.java, contractId)
 
+        val components = ComponentEntity.Queries.selectByContractId(em, contractId)
+        val productId = components.find { it.productId != null }!!.productId!!
+
         require(contract.contractState == ContractState.AWAITING_APPROVAL) {
             "Contract is not in state ${ContractState.AWAITING_APPROVAL}, but in state ${contract.contractState}"
         }
@@ -193,7 +196,7 @@ class ContractResource(
                 CompleteTasksCommand(contract.id, CreateTaskCommand.Action.APPROVE_CONTRACT.toString())
         )
 
-        approveContract(contract, context.user)
+        approveContract(contract, context.user, productId)
         log.info("approved contract $contractId")
 
         esAdapter.updateOffer(contractId, contract.contractState)

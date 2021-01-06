@@ -48,6 +48,10 @@ class EventBus {
         send(eventBus, offeredDraft.contract.id, offeredDraft, event = "OFFERED_DRAFT")
     }
 
+    fun publish(approvedContract: ApprovedContract) {
+        send(eventBus, approvedContract.contract.id, approvedContract, event = "APPROVED_CONTRACT")
+    }
+
     fun publish(createCaseCommand: CreateCaseCommand) {
         send(cases, createCaseCommand.referenceId, createCaseCommand, command = "CREATE_CASE")
     }

@@ -173,6 +173,9 @@ Also known as entry points, process components or UIs.
   - either `event` or `command` describing what kind of record it is. Events may 
     also contain the `originalCommand` attribute which led to their publication.
 - Topics
+  - billing-commands
+  - billing-events
+  - billing-internal-state (used to track the state of a selection and of contracts within it)
   - contracts-event-bus (generic for all closely-coupled components)
   - contracts-internal-es (for async load into ES)
   - cases-commands
@@ -188,14 +191,19 @@ Also known as entry points, process components or UIs.
   - CREATE_CASE (cases-commands)
   - CREATE_TASK (cases-commands)
   - UPDATE_TASK (cases-commands)
+  - COMPLETE_TASKS (cases-commands)
+  - CREATE_PARTNER_RELATIONSHIP (partners-commands)
 - Events (all have the header "event")
-  - ERROR (errors)
-  - CHANGED_CASE (cases-events)
   - CREATED_DRAFT (contracts-event-bus)
   - UPDATED_DRAFT (contracts-event-bus)
+  - OFFERED_DRAFT (contracts-event-bus)
+  - APPROVED_CONTRACT (contracts-event-bus)
   - UPDATED_PRICES (contracts-event-bus)
+  - CHANGED_PARTNER_RELATIONSHIP (partner-events)
+  - CHANGED_CASE (cases-events)
+  - ERROR (errors)
   - SECURITY_MODEL (organisation-events)
-  - PARTNER_CHANGED? (partner-events)
+  - SELECTED_FOR_BILLING (billing-internal)
 
 ## Links
 
@@ -513,6 +521,8 @@ Create new:
 
 ## Infrastructure
 
+Hmmm... not really needed ATM since we access using root:
+
     CREATE USER 'mf'@'%' IDENTIFIED BY 'secret';
     CREATE DATABASE mfcontracts CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
     GRANT ALL PRIVILEGES ON mfcontracts.* TO mf@'%' IDENTIFIED BY 'the_password';
@@ -522,53 +532,12 @@ Create new:
     GRANT ALL PRIVILEGES ON mfcases.* TO mf@'%' IDENTIFIED BY 'the_password';
     CREATE DATABASE mfpartners CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
     GRANT ALL PRIVILEGES ON mfpartners.* TO mf@'%' IDENTIFIED BY 'the_password';
+    CREATE DATABASE mfbilling CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+    GRANT ALL PRIVILEGES ON mfbilling.* TO mf@'%' IDENTIFIED BY 'the_password';
+
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper zeus.com:30000 --replication-factor 2 --partitions 5 --topic billing-internal-state
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --alter --topic billing-internal-state --zookeeper zeus.com:30000 --config cleanup.policy=compact
 
 ## Bugs
 
-2021-01-03 15:26:32,356 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] >>> APP.CREATED ch.maxant.kdc.mf.library.Other@4c4e20cd
-2021-01-03 15:26:32,358 INFO  [ch.max.kdc.mf.lib.State] (thread-1) [request-id: c: e:] >>> STATE.CREATED ch.maxant.kdc.mf.library.State@383485ef
-2021-01-03 15:26:32,359 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] set state to 1
-2021-01-03 15:26:32,358 INFO  [ch.max.kdc.mf.lib.State] (thread-2) [request-id: c: e:] >>> STATE.CREATED ch.maxant.kdc.mf.library.State@7220eab1
-2021-01-03 15:26:32,361 INFO  [ch.max.kdc.mf.lib.Other] (thread-2) [request-id: c: e:] set state to 2
-2021-01-03 15:26:32,367 INFO  [ch.max.kdc.mf.lib.State] (Quarkus Main Thread) [request-id: c: e:] >>> STATE.DESTROYING ch.maxant.kdc.mf.library.State@7220eab1
-2021-01-03 15:26:32,899 INFO  [ch.max.kdc.mf.lib.State] (thread-1) [request-id: c: e:] >>> STATE.CREATED ch.maxant.kdc.mf.library.State@72dd4f0f
-2021-01-03 15:26:32,901 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] doing it, state is asdf
-
-2021-01-03 15:30:00,609 INFO  [ch.max.kdc.mf.lib.Other] (Quarkus Main Thread) [request-id: c: e:] >>> APP.DESTROYING ch.maxant.kdc.mf.library.Other@4c4e20cd
-
-2021-01-03 15:30:03,386 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] >>> APP.CREATED ch.maxant.kdc.mf.library.Other@331de08a
-2021-01-03 15:30:03,388 INFO  [ch.max.kdc.mf.lib.State] (thread-1) [request-id: c: e:] >>> STATE.CREATED ch.maxant.kdc.mf.library.State@77643847
-2021-01-03 15:30:03,388 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] set state to 1
-2021-01-03 15:30:03,389 INFO  [ch.max.kdc.mf.lib.Other] (thread-2) [request-id: c: e:] set state to 2
-2021-01-03 15:30:03,647 INFO  [ch.max.kdc.mf.lib.State] (Quarkus Main Thread) [request-id: c: e:] >>> STATE.DESTROYING ch.maxant.kdc.mf.library.State@77643847
-2021-01-03 15:30:03,938 INFO  [ch.max.kdc.mf.lib.State] (thread-2) [request-id: c: e:] >>> STATE.CREATED ch.maxant.kdc.mf.library.State@706039eb
-
-
-2021-01-03 15:37:17,253 INFO  [ch.max.kdc.mf.lib.Service] (thread-2) [request-id: c: e:] >>> SERVICE.CREATED ch.maxant.kdc.mf.library.Service@5192c8c2
-2021-01-03 15:37:17,254 INFO  [ch.max.kdc.mf.lib.KafkaConsumers] (Quarkus Main Thread) [request-id: c: e:] kafka subscriptions setup completed
-2021-01-03 15:37:17,254 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] >>> APP.CREATED ch.maxant.kdc.mf.library.Other@f77b711
-2021-01-03 15:37:17,255 INFO  [ch.max.kdc.mf.lib.State] (thread-1) [request-id: c: e:] >>> STATE.CREATED ch.maxant.kdc.mf.library.State@53321fc5
-2021-01-03 15:37:17,256 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] set state to 1
-2021-01-03 15:37:17,257 INFO  [ch.max.kdc.mf.lib.Other] (thread-2) [request-id: c: e:] set state to 2
-2021-01-03 15:37:18,387 INFO  [ch.max.kdc.mf.lib.Other] (thread-2) [request-id: c: e:] doing it, state is 2
-2021-01-03 15:37:20,194 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] doing it, state is 2
-2021-01-03 15:37:20,731 INFO  [ch.max.kdc.mf.lib.Other] (thread-2) [request-id: c: e:] doing it, state is 2
-2021-01-03 15:37:21,812 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] doing it, state is 2
-
-27676 thread 1 value 
-27667 thread 2 27673map
-
-
-https://quarkusio.zulipchat.com/#narrow/stream/187030-users/topic/Does.20.40RequestScoped.20only.20work.20with.20web.20requests.3F
-
-    2021-01-03 16:23:14,880 INFO  [ch.max.kdc.mf.lib.Service] (thread-1) [request-id: c: e:] >>> SERVICE.CREATED ch.maxant.kdc.mf.library.Service@4384aed5
-    2021-01-03 16:23:14,882 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] >>> APP.CREATED ch.maxant.kdc.mf.library.Other@29789459
-    2021-01-03 16:23:14,882 INFO  [ch.max.kdc.mf.lib.State] (thread-1) [request-id: c: e:] >>> STATE.CREATED ch.maxant.kdc.mf.library.State@374a5f6e
-    2021-01-03 16:23:14,883 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] set state to 1 on ch.maxant.kdc.mf.library.State@374a5f6e
-    2021-01-03 16:23:15,561 INFO  [ch.max.kdc.mf.lib.Other] (thread-2) [request-id: c: e:] set state to 2 on ch.maxant.kdc.mf.library.State@374a5f6e
-    2021-01-03 16:23:15,821 INFO  [ch.max.kdc.mf.lib.State] (Quarkus Main Thread) [request-id: c: e:] >>> STATE.DESTROYING ch.maxant.kdc.mf.library.State@374a5f6e
-    2021-01-03 16:23:16,959 INFO  [ch.max.kdc.mf.lib.State] (thread-2) [request-id: c: e:] >>> STATE.CREATED ch.maxant.kdc.mf.library.State@2d584ec8
-    2021-01-03 16:23:16,960 INFO  [ch.max.kdc.mf.lib.Other] (thread-2) [request-id: c: e:] doing it, state is asdf on ch.maxant.kdc.mf.library.State@2d584ec8
-    2021-01-03 16:23:18,388 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] doing it, state is asdf on ch.maxant.kdc.mf.library.State@2d584ec8
-    2021-01-03 16:23:20,062 INFO  [ch.max.kdc.mf.lib.Other] (thread-2) [request-id: c: e:] doing it, state is asdf on ch.maxant.kdc.mf.library.State@2d584ec8
-    2021-01-03 16:23:20,978 INFO  [ch.max.kdc.mf.lib.Other] (thread-1) [request-id: c: e:] doing it, state is asdf on ch.maxant.kdc.mf.library.State@2d584ec8
+- https://quarkusio.zulipchat.com/#narrow/stream/187030-users/topic/Does.20.40RequestScoped.20only.20work.20with.20web.20requests.3F

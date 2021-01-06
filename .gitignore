@@ -5,6 +5,7 @@ neo4jembedded-incubator/store_lock
 
 kafka_2.11-2.1.1
 kafka_2.11-2.4.1
+kafka_2.12-2.7.0
 
 **/.idea
 **/target

@@ -34,10 +34,10 @@ Put link to raw puml file into this: http://www.plantuml.com/plantuml/form, and 
 
 Kafka needs to be present to build a suitable docker image.
 
-    wget https://downloads.apache.org/kafka/2.4.1/kafka_2.11-2.4.1.tgz
-    tar -xzf kafka_2.11-2.4.1.tgz
-    #echo kafka_2.11-2.4.1 >> .gitignore
-    rm kafka_2.11-2.4.1.tgz
+    wget https://downloads.apache.org/kafka/2.7.0/kafka_2.12-2.7.0.tgz
+    tar -xzf kafka_2.12-2.7.0.tgz
+    #echo kafka_2.12-2.7.0 >> .gitignore
+    rm kafka_2.12-2.7.0.tgz
     #git init
 
 ## Use docker-compose
@@ -355,22 +355,22 @@ Restart nginx:
 
 Create topics:
 
-    kafka_2.11-2.4.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic claim-create-db-command
-    kafka_2.11-2.4.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic claim-create-search-command
-    kafka_2.11-2.4.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic graph-create-command
-    kafka_2.11-2.4.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic task-create-command
-    kafka_2.11-2.4.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic location-create-command
-    kafka_2.11-2.4.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic claim-created-event
-    kafka_2.11-2.4.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic task-created-event
-    kafka_2.11-2.4.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic partner-created-event
-    kafka_2.11-2.4.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic partner-created-anonymous
-    kafka_2.11-2.4.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic partner-created-german-speaking-anonymous-with-age
-    kafka_2.11-2.4.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic partner-created-german-speaking-global-count
-    kafka_2.11-2.4.1/bin/kafka-topics.sh --list --zookeeper maxant.ch:30000
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic claim-create-db-command
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic claim-create-search-command
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic graph-create-command
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic task-create-command
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic location-create-command
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic claim-created-event
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic task-created-event
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic partner-created-event
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic partner-created-anonymous
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic partner-created-german-speaking-anonymous-with-age
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic partner-created-german-speaking-global-count
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --list --zookeeper maxant.ch:30000
 
 If you have to delete topics, do it like this:
 
-    kafka_2.11-2.4.1/bin/kafka-topics.sh --zookeeper maxant.ch:30000 --delete --topic claim-create-relationship-command
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --zookeeper maxant.ch:30000 --delete --topic claim-create-relationship-command
 
 Create elasticsearch indexes:
 
@@ -716,17 +716,17 @@ More info: https://docs.payara.fish/documentation/payara-micro/deploying/deploy-
 
 Read from a topic:
 
-    kafka_2.11-2.4.1/bin/kafka-console-consumer.sh --bootstrap-servers maxant.ch:30001 --topic ksql-test-cud-partners --from-beginning
+    kafka_2.12-2.7.0/bin/kafka-console-consumer.sh --bootstrap-servers maxant.ch:30001 --topic ksql-test-cud-partners --from-beginning
 
 Create a topic:
 
-    kafka_2.11-2.4.1/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic ksql-test-cud-partners
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 4 --topic ksql-test-cud-partners
 
-    kafka_2.11-2.4.1/bin/kafka-topics.sh --list --zookeeper maxant.ch:30000
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --list --zookeeper maxant.ch:30000
 
 Write some test data to a topic:
 
-    kafka_2.11-2.4.1/bin/kafka-console-producer.sh --broker-list maxant.ch:30001,maxant.ch:30002 --topic ksql-test-cud-partners
+    kafka_2.12-2.7.0/bin/kafka-console-producer.sh --broker-list maxant.ch:30001,maxant.ch:30002 --topic ksql-test-cud-partners
 
 # KSQL - DEPRECATED - See ksqlDB
 

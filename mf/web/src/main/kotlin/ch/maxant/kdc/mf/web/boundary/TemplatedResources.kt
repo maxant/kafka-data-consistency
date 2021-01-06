@@ -27,7 +27,7 @@ private fun TemplateInstance.addPvWidgets(pvcomponents: List<String>) =
         this.data("pvcomponents", pvcomponents)
 
 /** adds the given milk factory widgets */
-private fun TemplateInstance.addMfWidgets(components: List<Components>, additionalComponents: List<String> = listOf()) =
+private fun TemplateInstance.addMfWidgets(components: List<Component>, additionalComponents: List<String> = listOf()) =
         this.data("mfwidgets",
                 listOf("users.js")
                     + components.map { "${it.uiWidgetsJavascript}" }
@@ -36,7 +36,7 @@ private fun TemplateInstance.addMfWidgets(components: List<Components>, addition
 
 /** adds all the constants for the various microservice components in the landscape */
 private fun TemplateInstance.addMfComponents() =
-        this.data("mfcomponents", Components.values())
+        this.data("mfcomponents", Component.values())
 
 @ApplicationScoped
 @Path("/portal")
@@ -51,7 +51,7 @@ class PortalTemplate {
         portal.instance()
             .addStandardLibraries()
             .addPvWidgets(listOf("calendar", "dropdown", "autocomplete", "tabview", "tabpanel"))
-            .addMfWidgets(listOf(Components.Contracts, Components.Partners),
+            .addMfWidgets(listOf(Component.Contracts, Component.Partners),
                     listOf("vue-rxjs", "portal-home", "portal-sales",
                             "portal-order", "portal-order-details",
                             "portal-contract-details", "portal-demo"))
@@ -71,7 +71,7 @@ class PartnerTemplate {
             partner.instance()
             .addStandardLibraries()
             .addPvWidgets(listOf("calendar", "dropdown", "autocomplete", "inputtext", "button"))
-            .addMfWidgets(listOf(Components.Cases, Components.Contracts, Components.Partners))
+            .addMfWidgets(listOf(Component.Cases, Component.Contracts, Component.Partners))
             .addMfComponents()
 }
 
@@ -88,7 +88,7 @@ class ContractTemplate {
             contract.instance()
             .addStandardLibraries()
             .addPvWidgets(listOf("calendar", "dropdown", "autocomplete", "inputtext", "button"))
-            .addMfWidgets(listOf(Components.Contracts, Components.Partners))
+            .addMfWidgets(listOf(Component.Contracts, Component.Partners))
             .addMfComponents()
 }
 
@@ -105,7 +105,7 @@ class SalesTemplate {
             sales.instance()
             .addStandardLibraries()
             .addPvWidgets(listOf("calendar", "dropdown", "autocomplete", "inputtext", "button"))
-            .addMfWidgets(listOf(Components.Contracts, Components.Partners))
+            .addMfWidgets(listOf(Component.Contracts, Component.Partners))
             .addMfComponents()
 }
 
@@ -122,7 +122,7 @@ class SearchTemplate {
             search.instance()
             .addStandardLibraries()
             .addPvWidgets(listOf("calendar", "dropdown", "autocomplete", "inputtext", "button"))
-            .addMfWidgets(listOf(Components.Contracts, Components.Partners),
+            .addMfWidgets(listOf(Component.Contracts, Component.Partners),
                 listOf("vue-rxjs")
             )
             .addMfComponents()
@@ -162,7 +162,7 @@ class SecurityTemplate {
             .addMfComponents()
 }
 
-enum class Components(val constantName: String, val uiWidgetsJavascript: String, val baseUrl: String) {
+enum class Component(val constantName: String, val uiWidgetsJavascript: String, val baseUrl: String) {
     Contracts     ("CONTRACTS",     "contracts.js",    ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.contracts.url",     String::class.java).orElse("http://contracts:8080")),
     Pricing       ("PRICING",       "pricing.js",      ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.pricing.url",       String::class.java).orElse("http://pricing:8081")),
     Web           ("WEB",           "web.js",          ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.web.url",           String::class.java).orElse("http://web:8082")),
