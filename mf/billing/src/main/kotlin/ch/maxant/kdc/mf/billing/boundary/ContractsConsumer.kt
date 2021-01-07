@@ -1,17 +1,13 @@
 package ch.maxant.kdc.mf.billing.boundary
 
-import ch.maxant.kdc.mf.billing.boundary.BillingConsumer.Companion.SELECTED_FOR_BILLING
+import ch.maxant.kdc.mf.billing.boundary.BillingConsumer.Companion.BILL_GROUP
 import ch.maxant.kdc.mf.billing.definitions.BillingDefinitions
 import ch.maxant.kdc.mf.billing.definitions.Periodicity
 import ch.maxant.kdc.mf.billing.definitions.ProductId
-import ch.maxant.kdc.mf.billing.dto.ContractDto
-import ch.maxant.kdc.mf.billing.dto.Period
-import ch.maxant.kdc.mf.billing.dto.SelectionDto
 import ch.maxant.kdc.mf.library.*
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.google.common.annotations.VisibleForTesting
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
@@ -40,7 +36,7 @@ class ContractsConsumer(
 ) : KafkaHandler {
 
     @Inject
-    @Channel("billing-commands")
+    @Channel("billing-commands-out")
     lateinit var billingCommands: Emitter<String>
 
     private val log = Logger.getLogger(this.javaClass)
@@ -60,7 +56,7 @@ class ContractsConsumer(
 
     private fun billApprovedContract(command: JsonNode) {
         log.info("creating bill for new contract")
-        val contract = om.readValue<Contract>(command.get("contract").toString())
+        val contract = om.readValue<ContractDto>(command.get("contract").toString())
         val productId = ProductId.valueOf(command.get("productId").textValue())
 
         val defns = BillingDefinitions.get(productId)
@@ -70,16 +66,18 @@ class ContractsConsumer(
             Periodicity.MONTHLY -> calculateBasePeriodsForMonthly(today, contract.start.toLocalDate(), contract.end.toLocalDate(), defns.referenceDay)
             else -> throw TODO()
         }
+        log.info("calculated base periods $basePeriodsToPrice")
 
         val periodsToBill = when (defns.chosenPeriodicity) {
             Periodicity.DAILY -> listOf(Period(contract.start.toLocalDate(), contract.start.toLocalDate()))
             else -> throw TODO()
         }
+        log.info("calculated periods to bill $periodsToBill")
 
-        // calculate the chosen periods that need billing
-
-        val selection = SelectionDto(listOf(ContractDto(contract.id, basePeriodsToPrice, periodsToBill)))
-        sendSelection(selection)
+        // create a new job with one group and one contract in that group
+        val jobId = UUID.randomUUID()
+        val group = Group(jobId, UUID.randomUUID(), listOf(Contract(contract.id, basePeriodsToPrice, periodsToBill)))
+        sendGroup(group)
     }
 
     /**
@@ -90,7 +88,6 @@ class ContractsConsumer(
      * there can be more than one, if today isnt the reference day in the period
      * TODO if the contract starts in more than a month, then we dont need to bill the customer now!
      */
-    @VisibleForTesting
     fun calculateBasePeriodsForMonthly(today: LocalDate, start: LocalDate, end: LocalDate, referenceDay: Int): List<Period> {
         val dayOfMonth = start.dayOfMonth
         return when {
@@ -137,26 +134,11 @@ class ContractsConsumer(
         }
     }
 
-    private fun sendSelection(selection: SelectionDto) {
-        billingCommands.send(messageBuilder.build(null, selection, command = SELECTED_FOR_BILLING))
-        log.info("published selection command")
+    private fun sendGroup(group: Group) {
+        billingCommands.send(messageBuilder.build(null, group, command = BILL_GROUP))
+        log.info("published bill group command")
     }
 }
 
-data class Contract(val id: UUID, val start: LocalDateTime, val end: LocalDateTime)
+data class ContractDto(val id: UUID, val start: LocalDateTime, val end: LocalDateTime)
 
-TODO persist the selection and all contracts? how do we query the selection otherwise?
-
-TODO do pricing
-
-TODO do billing and save billedUntil
-
-TODO recurring billing: select where billedUntil is less than today from timeprovider
-
-TODO for load test, we simply delete pricing entries for a given day and reset billed Until, and we can repeat the test as often as we want to
-
-TODO monitoring =>
-
-TODO stopping => send control command to inform that a selection has been cancelled and it is to be ignored (all pods need to listen to this topic!)
-
-TODO does it make sense to set the requestId to be the selection Id???

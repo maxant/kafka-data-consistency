@@ -728,6 +728,10 @@ Write some test data to a topic:
 
     kafka_2.12-2.7.0/bin/kafka-console-producer.sh --broker-list maxant.ch:30001,maxant.ch:30002 --topic ksql-test-cud-partners
 
+Delete a topic:
+
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --zookeeper maxant.ch:30000 --delete --topic myTopic
+
 # KSQL - DEPRECATED - See ksqlDB
 
 Run the partner generator: `PartnerGenerator#main` => it generates new random partner data, a record every few seconds. 

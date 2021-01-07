@@ -5,7 +5,7 @@ A component for dealing with billing processes.
 ## Initial Billing
 
 No different from recurring billing, other than it's run because a contract is created, rather than
-because it's scheduled. The trigger event includes the contract id so that the selection runs faster.
+because it's scheduled. And its smaller too.
 
 ## Recurring Billing
 
@@ -96,6 +96,17 @@ because it's scheduled. The trigger event includes the contract id so that the s
       - id
       - billChosenId
       - billBaseId
+
+## State
+
+We're going to use Kafka and global KTables as key-value stores, in lieu of a different database.
+
+We will have three topics. One for jobs, one for their children aka groups, and one for their children, the contracts.
+
+Topics are compacted and as such retain data for ever.
+
+State will be stored for each level. Data can be deleted by sending tombstones, done via the UI, when a job is no longer
+needed.
 
 ## Running in dev mode
 

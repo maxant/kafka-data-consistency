@@ -2,6 +2,8 @@ package ch.maxant.kdc.mf.library
 
 import ch.maxant.kdc.mf.library.Context.Companion.DEMO_CONTEXT
 import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
+import org.jboss.resteasy.core.ResteasyContext
+import java.util.HashMap
 import javax.servlet.Filter
 import javax.servlet.FilterChain
 import javax.servlet.ServletRequest

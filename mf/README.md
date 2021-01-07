@@ -242,6 +242,23 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
 ## TODO
 
+TODO persist the selection and all contracts? how do we query the selection otherwise?
+
+TODO do pricing
+
+TODO do billing and save billedUntil
+
+TODO recurring billing: select where billedUntil is less than today from timeprovider
+
+TODO for load test, we simply delete pricing entries for a given day and reset billed Until, and we can repeat the test as often as we want to
+
+TODO monitoring =>
+
+TODO stopping => send control command to inform that a selection has been cancelled and it is to be ignored (all pods need to listen to this topic!)
+
+TODO does it make sense to set the requestId to be the selection Id???
+
+
 - discounts can be added to any component in the tree, as a child component! still not sure to which component these belong
 - fix external sales
 - billing
@@ -535,8 +552,14 @@ Hmmm... not really needed ATM since we access using root:
     CREATE DATABASE mfbilling CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
     GRANT ALL PRIVILEGES ON mfbilling.* TO mf@'%' IDENTIFIED BY 'the_password';
 
-    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper zeus.com:30000 --replication-factor 2 --partitions 5 --topic billing-internal-state
-    kafka_2.12-2.7.0/bin/kafka-topics.sh --alter --topic billing-internal-state --zookeeper zeus.com:30000 --config cleanup.policy=compact
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper zeus.com:30000 --replication-factor 2 --partitions 5 --topic billing-internal-state-jobs
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --alter --topic billing-internal-state-jobs --zookeeper zeus.com:30000 --config cleanup.policy=compact
+
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper zeus.com:30000 --replication-factor 2 --partitions 5 --topic billing-internal-state-groups
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --alter --topic billing-internal-state-groups --zookeeper zeus.com:30000 --config cleanup.policy=compact
+
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper zeus.com:30000 --replication-factor 2 --partitions 5 --topic billing-internal-state-contracts
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --alter --topic billing-internal-state-contracts --zookeeper zeus.com:30000 --config cleanup.policy=compact
 
 ## Bugs
 
