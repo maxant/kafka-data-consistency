@@ -561,6 +561,9 @@ Hmmm... not really needed ATM since we access using root:
     kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper zeus.com:30000 --replication-factor 2 --partitions 5 --topic billing-internal-state-contracts
     kafka_2.12-2.7.0/bin/kafka-topics.sh --alter --topic billing-internal-state-contracts --zookeeper zeus.com:30000 --config cleanup.policy=compact
 
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper zeus.com:30000 --replication-factor 2 --partitions 5 --topic billing-internal-events
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --alter --topic billing-internal-events --zookeeper zeus.com:30000 --config cleanup.policy=compact
+
 ## Bugs
 
 - https://quarkusio.zulipchat.com/#narrow/stream/187030-users/topic/Does.20.40RequestScoped.20only.20work.20with.20web.20requests.3F

@@ -1,6 +1,6 @@
 package ch.maxant.kdc.mf.billing.boundary
 
-import ch.maxant.kdc.mf.billing.boundary.BillingConsumer.Companion.BILL_GROUP
+import ch.maxant.kdc.mf.billing.boundary.BillingConsumer.Companion.PROCESS_GROUP
 import ch.maxant.kdc.mf.billing.definitions.BillingDefinitions
 import ch.maxant.kdc.mf.billing.definitions.Periodicity
 import ch.maxant.kdc.mf.billing.definitions.ProductId
@@ -76,7 +76,8 @@ class ContractsConsumer(
 
         // create a new job with one group and one contract in that group
         val jobId = UUID.randomUUID()
-        val group = Group(jobId, UUID.randomUUID(), listOf(Contract(contract.id, basePeriodsToPrice, periodsToBill)))
+        val groupId = UUID.randomUUID()
+        val group = Group(jobId, groupId, listOf(Contract(jobId, groupId, contract.id, basePeriodsToPrice, periodsToBill)))
         sendGroup(group)
     }
 
@@ -135,7 +136,7 @@ class ContractsConsumer(
     }
 
     private fun sendGroup(group: Group) {
-        billingCommands.send(messageBuilder.build(null, group, command = BILL_GROUP))
+        billingCommands.send(messageBuilder.build(null, group, command = PROCESS_GROUP))
         log.info("published bill group command")
     }
 }

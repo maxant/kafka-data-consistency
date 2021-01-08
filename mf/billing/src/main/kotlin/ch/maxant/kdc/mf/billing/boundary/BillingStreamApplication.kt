@@ -22,6 +22,7 @@ import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import java.math.BigDecimal
+import java.time.LocalDateTime
 import java.util.*
 import javax.annotation.PreDestroy
 import javax.enterprise.context.ApplicationScoped
@@ -30,6 +31,7 @@ import javax.inject.Inject
 import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
+import kotlin.collections.HashMap
 
 @ApplicationScoped
 @Path("/billing-stream")
@@ -75,21 +77,23 @@ class BillingStreamApplication(
         // from the GKT. the last one wins and overwrites the data written by the first one.
         // doing it this way with the aggregate, we are guaranteed to have correct data. this is the kafka way of doing
         // things.
-        builder.stream<String, String>("billing-internal-events-jobs")
+        builder.stream<String, String>("billing-internal-events")
                 .groupByKey() // { key, value -> om.readTree(value).get("jobId").asText() }
-                .aggregate(Initializer { om.writeValueAsString(JobState()) },
-                            Aggregator {k: String, v: String, j: String ->
-                                val jobId = UUID.fromString(k)
-                                val job = om.readValue<JobState>(j)
-                                job.jobId = jobId // just in case its not set yet
-                                val event = om.readValue<JobEvent>(v)
-                                if(event.action == JobAction.NEW_GROUP) {
-                                    job.numGroupsTotal++
-                                } else TODO()
-                                om.writeValueAsString(job)
-                            }) // or, reduce or count
+                .aggregate(Initializer { om.writeValueAsString(JobState()) }, jobsAggregator)
                 .toStream()
                 .to("billing-internal-state-jobs")
+
+        builder.stream<String, String>("billing-internal-events")
+                .groupBy { key, value -> om.readTree(value).get("groupId").asText() }
+                .aggregate(Initializer { om.writeValueAsString(GroupState()) }, groupsAggregator)
+                .toStream()
+                .to("billing-internal-state-groups")
+
+        builder.stream<String, String>("billing-internal-events")
+                .groupBy { key, value -> om.readTree(value).get("contractId").asText() }
+                .aggregate(Initializer { om.writeValueAsString(ContractState()) }, contractsAggregator)
+                .toStream()
+                .to("billing-internal-state-contracts")
 
         val topology = builder.build()
         println(topology.describe())
@@ -105,7 +109,23 @@ class BillingStreamApplication(
         println(topology.describe())
     }
 
-    /*
+    val jobsAggregator = Aggregator {k: String, v: String, j: String ->
+        val jobState = om.readValue<JobState>(j)
+        val event = om.readValue<Event>(v)
+        when(event.action) {
+            Action.SENT_TO_PRICING -> {
+                jobState.jobId = UUID.fromString(k) // just in case its not set yet
+                jobState.groups.computeIfAbsent(event.groupId, k -> State.ST)++
+            }
+            JobAction.GROUP_SENT_TO_BILLING -> {
+                jobState.numGroupsBilling++
+            }
+            else -> TODO()
+        }
+        om.writeValueAsString(jobState)
+    }
+
+    /* TODO delete this
     fun getJobs(): List<JobState> {
         val jobs = mutableListOf<JobState>()
         jobsView.all().forEachRemaining { jobs.add(om.readValue(it.value)) }
@@ -143,6 +163,53 @@ class BillingStreamApplication(
     fun getContract(@Parameter(name = "id") @PathParam("id") id: UUID): Response {
         return Response.ok(contractsView[id.toString()]).build()
     }
+}
 
+data class Event(val action: Action, val jobId: UUID, val groupId: UUID, val contractId: UUID, val completed: LocalDateTime? = null)
 
+enum class Action {
+    SENT_TO_PRICING, FAILED_IN_PRICING,
+    SENT_TO_BILLING, FAILED_IN_BILLING,
+    COMPLETED, GROUP_FAILED, FINISHED
+}
+
+data class JobState(var jobId: UUID,
+                    var state: State,
+                    var groups: HashMap<UUID, State>, // 1'000 x 36-chars-UUID + 10-chars-state => less than 100kb?
+
+                    // estimates:
+
+                    var numContractsTotal: Int,
+                    var numContractsPricing: Int,
+                    var numContractssPricingFailed: Int,
+                    var numContractsBilling: Int,
+                    var numContractsBillingFailed: Int,
+                    var numContractsComplete: Int,
+                    var failedContractIds: List<UUID>, // if every contract failed, that'd be 36MB... a litle big!
+                    var started: LocalDateTime,
+                    var completed: LocalDateTime?
+) {
+    constructor():
+            this(UUID.randomUUID(), State.STARTED, hashMapOf<UUID, State>(), 0, 0, 0, 0, 0, 0, emptyList(), LocalDateTime.now(), null)
+
+}
+
+enum class State {
+    STARTED, COMPLETED_PRICING, COMPLETED_BILLING, COMPLETED, FAILED
+}
+
+data class GroupState(var jobId: UUID,
+                      var groupId: UUID,
+                      var state: State,
+                      var contracts: HashMap<UUID, State>, // 1'000 x 36-chars-UUID + 10-chars-state => less than 100kb?
+                      var started: LocalDateTime,
+                      var finished: LocalDateTime?
+) {
+    constructor():
+            this(UUID.randomUUID(), UUID.randomUUID(), State.STARTED, hashMapOf<UUID, State>(), LocalDateTime.now(), null)
+}
+
+data class ContractState(var jobId: UUID, var groupId: UUID, var contractId: UUID, var state: State, var contract: Contract) {
+    constructor(): this(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), State.STARTED,
+            Contract(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), emptyList(), emptyList()))
 }
