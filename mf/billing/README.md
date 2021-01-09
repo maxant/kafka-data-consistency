@@ -58,46 +58,39 @@ because it's scheduled. And its smaller too.
       - if base < chosen, then bills contain a list of the price per base period
       - the bill can always contain all the info: whats the base price and for which period; for which period is this bill, etc.
 - Billing Mapping
-  - an entity
   - Represents the mapping from the contract to the chosen billing definition
-  - Fields:
-      - id
-      - contractId
-      - definitionId
-- Bill Chosen (this is what the customer pays)
+  - stored on bills as a foreign key to the definition
+- Bill Chosen (this is what the customer pays - stored in mfbilling)
   - Entity
   - Represents a single bill
   - Fields:
       - id
       - contractId
-      - chosen period from
-      - chosen period to
-      - chosen period price - this is what the customer must pay!
+      - definitionId
+      - period from
+      - period to
+      - price - this is what the customer must pay!
       - surcharge
       - total price
       - state
         - BILLED, REMINDED, NEVER_PAID (customer refused, see other processes), PAID
 - Bill Base (this is the basis of the calculation)
-  - Entity
+  - Entity, but stored in mfpricing
   - Represents the base price(s)
   - Fields:
       - id
-      - base period from
-      - base period to
-      - base period price - this is just the basis of the calculation
+      - period from
+      - period to
+      - price - this is just the basis of the calculation
 - Bill base to chosen
-  - Entity (join table)
+  - Could be a join table, but is just based on dates, so not explicitly stored
   - Represents the n:m relationship between chosen and base periods
     - 1:1: base bill periodicity equals chosen bill periodicity, e.g. both "monthly"
     - 1:m: e.g. a price fixed for a year is paid 12 times
     - n:1: e.g. a price that changes monthly is paid once per year
     - n:m: doesn't exist from the above perspective, although 1:m and n:1 are actually n:m when you think that you keep paying them, year on year
-  - Fields:
-      - id
-      - billChosenId
-      - billBaseId
 
-## State
+## Monitoring State
 
 We're going to use Kafka and global KTables as key-value stores, in lieu of a different database.
 

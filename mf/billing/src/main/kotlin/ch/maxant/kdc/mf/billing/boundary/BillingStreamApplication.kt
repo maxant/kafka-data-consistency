@@ -1,9 +1,11 @@
 package ch.maxant.kdc.mf.billing.boundary
 
+import ch.maxant.kdc.mf.billing.control.Action
+import ch.maxant.kdc.mf.billing.control.Event
+import ch.maxant.kdc.mf.billing.control.EventService
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.quarkus.runtime.StartupEvent
-import io.smallrye.reactive.messaging.kafka.OutgoingKafkaRecordMetadata
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.common.utils.Bytes
 import org.apache.kafka.streams.KafkaStreams
@@ -19,9 +21,6 @@ import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
-import org.eclipse.microprofile.reactive.messaging.Channel
-import org.eclipse.microprofile.reactive.messaging.Emitter
-import org.eclipse.microprofile.reactive.messaging.Message
 import java.time.LocalDateTime
 import java.util.*
 import javax.annotation.PreDestroy
@@ -42,13 +41,12 @@ class BillingStreamApplication(
     @Inject
     var om: ObjectMapper,
 
+    @Inject
+    var eventService: EventService,
+
     @ConfigProperty(name = "kafka.bootstrap.servers")
     val kafkaBootstrapServers: String
 ) {
-    @Inject
-    @Channel("events-out")
-    lateinit var events: Emitter<String>
-
     private lateinit var jobsView: ReadOnlyKeyValueStore<String, String>
 
     private lateinit var groupsView: ReadOnlyKeyValueStore<String, String>
@@ -265,25 +263,9 @@ class BillingStreamApplication(
     }
 
     private fun sendEvent_CompletedGroup(jobId: UUID, groupId: UUID) {
-        val event = Event(Action.COMPLETED_GROUP, jobId, groupId)
-        val md = OutgoingKafkaRecordMetadata.builder<String>()
-                .withKey(jobId.toString())
-                .build()
-        val msg = Message.of(om.writeValueAsString(event))
-        events.send(msg.addMetadata(md))
+        eventService.sendEvent(Event(Action.COMPLETED_GROUP, jobId, groupId))
     }
 
-}
-
-data class Event(val action: Action, val jobId: UUID, val groupId: UUID, val contractId: UUID?, val contract: Contract?, val completed: LocalDateTime? = null) {
-    constructor(action: Action, jobId: UUID, groupId: UUID): this(action, jobId, groupId, null, null)
-}
-
-enum class Action {
-    SENT_TO_PRICING, FAILED_IN_PRICING,
-    SENT_TO_BILLING, FAILED_IN_BILLING,
-    COMPLETED,
-    COMPLETED_GROUP
 }
 
 data class JobState(var jobId: UUID,
@@ -324,5 +306,5 @@ data class GroupState(var jobId: UUID,
 
 data class ContractState(var jobId: UUID, var groupId: UUID, var contractId: UUID, var state: State, var contract: Contract) {
     constructor(): this(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), State.STARTED,
-            Contract(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), emptyList(), emptyList()))
+            Contract(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "", emptyList(), emptyList()))
 }

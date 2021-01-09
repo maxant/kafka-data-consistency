@@ -76,7 +76,7 @@ class PricingService(
         for(contractId in contractIds) {
             val entitiesForContractOrderedByStart = entitiesOrderedByStart.filter { it.contractId == contractId }
             val commandsForContract = group.commands.filter { it.contractId == contractId }
-we MUST ensure that each period has an entry! its that simple.;
+
             // case 1 - more than one entry, command is to split based on the last entry
             // |------------------|------------------|
             //                              |-- date from which a new price is needed => split at this date
@@ -193,6 +193,6 @@ data class PricingCommand(val contractId: UUID, val from: LocalDate, val to: Loc
 
 data class PricingCommandGroupResult(val groupId: UUID, val commands: List<PricingCommandResult>)
 
-data class PricingCommandResult(val contractId: UUID, val priceByComponentId: Map<UUID, PriceWithValidity> = emptyMap(), val failed: Boolean = false)
+data class PricingCommandResult(val contractId: UUID, val priceByComponentId: Map<UUID, ComponentPriceWithValidity> = emptyMap(), val failed: Boolean = false)
 
-data class PriceWithValidity(val price: Price, val from: LocalDate, val to: LocalDate)
+data class ComponentPriceWithValidity(val parentId: UUID, val price: Price, val from: LocalDate, val to: LocalDate)
