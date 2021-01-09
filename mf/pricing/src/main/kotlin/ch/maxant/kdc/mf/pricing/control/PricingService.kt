@@ -15,6 +15,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
 import org.jboss.logging.Logger
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 import javax.enterprise.context.ApplicationScoped
@@ -58,6 +59,47 @@ class PricingService(
         } else {
             throw IllegalArgumentException("unexpected draft structure")
         }
+    }
+
+    @Transactional
+    @Timed(unit = MetricUnits.MILLISECONDS)
+    fun priceContract(jsonCommand: String): PricingCommandGroupResult {
+        val group = om.readValue<PricingCommandGroup>(jsonCommand)
+
+        if(group.failForTestingPurposes) {
+            log.error("FAILING FOR TEST PURPOSES")
+            throw RuntimeException("FAILING FOR TEST PURPOSES")
+        }
+
+        val contractIds = group.commands.map { it.contractId }.distinct()
+        val entitiesOrderedByStart = PriceEntity.Queries.selectByContractIdsOrderedByStart(em, contractIds)
+        for(contractId in contractIds) {
+            val entitiesForContractOrderedByStart = entitiesOrderedByStart.filter { it.contractId == contractId }
+            val commandsForContract = group.commands.filter { it.contractId == contractId }
+we MUST ensure that each period has an entry! its that simple.;
+            // case 1 - more than one entry, command is to split based on the last entry
+            // |------------------|------------------|
+            //                              |-- date from which a new price is needed => split at this date
+            //
+            // case 2 - just one entry
+            // |------------------|
+            //        |-- date from which a new price is needed => reduces to case 1
+            //
+            // case 3 - anything else => error, unexpected
+            val componentIds = entitiesOrderedByStart.map { it.componentId }.distinct()
+            for(componentId in componentIds) {
+                val lastEntityForComponentAndContract = entitiesForContractOrderedByStart.filter { it.componentId == componentId }.last()
+
+                if(commandsForContract.size == 1) {
+                    // just ensure that a price exists for the given period
+                    adsf
+                } else if(commandsForContract.size == 2) {
+        asdf
+                } else throw IllegalStateException("that should never happen")
+            }
+        }
+
+
     }
 
     fun toTree(list: List<FlatComponent>): TreeComponent {
@@ -134,7 +176,23 @@ class PricingService(
     }
 }
 
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// pricing result for drafts and updates to drafts
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 data class PricingResult(
         val contractId: UUID,
         val priceByComponentId: Map<UUID, Price>
 )
+
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// pricing command for billing
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+data class PricingCommandGroup(val jobId: UUID, val groupId: UUID, val commands: List<PricingCommand>, val failForTestingPurposes: Boolean)
+
+data class PricingCommand(val contractId: UUID, val from: LocalDate, val to: LocalDate)
+
+data class PricingCommandGroupResult(val groupId: UUID, val commands: List<PricingCommandResult>)
+
+data class PricingCommandResult(val contractId: UUID, val priceByComponentId: Map<UUID, PriceWithValidity> = emptyMap(), val failed: Boolean = false)
+
+data class PriceWithValidity(val price: Price, val from: LocalDate, val to: LocalDate)

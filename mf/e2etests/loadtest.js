@@ -72,7 +72,7 @@ function createPartnerAndContract(){
             updatedDraft++; // have to wait for updated prices before offering, otherwise we get a validation error because the contract isnt in sync
             console.log("event: updated draft " + updatedDraft + " - " + getMsSinceStart() + "msFromStart");
             if(updatedDraft >= 2) numWarns++; // this happens once
-        } else if(msg.event == "UPDATED_PRICES") {
+        } else if(msg.event == "UPDATED_PRICES_FOR_DRAFT") {
             updatedPrices++;
             console.log("event: updated prices " + updatedPrices + " - " + getMsSinceStart() + "msFromStart");
 

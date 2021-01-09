@@ -8,6 +8,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import org.apache.commons.lang3.StringUtils
 import org.jboss.logging.Logger
 import org.jboss.logging.MDC
+import org.jboss.resteasy.core.ResteasyContext
 import java.util.*
 import javax.inject.Inject
 import javax.servlet.Filter
@@ -40,12 +41,29 @@ class ContextWebFilter: Filter {
         MDC.put(REQUEST_ID, context.requestId)
         MDC.put(COMMAND, "${request.method} ${request.requestURI}")
 
+        ensureResteasyWillWork()
 
         try {
             filterChain.doFilter(request, response)
         } finally {
             response.setHeader(REQUEST_ID, context.requestId.toString())
             MDC.clear()
+        }
+    }
+
+    private fun ensureResteasyWillWork() {
+        // TODO this is really really strange, perhaps somehow related to the problems encountered in KafkaConsumers?
+        // anyway, just try and set something in the context data map. if it fails, it will fail downstream, so
+        // set it up to contain a HashMap rather than an EmptyMap
+        val datamap = ResteasyContext.getContextDataMap(false)
+        if(datamap != null) {
+            try {
+                datamap[this::class.java] = "TEST"
+            } catch(e: UnsupportedOperationException) { // this is what happens when it fails
+                ResteasyContext.pushContextDataMap(HashMap())
+            } finally {
+                datamap.remove(this::class.java)
+            }
         }
     }
 

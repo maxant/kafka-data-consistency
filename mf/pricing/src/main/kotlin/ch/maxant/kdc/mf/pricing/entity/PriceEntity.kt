@@ -15,7 +15,9 @@ import javax.persistence.*
         NamedQuery(name = PriceEntity.NqCountByContractIdAndNotSyncTime.name,
                 query = PriceEntity.NqCountByContractIdAndNotSyncTime.query),
         NamedQuery(name = PriceEntity.NqSelectByComponentIdsAndDateTime.name,
-                query = PriceEntity.NqSelectByComponentIdsAndDateTime.query)
+                query = PriceEntity.NqSelectByComponentIdsAndDateTime.query),
+        NamedQuery(name = PriceEntity.NqSelectByContractIdsOrderedByStartAsc.name,
+                query = PriceEntity.NqSelectByContractIdsOrderedByStartAsc.query)
 )
 open class PriceEntity( // add open, rather than rely on maven plugin, because @QuarkusTest running in IntelliJ seems to think its final
 
@@ -83,6 +85,17 @@ open class PriceEntity( // add open, rather than rely on maven plugin, because @
             """
     }
 
+    object NqSelectByContractIdsOrderedByStartAsc {
+        const val name = "selectByContractIds"
+        const val contractIdsParam = "contractIds"
+        const val query = """
+            select p 
+            from PriceEntity p 
+            where p.contractId in :$contractIdsParam
+            order by p.start asc
+            """
+    }
+
     object Queries {
         private val log = Logger.getLogger(this.javaClass)
 
@@ -106,6 +119,13 @@ open class PriceEntity( // add open, rather than rely on maven plugin, because @
             return em.createNamedQuery(NqSelectByComponentIdsAndDateTime.name, PriceEntity::class.java)
                     .setParameter(NqSelectByComponentIdsAndDateTime.componentIdsParam, componentIds)
                     .setParameter(NqSelectByComponentIdsAndDateTime.dateTimeParam, dateTime)
+                    .resultList
+        }
+
+        fun selectByContractIdsOrderedByStart(em: EntityManager, contractIds: List<UUID>): List<PriceEntity> {
+            log.info("getting price entities for contracts $contractIds")
+            return em.createNamedQuery(NqSelectByContractIdsOrderedByStartAsc.name, PriceEntity::class.java)
+                    .setParameter(NqSelectByContractIdsOrderedByStartAsc.contractIdsParam, contractIds)
                     .resultList
         }
     }

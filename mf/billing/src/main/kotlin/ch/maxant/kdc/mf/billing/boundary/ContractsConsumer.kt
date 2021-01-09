@@ -1,6 +1,7 @@
 package ch.maxant.kdc.mf.billing.boundary
 
-import ch.maxant.kdc.mf.billing.boundary.BillingConsumer.Companion.PROCESS_GROUP
+import ch.maxant.kdc.mf.billing.boundary.BillingConsumer.Companion.BILL_GROUP
+import ch.maxant.kdc.mf.billing.boundary.BillingConsumer.Companion.PRICE_GROUP
 import ch.maxant.kdc.mf.billing.definitions.BillingDefinitions
 import ch.maxant.kdc.mf.billing.definitions.Periodicity
 import ch.maxant.kdc.mf.billing.definitions.ProductId
@@ -8,10 +9,13 @@ import ch.maxant.kdc.mf.library.*
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.smallrye.reactive.messaging.kafka.OutgoingKafkaRecordMetadata
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
+import org.eclipse.microprofile.reactive.messaging.Message
 import org.jboss.logging.Logger
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
@@ -31,7 +35,13 @@ class ContractsConsumer(
         var messageBuilder: MessageBuilder,
 
         @Inject
-        var timeMachine: TimeMachine
+        var timeMachine: TimeMachine,
+
+        @Inject
+        var billingConsumer: BillingConsumer,
+
+        @Inject
+        var billingStreamApplication: BillingStreamApplication
 
 ) : KafkaHandler {
 
@@ -41,16 +51,16 @@ class ContractsConsumer(
 
     private val log = Logger.getLogger(this.javaClass)
 
-    override fun getKey() = "contracts-in"
+    override fun getKey() = "contracts-event-bus-in"
 
     override fun getRunInParallel() = true
 
     /** not using kafka streams api here, because we need easy access to headers */
     @PimpedAndWithDltAndAck
     override fun handle(record: ConsumerRecord<String, String>) {
-        val command = om.readTree(record.value())
         when (context.event) {
-            "APPROVED_CONTRACT" -> billApprovedContract(command)
+            "APPROVED_CONTRACT" -> billApprovedContract(om.readTree(record.value()))
+            "UPDATED_PRICES_FOR_GROUP_OF_CONTRACTS" -> handlePricedGroup(record.value())
         }
     }
 
@@ -78,7 +88,7 @@ class ContractsConsumer(
         val jobId = UUID.randomUUID()
         val groupId = UUID.randomUUID()
         val group = Group(jobId, groupId, listOf(Contract(jobId, groupId, contract.id, basePeriodsToPrice, periodsToBill)))
-        sendGroup(group)
+        sendPriceGroup(group)
     }
 
     /**
@@ -135,11 +145,54 @@ class ContractsConsumer(
         }
     }
 
-    private fun sendGroup(group: Group) {
-        billingCommands.send(messageBuilder.build(null, group, command = PROCESS_GROUP))
+    fun handlePricedGroup(value: String) {
+        val group = om.readValue<PricingCommandGroupResult>(value)
+        if(group.commands.any { it.failed }) {
+            if(group.commands.size == 1) {
+                val originalContract = billingStreamApplication.getContract(group.jobId, group.commands[0].contractId).contract // TODO this could fail if the store doesnt yet have the contract! let's see if it actually happens...
+                billingConsumer.sendEvent_FailedToPriceContract(originalContract)
+            } else {
+                // resend individually
+                group.commands.map { it.contractId }.distinct().forEach { contractId ->
+                    val originalContract = billingStreamApplication.getContract(group.jobId, contractId).contract // TODO this could fail if the store doesnt yet have the contract! let's see if it actually happens...
+                    val newGroupId = UUID.randomUUID() // we create a new group - one for each individual contract, containing the periods to price
+                    val contract = Contract(group.jobId, group.groupId, originalContract.contractId, originalContract.basePeriodsToPrice, emptyList())
+                    val newGroup = Group(group.jobId, newGroupId, listOf(contract))
+                    sendPriceGroup(newGroup)
+                }
+            }
+        } else {
+            val contracts = group.commands.map { it.contractId }.distinct().map { contractId ->
+                billingStreamApplication.getContract(group.jobId, contractId).contract // TODO this could fail if the store doesnt yet have the contract! let's see if it actually happens...
+            }
+            sendBillGroup(Group(group.jobId, group.groupId, contracts))
+        }
+    }
+
+    private fun sendPriceGroup(group: Group) {
+        billingCommands.send(messageBuilder.build(group.jobId, group, command = PRICE_GROUP))
         log.info("published bill group command")
     }
+
+    private fun sendBillGroup(group: Group) {
+        billingCommands.send(messageBuilder.build(group.jobId, group, command = BILL_GROUP))
+        log.info("published bill group command")
+    }
+
 }
 
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// contract event => sent from contracts, e.g. for an approved contract
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 data class ContractDto(val id: UUID, val start: LocalDateTime, val end: LocalDateTime)
 
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// pricing event => sent from pricing
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+data class PricingCommandGroupResult(val jobId: UUID, val groupId: UUID, val commands: List<PricingCommandResult>)
+
+data class PricingCommandResult(val contractId: UUID, val priceByComponentId: Map<UUID, PriceWithValidity>, val failed: Boolean)
+
+data class PriceWithValidity(val price: Price, val from: LocalDate, val to: LocalDate)
+
+data class Price(val total: BigDecimal, val tax: BigDecimal)

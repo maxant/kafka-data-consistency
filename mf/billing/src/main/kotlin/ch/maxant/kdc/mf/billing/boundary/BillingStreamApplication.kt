@@ -3,16 +3,14 @@ package ch.maxant.kdc.mf.billing.boundary
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.quarkus.runtime.StartupEvent
+import io.smallrye.reactive.messaging.kafka.OutgoingKafkaRecordMetadata
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.common.utils.Bytes
 import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.StoreQueryParameters
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.StreamsConfig
-import org.apache.kafka.streams.kstream.Aggregator
-import org.apache.kafka.streams.kstream.GlobalKTable
-import org.apache.kafka.streams.kstream.Initializer
-import org.apache.kafka.streams.kstream.Materialized
+import org.apache.kafka.streams.kstream.*
 import org.apache.kafka.streams.state.KeyValueStore
 import org.apache.kafka.streams.state.QueryableStoreTypes
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore
@@ -21,7 +19,9 @@ import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
-import java.math.BigDecimal
+import org.eclipse.microprofile.reactive.messaging.Channel
+import org.eclipse.microprofile.reactive.messaging.Emitter
+import org.eclipse.microprofile.reactive.messaging.Message
 import java.time.LocalDateTime
 import java.util.*
 import javax.annotation.PreDestroy
@@ -31,7 +31,6 @@ import javax.inject.Inject
 import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
-import kotlin.collections.HashMap
 
 @ApplicationScoped
 @Path("/billing-stream")
@@ -46,54 +45,73 @@ class BillingStreamApplication(
     @ConfigProperty(name = "kafka.bootstrap.servers")
     val kafkaBootstrapServers: String
 ) {
+    @Inject
+    @Channel("events-out")
+    lateinit var events: Emitter<String>
+
     private lateinit var jobsView: ReadOnlyKeyValueStore<String, String>
+
     private lateinit var groupsView: ReadOnlyKeyValueStore<String, String>
+
     private lateinit var contractsView: ReadOnlyKeyValueStore<String, String>
+
     private lateinit var streams: KafkaStreams
 
+    @SuppressWarnings("unused")
     fun init(@Observes e: StartupEvent) {
         val props = Properties()
-        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "mf-billing-streamapplication")
-        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootstrapServers)
-        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String()::class.java)
-        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String()::class.java)
+        props[StreamsConfig.APPLICATION_ID_CONFIG] = "mf-billing-streamapplication"
+        props[StreamsConfig.BOOTSTRAP_SERVERS_CONFIG] = kafkaBootstrapServers
+        props[StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG] = Serdes.String()::class.java
+        props[StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG] = Serdes.String()::class.java
 
         val builder = StreamsBuilder()
 
-        val jobsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`("billing-store-jobs")
-        val jobsGkt: GlobalKTable<String, String> = builder.globalTable("billing-internal-state-jobs", jobsStore)
-        val jobsStoreName = jobsGkt.queryableStoreName()
-
-        val groupsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`("billing-store-groups")
-        val groupsGkt: GlobalKTable<String, String> = builder.globalTable("billing-internal-state-groups", groupsStore)
-        val groupsStoreName = groupsGkt.queryableStoreName()
-
-        val contractsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`("billing-store-contracts")
-        val contractsGkt: GlobalKTable<String, String> = builder.globalTable("billing-internal-state-contracts", contractsStore)
-        val contractsStoreName = contractsGkt.queryableStoreName()
+        val events = builder.stream<String, String>("billing-internal-events")
 
         // we do the following, so that we dont have to create locks across JVMs, for updating state. imagine two pods
         // processing two results and updating stats in the job at the same time after both have read the latest state
         // from the GKT. the last one wins and overwrites the data written by the first one.
         // doing it this way with the aggregate, we are guaranteed to have correct data. this is the kafka way of doing
         // things.
-        builder.stream<String, String>("billing-internal-events")
-                .groupByKey() // { key, value -> om.readTree(value).get("jobId").asText() }
-                .aggregate(Initializer { om.writeValueAsString(JobState()) }, jobsAggregator)
-                .toStream()
+
+        // JOBS
+        events.groupByKey() // { key, value -> om.readTree(value).get("jobId").asText() }
+                .aggregate(Initializer { om.writeValueAsString(JobState()) }, jobsAggregator,
+                        Named.`as`("billing-internal-aggregate-state-jobs"), Materialized.with(Serdes.String(), Serdes.String()))
+                .toStream(Named.`as`("billing-internal-stream-state-jobs"))
                 .to("billing-internal-state-jobs")
 
-        builder.stream<String, String>("billing-internal-events")
-                .groupBy { key, value -> om.readTree(value).get("groupId").asText() }
-                .aggregate(Initializer { om.writeValueAsString(GroupState()) }, groupsAggregator)
-                .toStream()
+        val jobsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`("billing-store-jobs")
+        val jobsGkt: GlobalKTable<String, String> = builder.globalTable("billing-internal-state-jobs", jobsStore)
+        val jobsStoreName = jobsGkt.queryableStoreName()
+
+        // GROUPS
+        events.groupBy { _, value -> om.readTree(value).get("groupId").asText() }
+                .aggregate(Initializer { om.writeValueAsString(GroupState()) }, groupsAggregator,
+                        Named.`as`("billing-internal-aggregate-state-groups"), Materialized.with(Serdes.String(), Serdes.String()))
+                .toStream(Named.`as`("billing-internal-stream-state-groups"))
                 .to("billing-internal-state-groups")
 
-        builder.stream<String, String>("billing-internal-events")
-                .groupBy { key, value -> om.readTree(value).get("contractId").asText() }
-                .aggregate(Initializer { om.writeValueAsString(ContractState()) }, contractsAggregator)
-                .toStream()
+        val groupsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`("billing-store-groups")
+        val groupsGkt: GlobalKTable<String, String> = builder.globalTable("billing-internal-state-groups", groupsStore)
+        val groupsStoreName = groupsGkt.queryableStoreName()
+
+        // CONTRACTS
+        events.groupBy { _, value ->
+                    val tree = om.readTree(value)
+                    // a contract can be in 1..n groups (as if there is a failure, it will be sent again, on its own
+                    // and a contract can be priced by many jobs. so we need a key with more than just the contractId,
+                    // but can't use the groupId => jobId+contractId is suitable
+                    tree.get("jobId").asText() + "::" + tree.get("contractId").asText()
+                }.aggregate(Initializer { om.writeValueAsString(ContractState()) }, contractsAggregator,
+                        Named.`as`("billing-internal-aggregate-state-contracts"), Materialized.with(Serdes.String(), Serdes.String()))
+                .toStream(Named.`as`("billing-internal-stream-state-contracts"))
                 .to("billing-internal-state-contracts")
+
+        val contractsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`("billing-store-contracts")
+        val contractsGkt: GlobalKTable<String, String> = builder.globalTable("billing-internal-state-contracts", contractsStore)
+        val contractsStoreName = contractsGkt.queryableStoreName()
 
         val topology = builder.build()
         println(topology.describe())
@@ -114,33 +132,113 @@ class BillingStreamApplication(
         val event = om.readValue<Event>(v)
         when(event.action) {
             Action.SENT_TO_PRICING -> {
-                jobState.jobId = UUID.fromString(k) // just in case its not set yet
-                jobState.groups.computeIfAbsent(event.groupId, k -> State.ST)++
+                jobState.jobId = event.jobId // just in case its not set yet
+
+                jobState.groups.computeIfAbsent(event.groupId) { State.STARTED }
+                jobState.numContractsTotal++
+                jobState.numContractsPricing++
             }
-            JobAction.GROUP_SENT_TO_BILLING -> {
-                jobState.numGroupsBilling++
+            Action.FAILED_IN_PRICING -> {
+                jobState.groups.computeIfAbsent(event.groupId) { State.FAILED }
+                jobState.state = State.FAILED
+                jobState.numContractsPricingFailed++
             }
-            else -> TODO()
+            Action.SENT_TO_BILLING -> {
+                jobState.numContractsBilling++
+            }
+            Action.FAILED_IN_BILLING -> {
+                jobState.groups.computeIfAbsent(event.groupId) { State.FAILED }
+                jobState.state = State.FAILED
+                jobState.numContractsBillingFailed++
+            }
+            Action.COMPLETED -> {
+                // nothing to do when a contract completes, because we dont know about individual contracts at the job level!
+            }
+            Action.COMPLETED_GROUP -> {
+                jobState.groups.computeIfAbsent(event.groupId) { State.COMPLETED }
+                if(jobState.groups.values.all { it == State.COMPLETED }) {
+                    jobState.state = State.COMPLETED
+                }
+            }
         }
         om.writeValueAsString(jobState)
     }
 
-    /* TODO delete this
-    fun getJobs(): List<JobState> {
-        val jobs = mutableListOf<JobState>()
-        jobsView.all().forEachRemaining { jobs.add(om.readValue(it.value)) }
-        return jobs
+    val groupsAggregator = Aggregator {k: String, v: String, g: String ->
+        val groupState = om.readValue<GroupState>(g)
+        val event = om.readValue<Event>(v)
+        when(event.action) {
+            Action.SENT_TO_PRICING -> {
+                groupState.jobId = event.jobId // just in case its not set yet
+                groupState.groupId = event.groupId // just in case its not set yet
+
+                groupState.contracts.computeIfAbsent(event.contractId!!) { State.STARTED }
+            }
+            Action.FAILED_IN_PRICING -> {
+                groupState.contracts.computeIfAbsent(event.contractId!!) { State.FAILED }
+                groupState.state = State.FAILED
+            }
+            Action.SENT_TO_BILLING -> {
+                groupState.contracts.computeIfAbsent(event.contractId!!) { State.COMPLETED_PRICING }
+            }
+            Action.FAILED_IN_BILLING -> {
+                groupState.contracts.computeIfAbsent(event.contractId!!) { State.FAILED }
+                groupState.state = State.FAILED
+            }
+            Action.COMPLETED -> {
+                if(groupState.contracts.values.all { it == State.COMPLETED }) {
+                    sendEvent_CompletedGroup(groupState.jobId, groupState.groupId)
+                }
+            }
+            Action.COMPLETED_GROUP -> {
+                groupState.contracts.computeIfAbsent(event.contractId!!) { State.COMPLETED }
+                groupState.state = State.COMPLETED
+            }
+        }
+        om.writeValueAsString(groupState)
     }
-    */
+
+    val contractsAggregator = Aggregator { _: String, v: String, c: String ->
+        val contractState = om.readValue<ContractState>(c)
+        val event = om.readValue<Event>(v)
+        when(event.action) {
+            Action.SENT_TO_PRICING -> {
+                contractState.jobId = event.jobId // just in case its not set yet
+                contractState.groupId = event.groupId // just in case its not set yet
+                contractState.contractId = event.contractId!! // just in case its not set yet
+
+                contractState.contract = event.contract!!
+            }
+            Action.FAILED_IN_PRICING -> {
+                contractState.state = State.FAILED
+            }
+            Action.SENT_TO_BILLING -> {
+                contractState.state = State.COMPLETED_PRICING
+            }
+            Action.FAILED_IN_BILLING -> {
+                contractState.state = State.FAILED
+            }
+            Action.COMPLETED -> {
+                contractState.state = State.COMPLETED
+            }
+            Action.COMPLETED_GROUP -> Unit // noop
+        }
+        om.writeValueAsString(contractState)
+    }
 
     @PreDestroy
+    @SuppressWarnings("unused")
     fun predestroy() {
         streams.close()
     }
 
-    fun getJobState(id: UUID): JobState? {
-        val state: String? = jobsView[id.toString()]
-        return if(state == null) null else om.readValue(state)
+    @GET
+    @Path("/jobs")
+    @Timed(unit = MetricUnits.MILLISECONDS)
+    fun getJobs(): Response {
+        val jobs = mutableListOf<JobState>()
+        jobsView.all().forEachRemaining { jobs.add(om.readValue(it.value)) }
+        return Response.ok(jobs).build()
     }
 
     @GET
@@ -157,20 +255,35 @@ class BillingStreamApplication(
         return Response.ok(groupsView[id.toString()]).build()
     }
 
+    fun getContract(jobId: UUID, contractId: UUID) = om.readValue<ContractState>(contractsView["$jobId::$contractId"])
+
     @GET
-    @Path("/contract/{id}")
+    @Path("/contract/{jobId}/{contractId}")
     @Timed(unit = MetricUnits.MILLISECONDS)
-    fun getContract(@Parameter(name = "id") @PathParam("id") id: UUID): Response {
-        return Response.ok(contractsView[id.toString()]).build()
+    fun getContractREST(@Parameter(name = "jobId") @PathParam("jobId") jobId: UUID, @Parameter(name = "contractId") @PathParam("contractId") contractId: UUID): Response {
+        return Response.ok(contractsView["$jobId::$contractId"]).build()
     }
+
+    private fun sendEvent_CompletedGroup(jobId: UUID, groupId: UUID) {
+        val event = Event(Action.COMPLETED_GROUP, jobId, groupId)
+        val md = OutgoingKafkaRecordMetadata.builder<String>()
+                .withKey(jobId.toString())
+                .build()
+        val msg = Message.of(om.writeValueAsString(event))
+        events.send(msg.addMetadata(md))
+    }
+
 }
 
-data class Event(val action: Action, val jobId: UUID, val groupId: UUID, val contractId: UUID, val completed: LocalDateTime? = null)
+data class Event(val action: Action, val jobId: UUID, val groupId: UUID, val contractId: UUID?, val contract: Contract?, val completed: LocalDateTime? = null) {
+    constructor(action: Action, jobId: UUID, groupId: UUID): this(action, jobId, groupId, null, null)
+}
 
 enum class Action {
     SENT_TO_PRICING, FAILED_IN_PRICING,
     SENT_TO_BILLING, FAILED_IN_BILLING,
-    COMPLETED, GROUP_FAILED, FINISHED
+    COMPLETED,
+    COMPLETED_GROUP
 }
 
 data class JobState(var jobId: UUID,
@@ -181,7 +294,7 @@ data class JobState(var jobId: UUID,
 
                     var numContractsTotal: Int,
                     var numContractsPricing: Int,
-                    var numContractssPricingFailed: Int,
+                    var numContractsPricingFailed: Int,
                     var numContractsBilling: Int,
                     var numContractsBillingFailed: Int,
                     var numContractsComplete: Int,
@@ -195,7 +308,7 @@ data class JobState(var jobId: UUID,
 }
 
 enum class State {
-    STARTED, COMPLETED_PRICING, COMPLETED_BILLING, COMPLETED, FAILED
+    STARTED, COMPLETED_PRICING, COMPLETED, FAILED
 }
 
 data class GroupState(var jobId: UUID,

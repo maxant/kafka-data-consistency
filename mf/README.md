@@ -198,12 +198,14 @@ Also known as entry points, process components or UIs.
   - UPDATED_DRAFT (contracts-event-bus)
   - OFFERED_DRAFT (contracts-event-bus)
   - APPROVED_CONTRACT (contracts-event-bus)
-  - UPDATED_PRICES (contracts-event-bus)
+  - UPDATED_PRICES_FOR_DRAFT (contracts-event-bus)
+  - UPDATED_PRICES_FOR_GROUP_OF_CONTRACTS (contracts-event-bus)
   - CHANGED_PARTNER_RELATIONSHIP (partner-events)
   - CHANGED_CASE (cases-events)
   - ERROR (errors)
   - SECURITY_MODEL (organisation-events)
   - SELECTED_FOR_BILLING (billing-internal)
+  _ TODO all the billing events/commands
 
 ## Links
 
@@ -356,6 +358,12 @@ TODO does it make sense to set the requestId to be the selection Id???
 - when creating partner relationships, we send as much info in the command as possible, so that eg the selection of the sales rep can be done in the right place, namely the partner service
 - publishing security data when it changes, or when org starts up
   - fetching security data during startup or lazily if that fails, so that we can check jwts based on processes
+- internet performs badly
+- state in kafka for billing
+  - no transactions, so everything has to be side-effect free
+  - you really have to think hard about failure and what to do when something is sent multiple time
+  - you really need to think about concurrency and async updating of state => the solution presented here doesnt 
+    require locks, but fails if the state isnt yet replicated in the store. with a sync app, we'd be sure it was.
 
 ### the five tenets of global data consistency
 

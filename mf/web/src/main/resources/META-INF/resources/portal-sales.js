@@ -157,7 +157,7 @@ function sse(requestId, self) {
             self.model.draft = msg.payload;
             initialiseDraft(self.model.draft.pack);
             // dont update any waiting or timing state, because this is just the first of many events to come
-        } else if(msg.event == "UPDATED_PRICES") {
+        } else if(msg.event == "UPDATED_PRICES_FOR_DRAFT") {
             self.model.draft.prices = msg.payload.priceByComponentId;
             _.forEach(self.model.draft.prices, (v,k) => {
                 addPrice(self.model.draft.pack, k, v);
