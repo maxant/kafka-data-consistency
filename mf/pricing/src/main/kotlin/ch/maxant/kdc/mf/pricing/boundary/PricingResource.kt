@@ -36,7 +36,7 @@ class PricingResource(
                    @QueryParam("dateTime") dateTimeString: String
     ): Response {
         val entities = PriceEntity.Queries.selectByComponentIdsAndDateTime(em, componentIds, LocalDateTime.parse(dateTimeString))
-        if(entities.isEmpty()) throw IllegalStateException("no prices sound for componentIds $componentIds and date $dateTimeString")
+        if(entities.isEmpty()) throw IllegalStateException("no prices found for componentIds $componentIds and date $dateTimeString")
         val price = entities.map{ it.price }.reduce{ acc, price -> acc.add(price) }
         val tax = entities.map{ it.tax }.reduce{ acc, tax -> acc.add(tax) }
         return Response.ok(Price(price, tax)).build()

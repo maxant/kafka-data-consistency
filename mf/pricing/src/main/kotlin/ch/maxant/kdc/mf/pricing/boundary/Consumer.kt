@@ -35,10 +35,10 @@ class Consumer(
     lateinit var eventBus: Emitter<String>
 
     @Inject
-    private lateinit var pricingResultEvent: javax.enterprise.event.Event<PricingResult>
+    private lateinit var pricingDraftResultEvent: javax.enterprise.event.Event<PricingResult>
 
     @Inject
-    private lateinit var pricingCommandGroupResultEvent: javax.enterprise.event.Event<PricingCommandGroupResult>
+    private lateinit var pricingContractResultEvent: javax.enterprise.event.Event<PricingCommandGroupResult>
 
     private val log = Logger.getLogger(this.javaClass)
 
@@ -49,30 +49,9 @@ class Consumer(
     @PimpedAndWithDltAndAck
     override fun handle(record: ConsumerRecord<String, String>) {
         when (context.event) {
-            "CREATED_DRAFT", "UPDATED_DRAFT" -> {
-                try {
-                    log.info("pricing draft")
-                    val value = om.readTree(record.value())
-                    val result = pricingService.priceDraft(value)
-                    sendEvent(result)
-                } catch (e: Exception) {
-                    log.error("FAILED TO PRICE", e)
-                }
-            }
-            "CALCULATE_PRICES_FOR_GROUP_OF_CONTRACTS" -> {
-                try {
-                    log.info("pricing contract")
-                    val result = pricingService.priceContract(record.value())
-                    sendEvent(result)
-                } catch (e: Exception) {
-                    val group = om.readValue<PricingCommandGroup>(record.value())
-                    log.error("FAILED TO PRICE GROUP ${group.groupId} in job ${group.jobId} " +
-                            "with contractIds ${group.commands.map { it.contractId }.distinct()} => " +
-                            "publishing failed event", e)
-                    val commands = group.commands.map { PricingCommandResult(it.contractId, failed = true) }
-                    sendEvent(PricingCommandGroupResult(group.groupId, commands))
-                }
-            }
+            "CREATED_DRAFT", "UPDATED_DRAFT" -> priceDraft(record)
+            "READ_PRICES_FOR_GROUP_OF_CONTRACTS" -> readPricesForGroupOfContracts(record)
+            "RECALCULATE_PRICES_FOR_GROUP_OF_CONTRACTS" -> recalculatePricesForGroupOfContracts(record)
             else -> {
                 // ignore other messages
                 log.info("skipping irrelevant message ${context.event}")
@@ -80,8 +59,53 @@ class Consumer(
         }
     }
 
+    private fun priceDraft(record: ConsumerRecord<String, String>) {
+        try {
+            log.info("pricing draft")
+            val value = om.readTree(record.value())
+            val result = pricingService.priceDraft(value)
+            sendEvent(result)
+        } catch (e: Exception) {
+            log.error("FAILED TO PRICE", e)
+        }
+    }
+
+    private fun readPricesForGroupOfContracts(record: ConsumerRecord<String, String>) {
+        val group = om.readValue<PricingCommandGroup>(record.value())
+        try {
+            log.info("reading prices for group of contracts")
+            val result = pricingService.readPrices(group)
+            sendEvent(result)
+        } catch (e: Exception) {
+            log.error(
+                "FAILED TO READ PRICE FOR GROUP ${group.groupId} " +
+                        "with contractIds ${group.commands.map { it.contractId }.distinct()} => " +
+                        "publishing failed event", e
+            )
+            val commands = group.commands.map { PricingCommandResult(it.contractId, failed = true) }
+            sendEvent(PricingCommandGroupResult(group.groupId, commands, false))
+        }
+    }
+
+    private fun recalculatePricesForGroupOfContracts(record: ConsumerRecord<String, String>) {
+        val group = om.readValue<PricingCommandGroup>(record.value())
+        try {
+            log.info("repricing group of contracts")
+            val result = pricingService.repriceContract(group)
+            sendEvent(result)
+        } catch (e: Exception) {
+            log.error(
+                "FAILED TO REPRICE GROUP ${group.groupId} " +
+                        "with contractIds ${group.commands.map { it.contractId }.distinct()} => " +
+                        "publishing failed event", e
+            )
+            val commands = group.commands.map { PricingCommandResult(it.contractId, failed = true) }
+            sendEvent(PricingCommandGroupResult(group.groupId, commands, true))
+        }
+    }
+
     private fun sendEvent(prices: PricingResult) {
-        pricingResultEvent.fire(prices)
+        pricingDraftResultEvent.fire(prices)
     }
 
     @SuppressWarnings("unused")
@@ -92,13 +116,14 @@ class Consumer(
     }
 
     private fun sendEvent(prices: PricingCommandGroupResult) {
-        pricingCommandGroupResultEvent.fire(prices)
+        this.pricingContractResultEvent.fire(prices)
     }
 
     @SuppressWarnings("unused")
     private fun send(@Observes(during = TransactionPhase.AFTER_SUCCESS) prices: PricingCommandGroupResult) {
         // TODO transactional outbox
-        eventBus.send(messageBuilder.build(prices.groupId, prices, event = "UPDATED_PRICES_FOR_GROUP_OF_CONTRACTS"))
+        val event = if(prices.recalculated) "RECALCULATED_PRICES_FOR_GROUP_OF_CONTRACTS" else "READ_PRICES_FOR_GROUP_OF_CONTRACTS"
+        eventBus.send(messageBuilder.build(prices.groupId, prices, event = event))
         log.info("published prices group for contractIds ${prices.commands.map { it.contractId }.distinct()}")
     }
 }

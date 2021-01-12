@@ -9,6 +9,7 @@ import ch.maxant.kdc.mf.pricing.dto.TreeComponent
 import ch.maxant.kdc.mf.pricing.dto.Visitor
 import ch.maxant.kdc.mf.pricing.entity.PriceEntity
 import ch.maxant.kdc.mf.pricing.entity.PriceEntity.Queries.deleteByContractId
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -63,9 +64,42 @@ class PricingService(
 
     @Transactional
     @Timed(unit = MetricUnits.MILLISECONDS)
-    fun priceContract(jsonCommand: String): PricingCommandGroupResult {
-        val group = om.readValue<PricingCommandGroup>(jsonCommand)
+    fun readPrices(group: PricingCommandGroup): PricingCommandGroupResult {
+        if(group.failForTestingPurposes) {
+            log.error("FAILING FOR TEST PURPOSES")
+            throw RuntimeException("FAILING FOR TEST PURPOSES")
+        }
 
+        val contractIds = group.commands.map { it.contractId }.distinct()
+        val entitiesOrderedByStart = PriceEntity.Queries.selectByContractIdsOrderedByStart(em, contractIds)
+        val results = mutableListOf<PricingCommandResult>()
+        for(contractId in contractIds) {
+            val entitiesForContractOrderedByStart = entitiesOrderedByStart.filter { it.contractId == contractId }
+            val commandsForContract = group.commands.filter { it.contractId == contractId }
+            require(commandsForContract.size != 1) { "Request to read price of contract for more than one period is not currently supported! $commandsForContract" }
+            val commandForContract = commandsForContract[0]
+
+            val componentIds = entitiesOrderedByStart.map { it.componentId }.distinct()
+            val componentPrices = mutableMapOf<UUID, ComponentPriceWithValidity>()
+            for(componentId in componentIds) {
+                val entity = entitiesForContractOrderedByStart.filter { it.componentId == componentId }
+                    .find { it.start.toLocalDate() <= commandsForContract[0].from
+                            && it.end.toLocalDate() >= commandsForContract[0].to }
+
+                require(entity != null) { "no matching price found for $commandForContract"}
+                val price = Price(entity.price, entity.tax)
+                val priceWithValidity = ComponentPriceWithValidity(entity.componentId, price,
+                                                                    entity.start.toLocalDate(), entity.end.toLocalDate())
+                componentPrices[componentId] = priceWithValidity
+            }
+            results.add(PricingCommandResult(contractId, componentPrices))
+        }
+        return PricingCommandGroupResult(group.groupId, results, false)
+    }
+
+    @Transactional
+    @Timed(unit = MetricUnits.MILLISECONDS)
+    fun repriceContract(group: PricingCommandGroup): PricingCommandGroupResult {
         if(group.failForTestingPurposes) {
             log.error("FAILING FOR TEST PURPOSES")
             throw RuntimeException("FAILING FOR TEST PURPOSES")
@@ -92,14 +126,13 @@ class PricingService(
 
                 if(commandsForContract.size == 1) {
                     // just ensure that a price exists for the given period
-                    adsf
+                    TODO()
                 } else if(commandsForContract.size == 2) {
-        asdf
+                    TODO()
                 } else throw IllegalStateException("that should never happen")
             }
         }
-
-
+        return PricingCommandGroupResult(group.groupId, TODO(), true)
     }
 
     fun toTree(list: List<FlatComponent>): TreeComponent {
@@ -185,14 +218,14 @@ data class PricingResult(
 )
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// pricing command for billing
+// pricing commands for e.g. billing (as well as result as an event) - this is OUR interface, we define the contract (based on consumers requirements)
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-data class PricingCommandGroup(val jobId: UUID, val groupId: UUID, val commands: List<PricingCommand>, val failForTestingPurposes: Boolean)
+data class PricingCommandGroup(val groupId: UUID, val commands: List<PricingCommand>, val recalculate: Boolean, val failForTestingPurposes: Boolean)
 
 data class PricingCommand(val contractId: UUID, val from: LocalDate, val to: LocalDate)
 
-data class PricingCommandGroupResult(val groupId: UUID, val commands: List<PricingCommandResult>)
+data class PricingCommandGroupResult(val groupId: UUID, val commands: List<PricingCommandResult>, @field:JsonIgnore val recalculated: Boolean)
 
 data class PricingCommandResult(val contractId: UUID, val priceByComponentId: Map<UUID, ComponentPriceWithValidity> = emptyMap(), val failed: Boolean = false)
 
-data class ComponentPriceWithValidity(val parentId: UUID, val price: Price, val from: LocalDate, val to: LocalDate)
+data class ComponentPriceWithValidity(val componentId: UUID, val price: Price, val from: LocalDate, val to: LocalDate)

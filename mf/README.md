@@ -200,6 +200,7 @@ Also known as entry points, process components or UIs.
   - APPROVED_CONTRACT (contracts-event-bus)
   - UPDATED_PRICES_FOR_DRAFT (contracts-event-bus)
   - UPDATED_PRICES_FOR_GROUP_OF_CONTRACTS (contracts-event-bus)
+  - PRICES_READ_FOR_GROUP_OF_CONTRACTS (contracts-event-bus)
   - CHANGED_PARTNER_RELATIONSHIP (partner-events)
   - CHANGED_CASE (cases-events)
   - ERROR (errors)
@@ -364,6 +365,26 @@ TODO does it make sense to set the requestId to be the selection Id???
   - you really have to think hard about failure and what to do when something is sent multiple time
   - you really need to think about concurrency and async updating of state => the solution presented here doesnt 
     require locks, but fails if the state isnt yet replicated in the store. with a sync app, we'd be sure it was.
+- timing issues related to using kakfa to monitor state
+  - either we create monitoring events that update the state, but that can mean that the state being read during a process step
+    is not the latest, because the business command that we sent to say the pricing component was processed 
+    before the state event sent to the global ktable, and during preparation of the next process step, we end up using an out of date state
+  - or we create a truly linear process in which the output of the ktable is used as a business command to calculate prices, but
+    we need to be careful, since the structure of the pricing command should be responsibility of the pricing component. we end up
+    with perhaps a more tightly coupled system that we want, or at least have to take good care to avoid it with suitable mappings.
+  - why not just stick state in a synchronously written store or even a db? it's unlikely to be less available than a local rocksdb, or is it? even if its dedicated?
+    - or for that matter, writing to the local rocksdb? well, if there are several pods, you'd need to make sure they are all updated
+    - so you end up with the same pattern and associated problems
+    - => the solution appears to be like that for all timing issues - use a point to point process to ensure you don't end up with concurrency problems!
+    - the next problem you have though is that you need to keep the state for the entire group! you can't keep it per contract, 
+      because if you do that, you end up with state that may not yet be up to date, because the contract state is created async
+      to the group state, when you re-key and process downstream
+  - no this doesnt work - i just spent the evening rewriting the billing component and there is no way to subscribe to a GKT
+    like there is with a ktable->stream => so you have no guarantee that the state is written and available when the pricing
+    result returns. not only that, you might be processing the pricing result on a difference node, so it might be available
+    on a different node, but not yet on this one. you need to use a state store that is clusterable and capable of telling you 
+    that the result is now available on all nodes, so that the next attempt to read, will never fail, eg cassandra or a normal DB.
+    or you can send the entire model around, but that isnt loosely coupled :-(
 
 ### the five tenets of global data consistency
 
@@ -569,8 +590,8 @@ Hmmm... not really needed ATM since we access using root:
     kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper zeus.com:30000 --replication-factor 2 --partitions 5 --topic billing-internal-state-contracts
     kafka_2.12-2.7.0/bin/kafka-topics.sh --alter --topic billing-internal-state-contracts --zookeeper zeus.com:30000 --config cleanup.policy=compact
 
-    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper zeus.com:30000 --replication-factor 2 --partitions 5 --topic billing-internal-events
-    kafka_2.12-2.7.0/bin/kafka-topics.sh --alter --topic billing-internal-events --zookeeper zeus.com:30000 --config cleanup.policy=compact
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper zeus.com:30000 --replication-factor 2 --partitions 5 --topic billing-internal-stream
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --alter --topic billing-internal-stream --zookeeper zeus.com:30000 --config cleanup.policy=compact
 
 ## Bugs
 
