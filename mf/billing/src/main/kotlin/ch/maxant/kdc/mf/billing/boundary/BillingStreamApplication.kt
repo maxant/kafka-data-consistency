@@ -82,16 +82,17 @@ class BillingStreamApplication(
         // JOBS - this state is NOT guaranteed to be totally up to date with every group, as it might be processed
         // after a group is processed and sent downstream, processed and returned! the single source of synchronous
         // truth is the group state!
-        val jobsStoreName = "billing-store-jobs"
-        val jobsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`(jobsStoreName)
         streamOfGroups.groupByKey()
                 .aggregate(Initializer { om.writeValueAsString(JobState()) },
                             jobsAggregator,
-                            Named.`as`("billing-internal-aggregate-state-jobs"), Materialized.with(Serdes.String(), Serdes.String()))
+                            Named.`as`("billing-internal-aggregate-state-jobs"), Materialized.`as`("billing-store-jobs"))
                 .toStream(Named.`as`("billing-internal-stream-state-jobs"))
                 .peek {k, v -> log.info("aggregated group into job $k: $v")}
                 .to(BILLING_INTERNAL_STATE_JOBS)
-        builder.globalTable(BILLING_INTERNAL_STATE_JOBS, jobsStore)
+
+        val allJobsStoreName = "billing-store-jobs-all"
+        val allJobsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`(allJobsStoreName)
+        builder.globalTable(BILLING_INTERNAL_STATE_JOBS, allJobsStore)
 
 
         // GROUPS - single truth of true state relating to the billing of groups of contracts
@@ -144,7 +145,7 @@ class BillingStreamApplication(
 
         streams.start()
 
-        jobsView = streams.store(StoreQueryParameters.fromNameAndType(jobsStoreName, QueryableStoreTypes.keyValueStore<String, String>()))
+        jobsView = streams.store(StoreQueryParameters.fromNameAndType(allJobsStoreName, QueryableStoreTypes.keyValueStore<String, String>()))
         groupsView = streams.store(StoreQueryParameters.fromNameAndType(groupsStoreName, QueryableStoreTypes.keyValueStore<String, String>()))
 
         println(topology.describe())

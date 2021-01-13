@@ -180,21 +180,21 @@ so the command needs a descriminator. or perhaps its a difference command!;
         group: PricingCommandGroupResult,
         recalculated: Boolean
     ) {
-        // TODO the following could fail, because the group is sent to pricing before we have a guarantee that
-        // the GKT is updated. there is no way with the streams API to subscribe to the GKT, like you can with
-        // a KTable which you turn back into a stream. so we just have to try our luck and hope for the best!
-        // if it fails, we could just send it to the waiting room a few times...
-        val originalContract = billingStreamApplication.getContract(group.groupId, group.commands[0].contractId)
+        val originalContract = getContract(group.groupId, group.commands[0].contractId)
         val processStep = if (recalculated) BillingProcessStep.RECALCULATE_PRICE else BillingProcessStep.READ_PRICE
         streamService.sendGroup(Group(group.jobId, group.groupId, listOf(originalContract), processStep, processStep))
     }
+
+    /** the following can't fail, because the group is sent to pricing after it's written to the stream which is
+     * produced from the KTable, meaning that the ktable store has the data, before hand. */
+    private fun getContract(groupId: UUID, contractId: UUID) = billingStreamApplication.getContract(groupId, contractId)
 
     private fun handlePricedGroup_failedGroup(
         group: PricingCommandGroupResult,
         recalculated: Boolean
     ) {
         group.commands.map { it.contractId }.distinct().forEach { contractId ->
-            val originalContract = billingStreamApplication.getContract(group.groupId, group.commands[0].contractId)
+            val originalContract = getContract(group.groupId, group.commands[0].contractId)
             val newGroupId =
                 UUID.randomUUID() // we create a new group - one for each individual contract, containing the periods to price
             val contract = Contract(
@@ -213,7 +213,7 @@ so the command needs a descriminator. or perhaps its a difference command!;
 
     private fun handlePricedGroup_success(group: PricingCommandGroupResult) {
         val contracts = group.commands.map { it.contractId }.distinct().map { contractId ->
-            val contract = billingStreamApplication.getContract(group.jobId, contractId)
+            val contract = getContract(group.jobId, contractId)
             contract.periodsToBill.forEach { periodToBill ->
                 val priceByComponent = group.commands
                     .filter { it.contractId == contract.contractId }
