@@ -64,7 +64,7 @@ class ContractsConsumer(
         val basePeriodToPrice = Period(contract.start.toLocalDate(), contract.start.plusDays(1).toLocalDate())
 
         val periodsToBill = when (defn.chosenPeriodicity) {
-            Periodicity.DAILY -> listOf(Period(contract.start.toLocalDate(), contract.start.toLocalDate()))
+            Periodicity.DAILY -> listOf(BillPeriod(contract.start.toLocalDate(), contract.start.toLocalDate()))
             else -> throw TODO()
         }
         log.info("calculated periods to bill $periodsToBill")

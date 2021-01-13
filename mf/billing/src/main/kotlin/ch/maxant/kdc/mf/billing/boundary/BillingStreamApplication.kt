@@ -15,6 +15,7 @@ import org.apache.kafka.streams.state.ReadOnlyKeyValueStore
 import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
+import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import org.jboss.logging.Logger
@@ -83,15 +84,15 @@ class BillingStreamApplication(
         // truth is the group state!
         val jobsStoreName = "billing-store-jobs"
         val jobsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`(jobsStoreName)
-        val jobsTable = streamOfGroups.groupByKey()
+        streamOfGroups.groupByKey()
                 .aggregate(Initializer { om.writeValueAsString(JobState()) },
                             jobsAggregator,
-                            Named.`as`("billing-internal-aggregate-state-jobs"),
-                            jobsStore)
-
-        jobsTable.toStream(Named.`as`("billing-internal-stream-state-jobs"))
+                            Named.`as`("billing-internal-aggregate-state-jobs"), Materialized.with(Serdes.String(), Serdes.String()))
+                .toStream(Named.`as`("billing-internal-stream-state-jobs"))
                 .peek {k, v -> log.info("aggregated group into job $k: $v")}
-                .to("billing-internal-state-jobs")
+                .to(BILLING_INTERNAL_STATE_JOBS)
+        builder.globalTable(BILLING_INTERNAL_STATE_JOBS, jobsStore)
+
 
         // GROUPS - single truth of true state relating to the billing of groups of contracts
         val groupsStoreName = "billing-store-groups"
@@ -101,10 +102,10 @@ class BillingStreamApplication(
                         Named.`as`("billing-internal-aggregate-state-groups"), groupsStore)
         groupsTable.toStream(Named.`as`("billing-internal-stream-state-groups"))
                     .peek {k, v -> log.info("aggregated group $k: $v")}
-                    .to(Companion.BILLING_INTERNAL_STATE_GROUPS)
+                    .to(BILLING_INTERNAL_STATE_GROUPS)
 
         // now route the processed group to wherever it needs to go, depending on the next process step
-        val branches = builder.stream<String, String>(Companion.BILLING_INTERNAL_STATE_GROUPS)
+        val branches = builder.stream<String, String>(BILLING_INTERNAL_STATE_GROUPS)
             .branch(Named.`as`("billing-internal-branch"),
                 Predicate{ _, v -> om.readValue<Group>(v).nextProcessStep == BillingProcessStep.READ_PRICE},
                 Predicate{ _, v -> om.readValue<Group>(v).nextProcessStep == BillingProcessStep.RECALCULATE_PRICE},
@@ -243,6 +244,7 @@ class BillingStreamApplication(
 
     @GET
     @Path("/jobs")
+    @Operation(summary = "NOTE: knows about every job!")
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun getJobs(): Response {
         val jobs = mutableListOf<JobState>()
@@ -252,6 +254,7 @@ class BillingStreamApplication(
 
     @GET
     @Path("/job/{id}")
+    @Operation(summary = "NOTE: knows about every job!")
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun getJob(@Parameter(name = "id") @PathParam("id") id: UUID): Response {
         return Response.ok(jobsView[id.toString()]).build()
@@ -259,14 +262,17 @@ class BillingStreamApplication(
 
     @GET
     @Path("/group/{id}")
+    @Operation(summary = "NOTE: only knows about local state!")
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun getGroup(@Parameter(name = "id") @PathParam("id") id: UUID): Response {
         return Response.ok(groupsView[id.toString()]).build()
     }
 
+    /** NOTE: only knows about local state! */
     fun getContract(groupId: UUID, contractId: UUID) = om.readValue<GroupState>(groupsView["$groupId"]).contracts[contractId]!!
 
     companion object {
+        const val BILLING_INTERNAL_STATE_JOBS = "billing-internal-state-jobs"
         const val BILLING_INTERNAL_STATE_GROUPS = "billing-internal-state-groups"
     }
 
@@ -359,7 +365,8 @@ open class Period(val from: LocalDate,
 
 class BillPeriod(from: LocalDate,
                   to: LocalDate,
-                  price: BigDecimal, var billId: UUID? = null): Period(from, to, price)
+                  price: BigDecimal = BigDecimal.ZERO,
+                  var billId: UUID? = null): Period(from, to, price)
 
 enum class BillingProcessStep {
     READ_PRICE, // for new contracts, the price is already known, as it was offered to the customer, so just go read it
