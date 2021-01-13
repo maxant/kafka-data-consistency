@@ -31,17 +31,6 @@ class BillingResource(
     fun getById(@PathParam("id") id: UUID) =
         Response.ok("id").build()
 
-    @POST
-    @Path("/testNewContract")
-    fun testNewContract(): Response {
-        val contractId = UUID.randomUUID()
-        val contract = ApprovedContract(ContractDto(contractId,
-                LocalDateTime.now().plusDays(2),
-                LocalDateTime.now().plusYears(1)), ProductId.COOKIES_MILKSHAKE)
-        contractsEventBus.send(messageBuilder.build(contractId.toString(), contract, event = "APPROVED_CONTRACT"))
-        return Response.ok(contractId).build()
-    }
-
     data class ApprovedContract(val contract: ContractDto, val productId: ProductId)
 }
 

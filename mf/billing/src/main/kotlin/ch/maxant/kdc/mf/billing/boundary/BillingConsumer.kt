@@ -17,18 +17,18 @@ import javax.inject.Inject
 @SuppressWarnings("unused")
 class BillingConsumer(
     @Inject
-        var om: ObjectMapper,
+    var om: ObjectMapper,
 
     @Inject
-        var context: Context,
+    var context: Context,
 
     @Inject
-        var streamService: StreamService,
+    var streamService: StreamService,
 
     @Inject
-        var billingService: BillingService
+    var billingService: BillingService
 
-    ) : KafkaHandler {
+) : KafkaHandler {
 
     private val log = Logger.getLogger(this.javaClass)
 

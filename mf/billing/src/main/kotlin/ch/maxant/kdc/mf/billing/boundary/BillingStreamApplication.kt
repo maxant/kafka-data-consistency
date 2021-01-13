@@ -57,10 +57,11 @@ class BillingStreamApplication(
 
     private val log = Logger.getLogger(this.javaClass)
 
-    val BILLING_INTERNAL_STATE_GROUPS = "billing-internal-state-groups"
-
     @SuppressWarnings("unused")
     fun init(@Observes e: StartupEvent) {
+
+
+
         val props = Properties()
         props[StreamsConfig.APPLICATION_ID_CONFIG] = "mf-billing-streamapplication"
         props[StreamsConfig.BOOTSTRAP_SERVERS_CONFIG] = kafkaBootstrapServers
@@ -73,37 +74,37 @@ class BillingStreamApplication(
 
         // we do the following, so that we dont have to create locks across JVMs, for updating state. imagine two pods
         // processing two results and updating stats in the job at the same time after both have read the latest state
-        // from the GKT. the last one wins and overwrites the data written by the first one.
-        // doing it this way with the aggregate, we are guaranteed to have correct data. this is the kafka way of doing
-        // things.
+        // from the GKT/KT. the last one wins and overwrites the data written by the first one.
+        // doing it this way with the aggregate, we are guaranteed to have correct data.
+        // this is the kafka way of doing things.
 
-        // JOBS - this state is NOT guaranteed to be up to date, as it might be processed after a group is processed
-        // and sent downstream, processed and returned! the single source of synchronous truth is the group state!
-        streamOfGroups.groupByKey()
-                .aggregate(Initializer { om.writeValueAsString(JobState()) }, jobsAggregator,
-                        Named.`as`("billing-internal-aggregate-state-jobs"), Materialized.with(Serdes.String(), Serdes.String()))
-                .toStream(Named.`as`("billing-internal-stream-state-jobs"))
+        // JOBS - this state is NOT guaranteed to be totally up to date with every group, as it might be processed
+        // after a group is processed and sent downstream, processed and returned! the single source of synchronous
+        // truth is the group state!
+        val jobsStoreName = "billing-store-jobs"
+        val jobsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`(jobsStoreName)
+        val jobsTable = streamOfGroups.groupByKey()
+                .aggregate(Initializer { om.writeValueAsString(JobState()) },
+                            jobsAggregator,
+                            Named.`as`("billing-internal-aggregate-state-jobs"),
+                            jobsStore)
+
+        jobsTable.toStream(Named.`as`("billing-internal-stream-state-jobs"))
                 .peek {k, v -> log.info("aggregated group into job $k: $v")}
                 .to("billing-internal-state-jobs")
 
-        val jobsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`("billing-store-jobs")
-        val jobsGkt: GlobalKTable<String, String> = builder.globalTable("billing-internal-state-jobs", jobsStore)
-        val jobsStoreName = jobsGkt.queryableStoreName()
-
         // GROUPS - single truth of true state relating to the billing of groups of contracts
-        streamOfGroups.groupBy { _, value -> om.readTree(value).get("groupId").asText() }
+        val groupsStoreName = "billing-store-groups"
+        val groupsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`(groupsStoreName)
+        val groupsTable = streamOfGroups.groupBy { _, value -> om.readTree(value).get("groupId").asText() }
                 .aggregate(Initializer { om.writeValueAsString(GroupState()) }, groupsAggregator,
-                        Named.`as`("billing-internal-aggregate-state-groups"), Materialized.with(Serdes.String(), Serdes.String()))
-                .toStream(Named.`as`("billing-internal-stream-state-groups"))
-                .peek {k, v -> log.info("aggregated group $k: $v")}
-                .to(BILLING_INTERNAL_STATE_GROUPS)
-
-        val groupsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`("billing-store-groups")
-        val groupsGkt: GlobalKTable<String, String> = builder.globalTable(BILLING_INTERNAL_STATE_GROUPS, groupsStore)
-        val groupsStoreName = groupsGkt.queryableStoreName()
+                        Named.`as`("billing-internal-aggregate-state-groups"), groupsStore)
+        groupsTable.toStream(Named.`as`("billing-internal-stream-state-groups"))
+                    .peek {k, v -> log.info("aggregated group $k: $v")}
+                    .to(Companion.BILLING_INTERNAL_STATE_GROUPS)
 
         // now route the processed group to wherever it needs to go, depending on the next process step
-        val branches = builder.stream<String, String>(BILLING_INTERNAL_STATE_GROUPS)
+        val branches = builder.stream<String, String>(Companion.BILLING_INTERNAL_STATE_GROUPS)
             .branch(Named.`as`("billing-internal-branch"),
                 Predicate{ _, v -> om.readValue<Group>(v).nextProcessStep == BillingProcessStep.READ_PRICE},
                 Predicate{ _, v -> om.readValue<Group>(v).nextProcessStep == BillingProcessStep.RECALCULATE_PRICE},
@@ -133,7 +134,7 @@ class BillingStreamApplication(
         // BILL
         branches[2]
             .peek {k, v -> log.info("sending group for internal billing $k: $v")}
-            .to("billing-internal-bill") // TODO
+            .to("billing-internal-bill")
 
         val topology = builder.build()
         println(topology.describe())
@@ -264,6 +265,10 @@ class BillingStreamApplication(
     }
 
     fun getContract(groupId: UUID, contractId: UUID) = om.readValue<GroupState>(groupsView["$groupId"]).contracts[contractId]!!
+
+    companion object {
+        const val BILLING_INTERNAL_STATE_GROUPS = "billing-internal-state-groups"
+    }
 
 }
 
