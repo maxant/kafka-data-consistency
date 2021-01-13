@@ -1,3 +1,8 @@
+
+**/es-data
+**/grafanadata
+**/mysql-data
+
 neo4jembedded-incubator/neo4jstore
 neo4jembedded-incubator/certificates
 neo4jembedded-incubator/logs
