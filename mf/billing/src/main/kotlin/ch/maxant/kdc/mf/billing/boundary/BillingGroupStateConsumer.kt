@@ -26,7 +26,7 @@ import javax.ws.rs.core.MediaType
 @SuppressWarnings("unused")
 class BillingGroupStateConsumer : KafkaHandler {
 
-    override fun getKey() = "group-state-in"
+    override fun getKey() = "all-group-state-in"
 
     override fun getRunInParallel() = true
 

@@ -44,8 +44,8 @@ class BillsEntity(
         const val contractIdsParam = "contractIds"
         const val query = """
             select b 
-            from BillingEntity b 
-            where p.contractId in :$contractIdsParam
+            from BillsEntity b 
+            where b.contractId in :$contractIdsParam
             """
     }
 

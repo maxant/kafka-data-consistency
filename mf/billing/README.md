@@ -107,6 +107,12 @@ From inside the billing folder, so that changes to the library are also hot depl
 
 ```
 mvn quarkus:dev
+
+# or with zeus:
+mvn quarkus:dev \
+-Dquarkus.datasource.jdbc.url=jdbc:mysql://zeus.com:30300/mfbilling \
+-Dquarkus.log.handler.gelf.host=zeus.com \
+-Dkafka.bootstrap.servers=zeus.com:30001,zeus.com:30002
 ```
 
 ## Packaging and running the application

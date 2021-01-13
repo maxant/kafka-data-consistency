@@ -546,6 +546,7 @@ Create the databases in MySql:
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p -e "CREATE DATABASE mfpartners CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p -e "CREATE DATABASE mfaddinfo CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p
+    FAILS - use IP!! docker run -it --rm mysql mysql -h zeus.com --port 30300 -u root -p
 
 Set Java to version 8, because of Payara! (https://blog.payara.fish/java-11-support-in-payara-server-coming-soon)
 
