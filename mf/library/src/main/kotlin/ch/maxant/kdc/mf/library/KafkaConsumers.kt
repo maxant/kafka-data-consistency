@@ -71,7 +71,7 @@ class KafkaConsumers(
             val props = getProps(config, key)
             val topic = config.getValue("$prefixIncoming$key.topic", String::class.java)
             val handlers = topicHandlers.filter { it.key == key }
-            if(handlers.isEmpty()) throw IllegalArgumentException("No topic handler configured for topic '$topic'")
+            if(handlers.isEmpty()) throw IllegalArgumentException("No topic handler configured for topic '$topic' with key '$key'")
             if(handlers.size > 1) throw IllegalArgumentException("More than one topic handler configured for topic '$topic'")
 
             val die = MutableBoolean(false)

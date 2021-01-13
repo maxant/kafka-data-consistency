@@ -15,7 +15,7 @@ import javax.inject.Inject
 
 @ApplicationScoped
 @SuppressWarnings("unused")
-class BillingConsumer(
+class BillingCommandsConsumer(
     @Inject
     var om: ObjectMapper,
 

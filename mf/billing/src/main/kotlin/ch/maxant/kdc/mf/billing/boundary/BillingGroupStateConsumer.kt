@@ -20,9 +20,6 @@ import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
 
 @ApplicationScoped
-@Path("/billing-state")
-@Consumes(MediaType.APPLICATION_JSON)
-@Produces(MediaType.APPLICATION_JSON)
 @SuppressWarnings("unused")
 class BillingGroupStateConsumer : KafkaHandler {
 
@@ -37,11 +34,5 @@ class BillingGroupStateConsumer : KafkaHandler {
         broadcaster.onNext(record.value())
     }
 
-    @GET
-    @Path("/subscribe-to-all-jobs")
-    @Produces(MediaType.SERVER_SENT_EVENTS)
-    @SseElementType(MediaType.APPLICATION_JSON)
-    @Operation(summary = "get notification of changes to all groups of any job that is currently running")
-    fun stream() = broadcaster
-
 }
+

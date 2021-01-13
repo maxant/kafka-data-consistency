@@ -19,6 +19,7 @@ import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import org.jboss.logging.Logger
+import org.jboss.resteasy.annotations.SseElementType
 import java.math.BigDecimal
 import java.nio.charset.StandardCharsets
 import java.time.LocalDate
@@ -42,6 +43,9 @@ class BillingStreamApplication(
     @Inject
     var om: ObjectMapper,
 
+    @Inject
+    var billingGroupStateConsumer: BillingGroupStateConsumer,
+
     @ConfigProperty(name = "kafka.bootstrap.servers")
     val kafkaBootstrapServers: String,
 
@@ -58,11 +62,12 @@ class BillingStreamApplication(
 
     private val log = Logger.getLogger(this.javaClass)
 
+    val groupsStoreName = "billing-store-groups"
+
+    val allJobsStoreName = "billing-store-jobs-all"
+
     @SuppressWarnings("unused")
     fun init(@Observes e: StartupEvent) {
-
-
-
         val props = Properties()
         props[StreamsConfig.APPLICATION_ID_CONFIG] = "mf-billing-streamapplication"
         props[StreamsConfig.BOOTSTRAP_SERVERS_CONFIG] = kafkaBootstrapServers
@@ -90,13 +95,11 @@ class BillingStreamApplication(
                 .peek {k, v -> log.info("aggregated group into job $k: $v")}
                 .to(BILLING_INTERNAL_STATE_JOBS)
 
-        val allJobsStoreName = "billing-store-jobs-all"
         val allJobsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`(allJobsStoreName)
         builder.globalTable(BILLING_INTERNAL_STATE_JOBS, allJobsStore)
 
 
         // GROUPS - single truth of true state relating to the billing of groups of contracts
-        val groupsStoreName = "billing-store-groups"
         val groupsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`(groupsStoreName)
         val groupsTable = streamOfGroups.groupBy { _, value -> om.readTree(value).get("groupId").asText() }
                 .aggregate(Initializer { om.writeValueAsString(GroupState()) }, groupsAggregator,
@@ -144,9 +147,6 @@ class BillingStreamApplication(
         streams = KafkaStreams(topology, props)
 
         streams.start()
-
-        jobsView = streams.store(StoreQueryParameters.fromNameAndType(allJobsStoreName, QueryableStoreTypes.keyValueStore<String, String>()))
-        groupsView = streams.store(StoreQueryParameters.fromNameAndType(groupsStoreName, QueryableStoreTypes.keyValueStore<String, String>()))
 
         println(topology.describe())
     }
@@ -243,13 +243,40 @@ class BillingStreamApplication(
         streams.close()
     }
 
+    /** seems to not like immediate fetching of the store during init - so lets do it lazily */
+    private fun getAllJobs() =
+        try {
+            jobsView.all()
+        } catch(e: UninitializedPropertyAccessException) {
+            jobsView = streams.store(StoreQueryParameters.fromNameAndType(allJobsStoreName, QueryableStoreTypes.keyValueStore<String, String>()))
+            jobsView.all()
+        }
+
+    /** seems to not like immediate fetching of the store during init - so lets do it lazily */
+    private fun getJob(key: String) =
+        try {
+            jobsView.get(key)
+        } catch(e: UninitializedPropertyAccessException) {
+            jobsView = streams.store(StoreQueryParameters.fromNameAndType(allJobsStoreName, QueryableStoreTypes.keyValueStore<String, String>()))
+            jobsView.get(key)
+        }
+
+    /** seems to not like immediate fetching of the store during init - so lets do it lazily */
+    private fun getGroup(key: String) =
+        try {
+            groupsView.get(key)
+        } catch(e: UninitializedPropertyAccessException) {
+            groupsView = streams.store(StoreQueryParameters.fromNameAndType(groupsStoreName, QueryableStoreTypes.keyValueStore<String, String>()))
+            groupsView.get(key)
+        }
+
     @GET
     @Path("/jobs")
     @Operation(summary = "NOTE: knows about every job!")
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun getJobs(): Response {
         val jobs = mutableListOf<JobState>()
-        jobsView.all().forEachRemaining { jobs.add(om.readValue(it.value)) }
+        getAllJobs().forEachRemaining { jobs.add(om.readValue(it.value)) }
         return Response.ok(jobs).build()
     }
 
@@ -258,7 +285,7 @@ class BillingStreamApplication(
     @Operation(summary = "NOTE: knows about every job!")
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun getJob(@Parameter(name = "id") @PathParam("id") id: UUID): Response {
-        return Response.ok(jobsView[id.toString()]).build()
+        return Response.ok(getJob(id.toString())).build()
     }
 
     @GET
@@ -266,11 +293,18 @@ class BillingStreamApplication(
     @Operation(summary = "NOTE: only knows about local state!")
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun getGroup(@Parameter(name = "id") @PathParam("id") id: UUID): Response {
-        return Response.ok(groupsView[id.toString()]).build()
+        return Response.ok(getGroup(id.toString())).build()
     }
 
+    @GET
+    @Path("/notifications")
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    @SseElementType(MediaType.APPLICATION_JSON)
+    @Operation(summary = "get notification of changes to all groups of any job that is currently running")
+    fun notifications() = billingGroupStateConsumer.broadcaster
+
     /** NOTE: only knows about local state! */
-    fun getContract(groupId: UUID, contractId: UUID) = om.readValue<GroupState>(groupsView["$groupId"]).contracts[contractId]!!
+    fun getContract(groupId: UUID, contractId: UUID) = om.readValue<GroupState>(getGroup(groupId.toString())).contracts[contractId]!!
 
     companion object {
         const val BILLING_INTERNAL_STATE_JOBS = "billing-internal-state-jobs"

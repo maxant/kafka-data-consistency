@@ -19,7 +19,7 @@
 </body>
 <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
 <script>
-    var source = new EventSource("/billing-state/stream");
+    var source = new EventSource("/billing-stream/notifications");
     source.onmessage = function (event) {
         document.getElementById("content").innerHTML = event.data;
     };
