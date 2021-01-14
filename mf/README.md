@@ -206,7 +206,8 @@ Also known as entry points, process components or UIs.
   - ERROR (errors)
   - SECURITY_MODEL (organisation-events)
   - SELECTED_FOR_BILLING (billing-internal)
-  _ TODO all the billing events/commands
+  - BILL_CREATED (billing-events)
+  - TODO all the other billing events/commands
 
 ## Links
 
@@ -231,6 +232,7 @@ Worth alerting on:
 - PARES001 TODO
 - KAF001 If this occurs, then something is no longer working with request scoped state management
 - KAF002 something failed in the consumer that needs to be investigated. probably at startup rather than during polling.
+- BSA00* Billing Application had a fatal error, and threw a record away, in order to avoid shutting down
 
 ## Useful log searches
 

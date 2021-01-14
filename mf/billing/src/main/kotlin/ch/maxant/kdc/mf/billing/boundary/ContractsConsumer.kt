@@ -27,9 +27,6 @@ class ContractsConsumer(
         var context: Context,
 
         @Inject
-        var messageBuilder: MessageBuilder,
-
-        @Inject
         var billingStreamApplication: BillingStreamApplication,
 
         @Inject
@@ -182,7 +179,7 @@ so the command needs a descriminator. or perhaps its a difference command!;
     ) {
         val originalContract = getContract(group.groupId, group.commands[0].contractId)
         val processStep = if (recalculated) BillingProcessStep.RECALCULATE_PRICE else BillingProcessStep.READ_PRICE
-        streamService.sendGroup(Group(group.jobId, group.groupId, listOf(originalContract), processStep, processStep))
+        streamService.sendGroup(Group(originalContract.jobId, group.groupId, listOf(originalContract), null, processStep))
     }
 
     /** the following can't fail, because the group is sent to pricing after it's written to the stream which is
@@ -194,11 +191,10 @@ so the command needs a descriminator. or perhaps its a difference command!;
         recalculated: Boolean
     ) {
         group.commands.map { it.contractId }.distinct().forEach { contractId ->
-            val originalContract = getContract(group.groupId, group.commands[0].contractId)
-            val newGroupId =
-                UUID.randomUUID() // we create a new group - one for each individual contract, containing the periods to price
+            val originalContract = getContract(group.groupId, contractId)
+            val newGroupId = UUID.randomUUID() // we create a new group - one for each individual contract, containing the periods to price
             val contract = Contract(
-                group.jobId,
+                originalContract.jobId,
                 group.groupId,
                 originalContract.contractId,
                 originalContract.billingDefinitionId,
@@ -206,14 +202,14 @@ so the command needs a descriminator. or perhaps its a difference command!;
                 emptyList()
             )
             val processStep = if (recalculated) BillingProcessStep.RECALCULATE_PRICE else BillingProcessStep.READ_PRICE
-            val newGroup = Group(group.jobId, newGroupId, listOf(contract), processStep)
+            val newGroup = Group(originalContract.jobId, newGroupId, listOf(contract), processStep)
             streamService.sendGroup(newGroup)
         }
     }
 
     private fun handlePricedGroup_success(group: PricingCommandGroupResult) {
         val contracts = group.commands.map { it.contractId }.distinct().map { contractId ->
-            val contract = getContract(group.jobId, contractId)
+            val contract = getContract(group.groupId, contractId)
             contract.periodsToBill.forEach { periodToBill ->
                 val priceByComponent = group.commands
                     .filter { it.contractId == contract.contractId }
@@ -237,7 +233,7 @@ so the command needs a descriminator. or perhaps its a difference command!;
             }
             contract
         }
-        streamService.sendGroup(Group(group.jobId, group.groupId, contracts, BillingProcessStep.BILL))
+        streamService.sendGroup(Group(contracts[0].jobId/*they all have the same one!*/, group.groupId, contracts, BillingProcessStep.BILL))
     }
 }
 
@@ -249,7 +245,7 @@ data class ContractDto(val id: UUID, val start: LocalDateTime, val end: LocalDat
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // pricing event => sent from pricing
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-data class PricingCommandGroupResult(val jobId: UUID, val groupId: UUID, val commands: List<PricingCommandResult>)
+data class PricingCommandGroupResult(val groupId: UUID, val commands: List<PricingCommandResult>)
 
 data class PricingCommandResult(val contractId: UUID, val priceByComponentId: Map<UUID, ComponentPriceWithValidity>, val failed: Boolean)
 

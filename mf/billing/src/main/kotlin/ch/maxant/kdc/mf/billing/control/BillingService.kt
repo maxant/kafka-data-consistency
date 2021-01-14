@@ -6,6 +6,7 @@ import java.util.*
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
 import javax.persistence.EntityManager
+import javax.transaction.Transactional
 
 @ApplicationScoped
 class BillingService {
@@ -13,6 +14,7 @@ class BillingService {
     @Inject
     lateinit var em: EntityManager
 
+    @Transactional
     fun billGroup(group: Group) {
         group.contracts.forEach { contract ->
             contract.periodsToBill.forEach { period ->

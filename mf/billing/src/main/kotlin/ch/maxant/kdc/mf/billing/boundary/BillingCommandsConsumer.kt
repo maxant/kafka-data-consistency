@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.billing.boundary
 
+import ch.maxant.kdc.mf.billing.boundary.BillingStreamApplication.Companion.BILL_GROUP
 import ch.maxant.kdc.mf.billing.control.BillingService
 import ch.maxant.kdc.mf.billing.control.StreamService
 import ch.maxant.kdc.mf.library.Context
@@ -44,7 +45,7 @@ class BillingCommandsConsumer(
     @PimpedAndWithDltAndAck
     override fun handle(record: ConsumerRecord<String, String>) {
         when (context.command) {
-            "BILL_GROUP" -> bill(record.value())
+            BILL_GROUP -> bill(record.value())
             else -> TODO("unknown message ${context.event}")
         }
     }
@@ -64,7 +65,7 @@ class BillingCommandsConsumer(
             if(group.contracts.size == 1) {
                 log.error("failed to bill contract as part of group ${group.groupId} in job ${group.jobId}, " +
                         "with contractId ${group.contracts[0].contractId}", e)
-                streamService.sendGroup(Group(group.jobId, group.groupId, group.contracts, BillingProcessStep.BILL, BillingProcessStep.BILL))
+                streamService.sendGroup(Group(group.jobId, group.groupId, group.contracts, null, BillingProcessStep.BILL))
             } else {
                 log.info("failed to bill group => sending individually ${group.groupId}")
                 // resend individually

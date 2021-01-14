@@ -50,11 +50,17 @@ class Consumer(
     override fun handle(record: ConsumerRecord<String, String>) {
         when (context.event) {
             "CREATED_DRAFT", "UPDATED_DRAFT" -> priceDraft(record)
+            else -> {
+                // ignore other messages
+                log.info("skipping irrelevant event ${context.event}")
+            }
+        }
+        when (context.command) {
             "READ_PRICES_FOR_GROUP_OF_CONTRACTS" -> readPricesForGroupOfContracts(record)
             "RECALCULATE_PRICES_FOR_GROUP_OF_CONTRACTS" -> recalculatePricesForGroupOfContracts(record)
             else -> {
                 // ignore other messages
-                log.info("skipping irrelevant message ${context.event}")
+                log.info("skipping irrelevant command ${context.event}")
             }
         }
     }

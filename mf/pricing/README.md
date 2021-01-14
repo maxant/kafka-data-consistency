@@ -8,6 +8,13 @@ From inside the pricing folder, so that changes to the library are also hot depl
 
 ```
 mvn quarkus:dev
+
+# or on zeus:
+mvn quarkus:dev \
+-Dquarkus.datasource.jdbc.url=jdbc:mysql://192.168.1.215:30300/mfpricing \
+-Dquarkus.log.handler.gelf.host=192.168.1.215 \
+-Dkafka.bootstrap.servers=192.168.1.215:30001,192.168.1.215:30002
+-Dquarkus.http.host=0.0.0.0
 ```
 
 ## Packaging and running the application

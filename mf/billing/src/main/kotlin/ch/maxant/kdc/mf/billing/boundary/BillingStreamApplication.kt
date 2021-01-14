@@ -1,8 +1,10 @@
 package ch.maxant.kdc.mf.billing.boundary
 
+import ch.maxant.kdc.mf.library.Context.Companion.COMMAND
 import ch.maxant.kdc.mf.library.Context.Companion.EVENT
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.quarkus.arc.Arc
 import io.quarkus.runtime.StartupEvent
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.common.utils.Bytes
@@ -90,7 +92,8 @@ class BillingStreamApplication(
         streamOfGroups.groupByKey()
                 .aggregate(Initializer { om.writeValueAsString(JobState()) },
                             jobsAggregator,
-                            Named.`as`("billing-internal-aggregate-state-jobs"), Materialized.`as`("billing-store-jobs"))
+                            Named.`as`("billing-internal-aggregate-state-jobs"),
+                            Materialized.`as`("billing-store-jobs"))
                 .toStream(Named.`as`("billing-internal-stream-state-jobs"))
                 .peek {k, v -> log.info("aggregated group into job $k: $v")}
                 .to(BILLING_INTERNAL_STATE_JOBS)
@@ -98,12 +101,27 @@ class BillingStreamApplication(
         val allJobsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`(allJobsStoreName)
         builder.globalTable(BILLING_INTERNAL_STATE_JOBS, allJobsStore)
 
+        builder.stream<String, String>(BILLING_INTERNAL_STATE_JOBS)
+            .branch(Named.`as`("billing-internal-branch-job-successful"),
+                Predicate{ _, v -> catching(v) { om.readValue<JobState>(v).completed != null } }
+            )[0]
+            .map<String, String>({ k, v ->
+                KeyValue(k, buildReadPricesCommand(v))
+             }, Named.`as`("billing-job-completed-to-event-mapper"))
+            .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
+                MfTransformer(EVENT, "BILL_CREATED")
+            })
+            .peek {k, v -> log.info("publishing successful billing event $k: $v")}
+            .to("billing-events")
 
         // GROUPS - single truth of true state relating to the billing of groups of contracts
         val groupsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`(groupsStoreName)
-        val groupsTable = streamOfGroups.groupBy { _, value -> om.readTree(value).get("groupId").asText() }
-                .aggregate(Initializer { om.writeValueAsString(GroupState()) }, groupsAggregator,
-                        Named.`as`("billing-internal-aggregate-state-groups"), groupsStore)
+        val groupsTable = streamOfGroups
+                .groupBy { _, value -> om.readTree(value).get("groupId").asText() }
+                .aggregate(Initializer { om.writeValueAsString(GroupState()) },
+                        groupsAggregator,
+                        Named.`as`("billing-internal-aggregate-state-groups"),
+                        groupsStore)
         groupsTable.toStream(Named.`as`("billing-internal-stream-state-groups"))
                     .peek {k, v -> log.info("aggregated group $k: $v")}
                     .to(BILLING_INTERNAL_STATE_GROUPS)
@@ -111,9 +129,9 @@ class BillingStreamApplication(
         // now route the processed group to wherever it needs to go, depending on the next process step
         val branches = builder.stream<String, String>(BILLING_INTERNAL_STATE_GROUPS)
             .branch(Named.`as`("billing-internal-branch"),
-                Predicate{ _, v -> om.readValue<Group>(v).nextProcessStep == BillingProcessStep.READ_PRICE},
-                Predicate{ _, v -> om.readValue<Group>(v).nextProcessStep == BillingProcessStep.RECALCULATE_PRICE},
-                Predicate{ _, v -> om.readValue<Group>(v).nextProcessStep == BillingProcessStep.BILL}
+                Predicate{ _, v -> catching(v) { om.readValue<GroupState>(v).group.nextProcessStep == BillingProcessStep.READ_PRICE } },
+                Predicate{ _, v -> catching(v) { om.readValue<GroupState>(v).group.nextProcessStep == BillingProcessStep.RECALCULATE_PRICE } },
+                Predicate{ _, v -> catching(v) { om.readValue<GroupState>(v).group.nextProcessStep == BillingProcessStep.BILL } }
             )
 
         // READ_PRICE
@@ -122,8 +140,9 @@ class BillingStreamApplication(
                 KeyValue(k, buildReadPricesCommand(v))
              }, Named.`as`("billing-internal-to-read-pricing-mapper"))
             .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
-                MfTransformer("READ_PRICES_FOR_GROUP_OF_CONTRACTS")
+                MfTransformer(COMMAND, "READ_PRICES_FOR_GROUP_OF_CONTRACTS")
             })
+            .peek {k, v -> log.info("sending group to read prices $k: $v")}
             .to("contracts-event-bus")
 
         // RECALCULATE_PRICE
@@ -132,12 +151,19 @@ class BillingStreamApplication(
                 TODO() //KeyValue(k, v) // TODO
             }, Named.`as`("billing-internal-to-recalculate-pricing-mapper"))
             .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
-                MfTransformer("RECALCULATE_PRICES_FOR_GROUP_OF_CONTRACTS")
+                MfTransformer(COMMAND, "RECALCULATE_PRICES_FOR_GROUP_OF_CONTRACTS")
             })
+            .peek {k, v -> log.info("sending group to recalculate prices $k: $v")}
             .to("contracts-event-bus")
 
         // BILL
         branches[2]
+            .map<String, String>({ k, v ->
+                KeyValue(k, mapGroupStateToGroup(v))
+            }, Named.`as`("billing-internal-to-billing-mapper"))
+            .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
+                MfTransformer(COMMAND, BILL_GROUP)
+            })
             .peek {k, v -> log.info("sending group for internal billing $k: $v")}
             .to("billing-internal-bill")
 
@@ -146,27 +172,45 @@ class BillingStreamApplication(
 
         streams = KafkaStreams(topology, props)
 
+        streams.setUncaughtExceptionHandler { thread, throwable ->
+            log.error("BSA002 handling an uncaught error on thread $thread: ${throwable.message} AND SHUTTING DOWN", throwable )
+            Arc.shutdown()
+        }
+
         streams.start()
 
         println(topology.describe())
     }
 
+    private fun catching(value: String, f: () -> Boolean) =
+        try {
+            f()
+        } catch(e: Exception) {
+            log.error("BSA003 Failed to do something ${e.message} AND DISPOSING OF RECORD WITH VALUE $value AWAY!", e)
+            false
+        }
+
     private fun buildReadPricesCommand(v: String): String {
-        val group = om.readValue<Group>(v)
+        val state = om.readValue<GroupState>(v)
 
         val fail = failRandomlyForTestingPurposes && random.nextInt(100) == 1
         if(fail) {
-            log.warn("failing job ${group.jobId} and group ${group.groupId} for testing purposes at pricing!")
+            log.warn("failing job ${state.group.jobId} and group ${state.group.groupId} for testing purposes at pricing!")
         }
 
         val commands = mutableListOf<PricingCommand>()
-        for(contract in group.contracts) {
+        for(contract in state.group.contracts) {
             for(period in contract.basePeriodsToPrice) {
                 commands.add(PricingCommand(contract.contractId, period.from, period.to))
             }
         }
-        val command = PricingCommandGroup(group.groupId, commands, false, fail)
+        val command = PricingCommandGroup(state.group.groupId, commands, false, fail)
         return om.writeValueAsString(command)
+    }
+
+    private fun mapGroupStateToGroup(v: String): String {
+        val state = om.readValue<GroupState>(v)
+        return om.writeValueAsString(state.group)
     }
 
     val jobsAggregator = Aggregator {k: String, v: String, j: String ->
@@ -185,56 +229,56 @@ class BillingStreamApplication(
             }
             else -> Unit // noop
         }
-        if(group.failedProcessStep != null) {
-            when(group.nextProcessStep) {
-                BillingProcessStep.READ_PRICE, BillingProcessStep.RECALCULATE_PRICE  -> {
-                    jobState.jobId = group.jobId // just in case its not set yet
-    
-                    jobState.groups.computeIfAbsent(group.groupId) { State.STARTED }
-                    jobState.numContractsTotal += group.contracts.size
-                    jobState.numContractsPricing += group.contracts.size
+        when(group.nextProcessStep) {
+            BillingProcessStep.READ_PRICE, BillingProcessStep.RECALCULATE_PRICE  -> {
+                jobState.jobId = group.jobId // just in case its not set yet
+
+                jobState.groups.computeIfAbsent(group.groupId) { State.STARTED }
+                jobState.numContractsTotal += group.contracts.size
+                jobState.numContractsPricing += group.contracts.size
+            }
+            BillingProcessStep.BILL -> {
+                jobState.numContractsBilling += group.contracts.size
+            }
+            BillingProcessStep.COMMS -> {
+                jobState.groups[group.groupId] = State.COMPLETED
+                if(jobState.groups.values.all { it == State.COMPLETED }) {
+                    jobState.state = State.COMPLETED
+                    jobState.completed = LocalDateTime.now()
                 }
-                BillingProcessStep.BILL -> {
-                    jobState.numContractsBilling += group.contracts.size
-                }
-                BillingProcessStep.COMMS -> {
-                    jobState.groups[group.groupId] = State.COMPLETED
-                    if(jobState.groups.values.all { it == State.COMPLETED }) {
-                        jobState.state = State.COMPLETED
-                        TODO() // TODO send event to the world
-                    }
-                    jobState.numContractsComplete += group.contracts.size
-                }
+                jobState.numContractsComplete += group.contracts.size
             }
         }
         om.writeValueAsString(jobState)
     }
 
     val groupsAggregator = Aggregator {k: String, v: String, g: String ->
-        val groupState = om.readValue<GroupState>(g)
-        val group = om.readValue<Group>(v)
-        when(group.failedProcessStep) {
-            BillingProcessStep.READ_PRICE, BillingProcessStep.RECALCULATE_PRICE  -> {
+        try {
+            val groupState = om.readValue<GroupState>(g)
+            val group = om.readValue<Group>(v)
+
+            // copy latest state from group into state object
+            groupState.group = group
+
+            if(group.failedProcessStep != null) {
                 groupState.state = State.FAILED
             }
-            BillingProcessStep.BILL  -> {
-                groupState.state = State.FAILED
-            }
-            else -> Unit // noop
-        }
-        if(group.failedProcessStep != null) {
+
             when(group.nextProcessStep) {
-                BillingProcessStep.READ_PRICE, BillingProcessStep.RECALCULATE_PRICE  -> {
-                    groupState.jobId = group.jobId // just in case its not set yet
-                    groupState.groupId = group.groupId // just in case its not set yet
-                }
+                BillingProcessStep.READ_PRICE,
+                BillingProcessStep.RECALCULATE_PRICE,
                 BillingProcessStep.BILL -> Unit // noop
                 BillingProcessStep.COMMS -> {
                     groupState.state = State.COMPLETED
+                    groupState.finished = LocalDateTime.now()
                 }
             }
+
+            om.writeValueAsString(groupState)
+        } catch(e: Exception) {
+            log.error("BSA001 Failed to aggregate group ${e.message} - DISPOSING OF RECORD WITH KEY $k AND VALUE $v", e)
+            g
         }
-        om.writeValueAsString(groupState)
     }
 
     @PreDestroy
@@ -304,16 +348,17 @@ class BillingStreamApplication(
     fun notifications() = billingGroupStateConsumer.broadcaster
 
     /** NOTE: only knows about local state! */
-    fun getContract(groupId: UUID, contractId: UUID) = om.readValue<GroupState>(getGroup(groupId.toString())).contracts[contractId]!!
+    fun getContract(groupId: UUID, contractId: UUID) = om.readValue<GroupState>(getGroup(groupId.toString())).group.contracts.find { it.contractId == contractId }!!
 
     companion object {
+        const val BILL_GROUP = "BILL_GROUP"
         const val BILLING_INTERNAL_STATE_JOBS = "billing-internal-state-jobs"
         const val BILLING_INTERNAL_STATE_GROUPS = "billing-internal-state-groups"
     }
 
 }
 
-class MfTransformer(private val event: String): Transformer<String, String, KeyValue<String, String>> {
+class MfTransformer(private val headerName: String, private val headerValue: String): Transformer<String, String, KeyValue<String, String>> {
     private lateinit var context: ProcessorContext
 
     override fun init(context: ProcessorContext) {
@@ -321,7 +366,7 @@ class MfTransformer(private val event: String): Transformer<String, String, KeyV
     }
 
     override fun transform(key: String, value: String): KeyValue<String, String> {
-        context.headers().add(EVENT, event.toByteArray(StandardCharsets.UTF_8))
+        context.headers().add(headerName, headerValue.toByteArray(StandardCharsets.UTF_8))
         return KeyValue(key, value)
     }
 
@@ -356,15 +401,13 @@ enum class State {
 
 // 1'000 x 1'000 bytes => less than 1MB? that's the aim, as kafkas default max record size is 1mb
 // - control it using group size! 1'000 is probably too big as it is, regarding reading/writing to DB
-data class GroupState(var jobId: UUID,
-                      var groupId: UUID,
+data class GroupState(var group: Group,
                       var state: State,
-                      var contracts: HashMap<UUID, Contract>,
                       var started: LocalDateTime,
                       var finished: LocalDateTime?
 ) {
     constructor():
-            this(UUID.randomUUID(), UUID.randomUUID(), State.STARTED, hashMapOf<UUID, Contract>(), LocalDateTime.now(), null)
+            this(Group(UUID.randomUUID(), UUID.randomUUID(), listOf(), BillingProcessStep.READ_PRICE), State.STARTED, LocalDateTime.now(), null)
 }
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -373,14 +416,14 @@ data class GroupState(var jobId: UUID,
 data class Group(val jobId: UUID,
                  val groupId: UUID,
                  val contracts: List<Contract>,
-                 val nextProcessStep: BillingProcessStep,   // effectively, where to send the model next, because in
+                 val nextProcessStep: BillingProcessStep?,  // effectively, where to send the model next, because in
                                                             // order to ensure that the state that is written to rocksdb
                                                             // is always up to date before it is used, we need a
                                                             // "point-to-point" architecture in that we send data from
                                                             // one station to the next. the state store is one of those
                                                             // stations, and is in charge of updating the global ktable
                                                             // before sending a command to the next component to execute
-                                                            // the next process step
+                                                            // the next process step. null if failed.
                  val failedProcessStep: BillingProcessStep? = null, // where, if at all the group failed
                  val started: LocalDateTime = LocalDateTime.now()
 )

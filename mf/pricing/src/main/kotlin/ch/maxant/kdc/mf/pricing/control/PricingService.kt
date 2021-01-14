@@ -76,7 +76,7 @@ class PricingService(
         for(contractId in contractIds) {
             val entitiesForContractOrderedByStart = entitiesOrderedByStart.filter { it.contractId == contractId }
             val commandsForContract = group.commands.filter { it.contractId == contractId }
-            require(commandsForContract.size != 1) { "Request to read price of contract for more than one period is not currently supported! $commandsForContract" }
+            require(commandsForContract.size == 1) { "Request to read price of contract for more than one period is not currently supported! $commandsForContract" }
             val commandForContract = commandsForContract[0]
 
             val componentIds = entitiesOrderedByStart.map { it.componentId }.distinct()
