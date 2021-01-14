@@ -76,9 +76,7 @@ function createPartnerAndContract(){
             updatedPrices++;
             console.log("event: updated prices " + updatedPrices + " - " + getMsSinceStart() + "msFromStart");
 
-            // TODO hmmm the following isnt true! ah, because the web now handles these in parallel
-            // prices are always updated after draft creation/update, and are published on the same topic, so arrive
-            // AFTER those events. but before we continue with the process, lets just check everything is as expected
+            // hmmm the following is necessary, because the web now handles these in parallel
             if(createdDraft >= 1 && updatedPrices >= 1 && !modifiedFatContent) {
                 modifyFatContent(componentIdWithFatContent);
             } else if(updatedDraft >= 1 && updatedPrices >= 2 && relationshipCreated >= 2 && !offeredDraft) {

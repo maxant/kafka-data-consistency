@@ -199,7 +199,7 @@ Also known as entry points, process components or UIs.
   - OFFERED_DRAFT (contracts-event-bus)
   - APPROVED_CONTRACT (contracts-event-bus)
   - UPDATED_PRICES_FOR_DRAFT (contracts-event-bus)
-  - UPDATED_PRICES_FOR_GROUP_OF_CONTRACTS (contracts-event-bus)
+  - RECALCULATED_PRICES_FOR_GROUP_OF_CONTRACTS (contracts-event-bus)
   - PRICES_READ_FOR_GROUP_OF_CONTRACTS (contracts-event-bus)
   - CHANGED_PARTNER_RELATIONSHIP (partner-events)
   - CHANGED_CASE (cases-events)

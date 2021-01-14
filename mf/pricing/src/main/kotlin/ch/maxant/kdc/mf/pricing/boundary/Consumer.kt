@@ -111,7 +111,7 @@ class Consumer(
     @SuppressWarnings("unused")
     private fun send(@Observes(during = TransactionPhase.AFTER_SUCCESS) prices: PricingResult) {
         // TODO transactional outbox
-        eventBus.send(messageBuilder.build(prices.contractId, prices, event = "UPDATED_PRICES"))
+        eventBus.send(messageBuilder.build(prices.contractId, prices, event = "UPDATED_PRICES_FOR_DRAFT"))
         log.info("published prices for contractId ${prices.contractId}")
     }
 
