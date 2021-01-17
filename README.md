@@ -87,11 +87,8 @@ Open ports like this:
     #                 prometheus:29996:9000  mapped in nginx
     #                  portainer:29999:9000  mapped in nginx
     #                  zookeeper:30000:2181  exposed
-    #                  zookeeper:30010:9876  exposed
     #                    kafka_1:30001:9092  exposed
-    #                    kafka_1:30011:9876  exposed
     #                    kafka_2:30002:9092  exposed
-    #                    kafka_2:30012:9876  exposed
     #           kafka-rest-proxy:30030:8082  inactive?
     #                    elastic:30050:9200  mapped in nginx
     #                    elastic:30051:9300  hidden
@@ -118,11 +115,8 @@ Open ports like this:
     #         kdc-mf-waitingroom:30785:8080  just on retropie!
     #        kdc-mf-organisation:30786:8080  just on retropie!
     firewall-cmd --zone=public --permanent --add-port=30000/tcp
-    firewall-cmd --zone=public --permanent --add-port=30010/tcp
     firewall-cmd --zone=public --permanent --add-port=30001/tcp
-    firewall-cmd --zone=public --permanent --add-port=30011/tcp
     firewall-cmd --zone=public --permanent --add-port=30002/tcp
-    firewall-cmd --zone=public --permanent --add-port=30012/tcp
     firewall-cmd --zone=public --permanent --add-port=30055/udp
     firewall-cmd --zone=public --permanent --add-port=30101/tcp
     firewall-cmd --zone=public --permanent --add-port=30200/tcp
@@ -134,7 +128,6 @@ Open ports like this:
     firewall-cmd --zone=public --permanent --add-port=30601/tcp
     firewall-cmd --reload
     firewall-cmd --list-all
-    firewall-cmd --zone=public --permanent --remove-port=30550/tcp
     firewall-cmd --zone=public --permanent --remove-port=30055/tcp
 
 Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-consistency.conf):
