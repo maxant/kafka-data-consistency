@@ -1,0 +1,11 @@
+#########################################################
+# docker build -f DockerfileKafka -t maxant/kafka .
+#########################################################
+# see https://www.metricfire.com/blog/kafka-monitoring-using-prometheus/?GAID=undefined
+
+FROM confluentinc/cp-kafka:5.5.0
+
+# initially taken from https://raw.githubusercontent.com/prometheus/jmx_exporter/master/example_configs/kafka-2_0_0.yml:
+ADD kafka-2_0_0.yml /usr/app/prom-jmx-agent-config.yml
+
+ADD https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/0.14.0/jmx_prometheus_javaagent-0.14.0.jar /usr/app/jmx_prometheus_javaagent.jar
