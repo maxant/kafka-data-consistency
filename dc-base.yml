@@ -9,12 +9,12 @@ services:
     container_name: "kdc-zookeeper"
     ports:
       - "30000:2181"
-      - "30010:9876"
+      - "30010:30010"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-      KAFKA_JMX_PORT: 9876
-      KAFKA_JMX_OPTS: "-Djava.rmi.server.hostname=maxant.ch -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.authenticate=false  -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.rmi.port=9876"
+      KAFKA_JMX_PORT: 30010
+      KAFKA_JMX_OPTS: "-Djava.rmi.server.hostname=maxant.ch -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.authenticate=false  -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.rmi.port=30010"
       KAFKA_JMX_HOSTNAME: maxant.ch
     #volumes:
     #  - ./full-stack/zoo1/data:/data
@@ -25,7 +25,7 @@ services:
     container_name: "kdc-kafka-1"
     ports:
       - "30001:9092"
-      - "30011:9876"
+      - "30011:30011"
     depends_on:
       - kdc-zookeeper
     environment:
@@ -47,8 +47,8 @@ services:
       KAFKA_NUM_PARTITIONS: 5
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8085
-      KAFKA_JMX_PORT: 9876
-      KAFKA_JMX_OPTS: "-Djava.rmi.server.hostname=maxant.ch -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.authenticate=false  -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.rmi.port=9876"
+      KAFKA_JMX_PORT: 30011
+      KAFKA_JMX_OPTS: "-Djava.rmi.server.hostname=maxant.ch -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.authenticate=false  -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.rmi.port=30011"
       KAFKA_JMX_HOSTNAME: maxant.ch
     #volumes:
     #  - ./full-stack/kafka1/data:/var/lib/kafka/data
@@ -58,7 +58,7 @@ services:
     container_name: "kdc-kafka-2"
     ports:
       - "30002:9092"
-      - "30012:9876"
+      - "30012:30012"
     depends_on:
       - kdc-kafka-1
     environment:
@@ -78,8 +78,8 @@ services:
       KAFKA_NUM_PARTITIONS: 5
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://kdc-schemaregistry:8085
-      KAFKA_JMX_PORT: 9876
-      KAFKA_JMX_OPTS: "-Djava.rmi.server.hostname=maxant.ch -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.authenticate=false  -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.rmi.port=9876"
+      KAFKA_JMX_PORT: 30012
+      KAFKA_JMX_OPTS: "-Djava.rmi.server.hostname=maxant.ch -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.authenticate=false  -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.rmi.port=30012"
       KAFKA_JMX_HOSTNAME: maxant.ch
     #volumes:
     #  - ./full-stack/kafka1/data:/var/lib/kafka/data

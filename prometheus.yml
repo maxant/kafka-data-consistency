@@ -40,6 +40,9 @@ scrape_configs:
     static_configs:
       - targets: ['dockerstats.zeus.com']
 
+# TODO see https://www.metricfire.com/blog/kafka-monitoring-using-prometheus/?GAID=undefined
+# BUT it works with visualvm and the mbeans plugin
+
   - job_name: 'kdc-zookeeper'
     static_configs:
       - targets: ['maxant.ch:30010']

@@ -118,8 +118,11 @@ Open ports like this:
     #         kdc-mf-waitingroom:30785:8080  just on retropie!
     #        kdc-mf-organisation:30786:8080  just on retropie!
     firewall-cmd --zone=public --permanent --add-port=30000/tcp
+    firewall-cmd --zone=public --permanent --add-port=30010/tcp
     firewall-cmd --zone=public --permanent --add-port=30001/tcp
+    firewall-cmd --zone=public --permanent --add-port=30011/tcp
     firewall-cmd --zone=public --permanent --add-port=30002/tcp
+    firewall-cmd --zone=public --permanent --add-port=30012/tcp
     firewall-cmd --zone=public --permanent --add-port=30055/udp
     firewall-cmd --zone=public --permanent --add-port=30101/tcp
     firewall-cmd --zone=public --permanent --add-port=30200/tcp
