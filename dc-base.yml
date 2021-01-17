@@ -24,6 +24,7 @@ services:
     container_name: "kdc-kafka-1"
     ports:
       - "30001:9092"
+      - "9876:9876"
     depends_on:
       - kdc-zookeeper
     environment:
