@@ -40,9 +40,17 @@ scrape_configs:
     static_configs:
       - targets: ['dockerstats.zeus.com']
 
+  - job_name: 'kdc-zookeeper'
+    static_configs:
+      - targets: ['maxant.ch:30010']
+
   - job_name: 'kdc-kafka-1'
     static_configs:
-      - targets: ['kdc-kafka-1:9876']
+      - targets: ['maxant.ch:30011']
+
+  - job_name: 'kdc-kafka-2'
+    static_configs:
+      - targets: ['maxant.ch:30012']
 
   - job_name: 'kdc-mf-contracts'
     static_configs:

@@ -87,8 +87,11 @@ Open ports like this:
     #                 prometheus:29996:9000  mapped in nginx
     #                  portainer:29999:9000  mapped in nginx
     #                  zookeeper:30000:2181  exposed
+    #                  zookeeper:30010:9876  exposed
     #                    kafka_1:30001:9092  exposed
+    #                    kafka_1:30011:9876  exposed
     #                    kafka_2:30002:9092  exposed
+    #                    kafka_2:30012:9876  exposed
     #           kafka-rest-proxy:30030:8082  inactive?
     #                    elastic:30050:9200  mapped in nginx
     #                    elastic:30051:9300  hidden
