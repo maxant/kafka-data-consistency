@@ -65,15 +65,15 @@ class Generator {
                     c.prepareStatement("SET UNIQUE_CHECKS = 0").use { it.executeUpdate() }
                     c.prepareStatement("SET sql_log_bin = 0").use { it.executeUpdate() }
                     //c.prepareStatement("SET GLOBAL innodb_buffer_pool_size=268435456").use { it.executeUpdate() }
-                    c.prepareStatement("ALTER TABLE T_CONTRACTS DISABLE KEYS").use { it.executeUpdate() }
-                    c.prepareStatement("ALTER TABLE T_COMPONENTS DISABLE KEYS").use { it.executeUpdate() }
+                    c.prepareStatement("ALTER TABLE T_CONTRACTS2 DISABLE KEYS").use { it.executeUpdate() }
+                    c.prepareStatement("ALTER TABLE T_COMPONENTS2 DISABLE KEYS").use { it.executeUpdate() }
                     time = System.currentTimeMillis() - start
                     println("setup done in $time ms")
 
                     start = System.currentTimeMillis()
-                    c.prepareStatement("LOCK TABLES T_CONTRACTS WRITE, T_COMPONENTS WRITE").use { it.executeUpdate() }
+                    c.prepareStatement("LOCK TABLES T_CONTRACTS2 WRITE, T_COMPONENTS2 WRITE").use { it.executeUpdate() }
                     c.prepareStatement("""
-                        LOAD DATA LOCAL INFILE '$filename' INTO TABLE mfcontracts.T_CONTRACTS
+                        LOAD DATA LOCAL INFILE '$filename' INTO TABLE mfcontracts.T_CONTRACTS2
                         FIELDS TERMINATED by ','
                         ENCLOSED BY '\"'
                         LINES TERMINATED by '\n'
@@ -83,7 +83,7 @@ class Generator {
                     println("loaded contracts in $time ms")
                     start = System.currentTimeMillis()
                     c.prepareStatement("""
-                        LOAD DATA LOCAL INFILE '$filename2' INTO TABLE mfcontracts.T_COMPONENTS
+                        LOAD DATA LOCAL INFILE '$filename2' INTO TABLE mfcontracts.T_COMPONENTS2
                         FIELDS TERMINATED by ','
                         ENCLOSED BY '%'
                         LINES TERMINATED by '\n'
@@ -101,8 +101,8 @@ class Generator {
                     start = System.currentTimeMillis()
                     c.prepareStatement("SET UNIQUE_CHECKS = 1").use { it.executeUpdate() }
                     c.prepareStatement("SET FOREIGN_KEY_CHECKS = 1").use { it.executeUpdate() }
-                    c.prepareStatement("ALTER TABLE T_CONTRACTS ENABLE KEYS").use { it.executeUpdate() }
-                    c.prepareStatement("ALTER TABLE T_COMPONENTS ENABLE KEYS").use { it.executeUpdate() }
+                    c.prepareStatement("ALTER TABLE T_CONTRACTS2 ENABLE KEYS").use { it.executeUpdate() }
+                    c.prepareStatement("ALTER TABLE T_COMPONENTS2 ENABLE KEYS").use { it.executeUpdate() }
                     //c.prepareStatement("SET GLOBAL innodb_buffer_pool_size=134217728").use { it.executeUpdate() }
                     time = System.currentTimeMillis() - start
                     println("tore down in $time ms")
