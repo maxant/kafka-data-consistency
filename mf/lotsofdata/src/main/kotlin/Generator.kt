@@ -15,7 +15,8 @@ class Generator {
             for(j in 1..30) {
                 println("ITERATION $j")
 
-                val file = File("./mf/lotsofdata/import-contracts2.csv")
+                val filename = "/w/kafka-data-consistency/mf/lotsofdata/import-contracts2.csv"
+                val file = File(filename)
                 if(file.exists()) file.delete()
                 val out = BufferedWriter(FileWriter(file), 256*1024)
                 var start: Long = System.currentTimeMillis()
@@ -45,7 +46,7 @@ class Generator {
                     start = System.currentTimeMillis()
                     c.prepareStatement("LOCK TABLES T_CONTRACTS2 WRITE").use { it.executeUpdate() }
                     c.prepareStatement("""
-                        LOAD DATA LOCAL INFILE '/w/kafka-data-consistency/mf/lotsofdata/import-contracts2.csv' INTO TABLE mfcontracts.T_CONTRACTS2
+                        LOAD DATA LOCAL INFILE '$filename' INTO TABLE mfcontracts.T_CONTRACTS2
                         FIELDS TERMINATED by ','
                         ENCLOSED BY '\"'
                         LINES TERMINATED by '\n'
