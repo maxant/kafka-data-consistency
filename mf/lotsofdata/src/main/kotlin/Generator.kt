@@ -28,7 +28,7 @@ class Generator {
                 val out2 = BufferedWriter(FileWriter(file2), 256*1024)
                 var start: Long = System.currentTimeMillis()
                 var bytes = 0L
-                for(i in 1..10_000) {
+                for(i in 1..1_000) {
                     val contractId = UUID.randomUUID()
                     val startTime = LocalDateTime.now().withHour(12).plusDays(r.nextInt(365).toLong())
                     val endTime = startTime.plusYears(r.nextInt(6).toLong())
