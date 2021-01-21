@@ -1,3 +1,5 @@
+**/import-contracts2.csv
+**/import-components2.csv
 
 **/es-data
 **/grafanadata
@@ -41,3 +43,4 @@ kafka_2.12-2.7.0
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+/mf/lotsofdata/import-contracts2.csv
