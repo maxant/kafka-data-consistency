@@ -64,7 +64,8 @@ class Generator {
                             for(c in 1..30) {
                                 val componentId = UUID.randomUUID()
                                 // ID, PARENT_ID, CONTRACT_ID, COMPONENTDEFINITION_ID, PRODUCT_ID, CONFIGURATION
-                                val text2 = """'$componentId', ${if(parentId == null){"NULL"} else {"'${parentId}'"}}, '$contractId', 'CardboardBox', NULL, '[{"c**": "IntConfiguration", "name": "SPACES", "clazz": "int", "units": "NONE", "value": "10"}, {"c**": "IntConfiguration", "name": "QUANTITY", "clazz": "int", "units": "PIECES", "value": "${r.nextInt(100)}"}, {"c**": "MaterialConfiguration", "name": "MATERIAL", "clazz": "Material", "units": "NONE", "value": "CARDBOARD"}]'"""
+                                val parent = if(parentId == null) { "NULL" } else { "'${parentId}'" }
+                                val text2 = """'$componentId',$parent,'$contractId','CardboardBox',NULL,'[{"c**":"IntConfiguration","name":"SPACES","clazz":"int","units":"NONE","value":"10"},{"c**":"IntConfiguration","name":"QUANTITY","clazz":"int","units":"PIECES","value":"${r.nextInt(100)}"},{"c**":"MaterialConfiguration","name":"MATERIAL","clazz":"Material","units":"NONE","value":"CARDBOARD"}]'"""
                                 out2.write(text2)
                                 out2.newLine()
                                 bytes += text2.length
