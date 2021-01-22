@@ -87,7 +87,10 @@ class Generator {
                                 numComponents++
                             }
                         }
+                        out.flush()
                         out.close()
+                        out2.flush()
+                        out2.close()
                         time = System.currentTimeMillis() - start
                         println("Wrote ${bytes/1024}KB in $time ms => ${DecimalFormat("#.00").format(bytes / 1024.0 / 1024L / (time / 1000.0))} MB/s.")
 
