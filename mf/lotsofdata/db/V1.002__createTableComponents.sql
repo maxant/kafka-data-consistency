@@ -4,7 +4,7 @@ CREATE TABLE T_COMPONENTS2 (
   CONTRACT_ID             VARCHAR(36) NOT NULL, -- to which contract does this component belong?
   COMPONENTDEFINITION_ID  VARCHAR(99) NOT NULL, -- name of defining class
   PRODUCT_ID              VARCHAR(99),          -- optional name of the product containing this component
-  CONFIGURATION           JSON,                 -- variable, depending on defining class
+  CONFIGURATION           jsonb,                 -- variable, depending on defining class
   PRIMARY KEY(ID)
 ) ENGINE = MYISAM
 ;

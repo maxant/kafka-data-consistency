@@ -62,11 +62,11 @@ class Generator {
                         var bytes = 0L
                         for(i in 1..1_000) {
                             val contractId = UUID.randomUUID()
-                            val startTime = LocalDateTime.now().withHour(12).plusDays(r.nextInt(365).toLong())
+                            val startTime = LocalDateTime.now().withHour(12).plusDays(r.nextInt(365).toLong()).withNano(0)
                             val endTime = startTime.plusYears(r.nextInt(6).toLong())
                             val s = startTime.format(DateTimeFormatter.ISO_DATE_TIME).replace('T', ' ')
                             val e = endTime.format(DateTimeFormatter.ISO_DATE_TIME).replace('T', ' ')
-                            val at = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME).replace('T', ' ')
+                            val at = LocalDateTime.now().withNano(0).format(DateTimeFormatter.ISO_DATE_TIME).replace('T', ' ')
                             val sync = System.currentTimeMillis()
                             // ID, STARTTIME, ENDTIME, STATE, SYNC_TIMESTAMP, CREATED_AT, CREATED_BY, OFFERED_AT, OFFERED_BY, ACCEPTED_AT, ACCEPTED_BY, APPROVED_AT, APPROVED_BY
                             val text = """"${contractId}", "$s.000","$e.000","RUNNING","$sync","$at.681","john.smith","$at.000","john.smith","$at.000","john.smith ","$at.000","jane.smith""""
