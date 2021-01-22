@@ -8,10 +8,8 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 
-class Generator {
+class Generator2 {
     companion object {
-
-        private var shuttingDown = false
 
         @JvmStatic
         fun main(args: Array<String>) {
@@ -19,27 +17,11 @@ class Generator {
             Class.forName("com.mysql.cj.jdbc.Driver")
 
             DriverManager.getConnection("jdbc:mysql://retropie:3306/mfcontracts?allowLoadLocalInfile=true","mfcontracts", "secret").use { c ->
-
-                Runtime.getRuntime().addShutdownHook(Thread {
-                    teardown(c)
-                })
-
                 var start = System.currentTimeMillis()
                 c.autoCommit = false
                 c.transactionIsolation = Connection.TRANSACTION_READ_UNCOMMITTED
-                c.prepareStatement("SET FOREIGN_KEY_CHECKS = 0").use { it.executeUpdate() }
-                c.prepareStatement("SET UNIQUE_CHECKS = 0").use { it.executeUpdate() }
-                c.prepareStatement("SET sql_log_bin = 0").use { it.executeUpdate() }
-                c.prepareStatement("SET GLOBAL innodb_buffer_pool_size=268435456").use { it.executeUpdate() }
-                c.prepareStatement("ALTER TABLE T_CONTRACTS2 DISABLE KEYS").use { it.executeUpdate() }
-                c.prepareStatement("ALTER TABLE T_COMPONENTS2 DISABLE KEYS").use { it.executeUpdate() }
                 var time = System.currentTimeMillis() - start
                 println("setup done in $time ms")
-
-                start = System.currentTimeMillis()
-                c.prepareStatement("LOCK TABLES T_CONTRACTS2 WRITE, T_COMPONENTS2 WRITE").use { it.executeUpdate() }
-                time = System.currentTimeMillis() - start
-                println("locked in $time ms")
 
                 var numComponents = 0
                 var n = 0
@@ -93,22 +75,18 @@ class Generator {
 
                         start = System.currentTimeMillis()
                         c.prepareStatement("""
-                    LOAD DATA LOCAL INFILE '$filename' INTO TABLE mfcontracts.T_CONTRACTS2
-                    FIELDS TERMINATED by ','
-                    ENCLOSED BY '\"'
-                    LINES TERMINATED by '\n'
-                    (ID, STARTTIME, ENDTIME, STATE, SYNC_TIMESTAMP, CREATED_AT, CREATED_BY, OFFERED_AT, OFFERED_BY, ACCEPTED_AT, ACCEPTED_BY, APPROVED_AT, APPROVED_BY)
+                    copy t_contracts2(ID, STARTTIME, ENDTIME, STATE, SYNC_TIMESTAMP, CREATED_AT, CREATED_BY, OFFERED_AT, OFFERED_BY, ACCEPTED_AT, ACCEPTED_BY, APPROVED_AT, APPROVED_BY) 
+                    from '/w/kafka-data-consistency/mf/lotsofdata/import-contracts2.csv' 
+                    with DELIMITER ',' CSV QUOTE '"';
                 """.trimIndent()).use { println("load contracts: ${it.executeUpdate()}") }
                         time = System.currentTimeMillis() - start
                         println("loaded contracts in $time ms")
 
                         start = System.currentTimeMillis()
                         c.prepareStatement("""
-                    LOAD DATA LOCAL INFILE '$filename2' INTO TABLE mfcontracts.T_COMPONENTS2
-                    FIELDS TERMINATED by ','
-                    ENCLOSED BY '\''
-                    LINES TERMINATED by '\n'
-                    (ID, PARENT_ID, CONTRACT_ID, COMPONENTDEFINITION_ID, PRODUCT_ID, CONFIGURATION)
+                    copy t_components2(ID, PARENT_ID, CONTRACT_ID, COMPONENTDEFINITION_ID, PRODUCT_ID, CONFIGURATION) 
+                    from '/w/kafka-data-consistency/mf/lotsofdata/import-components2.csv' 
+                    with DELIMITER ',' CSV QUOTE '''';
                 """.trimIndent()).use { println("load components: ${it.executeUpdate()}") }
                         time = System.currentTimeMillis() - start
                         println("loaded components in $time ms")
@@ -119,47 +97,6 @@ class Generator {
                         println("committed in $time ms")
                     }
                 }
-
-                teardown(c)
-            }
-        }
-
-        private fun teardown(c: Connection) {
-            if(!shuttingDown) {
-                shuttingDown = true
-                println("")
-                println(">>>>>> SHUTTING DOWN")
-                println("")
-
-                var start = System.currentTimeMillis()
-                c.prepareStatement("UNLOCK TABLES").use { it.executeUpdate() }
-                var time = System.currentTimeMillis() - start
-                println("unlocked in $time ms")
-
-                start = System.currentTimeMillis()
-                c.prepareStatement("SET UNIQUE_CHECKS = 1").use { it.executeUpdate() }
-                time = System.currentTimeMillis() - start
-                println("enabled unique checks $time ms")
-
-                start = System.currentTimeMillis()
-                c.prepareStatement("SET FOREIGN_KEY_CHECKS = 1").use { it.executeUpdate() }
-                time = System.currentTimeMillis() - start
-                println("enabled FK checks $time ms")
-
-                start = System.currentTimeMillis()
-                c.prepareStatement("ALTER TABLE T_COMPONENTS2 ENABLE KEYS").use { it.executeUpdate() }
-                time = System.currentTimeMillis() - start
-                println("enabled component keys $time ms")
-
-                start = System.currentTimeMillis()
-                c.prepareStatement("ALTER TABLE T_CONTRACTS2 ENABLE KEYS").use { it.executeUpdate() }
-                time = System.currentTimeMillis() - start
-                println("enabled contract keys $time ms")
-
-                c.prepareStatement("SET GLOBAL innodb_buffer_pool_size=134217728").use { it.executeUpdate() }
-                println("reset innodb buffer pool size")
-            } else {
-                print("already in the process of shutting down")
             }
         }
     }
