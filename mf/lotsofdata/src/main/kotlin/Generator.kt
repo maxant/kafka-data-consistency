@@ -8,29 +8,43 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 
-
 class Generator {
     companion object {
+
+        var shuttingDown = false
+
         @JvmStatic
         fun main(args: Array<String>) {
             val r = Random()
             Class.forName("com.mysql.cj.jdbc.Driver")
 
-            var n = 0;
-            while(true){
-                n++
-                DriverManager.getConnection("jdbc:mysql://retropie:3306/mfcontracts?allowLoadLocalInfile=true","mfcontracts", "secret").use { c ->
-                    var start = System.currentTimeMillis()
-                    c.autoCommit = false
-                    c.transactionIsolation = Connection.TRANSACTION_READ_UNCOMMITTED
-                    c.prepareStatement("SET FOREIGN_KEY_CHECKS = 0").use { it.executeUpdate() }
-                    c.prepareStatement("SET UNIQUE_CHECKS = 0").use { it.executeUpdate() }
-                    c.prepareStatement("SET sql_log_bin = 0").use { it.executeUpdate() }
-                    //c.prepareStatement("SET GLOBAL innodb_buffer_pool_size=268435456").use { it.executeUpdate() }
-                    c.prepareStatement("ALTER TABLE T_CONTRACTS2 DISABLE KEYS").use { it.executeUpdate() }
-                    c.prepareStatement("ALTER TABLE T_COMPONENTS2 DISABLE KEYS").use { it.executeUpdate() }
-                    var time = System.currentTimeMillis() - start
-                    println("setup done in $time ms")
+            DriverManager.getConnection("jdbc:mysql://retropie:3306/mfcontracts?allowLoadLocalInfile=true","mfcontracts", "secret").use { c ->
+
+                Runtime.getRuntime().addShutdownHook(Thread {
+                    teardown(c)
+                })
+
+                var start = System.currentTimeMillis()
+                c.autoCommit = false
+                c.transactionIsolation = Connection.TRANSACTION_READ_UNCOMMITTED
+                c.prepareStatement("SET FOREIGN_KEY_CHECKS = 0").use { it.executeUpdate() }
+                c.prepareStatement("SET UNIQUE_CHECKS = 0").use { it.executeUpdate() }
+                c.prepareStatement("SET sql_log_bin = 0").use { it.executeUpdate() }
+                c.prepareStatement("SET GLOBAL innodb_buffer_pool_size=268435456").use { it.executeUpdate() }
+                c.prepareStatement("ALTER TABLE T_CONTRACTS2 DISABLE KEYS").use { it.executeUpdate() }
+                c.prepareStatement("ALTER TABLE T_COMPONENTS2 DISABLE KEYS").use { it.executeUpdate() }
+                var time = System.currentTimeMillis() - start
+                println("setup done in $time ms")
+
+                start = System.currentTimeMillis()
+                c.prepareStatement("LOCK TABLES T_CONTRACTS2 WRITE, T_COMPONENTS2 WRITE").use { it.executeUpdate() }
+                time = System.currentTimeMillis() - start
+                println("locked in $time ms")
+
+                var numComponents = 0;
+                var n = 0;
+                while(numComponents < 20_000_000){
+                    n++
 
                     for(j in 1..20) {
                         println("ITERATION $n/$j")
@@ -70,6 +84,7 @@ class Generator {
                                 out2.newLine()
                                 bytes += text2.length
                                 parentId = componentId
+                                numComponents++
                             }
                         }
                         out.close()
@@ -77,7 +92,6 @@ class Generator {
                         println("Wrote ${bytes/1024}KB in $time ms => ${DecimalFormat("#.00").format(bytes / 1024.0 / 1024L / (time / 1000.0))} MB/s.")
 
                         start = System.currentTimeMillis()
-                        c.prepareStatement("LOCK TABLES T_CONTRACTS2 WRITE, T_COMPONENTS2 WRITE").use { it.executeUpdate() }
                         c.prepareStatement("""
                     LOAD DATA LOCAL INFILE '$filename' INTO TABLE mfcontracts.T_CONTRACTS2
                     FIELDS TERMINATED by ','
@@ -104,21 +118,48 @@ class Generator {
                         time = System.currentTimeMillis() - start
                         println("committed in $time ms")
                     }
-
-                    start = System.currentTimeMillis()
-                    c.prepareStatement("UNLOCK TABLES").use { it.executeUpdate() }
-                    time = System.currentTimeMillis() - start
-                    println("unlocked in $time ms")
-
-                    start = System.currentTimeMillis()
-                    c.prepareStatement("SET UNIQUE_CHECKS = 1").use { it.executeUpdate() }
-                    c.prepareStatement("SET FOREIGN_KEY_CHECKS = 1").use { it.executeUpdate() }
-                    c.prepareStatement("ALTER TABLE T_CONTRACTS2 ENABLE KEYS").use { it.executeUpdate() }
-                    c.prepareStatement("ALTER TABLE T_COMPONENTS2 ENABLE KEYS").use { it.executeUpdate() }
-                    //c.prepareStatement("SET GLOBAL innodb_buffer_pool_size=134217728").use { it.executeUpdate() }
-                    time = System.currentTimeMillis() - start
-                    println("tore down in $time ms")
                 }
+
+                teardown(c)
+            }
+        }
+
+        private fun teardown(c: Connection) {
+            if(!shuttingDown) {
+                shuttingDown = true;
+                println("")
+                println(">>>>>> SHUTTING DOWN")
+                println("")
+
+                var start = System.currentTimeMillis()
+                c.prepareStatement("UNLOCK TABLES").use { it.executeUpdate() }
+                var time = System.currentTimeMillis() - start
+                println("unlocked in $time ms")
+
+                start = System.currentTimeMillis()
+                c.prepareStatement("SET UNIQUE_CHECKS = 1").use { it.executeUpdate() }
+                time = System.currentTimeMillis() - start
+                println("enabled unique checks $time ms")
+
+                start = System.currentTimeMillis()
+                c.prepareStatement("SET FOREIGN_KEY_CHECKS = 1").use { it.executeUpdate() }
+                time = System.currentTimeMillis() - start
+                println("enabled FK checks $time ms")
+
+                start = System.currentTimeMillis()
+                c.prepareStatement("ALTER TABLE T_COMPONENTS2 ENABLE KEYS").use { it.executeUpdate() }
+                time = System.currentTimeMillis() - start
+                println("enabled component keys $time ms")
+
+                start = System.currentTimeMillis()
+                c.prepareStatement("ALTER TABLE T_CONTRACTS2 ENABLE KEYS").use { it.executeUpdate() }
+                time = System.currentTimeMillis() - start
+                println("enabled contract keys $time ms")
+
+                c.prepareStatement("SET GLOBAL innodb_buffer_pool_size=134217728").use { it.executeUpdate() }
+                println("reset innodb buffer pool size")
+            } else {
+                print("already in the process of shutting down")
             }
         }
     }
