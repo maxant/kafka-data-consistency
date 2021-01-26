@@ -19,9 +19,30 @@
 </body>
 <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
 <script>
-    var source = new EventSource("/billing-stream/notifications");
-    source.onmessage = function (event) {
-        document.getElementById("content").innerHTML = event.data;
-    };
+var jobs = {};
+window.jobs = jobs; // for debugging
+var source = new EventSource("/billing-stream/notifications");
+source.onmessage = function (event) {
+    var state = JSON.parse(event.data);
+    var job = jobs[state.group.jobId]
+    if(!job) {
+        job = { groups: {} };
+        jobs[state.group.jobId] = job;
+    }
+    var groupHistory = job.groups[state.group.groupId]
+    if(!group) {
+        groupHistory = [];
+        job.groups[state.group.groupId] = groupHistory;
+    }
+    groupHistory.push()
+};
+
+fetch("/billing-stream/jobs", {method: "GET"})
+.then(r => r.json())
+.then(r => {
+    r.forEach(job => {
+        jobs[job.jobId] = job;
+    });
+});
 </script>
 </html>

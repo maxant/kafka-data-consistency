@@ -2,10 +2,13 @@ package ch.maxant.kdc.mf.billing.boundary
 
 import ch.maxant.kdc.mf.library.Context.Companion.COMMAND
 import ch.maxant.kdc.mf.library.Context.Companion.EVENT
+import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.quarkus.arc.Arc
 import io.quarkus.runtime.StartupEvent
+import io.smallrye.mutiny.Multi
+import io.smallrye.mutiny.subscription.MultiEmitter
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.common.utils.Bytes
 import org.apache.kafka.streams.*
@@ -27,6 +30,7 @@ import java.nio.charset.StandardCharsets
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import javax.annotation.PreDestroy
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.event.Observes
@@ -45,15 +49,15 @@ class BillingStreamApplication(
     @Inject
     var om: ObjectMapper,
 
-    @Inject
-    var billingGroupStateConsumer: BillingGroupStateConsumer,
-
     @ConfigProperty(name = "kafka.bootstrap.servers")
     val kafkaBootstrapServers: String,
 
     @ConfigProperty(name = "ch.maxant.kdc.mf.billing.failRandomlyForTestingPurposes", defaultValue = "false")
     var failRandomlyForTestingPurposes: Boolean
 ) {
+    // TODO tidy the entries up when they are no longer in use! tip: see isCancelled below - altho theyre already removed with onterminate at the bottom?
+    val subscriptions = ConcurrentHashMap<String, EmitterState>()
+
     private lateinit var jobsView: ReadOnlyKeyValueStore<String, String>
 
     private lateinit var groupsView: ReadOnlyKeyValueStore<String, String>
@@ -89,32 +93,37 @@ class BillingStreamApplication(
         // JOBS - this state is NOT guaranteed to be totally up to date with every group, as it might be processed
         // after a group is processed and sent downstream, processed and returned! the single source of synchronous
         // truth is the group state!
-        streamOfGroups.groupByKey()
+        val jobsStateStream = streamOfGroups.groupByKey()
                 .aggregate(Initializer { om.writeValueAsString(JobState()) },
                             jobsAggregator,
                             Named.`as`("billing-internal-aggregate-state-jobs"),
                             Materialized.`as`("billing-store-jobs"))
                 .toStream(Named.`as`("billing-internal-stream-state-jobs"))
+
+        // publish aggregated job state to a topic in order to build a GKT from it...
+        jobsStateStream
                 .peek {k, v -> log.info("aggregated group into job $k: $v")}
                 .to(BILLING_INTERNAL_STATE_JOBS)
 
         val allJobsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`(allJobsStoreName)
         builder.globalTable(BILLING_INTERNAL_STATE_JOBS, allJobsStore)
 
-        builder.stream<String, String>(BILLING_INTERNAL_STATE_JOBS)
-            .branch(Named.`as`("billing-internal-branch-job-successful"),
-                Predicate{ _, v -> catching(v) { om.readValue<JobState>(v).completed != null } }
-            )[0]
-            .map<String, String>({ k, v ->
-                KeyValue(k, buildReadPricesCommand(v))
-             }, Named.`as`("billing-job-completed-to-event-mapper"))
+        // ... and then get any completed jobs and send an event about that fact
+        jobsStateStream
+            .filter(
+                { _, v -> catching(v) { om.readValue<JobState>(v).completed != null } },
+                Named.`as`("billing-internal-branch-job-successful")
+            )
             .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
                 MfTransformer(EVENT, "BILL_CREATED")
+            })
+            .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
+                MfTransformer(REQUEST_ID)
             })
             .peek {k, v -> log.info("publishing successful billing event $k: $v")}
             .to("billing-events")
 
-        // GROUPS - single truth of true state relating to the billing of groups of contracts
+        // GROUPS - single source of truth of true state relating to the billing of a groups of contracts
         val groupsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`(groupsStoreName)
         val groupsTable = streamOfGroups
                 .groupBy { _, value -> om.readTree(value).get("groupId").asText() }
@@ -287,6 +296,31 @@ class BillingStreamApplication(
         streams.close()
     }
 
+    fun sendToSubscribers(data: String) {
+        val toRemove = mutableSetOf<String>()
+        subscriptions
+            .entries
+            .filter { it.value.isExpiredOrCancelled() }
+            .forEach {
+                synchronized(it.value.emitter) { // TODO is this necessary? does it hurt??
+                    log.info("closing cancelled/expired emitter. cancelled: ${it.value.emitter.isCancelled}, expired: ${it.value.isExpired()}")
+                    it.value.emitter.complete()
+                    toRemove.add(it.key)
+                }
+            }
+        toRemove.forEach { subscriptions.remove(it) }
+
+        subscriptions
+            .entries
+            .filter { !it.value.isExpiredOrCancelled() }
+            .forEach {
+                synchronized(it.value) { // TODO is this necessary? does it hurt??
+                    log.info("emitting data to subscriber ${it.key}: $data")
+                    it.value.emitter.emit(data)
+                }
+            }
+    }
+
     /** seems to not like immediate fetching of the store during init - so lets do it lazily */
     private fun getAllJobs() =
         try {
@@ -345,7 +379,16 @@ class BillingStreamApplication(
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @SseElementType(MediaType.APPLICATION_JSON)
     @Operation(summary = "get notification of changes to all groups of any job that is currently running")
-    fun notifications() = billingGroupStateConsumer.broadcaster
+    fun notifications(): Multi<String> =
+        Multi.createFrom()
+            .emitter { e: MultiEmitter<in String?> ->
+                val id = UUID.randomUUID().toString()
+                subscriptions[id] = EmitterState(e, System.currentTimeMillis())
+                e.onTermination {
+                    e.complete()
+                    subscriptions.remove(id)
+                }
+            } // TODO if we get memory problems, add a different BackPressureStrategy as a second parameter to the emitter method
 
     /** NOTE: only knows about local state! */
     fun getContract(groupId: UUID, contractId: UUID) = om.readValue<GroupState>(getGroup(groupId.toString())).group.contracts.find { it.contractId == contractId }!!
@@ -358,7 +401,7 @@ class BillingStreamApplication(
 
 }
 
-class MfTransformer(private val headerName: String, private val headerValue: String): Transformer<String, String, KeyValue<String, String>> {
+class MfTransformer(private val headerName: String, private var headerValue: String = ""): Transformer<String, String, KeyValue<String, String>> {
     private lateinit var context: ProcessorContext
 
     override fun init(context: ProcessorContext) {
@@ -366,6 +409,10 @@ class MfTransformer(private val headerName: String, private val headerValue: Str
     }
 
     override fun transform(key: String, value: String): KeyValue<String, String> {
+        // use the key (jobId) as the requestId since the requestId was used as the jobId at the start of
+        // a single contract job, so that the waiting UI can react
+        if(headerName == REQUEST_ID) headerValue = key
+
         context.headers().add(headerName, headerValue.toByteArray(StandardCharsets.UTF_8))
         return KeyValue(key, value)
     }
@@ -460,3 +507,14 @@ enum class BillingProcessStep {
 data class PricingCommandGroup(val groupId: UUID, val commands: List<PricingCommand>, val recalculate: Boolean, val failForTestingPurposes: Boolean)
 
 data class PricingCommand(val contractId: UUID, val from: LocalDate, val to: LocalDate)
+
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// SSE model
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+data class EmitterState(val emitter: MultiEmitter<in String?>, val created: Long) {
+    val FIVE_MINUTES = 5 * 60 * 1_000
+
+    fun isExpired() = System.currentTimeMillis() - this.created > FIVE_MINUTES
+
+    fun isExpiredOrCancelled() = this.emitter.isCancelled || isExpired()
+}
