@@ -396,7 +396,7 @@ TODO does it make sense to set the requestId to be the selection Id???
 - use automated retry for non-business errors
   - realised with the waiting room with a suitable back off strategy
   - which allows for a self healing system
-- error propagation back to the originator
+- error propagation back to the initiator
   - realised with the requestId and web component which filters data and returns it to the right browser
 - timeouts and "must be processed by"
   - and the ability to reload and fix problems, e.g. recalculating discounts and prices

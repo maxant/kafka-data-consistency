@@ -17,6 +17,18 @@ class Generator2 {
             Class.forName("com.mysql.cj.jdbc.Driver")
 
             DriverManager.getConnection("jdbc:postgresql://retropie:5432/mfcontracts", "pi", "secret").use { c ->
+
+                // https://fle.github.io/temporarily-disable-all-indexes-of-a-postgresql-table.html
+                // UPDATE pg_index SET indisready=false WHERE indrelid = (SELECT oid FROM pg_class WHERE relname='t_contracts2');
+                // UPDATE pg_index SET indisready=false WHERE indrelid = (SELECT oid FROM pg_class WHERE relname='t_components2');
+                // ... load...
+                // UPDATE pg_index SET indisready=true WHERE indrelid = (SELECT oid FROM pg_class WHERE relname='t_contracts2');
+                // UPDATE pg_index SET indisready=true WHERE indrelid = (SELECT oid FROM pg_class WHERE relname='t_components2');
+                // REINDEX TABLE t_contracts2;
+                // ??? REINDEX INDEX t_contracts2_pkey;
+                // REINDEX TABLE t_components2;
+                // ??? REINDEX INDEX t_components2_pkey;
+
                 var start = System.currentTimeMillis()
                 c.autoCommit = false
                 c.transactionIsolation = Connection.TRANSACTION_READ_UNCOMMITTED
