@@ -29,6 +29,7 @@ services:
       - "cases:217.172.187.46"
       - "waitingroom:217.172.187.46"
       - "organisation:217.172.187.46"
+      - "billing:217.172.187.46"
 
   kdc-mf-pricing:
     image: maxant/jdk
@@ -49,6 +50,7 @@ services:
       - "cases:217.172.187.46"
       - "waitingroom:217.172.187.46"
       - "organisation:217.172.187.46"
+      - "billing:217.172.187.46"
 
   kdc-mf-web:
     image: maxant/jdk
@@ -64,6 +66,7 @@ services:
       ch.maxant.kdc.mf.components.cases.url:         "http://maxant.ch:8084"
       ch.maxant.kdc.mf.components.waitingroom.url:   "http://maxant.ch:8085"
       ch.maxant.kdc.mf.components.organisation.url:  "http://maxant.ch:8086"
+      ch.maxant.kdc.mf.components.billing.url:       "http://maxant.ch:8087"
       ch.maxant.kdc.mf.components.elasticsearch.url: "http://kdc.elasticsearch.maxant.ch"
     volumes:
       - ./mf/web/target:/project
@@ -77,6 +80,7 @@ services:
       - "cases:217.172.187.46"
       - "waitingroom:217.172.187.46"
       - "organisation:217.172.187.46"
+      - "billing:217.172.187.46"
 
   kdc-mf-partners:
     image: maxant/jdk
@@ -97,6 +101,7 @@ services:
       - "cases:217.172.187.46"
       - "waitingroom:217.172.187.46"
       - "organisation:217.172.187.46"
+      - "billing:217.172.187.46"
 
   kdc-mf-cases:
     image: maxant/jdk
@@ -117,6 +122,7 @@ services:
       - "cases:217.172.187.46"
       - "waitingroom:217.172.187.46"
       - "organisation:217.172.187.46"
+      - "billing:217.172.187.46"
 
   kdc-mf-waitingroom:
     image: maxant/jdk
@@ -137,6 +143,7 @@ services:
       - "cases:217.172.187.46"
       - "waitingroom:217.172.187.46"
       - "organisation:217.172.187.46"
+      - "billing:217.172.187.46"
 
   kdc-mf-organisation:
     image: maxant/jdk
@@ -157,3 +164,25 @@ services:
       - "cases:217.172.187.46"
       - "waitingroom:217.172.187.46"
       - "organisation:217.172.187.46"
+      - "billing:217.172.187.46"
+
+  kdc-mf-billing:
+    image: maxant/jdk
+    container_name: kdc-mf-billing
+    ports:
+      - "8087:8087"
+    environment:
+      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+    volumes:
+      - ./mf/billing/target:/project
+    command:
+      java -jar billing-1.0-SNAPSHOT-runner.jar -Xmx300m
+    extra_hosts:
+      - "contracts:217.172.187.46"
+      - "pricing:217.172.187.46"
+      - "web:217.172.187.46"
+      - "partners:217.172.187.46"
+      - "cases:217.172.187.46"
+      - "waitingroom:217.172.187.46"
+      - "organisation:217.172.187.46"
+      - "billing:217.172.187.46"

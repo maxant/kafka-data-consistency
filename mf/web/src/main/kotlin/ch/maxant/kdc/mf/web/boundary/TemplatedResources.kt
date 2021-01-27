@@ -170,5 +170,6 @@ enum class Component(val constantName: String, val uiWidgetsJavascript: String, 
     Cases         ("CASES",         "cases.js",        ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.cases.url",         String::class.java).orElse("http://cases:8084")),
     Waitingroom   ("WAITINGROOM",   "waitingroom.js",  ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.waitingroom.url",   String::class.java).orElse("http://waitingroom:8085")),
     Organisation  ("ORGANISATION",  "organisation.js", ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.organisation.url",  String::class.java).orElse("http://organisation:8086")),
+    Billing       ("BILLING",       "billing.js",      ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.billing.url",       String::class.java).orElse("http://billing:8087")),
     ElasticSearch ("ELASTICSEARCH", "elastic.js",      ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.elasticsearch.url", String::class.java).orElse("http://kdc.elasticsearch.maxant.ch")),
 }
