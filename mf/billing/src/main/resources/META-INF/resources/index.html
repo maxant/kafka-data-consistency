@@ -11,30 +11,49 @@
 </head>
 <body>
 <div class="container">
-    <h2>Group States</h2>
-    <div class="row">
-        <p class="col-md-12">The last state is <span id="content">N/A</span>.</p>
-    </div>
+    <h2>Jobs</h2>
+    <div id="jobs"></div>
+
+    <div id="job"></div>
+
+    <div id="group"></div>
 </div>
 </body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.20/lodash.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
 <script>
 var jobs = {};
 window.jobs = jobs; // for debugging
+var selectedJob;
+var selectedGroup;
 var source = new EventSource("/billing-stream/notifications");
 source.onmessage = function (event) {
     var state = JSON.parse(event.data);
-    var job = jobs[state.group.jobId]
-    if(!job) {
-        job = { groups: {} };
-        jobs[state.group.jobId] = job;
+    if(state.failedContractIds) {
+        // job state
+        if(!selectedJob) {
+            selectedJob = state;
+        }
+        if(selectedJob.jobId == state.jobId) {
+            selectedJob = state;
+            redrawSelectedJob();
+        }
+
+        jobs[state.jobId] = state;
+        redrawJobs();
+    } else {
+        // group state
+        if(!selectedGroup) {
+            selectedGroup = state;
+            selectedGroup.history = [];
+        }
+        if(selectedGroup.group.groupId == state.group.groupId) {
+            state.history = selectedGroup.history; // take over existing history
+            selectedGroup = state; // take over state
+            selectedGroup.history.push(state.group); // add history
+            redrawSelectedGroup();
+        }
     }
-    var groupHistory = job.groups[state.group.groupId]
-    if(!group) {
-        groupHistory = [];
-        job.groups[state.group.groupId] = groupHistory;
-    }
-    groupHistory.push()
 };
 
 fetch("/billing-stream/jobs", {method: "GET"})
@@ -42,7 +61,170 @@ fetch("/billing-stream/jobs", {method: "GET"})
 .then(r => {
     r.forEach(job => {
         jobs[job.jobId] = job;
+        job.groupHistory = [];
+        for(groupId in job.groups) {
+            let group = job.groups[groupId];
+            job.groupHistory.push(group);
+        }
     });
+    redraw();
 });
+
+function redraw() {
+    redrawJobs();
+    redrawSelectedJob();
+    redrawSelectedGroup();
+}
+
+function selectJob(jobId) {
+    selectedJob = jobs[jobId];
+    redrawSelectedJob();
+    selectedGroup = undefined;
+    redrawSelectedGroup();
+}
+
+function selectGroup(groupId) {
+    // TODO how to make this compatible with cluster? need a GTK for just this call too!
+    fetch("/billing-stream/group/" + groupId, {method: "GET"})
+    .then(r => r.json())
+    .then(r => {
+        selectedGroup = r;
+        selectedGroup.history = [selectedGroup.group];
+        redrawSelectedGroup();
+    });
+}
+
+function redrawJobs() {
+    let table = `<div style="overflow-y: scroll; overflow-x: hidden; height: 200px;"><table border="1"><tr>
+        <th>Job ID</th>
+        <th>Started</th>
+        <th>Completed</th>
+        <th>State</th>
+        <th>Number of contracts</th>
+    </tr>`;
+
+    _(jobs).map((e) => e).orderBy(['started'], ['desc']).forEach((job) => {
+        table += `<tr>
+            <td><a href="#" onclick="selectJob('${job.jobId}')">${job.jobId}</a></td>
+            <td>${toDisplayDate(job.started)}</td>
+            <td>${toDisplayDate(job.completed)}</td>
+            <td align="center">${job.state}</td>
+            <td align="right">${job.numContractsTotal}</td>
+        </tr>`;
+    });
+
+    table += `</table></div>`;
+    document.getElementById("jobs").innerHTML = table;
+}
+
+function redrawSelectedJob() {
+    if(!selectedJob) {
+        document.getElementById("job").innerHTML = ``;
+        return;
+    }
+
+    let table = `<table>
+        <tr><td style="padding: 2px;" align="right">num Contracts Total:</td><td>${selectedJob.numContractsTotal}</td></tr>
+        <tr><td style="padding: 2px;" align="right">num Contracts Pricing:</td><td>${selectedJob.numContractsPricing}</td></tr>
+        <tr><td style="padding: 2px;" align="right">num Contracts PricingFailed:</td><td>${selectedJob.numContractsPricingFailed}</td></tr>
+        <tr><td style="padding: 2px;" align="right">num Contracts Billing:</td><td>${selectedJob.numContractsBilling}</td></tr>
+        <tr><td style="padding: 2px;" align="right">num Contracts BillingFailed:</td><td>${selectedJob.numContractsBillingFailed}</td></tr>
+        <tr><td style="padding: 2px;" align="right">num Contracts Complete:</td><td>${selectedJob.numContractsComplete}</td></tr>
+        <tr><td style="padding: 2px;" align="right">failed contract IDs:</td><td>${selectedJob.failedContractIds.join(",")}</td></tr>
+    `;
+    table += `</table><h3>Groups in Job</h3><table border="1"><tr>
+        <th>Group ID</th>
+        <th>State</th>
+    </tr>`;
+
+    for(groupId in selectedJob.groups) {
+        let state = selectedJob.groups[groupId];
+        table += `<tr>
+            <td><a href="#" onclick="selectGroup('${groupId}')">${groupId}</a></td>
+            <td>${state}</td>
+        </tr>`;
+    }
+
+    table += `</table>`;
+    document.getElementById("job").innerHTML = `<hr>
+        <h2>Job ${selectedJob.jobId}
+            <a href="#" onclick="selectedJob = undefined; redrawSelectedJob();selectedGroup = undefined; redrawSelectedGroup();">x</a>
+        </h2>
+
+        ${table}`;
+}
+
+function redrawSelectedGroup() {
+    if(!selectedGroup) {
+        document.getElementById("group").innerHTML = ``;
+        return;
+    }
+
+    let table = `<hr>
+        <h2>Group ${selectedGroup.group.groupId}
+            <a href="#" onclick="selectedGroup = undefined; redrawSelectedGroup();">x</a>
+        </h2>
+        <table>
+            <tr><td style="padding: 2px;" align="right">started:</td><td>${toDisplayDate(selectedGroup.started)}</td></tr>
+            <tr><td style="padding: 2px;" align="right">finished:</td><td>${toDisplayDate(selectedGroup.finished)}</td></tr>
+            <tr><td style="padding: 2px;" align="right">state:</td><td>${selectedGroup.state}</td></tr>
+        </table>`;
+
+    table += `<h3>History</h3><table border="1"><tr>
+        <th>Time</th>
+        <th>next process step</th>
+        <th>failed process step</th>
+    </tr>`;
+    for(i in selectedGroup.history) {
+        let history = selectedGroup.history[i];
+        table += `<tr>
+            <td>${toDisplayDate(history.started, true)}</td>
+            <td>${history.nextProcessStep}</td>
+            <td>${history.failedProcessStep}</td>
+        </tr>`;
+    }
+    table += `</table>`;
+
+    table += `<h3>Latest Contract State for Group</h3><table border="1"><tr>
+        <th>Contract ID</th>
+        <th>Billing Definition ID</th>
+        <th>Period To Bill</th>
+    </tr>`;
+
+    for(i in selectedGroup.group.contracts) {
+        let contract = selectedGroup.group.contracts[i];
+        table += `<tr>
+            <td>${contract.contractId}</td>
+            <td>${contract.billingDefinitionId}</td>
+            <td><table border="1">
+                    <tr>
+                        <th>from</th>
+                        <th>to</th>
+                        <th>price</th>
+                        <th>bill ID</th>
+                    </tr>
+            `;
+
+        for(j in contract.periodsToBill) {
+            let billingPeriod = contract.periodsToBill[j];
+            table += `<tr>
+                <td>${billingPeriod.from}</td>
+                <td>${billingPeriod.to}</td>
+                <td>${billingPeriod.price}</td>
+                <td>${billingPeriod.billId}</td>
+            </tr>`;
+        }
+        table += `</table></td>`;
+        table += `</tr>`;
+    }
+    table += `</table>`;
+
+    document.getElementById("group").innerHTML = `${table}`;
+}
+
+function toDisplayDate(date, withMs) {
+    return date ? new Date(date).toISOString().substr(0,(withMs?23:19)).replace("T", " ") : "";
+}
+
 </script>
 </html>

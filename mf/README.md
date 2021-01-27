@@ -247,36 +247,14 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
 ## TODO
 
-TODO persist the selection and all contracts? how do we query the selection otherwise?
-
-TODO do pricing
-
-TODO do billing and save billedUntil
-
-TODO recurring billing: select where billedUntil is less than today from timeprovider
-
-TODO for load test, we simply delete pricing entries for a given day and reset billed Until, and we can repeat the test as often as we want to
-
-TODO monitoring =>
-
-TODO stopping => send control command to inform that a selection has been cancelled and it is to be ignored (all pods need to listen to this topic!)
-
-TODO does it make sense to set the requestId to be the selection Id???
-
-
 - discounts can be added to any component in the tree, as a child component! still not sure to which component these belong
 - fix external sales
+- https://quarkus.io/guides/redis
+- https://zipkin.io/ => also for billing!
+- billing2 => compare to using DB to store state
 - billing
-  - accept offer => event to billing
-  - billing is an orchestrator which keeps its model in a global ktable and which uses tombstone records and compaction
-  - billing publishes event to world to inform contract component that the contract is active?
-  - add duration, day in year to bill, billing frequency => make customer pay for first period until next billing period according to config
-  - add daily billing job
-    - group (and unfold on errors)
-    - update prices (due to market price on certain components)
-    - calculate bill for given period (regardless of what already exists)
-    - send output
-    - progress tracking
+  - billing - stopping => send control command to inform that a selection has been cancelled and it is to be ignored (all pods need to listen to this topic!)
+  - tombstone records and compaction?
   - send event back to UI so that the customer can pay directly for the first billed period
 - allow changing the quantity in the offer, so you can get under the approval threshold
   - somethings not quite right - the price doesnt account for the quantity in the box!
@@ -295,7 +273,6 @@ TODO does it make sense to set the requestId to be the selection Id???
 - move sse and other standard things into vue components
 - security: do a view of all methods, and the roles and therefore the users which can run them
 - finish security.html
-- https://zipkin.io/
 - how do cases and then PARTNER RELATIONSHIPS end up in the client, when they use contractId? ok coz of requestId?
 - add accepting and do validation of prices at that point. TRANSPORT still with kafka!
 - add the ability to fix errors, so that the user isnt blocked.

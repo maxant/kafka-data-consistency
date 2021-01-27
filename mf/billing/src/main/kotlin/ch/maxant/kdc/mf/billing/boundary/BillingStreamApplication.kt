@@ -62,6 +62,8 @@ class BillingStreamApplication(
 
     private lateinit var groupsView: ReadOnlyKeyValueStore<String, String>
 
+    private lateinit var globalGroupsView: ReadOnlyKeyValueStore<String, String>
+
     private lateinit var streams: KafkaStreams
 
     private val random = Random()
@@ -69,6 +71,8 @@ class BillingStreamApplication(
     private val log = Logger.getLogger(this.javaClass)
 
     val groupsStoreName = "billing-store-groups"
+
+    val globalGroupsStoreName = "billing-store-groups-all"
 
     val allJobsStoreName = "billing-store-jobs-all"
 
@@ -131,12 +135,16 @@ class BillingStreamApplication(
                         groupsAggregator,
                         Named.`as`("billing-internal-aggregate-state-groups"),
                         groupsStore)
-        groupsTable.toStream(Named.`as`("billing-internal-stream-state-groups"))
-                    .peek {k, v -> log.info("aggregated group $k: $v")}
+        val groupsStream = groupsTable.toStream(Named.`as`("billing-internal-stream-state-groups"))
+        groupsStream.peek {k, v -> log.info("aggregated group $k: $v")}
                     .to(BILLING_INTERNAL_STATE_GROUPS)
 
+        // global GROUPS - just so that we can fetch data for the UI!
+        val globalGroupsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`(globalGroupsStoreName)
+        builder.globalTable(BILLING_INTERNAL_STATE_GROUPS, globalGroupsStore)
+
         // now route the processed group to wherever it needs to go, depending on the next process step
-        val branches = builder.stream<String, String>(BILLING_INTERNAL_STATE_GROUPS)
+        val branches = groupsStream
             .branch(Named.`as`("billing-internal-branch"),
                 Predicate{ _, v -> catching(v) { om.readValue<GroupState>(v).group.nextProcessStep == BillingProcessStep.READ_PRICE } },
                 Predicate{ _, v -> catching(v) { om.readValue<GroupState>(v).group.nextProcessStep == BillingProcessStep.RECALCULATE_PRICE } },
@@ -340,6 +348,15 @@ class BillingStreamApplication(
         }
 
     /** seems to not like immediate fetching of the store during init - so lets do it lazily */
+    private fun getGlobalGroup(key: String) =
+        try {
+            globalGroupsView.get(key)
+        } catch(e: UninitializedPropertyAccessException) {
+            globalGroupsView = streams.store(StoreQueryParameters.fromNameAndType(globalGroupsStoreName, QueryableStoreTypes.keyValueStore<String, String>()))
+            globalGroupsView.get(key)
+        }
+
+    /** seems to not like immediate fetching of the store during init - so lets do it lazily */
     private fun getGroup(key: String) =
         try {
             groupsView.get(key)
@@ -368,10 +385,10 @@ class BillingStreamApplication(
 
     @GET
     @Path("/group/{id}")
-    @Operation(summary = "NOTE: only knows about local state!")
+    @Operation(summary = "knows global state")
     @Timed(unit = MetricUnits.MILLISECONDS)
-    fun getGroup(@Parameter(name = "id") @PathParam("id") id: UUID): Response {
-        return Response.ok(getGroup(id.toString())).build()
+    fun getGlobalGroup(@Parameter(name = "id") @PathParam("id") id: UUID): Response {
+        return Response.ok(getGlobalGroup(id.toString())).build()
     }
 
     @GET
