@@ -64,7 +64,7 @@ services:
       ch.maxant.kdc.mf.components.cases.url:         "http://maxant.ch:8084"
       ch.maxant.kdc.mf.components.waitingroom.url:   "http://maxant.ch:8085"
       ch.maxant.kdc.mf.components.organisation.url:  "http://maxant.ch:8086"
-      ch.maxant.kdc.mf.components.elasticsearch.url: "http://maxant.ch.elasticsearch.maxant.ch"
+      ch.maxant.kdc.mf.components.elasticsearch.url: "http://kdc.elasticsearch.maxant.ch"
     volumes:
       - ./mf/web/target:/project
     command:
