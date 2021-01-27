@@ -264,6 +264,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 - sales uis should use a state object which is appended to when events arrive, and it is used to determine what buttons etc become available
   - actually, thats kinda cool, coz cypress just has to wait til it can click the buttons?
 - timestamp - if we attempt to insert but a new version has already been applied, we need to ignore it and log it for alerting. or fail with an error? why not just use optimistic locking. whats on my bit of paper?
+  - SEE "must be processed by time X" below!
 - sessionId
 - web register for session, request, contract, etc. not just requestId
 - pep, pip?, pdp
