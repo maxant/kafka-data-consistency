@@ -59,14 +59,14 @@ services:
       - "8082:8082"
     environment:
       ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
-      ch.maxant.kdc.mf.components.contracts.url:     "http://maxant.ch:8080"
-      ch.maxant.kdc.mf.components.pricing.url:       "http://maxant.ch:8081"
-      ch.maxant.kdc.mf.components.web.url:           "http://maxant.ch:8082"
-      ch.maxant.kdc.mf.components.partners.url:      "http://maxant.ch:8083"
-      ch.maxant.kdc.mf.components.cases.url:         "http://maxant.ch:8084"
-      ch.maxant.kdc.mf.components.waitingroom.url:   "http://maxant.ch:8085"
-      ch.maxant.kdc.mf.components.organisation.url:  "http://maxant.ch:8086"
-      ch.maxant.kdc.mf.components.billing.url:       "http://maxant.ch:8087"
+      ch.maxant.kdc.mf.components.contracts.url:     "http://mf-contracts.maxant.ch"
+      ch.maxant.kdc.mf.components.pricing.url:       "http://mf-pricing.maxant.ch"
+      ch.maxant.kdc.mf.components.web.url:           "http://mf-web.maxant.ch"
+      ch.maxant.kdc.mf.components.partners.url:      "http://mf-partners.maxant.ch"
+      ch.maxant.kdc.mf.components.cases.url:         "http://mf-casescases.maxant.ch"
+      ch.maxant.kdc.mf.components.waitingroom.url:   "http://mf-waitingroom.maxant.ch"
+      ch.maxant.kdc.mf.components.organisation.url:  "http://mf-organisation.maxant.ch"
+      ch.maxant.kdc.mf.components.billing.url:       "http://mf-billing.maxant.ch"
       ch.maxant.kdc.mf.components.elasticsearch.url: "http://kdc.elasticsearch.maxant.ch"
     volumes:
       - ./mf/web/target:/project
