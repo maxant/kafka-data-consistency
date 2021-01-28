@@ -35,7 +35,9 @@ import javax.annotation.PreDestroy
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.event.Observes
 import javax.inject.Inject
+import javax.servlet.http.HttpServletResponse
 import javax.ws.rs.*
+import javax.ws.rs.core.Context
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
@@ -396,8 +398,11 @@ class BillingStreamApplication(
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @SseElementType(MediaType.APPLICATION_JSON)
     @Operation(summary = "get notification of changes to all groups of any job that is currently running")
-    fun notifications(): Multi<String> =
-        Multi.createFrom()
+    fun notifications(@Context response: HttpServletResponse): Multi<String> {
+        // https://serverfault.com/questions/801628/for-server-sent-events-sse-what-nginx-proxy-configuration-is-appropriate
+        response.setHeader("Cache-Control", "no-cache")
+        response.setHeader("X-Accel-Buffering", "no")
+        return Multi.createFrom()
             .emitter { e: MultiEmitter<in String?> ->
                 val id = UUID.randomUUID().toString()
                 subscriptions[id] = EmitterState(e, System.currentTimeMillis())
@@ -406,6 +411,7 @@ class BillingStreamApplication(
                     subscriptions.remove(id)
                 }
             } // TODO if we get memory problems, add a different BackPressureStrategy as a second parameter to the emitter method
+    }
 
     /** NOTE: only knows about local state! */
     fun getContract(groupId: UUID, contractId: UUID) = om.readValue<GroupState>(getGroup(groupId.toString())).group.contracts.find { it.contractId == contractId }!!

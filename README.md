@@ -284,14 +284,15 @@ Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-co
 
       server { listen 80; server_name kdc.objects.maxant.ch; location / { proxy_pass http://localhost:30601/; } }
 
-      server { listen 80; server_name mf-contracts.maxant.ch;    location / { proxy_pass http://localhost:8080/; } }
-      server { listen 80; server_name mf-pricing.maxant.ch;      location / { proxy_pass http://localhost:8081/; } }
-      server { listen 80; server_name mf-web.maxant.ch;          location / { proxy_pass http://localhost:8082/; } }
-      server { listen 80; server_name mf-partners.maxant.ch;     location / { proxy_pass http://localhost:8083/; } }
-      server { listen 80; server_name mf-cases.maxant.ch;        location / { proxy_pass http://localhost:8084/; } }
-      server { listen 80; server_name mf-waitingroom.maxant.ch;  location / { proxy_pass http://localhost:8085/; } }
-      server { listen 80; server_name mf-organisation.maxant.ch; location / { proxy_pass http://localhost:8086/; } }
-      server { listen 80; server_name mf-billing.maxant.ch;      location / { proxy_pass http://localhost:8087/; } }
+      # https://serverfault.com/questions/801628/for-server-sent-events-sse-what-nginx-proxy-configuration-is-appropriate
+      server { listen 80; server_name mf-contracts.maxant.ch;    proxy_http_version 1.1; proxy_set_header Connection ""; location / { proxy_pass http://localhost:8080/; } }
+      server { listen 80; server_name mf-pricing.maxant.ch;      proxy_http_version 1.1; proxy_set_header Connection ""; location / { proxy_pass http://localhost:8081/; } }
+      server { listen 80; server_name mf-web.maxant.ch;          proxy_http_version 1.1; proxy_set_header Connection ""; location / { proxy_pass http://localhost:8082/; } }
+      server { listen 80; server_name mf-partners.maxant.ch;     proxy_http_version 1.1; proxy_set_header Connection ""; location / { proxy_pass http://localhost:8083/; } }
+      server { listen 80; server_name mf-cases.maxant.ch;        proxy_http_version 1.1; proxy_set_header Connection ""; location / { proxy_pass http://localhost:8084/; } }
+      server { listen 80; server_name mf-waitingroom.maxant.ch;  proxy_http_version 1.1; proxy_set_header Connection ""; location / { proxy_pass http://localhost:8085/; } }
+      server { listen 80; server_name mf-organisation.maxant.ch; proxy_http_version 1.1; proxy_set_header Connection ""; location / { proxy_pass http://localhost:8086/; } }
+      server { listen 80; server_name mf-billing.maxant.ch;      proxy_http_version 1.1; proxy_set_header Connection ""; location / { proxy_pass http://localhost:8087/; } }
 
       server {
         listen 80;

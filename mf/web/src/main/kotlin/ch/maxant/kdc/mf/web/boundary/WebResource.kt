@@ -3,12 +3,9 @@ package ch.maxant.kdc.mf.web.boundary
 import ch.maxant.kdc.mf.library.Context
 import ch.maxant.kdc.mf.library.Context.Companion.DEMO_CONTEXT
 import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
-import ch.maxant.kdc.mf.library.RequestId
-import ch.maxant.kdc.mf.library.withMdcSet
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.subscription.MultiEmitter
 import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecordMetadata
-import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.header.Header
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
@@ -22,6 +19,7 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.ConcurrentHashMap
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
+import javax.servlet.http.HttpServletResponse
 import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
@@ -117,8 +115,11 @@ class WebResource {
     @Path("/stream/{requestId}")
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @SseElementType(MediaType.APPLICATION_JSON)
-    fun stream(@PathParam("requestId") requestId: String): Multi<String?>? =
-        Multi.createFrom()
+    fun stream(@PathParam("requestId") requestId: String, @javax.ws.rs.core.Context response: HttpServletResponse): Multi<String> {
+        // https://serverfault.com/questions/801628/for-server-sent-events-sse-what-nginx-proxy-configuration-is-appropriate
+        response.setHeader("Cache-Control", "no-cache")
+        response.setHeader("X-Accel-Buffering", "no")
+        return Multi.createFrom()
                 .emitter { e: MultiEmitter<in String?> ->
                     subscriptions[requestId] = EmitterState(e, System.currentTimeMillis())
                     e.onTermination {
@@ -126,6 +127,7 @@ class WebResource {
                         subscriptions.remove(requestId)
                     }
                 } // TODO if we get memory problems, add a different BackPressureStrategy as a second parameter to the emitter method
+    }
 
     @GET
     @Path("/stats")
