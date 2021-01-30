@@ -86,7 +86,7 @@ class PricingService(
                     .find { it.start.toLocalDate() <= commandsForContract[0].from
                             && it.end.toLocalDate() >= commandsForContract[0].to }
 
-                require(entity != null) { "no matching price found for $commandForContract"}
+                require(entity != null) { "no matching price found for $commandForContract and component $componentId"}
                 val price = Price(entity.price, entity.tax)
                 val priceWithValidity = ComponentPriceWithValidity(entity.componentId, price,
                                                                     entity.start.toLocalDate(), entity.end.toLocalDate())
@@ -224,8 +224,13 @@ data class PricingCommandGroup(val groupId: UUID, val commands: List<PricingComm
 
 data class PricingCommand(val contractId: UUID, val from: LocalDate, val to: LocalDate)
 
-data class PricingCommandGroupResult(val groupId: UUID, val commands: List<PricingCommandResult>, @field:JsonIgnore val recalculated: Boolean)
+data class PricingCommandGroupResult(val groupId: UUID,
+                                     val commands: List<PricingCommandResult>,
+                                     @field:JsonIgnore val recalculated: Boolean,
+                                     val failed: Boolean = false,
+                                     var failedReason: String? = null)
 
-data class PricingCommandResult(val contractId: UUID, val priceByComponentId: Map<UUID, ComponentPriceWithValidity> = emptyMap(), val failed: Boolean = false)
+data class PricingCommandResult(val contractId: UUID,
+                                val priceByComponentId: Map<UUID, ComponentPriceWithValidity> = emptyMap())
 
 data class ComponentPriceWithValidity(val componentId: UUID, val price: Price, val from: LocalDate, val to: LocalDate)

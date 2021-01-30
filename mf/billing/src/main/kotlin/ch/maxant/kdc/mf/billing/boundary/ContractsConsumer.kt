@@ -4,7 +4,9 @@ import ch.maxant.kdc.mf.billing.control.StreamService
 import ch.maxant.kdc.mf.billing.definitions.BillingDefinitions
 import ch.maxant.kdc.mf.billing.definitions.Periodicity
 import ch.maxant.kdc.mf.billing.definitions.ProductId
-import ch.maxant.kdc.mf.library.*
+import ch.maxant.kdc.mf.library.Context
+import ch.maxant.kdc.mf.library.KafkaHandler
+import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -75,94 +77,9 @@ class ContractsConsumer(
         streamService.sendGroup(group)
     }
 
-    private fun recurringBillExistingContract(command: JsonNode) {
-        log.info("recurring bill for existing contract")
-        TODO()
-        /*
-        val group = om.readValue<List<ContractDto>>(command.get("contracts").toString())
-        val productId = ProductId.valueOf(command.get("productId").textValue())
-
-        val defn = BillingDefinitions.get(productId)
-        val today = timeMachine.today()
-for a new contract, we just need to fetch a price.
-during recurring billing, we need to calculate a new price.
-so the command needs a descriminator. or perhaps its a difference command!;
-        val basePeriodsToPrice = when (defn.basePeriodicity) {
-            Periodicity.MONTHLY -> calculateBasePeriodsForMonthly(today, contract.start.toLocalDate(), contract.end.toLocalDate(), defn.referenceDay)
-            else -> throw TODO()
-        }
-        log.info("calculated base periods $basePeriodsToPrice")
-
-        val periodsToBill = when (defn.chosenPeriodicity) {
-            Periodicity.DAILY -> listOf(Period(contract.start.toLocalDate(), contract.start.toLocalDate()))
-            else -> throw TODO()
-        }
-        log.info("calculated periods to bill $periodsToBill")
-
-        // create a new job with one group and one contract in that group
-        val jobId = UUID.randomUUID()
-        val groupId = UUID.randomUUID()
-        val group = Group(jobId, groupId, listOf(Contract(jobId, groupId, contract.id, defn.definitionId, basePeriodsToPrice, periodsToBill)))
-        sendPriceGroup(group)
-         */
-    }
-
-    /**
-     * too complex to think about right now.
-     * just ensure that we have some prices calculated for the first base period, and any time before it.
-     * the time before the first month will have the same basis. since we bill in advance, we calculate the
-     * price for next month, based on data from this month.
-     * there can be more than one, if today isnt the reference day in the period
-     */
-    fun calculateBasePeriodsForMonthly(today: LocalDate, start: LocalDate, end: LocalDate, referenceDay: Int): List<Period> {
-        val dayOfMonth = start.dayOfMonth
-        return when {
-            dayOfMonth < referenceDay -> {
-                // case (1)
-                // 1 2 3 4 5 6 7 8 9 ... 30 1 2 3 4 5
-                //         |- referenceDay
-                //   |- start
-                //   |-P1--|-P2 (whole month)-----|
-                listOf(
-                        // the period up to the reference day
-                        Period(start, start.withDayOfMonth(referenceDay)),
-
-                        // a whole month from the reference day
-                        Period(start.withDayOfMonth(referenceDay), start.plusMonths(1).withDayOfMonth(referenceDay))
-                )
-            }
-            dayOfMonth == referenceDay -> {
-                // case (2)
-                // 1 2 3 4 5 6 7 8 9 ... 30 1 2
-                //   |- referenceDay
-                //   |- start
-                //   |-P1---------------------|
-                //
-                listOf(
-                        // a whole month from the reference day, start
-                        Period(start, start.plusMonths(1))
-                )
-            }
-            else -> { // dayOfMonth > referenceDay
-                // case (3)
-                // 1 2 3 4 5 6 7 8 9 ......... 30 1 2 3 4 5
-                //   |- referenceDay
-                //         |- start
-                //         |-P1-(only 27 days!)-----|-P2 (whole month)-|
-                listOf(
-                        // the period from start to the end of the month
-                        Period(start, start.plusMonths(1).withDayOfMonth(referenceDay)),
-
-                        // a whole month from the next reference day
-                        Period(start.plusMonths(1).withDayOfMonth(referenceDay), start.plusMonths(2).withDayOfMonth(referenceDay))
-                )
-            }
-        }
-    }
-
     fun handlePricedGroup(value: String, recalculated: Boolean) {
         val group = om.readValue<PricingCommandGroupResult>(value)
-        if(group.commands.any { it.failed }) {
+        if(group.failed) {
             if(group.commands.size == 1) {
                 handlePricedGroup_failedSingleContract(group, recalculated)
             } else {
@@ -177,21 +94,23 @@ so the command needs a descriminator. or perhaps its a difference command!;
         group: PricingCommandGroupResult,
         recalculated: Boolean
     ) {
-        val originalContract = getContract(group.groupId, group.commands[0].contractId)
+        val originalContract = getContract(getGroup(group.groupId), group.commands[0].contractId)
         val processStep = if (recalculated) BillingProcessStep.RECALCULATE_PRICE else BillingProcessStep.READ_PRICE
-        streamService.sendGroup(Group(originalContract.jobId, group.groupId, listOf(originalContract), null, processStep))
+        streamService.sendGroup(Group(originalContract.jobId, group.groupId, listOf(originalContract), null, processStep, failedReason = group.failedReason))
     }
 
     /** the following can't fail, because the group is sent to pricing after it's written to the stream which is
      * produced from the KTable, meaning that the ktable store has the data, before hand. */
-    private fun getContract(groupId: UUID, contractId: UUID) = billingStreamApplication.getContract(groupId, contractId)
+    private fun getGroup(groupId: UUID) = billingStreamApplication.getGroup(groupId)
 
     private fun handlePricedGroup_failedGroup(
         group: PricingCommandGroupResult,
         recalculated: Boolean
     ) {
+        val processStep = if (recalculated) BillingProcessStep.RECALCULATE_PRICE else BillingProcessStep.READ_PRICE
+        val originalGroup = getGroup(group.groupId)
         group.commands.map { it.contractId }.distinct().forEach { contractId ->
-            val originalContract = getContract(group.groupId, contractId)
+            val originalContract = getContract(originalGroup, contractId)
             val newGroupId = UUID.randomUUID() // we create a new group - one for each individual contract, containing the periods to price
             val contract = Contract(
                 originalContract.jobId,
@@ -201,15 +120,20 @@ so the command needs a descriminator. or perhaps its a difference command!;
                 originalContract.basePeriodsToPrice,
                 emptyList()
             )
-            val processStep = if (recalculated) BillingProcessStep.RECALCULATE_PRICE else BillingProcessStep.READ_PRICE
             val newGroup = Group(originalContract.jobId, newGroupId, listOf(contract), processStep)
             streamService.sendGroup(newGroup)
         }
+
+        // now send a group message so that the app can update its state for the old group.
+        streamService.sendGroup(Group(originalGroup.jobId, originalGroup.groupId, originalGroup.contracts, null, processStep, failedReason = originalGroup.failedReason))
     }
 
+    private fun getContract(group: Group, contractId: UUID) = group.contracts.find { it.contractId == contractId }!!
+
     private fun handlePricedGroup_success(group: PricingCommandGroupResult) {
+        val originalGroup = getGroup(group.groupId)
         val contracts = group.commands.map { it.contractId }.distinct().map { contractId ->
-            val contract = getContract(group.groupId, contractId)
+            val contract = getContract(originalGroup, contractId)
             contract.periodsToBill.forEach { periodToBill ->
                 val priceByComponent = group.commands
                     .filter { it.contractId == contract.contractId }
@@ -245,9 +169,14 @@ data class ContractDto(val id: UUID, val start: LocalDateTime, val end: LocalDat
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // pricing event => sent from pricing
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-data class PricingCommandGroupResult(val groupId: UUID, val commands: List<PricingCommandResult>)
+data class PricingCommandGroupResult(val groupId: UUID,
+                                     val commands: List<PricingCommandResult>,
+                                     val failed: Boolean,
+                                     var failedReason: String?)
 
-data class PricingCommandResult(val contractId: UUID, val priceByComponentId: Map<UUID, ComponentPriceWithValidity>, val failed: Boolean)
+data class PricingCommandResult(val contractId: UUID,
+                                val priceByComponentId: Map<UUID, ComponentPriceWithValidity>)
+
 
 data class ComponentPriceWithValidity(val price: Price, val from: LocalDate, val to: LocalDate)
 

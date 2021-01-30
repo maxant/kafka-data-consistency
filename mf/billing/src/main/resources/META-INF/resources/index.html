@@ -11,12 +11,16 @@
 </head>
 <body>
 <div class="container">
-    <h2>Jobs</h2>
+    <h2>Jobs <button onclick="billNow()">Bill now...</button></h2>
+
     <div id="jobs"></div>
 
     <div id="job"></div>
 
     <div id="group"></div>
+
+    <hr>
+    <div id="test"></div>
 </div>
 </body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.20/lodash.min.js"></script>
@@ -26,6 +30,13 @@ var jobs = {};
 window.jobs = jobs; // for debugging
 var selectedJob;
 var selectedGroup;
+
+// TODO delete this once it works
+var sourceTest = new EventSource("/test/sse");
+sourceTest.onmessage = function (event) {
+    document.getElementById("test").innerHTML = event.data;
+}
+
 var source = new EventSource("/billing-stream/notifications");
 source.onmessage = function (event) {
     var state = JSON.parse(event.data);
@@ -57,8 +68,14 @@ source.onmessage = function (event) {
 };
 
 fetch("/billing-stream/jobs", {method: "GET"})
-.then(r => r.json())
 .then(r => {
+    if(r.status == 200) return r.json();
+    else return r.text().then(r => { throw new Error(r) });
+})
+.then(handleJobs)
+.catch(e => { alert("ERROR: " + e) });
+
+function handleJobs(r) {
     r.forEach(job => {
         jobs[job.jobId] = job;
         job.groupHistory = [];
@@ -68,7 +85,7 @@ fetch("/billing-stream/jobs", {method: "GET"})
         }
     });
     redraw();
-});
+}
 
 function redraw() {
     redrawJobs();
@@ -174,6 +191,7 @@ function redrawSelectedGroup() {
         <th>Time</th>
         <th>next process step</th>
         <th>failed process step</th>
+        <th>failed reason</th>
     </tr>`;
     for(i in selectedGroup.history) {
         let history = selectedGroup.history[i];
@@ -181,6 +199,7 @@ function redrawSelectedGroup() {
             <td>${toDisplayDate(history.started, true)}</td>
             <td>${history.nextProcessStep}</td>
             <td>${history.failedProcessStep}</td>
+            <td>${history.failedReason}</td>
         </tr>`;
     }
     table += `</table>`;
@@ -224,6 +243,28 @@ function redrawSelectedGroup() {
 
 function toDisplayDate(date, withMs) {
     return date ? new Date(date).toISOString().substr(0,(withMs?23:19)).replace("T", " ") : "";
+}
+
+function billNow() {
+    $("body").css("cursor", "progress");
+    fetch("/billing/recurring/" + new Date().toISOString().substr(0,10), {method: "PUT"})
+    .then(r => {
+        console.log("");
+        if(r.status !== 202) {
+            return r.text()
+                    .then(r => {
+                        throw new Error(r);
+                    });
+        } else return r.text();
+    }).then(jobId => {
+        return fetch("/billing-stream/jobs", {method: "GET"})
+                .then(r => r.json())
+                .then(handleJobs)
+                .then(r => jobId);
+    }).then(jobId => selectJob(jobId))
+    .catch(e => {
+        alert("ERROR: " + e);
+    }).finally(() => $("body").css("cursor", "default"))
 }
 
 </script>

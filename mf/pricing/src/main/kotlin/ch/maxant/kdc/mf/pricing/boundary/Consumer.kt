@@ -82,13 +82,12 @@ class Consumer(
             val result = pricingService.readPrices(group)
             sendEvent(result)
         } catch (e: Exception) {
-            log.error(
-                "FAILED TO READ PRICE FOR GROUP ${group.groupId} " +
-                        "with contractIds ${group.commands.map { it.contractId }.distinct()} => " +
-                        "publishing failed event", e
-            )
-            val commands = group.commands.map { PricingCommandResult(it.contractId, failed = true) }
-            sendEvent(PricingCommandGroupResult(group.groupId, commands, false))
+            val msg = "FAILED TO READ PRICE FOR GROUP ${group.groupId} " +
+                    "with contractIds ${group.commands.map { it.contractId }.distinct()} => " +
+                    "publishing failed event"
+            log.error(msg, e)
+            val commands = group.commands.map { PricingCommandResult(it.contractId) }
+            sendEvent(PricingCommandGroupResult(group.groupId, commands, false, true, "$msg: ${e.message}"))
         }
     }
 
@@ -99,13 +98,12 @@ class Consumer(
             val result = pricingService.repriceContract(group)
             sendEvent(result)
         } catch (e: Exception) {
-            log.error(
-                "FAILED TO REPRICE GROUP ${group.groupId} " +
-                        "with contractIds ${group.commands.map { it.contractId }.distinct()} => " +
-                        "publishing failed event", e
-            )
-            val commands = group.commands.map { PricingCommandResult(it.contractId, failed = true) }
-            sendEvent(PricingCommandGroupResult(group.groupId, commands, true))
+            val msg = "FAILED TO REPRICE GROUP ${group.groupId} " +
+                    "with contractIds ${group.commands.map { it.contractId }.distinct()} => " +
+                    "publishing failed event"
+            log.error(msg, e)
+            val commands = group.commands.map { PricingCommandResult(it.contractId) }
+            sendEvent(PricingCommandGroupResult(group.groupId, commands, true, true, "$msg: ${e.message}"))
         }
     }
 

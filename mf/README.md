@@ -249,6 +249,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
 - discounts can be added to any component in the tree, as a child component! still not sure to which component these belong
 - fix external sales
+- show bills on contract UI
 - https://quarkus.io/guides/redis
 - https://zipkin.io/ => also for billing!
 - billing2 => compare to using DB to store state

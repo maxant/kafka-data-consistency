@@ -99,7 +99,8 @@ class BillingStreamApplication(
         // JOBS - this state is NOT guaranteed to be totally up to date with every group, as it might be processed
         // after a group is processed and sent downstream, processed and returned! the single source of synchronous
         // truth is the group state!
-        val jobsStateStream = streamOfGroups.groupByKey()
+        val jobsStateStream = streamOfGroups
+                .groupByKey()
                 .aggregate(Initializer { om.writeValueAsString(JobState()) },
                             jobsAggregator,
                             Named.`as`("billing-internal-aggregate-state-jobs"),
@@ -108,7 +109,7 @@ class BillingStreamApplication(
 
         // publish aggregated job state to a topic in order to build a GKT from it...
         jobsStateStream
-                .peek {k, v -> log.info("aggregated group into job $k: $v")}
+                .peek {k, _ -> log.info("aggregated group into job $k")}
                 .to(BILLING_INTERNAL_STATE_JOBS)
 
         val allJobsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`(allJobsStoreName)
@@ -138,7 +139,7 @@ class BillingStreamApplication(
                         Named.`as`("billing-internal-aggregate-state-groups"),
                         groupsStore)
         val groupsStream = groupsTable.toStream(Named.`as`("billing-internal-stream-state-groups"))
-        groupsStream.peek {k, v -> log.info("aggregated group $k: $v")}
+        groupsStream.peek {k, _ -> log.info("aggregated group $k")}
                     .to(BILLING_INTERNAL_STATE_GROUPS)
 
         // global GROUPS - just so that we can fetch data for the UI!
@@ -161,18 +162,18 @@ class BillingStreamApplication(
             .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
                 MfTransformer(COMMAND, "READ_PRICES_FOR_GROUP_OF_CONTRACTS")
             })
-            .peek {k, v -> log.info("sending group to read prices $k: $v")}
+            .peek {k, _ -> log.info("sending group to read prices $k")}
             .to("contracts-event-bus")
 
         // RECALCULATE_PRICE
         branches[1]
-            .map<String, String>({ k, v ->
+            .map<String, String>({ _, _ ->
                 TODO() //KeyValue(k, v) // TODO
             }, Named.`as`("billing-internal-to-recalculate-pricing-mapper"))
             .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
                 MfTransformer(COMMAND, "RECALCULATE_PRICES_FOR_GROUP_OF_CONTRACTS")
             })
-            .peek {k, v -> log.info("sending group to recalculate prices $k: $v")}
+            .peek {k, _ -> log.info("sending group to recalculate prices $k")}
             .to("contracts-event-bus")
 
         // BILL
@@ -183,7 +184,7 @@ class BillingStreamApplication(
             .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
                 MfTransformer(COMMAND, BILL_GROUP)
             })
-            .peek {k, v -> log.info("sending group for internal billing $k: $v")}
+            .peek {k, _ -> log.info("sending group for internal billing $k")}
             .to("billing-internal-bill")
 
         val topology = builder.build()
@@ -232,18 +233,16 @@ class BillingStreamApplication(
         return om.writeValueAsString(state.group)
     }
 
-    val jobsAggregator = Aggregator {k: String, v: String, j: String ->
+    val jobsAggregator = Aggregator {_: String, v: String, j: String ->
         val jobState = om.readValue<JobState>(j)
         val group = om.readValue<Group>(v)
         when(group.failedProcessStep) {
             BillingProcessStep.READ_PRICE, BillingProcessStep.RECALCULATE_PRICE  -> {
-                jobState.groups.computeIfAbsent(group.groupId) { State.FAILED }
-                jobState.state = State.FAILED
+                jobState.groups[group.groupId] = State.FAILED
                 jobState.numContractsPricingFailed += group.contracts.size
             }
             BillingProcessStep.BILL  -> {
-                jobState.groups.computeIfAbsent(group.groupId) { State.FAILED }
-                jobState.state = State.FAILED
+                jobState.groups[group.groupId] = State.FAILED
                 jobState.numContractsBillingFailed += group.contracts.size
             }
             else -> Unit // noop
@@ -251,8 +250,7 @@ class BillingStreamApplication(
         when(group.nextProcessStep) {
             BillingProcessStep.READ_PRICE, BillingProcessStep.RECALCULATE_PRICE  -> {
                 jobState.jobId = group.jobId // just in case its not set yet
-
-                jobState.groups.computeIfAbsent(group.groupId) { State.STARTED }
+                jobState.groups[group.groupId] = State.STARTED
                 jobState.numContractsTotal += group.contracts.size
                 jobState.numContractsPricing += group.contracts.size
             }
@@ -261,12 +259,16 @@ class BillingStreamApplication(
             }
             BillingProcessStep.COMMS -> {
                 jobState.groups[group.groupId] = State.COMPLETED
-                if(jobState.groups.values.all { it == State.COMPLETED }) {
+                if(jobState.groups.values.all { it == State.COMPLETED || it == State.FAILED }) {
                     jobState.state = State.COMPLETED
                     jobState.completed = LocalDateTime.now()
                 }
                 jobState.numContractsComplete += group.contracts.size
             }
+        }
+        if(jobState.groups.all { it.value == State.FAILED }) {
+            jobState.completed = LocalDateTime.now()
+            jobState.state = State.FAILED
         }
         om.writeValueAsString(jobState)
     }
@@ -281,6 +283,8 @@ class BillingStreamApplication(
 
             if(group.failedProcessStep != null) {
                 groupState.state = State.FAILED
+                groupState.finished = LocalDateTime.now()
+                groupState.failedReason = group.failedReason
             }
 
             when(group.nextProcessStep) {
@@ -325,7 +329,7 @@ class BillingStreamApplication(
             .filter { !it.value.isExpiredOrCancelled() }
             .forEach {
                 synchronized(it.value) { // TODO is this necessary? does it hurt??
-                    log.info("emitting data to subscriber ${it.key}: $data")
+                    log.info("emitting data to subscriber ${it.key}")
                     it.value.emitter.emit(data)
                 }
             }
@@ -414,7 +418,7 @@ class BillingStreamApplication(
     }
 
     /** NOTE: only knows about local state! */
-    fun getContract(groupId: UUID, contractId: UUID) = om.readValue<GroupState>(getGroup(groupId.toString())).group.contracts.find { it.contractId == contractId }!!
+    fun getGroup(groupId: UUID) = om.readValue<GroupState>(getGroup(groupId.toString())).group
 
     companion object {
         const val BILL_GROUP = "BILL_GROUP"
@@ -474,7 +478,8 @@ enum class State {
 data class GroupState(var group: Group,
                       var state: State,
                       var started: LocalDateTime,
-                      var finished: LocalDateTime?
+                      var finished: LocalDateTime?,
+                      var failedReason: String? = null
 ) {
     constructor():
             this(Group(UUID.randomUUID(), UUID.randomUUID(), listOf(), BillingProcessStep.READ_PRICE), State.STARTED, LocalDateTime.now(), null)
@@ -495,7 +500,8 @@ data class Group(val jobId: UUID,
                                                             // before sending a command to the next component to execute
                                                             // the next process step. null if failed.
                  val failedProcessStep: BillingProcessStep? = null, // where, if at all the group failed
-                 val started: LocalDateTime = LocalDateTime.now()
+                 val started: LocalDateTime = LocalDateTime.now(),
+                 val failedReason: String? = null
 )
 
 data class Contract(val jobId: UUID,
@@ -535,9 +541,9 @@ data class PricingCommand(val contractId: UUID, val from: LocalDate, val to: Loc
 // SSE model
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 data class EmitterState(val emitter: MultiEmitter<in String?>, val created: Long) {
-    val FIVE_MINUTES = 5 * 60 * 1_000
+    private val fiveMins = 5 * 60 * 1_000
 
-    fun isExpired() = System.currentTimeMillis() - this.created > FIVE_MINUTES
+    fun isExpired() = System.currentTimeMillis() - this.created > fiveMins
 
     fun isExpiredOrCancelled() = this.emitter.isCancelled || isExpired()
 }
