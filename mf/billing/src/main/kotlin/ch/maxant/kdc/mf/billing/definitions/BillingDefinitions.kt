@@ -6,7 +6,7 @@ class BillingDefinitions {
         fun get(productId: ProductId) = when (productId) {
             ProductId.COOKIES_MILKSHAKE -> {
                 // TODO allow customer to actually choose, by having several of these, which the customer can choose from
-                BillingDefinition("CM-MD1", Periodicity.MONTHLY, Periodicity.DAILY, 1)
+                BillingDefinition("CM-MD1", Periodicity.MONTHLY, Periodicity.DAILY, 1) // prices constant for a month; billed daily
             }
         }
     }

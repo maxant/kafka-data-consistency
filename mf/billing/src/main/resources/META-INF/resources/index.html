@@ -11,7 +11,12 @@
 </head>
 <body>
 <div class="container">
-    <h2>Jobs <button onclick="billNow()">Bill now...</button></h2>
+    <h2>Jobs
+        <button onclick="billNow()">Bill now...</button>
+        <button onclick="deleteAll()" style="background: #ffeeee">Delete all bills!</button>
+    </h2>
+
+    <div id="toast"></div>
 
     <div id="jobs"></div>
 
@@ -50,7 +55,7 @@ source.onmessage = function (event) {
             redrawSelectedJob();
         }
 
-        jobs[state.jobId] = state;
+        jobs[state.jobId] = state; // update state, as well as handle new jobs
         redrawJobs();
     } else {
         // group state
@@ -247,7 +252,8 @@ function toDisplayDate(date, withMs) {
 
 function billNow() {
     $("body").css("cursor", "progress");
-    fetch("/billing/recurring/" + new Date().toISOString().substr(0,10), {method: "PUT"})
+    let date = new Date().toISOString().substr(0,10);
+    fetch("/billing/recurring/" + date, {method: "PUT"})
     .then(r => {
         console.log("");
         if(r.status !== 202) {
@@ -255,17 +261,38 @@ function billNow() {
                     .then(r => {
                         throw new Error(r);
                     });
-        } else return r.text();
-    }).then(jobId => {
-        return fetch("/billing-stream/jobs", {method: "GET"})
-                .then(r => r.json())
-                .then(handleJobs)
-                .then(r => jobId);
-    }).then(jobId => selectJob(jobId))
-    .catch(e => {
+        } else return r.json();
+    }).then(job => {
+        document.getElementById("toast").innerHTML =
+            `Created job with ID ${job.jobId} to bill contracts from ${date},
+             containing ${job.numSelectedContracts} contracts in ${job.numGroups} groups <a href='#' onclick="closeToast()">x</a>`;
+        selectJob(undefined) // causes deselection. we auto select when the new job arrives
+    }).catch(e => {
         alert("ERROR: " + e);
     }).finally(() => $("body").css("cursor", "default"))
 }
 
+function closeToast() {
+    document.getElementById("toast").innerHTML = "";
+}
+
+function deleteAll() {
+    $("body").css("cursor", "progress");
+    fetch("/billing/all", {method: "DELETE"})
+    .then(r => {
+        console.log("");
+        if(r.status !== 200) {
+            return r.text()
+                    .then(r => {
+                        throw new Error(r);
+                    });
+        } else return r.json();
+    }).then(deleted => {
+        document.getElementById("toast").innerHTML =
+            `Deleted ${deleted.numBills} bills from ${deleted.numContracts} contracts <a href='#' onclick="closeToast()">x</a>`;
+    }).catch(e => {
+        alert("ERROR: " + e);
+    }).finally(() => $("body").css("cursor", "default"))
+}
 </script>
 </html>

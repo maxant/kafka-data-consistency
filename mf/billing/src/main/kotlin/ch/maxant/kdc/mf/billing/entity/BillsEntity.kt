@@ -3,6 +3,7 @@ package ch.maxant.kdc.mf.billing.entity
 import org.hibernate.annotations.Type
 import org.jboss.logging.Logger
 import java.math.BigDecimal
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 import javax.persistence.*
@@ -27,17 +28,19 @@ class BillsEntity(
     @Column(name = "DEFINITION_ID", nullable = false, updatable = false)
     var definitionId: String,
 
-    @Column(name = "STARTTIME", nullable = false)
-    open var start: LocalDateTime,
+    @Column(name = "STARTDATE", nullable = false)
+    open var start: LocalDate,
 
-    @Column(name = "ENDTIME", nullable = false)
-    open var end: LocalDateTime,
+    @Column(name = "ENDDATE", nullable = false)
+    open var end: LocalDate,
 
     @Column(name = "PRICE", nullable = false)
-    var price: BigDecimal
+    var price: BigDecimal,
 
+    @Column(name = "CREATED_AT", nullable = false)
+    var createdAt: LocalDateTime = LocalDateTime.now()
 ) {
-    constructor() : this(UUID.randomUUID(), UUID.randomUUID(), "", LocalDateTime.MIN, LocalDateTime.MAX, BigDecimal.ZERO)
+    constructor() : this(UUID.randomUUID(), UUID.randomUUID(), "", LocalDate.MIN, LocalDate.MAX, BigDecimal.ZERO)
 
     object NqSelectByContractIds {
         const val name = "selectByContractIds"

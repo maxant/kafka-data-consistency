@@ -146,14 +146,7 @@ class ContractsConsumer(
                 // the price will always have a bigger range than the bill. See note in definitions!
                 // TODO ok, not true, if the customer choses a periodicity smaller than the base periodicity.
                 //  that isnt allowed for the moment tho!
-
-                var highestPrice: ComponentPriceWithValidity? = null
-                priceByComponent.forEach {
-                    if (highestPrice == null || it.price.total > highestPrice!!.price.total) {
-                        highestPrice = it
-                    }
-                }
-                periodToBill.price = highestPrice!!.price.total
+                periodToBill.price = priceByComponent.map { it.price.total }.max()!!
             }
             contract
         }

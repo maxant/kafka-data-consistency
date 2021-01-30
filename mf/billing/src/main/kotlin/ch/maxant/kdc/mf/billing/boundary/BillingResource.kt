@@ -14,6 +14,7 @@ import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
 import javax.persistence.EntityManager
+import javax.transaction.Transactional
 import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
@@ -46,10 +47,21 @@ class BillingResource(
     @Operation(summary = "select all contracts that need billing and do it")
     fun billRecurring(@Parameter(name = "from", required = true) @PathParam("from") from: String,
                       @Parameter(name = "maxSizeOfGroup", required = false) @QueryParam("maxSizeOfGroup") maxSizeOfGroup: Int?): Response {
-        val jobId = billingService.startRecurringBilling(LocalDate.parse(from), maxSizeOfGroup?:50)
-        return Response.accepted(jobId).build()
+        val job = billingService.startRecurringBilling(LocalDate.parse(from), maxSizeOfGroup?:50)
+        return Response.accepted(job).build()
+    }
+
+    @DELETE
+    @Path("/all")
+    @Operation(summary = "delete all bills - only useful for testing!")
+    @Transactional
+    fun deleteAllBills(): Response {
+        val numBills = em.createQuery("delete from BillsEntity").executeUpdate()
+        val numContracts = em.createQuery("delete from BilledToEntity").executeUpdate()
+        return Response.ok(Deleted(numBills, numContracts)).build()
     }
 
     data class ApprovedContract(val contract: ContractDto, val productId: ProductId)
+    data class Deleted(val numBills: Int, val numContracts: Int)
 }
 
