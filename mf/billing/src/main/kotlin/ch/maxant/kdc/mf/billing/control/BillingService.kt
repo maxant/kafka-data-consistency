@@ -112,7 +112,7 @@ AND c.ID = 'ffa9c87d-f39c-4518-baaa-c663166720f2'
 
     private fun calculateBillingRequirements(it: ToBill, from: LocalDate): ToBill {
         var basePeriodToPrice = when (it.billingDefinition.basePeriodicity) {
-            Periodicity.DAILY -> Period(it.billFrom, it.billFrom.plusDays(1))
+            Periodicity.DAILY -> Period(it.billFrom, it.billFrom)
             Periodicity.MONTHLY -> Period(
                 it.billFrom.withDayOfMonth(1),
                 it.billFrom.plusMonths(1).withDayOfMonth(1).minusDays(1)
@@ -150,7 +150,7 @@ AND c.ID = 'ffa9c87d-f39c-4518-baaa-c663166720f2'
         while (currentDate <= from) {
             val period = BillPeriod(currentDate, currentDate)
             periods.add(period)
-            currentDate = period.to
+            currentDate = period.to.plusDays(it.billingDefinition.chosenPeriodicity.numDaysInPeriod.toLong())
         }
         return periods
     }
@@ -177,7 +177,7 @@ AND c.ID = 'ffa9c87d-f39c-4518-baaa-c663166720f2'
             (row[1] as Timestamp).toLocalDateTime().toLocalDate(),
             (row[4] as Timestamp).toLocalDateTime().toLocalDate(),
             ofNullable(row[2])
-                .map { (it as Timestamp).toLocalDateTime().toLocalDate().plusDays(1) } // the day after billing endtime
+                .map { (it as Timestamp).toLocalDateTime().toLocalDate().plusDays(1) } // the day after billing enddate
                 .orElse((row[1] as Timestamp).toLocalDateTime().toLocalDate()), // contract start date
             ProductId.valueOf(row[3] as String),
             BillingDefinitions.get(ProductId.valueOf(row[3] as String))
