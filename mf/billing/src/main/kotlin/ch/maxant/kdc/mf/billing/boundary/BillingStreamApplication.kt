@@ -54,7 +54,7 @@ class BillingStreamApplication(
     @ConfigProperty(name = "kafka.bootstrap.servers")
     val kafkaBootstrapServers: String,
 
-    @ConfigProperty(name = "ch.maxant.kdc.mf.billing.failRandomlyForTestingPurposes", defaultValue = "false")
+    @ConfigProperty(name = "ch.maxant.kdc.mf.billing.failRandomlyForTestingPurposes", defaultValue = "true")
     var failRandomlyForTestingPurposes: Boolean
 ) {
     // TODO tidy the entries up when they are no longer in use! tip: see isCancelled below - altho theyre already removed with onterminate at the bottom?
@@ -217,7 +217,7 @@ class BillingStreamApplication(
     private fun buildReadPricesCommand(v: String): String {
         val state = om.readValue<GroupState>(v)
 
-        val fail = failRandomlyForTestingPurposes && random.nextInt(100) == 1
+        val fail = failRandomlyForTestingPurposes && random.nextInt(50) == 1
         if(fail) {
             log.warn("failing job ${state.group.jobId} and group ${state.group.groupId} for testing purposes at pricing!")
         }

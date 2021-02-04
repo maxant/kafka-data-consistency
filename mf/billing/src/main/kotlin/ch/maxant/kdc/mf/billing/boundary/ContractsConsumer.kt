@@ -40,7 +40,7 @@ class ContractsConsumer(
 
     override fun getKey() = "contracts-event-bus-in"
 
-    override fun getRunInParallel() = true
+    override fun getRunInParallel() = false
 
     /** not using kafka streams api here, because we need easy access to headers */
     @PimpedAndWithDltAndAck

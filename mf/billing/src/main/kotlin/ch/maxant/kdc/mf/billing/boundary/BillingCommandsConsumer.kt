@@ -35,7 +35,7 @@ class BillingCommandsConsumer(
 
     override fun getKey() = "billing-in"
 
-    override fun getRunInParallel() = true
+    override fun getRunInParallel() = false
 
     /**
      * this is the general entry point into the billing application. this is either called because a contract is
