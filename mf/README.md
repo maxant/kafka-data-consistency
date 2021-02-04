@@ -247,27 +247,25 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
 ## TODO
 
-- billing: restart it and bill the fixed contract. if that works, then change temp sql to `AND c.starttime > '2021-01-29'` => instead of contractId = blahblah
-  - check grouping by day and max group size works
-  - work on latency
+- billing2 => compare to using DB to store state
+- remove old stuff from this git repo so we can link to this repo in presentations
 - fix external sales
 - grafana parameterisation
-- add kafka metrics to grafana
-- discounts can be added to any component in the tree, as a child component! still not sure to which component these belong
+- add kafka metrics from applications (prod/consumers/streams) to grafana
 - show bills on contract UI
 - link from billing application back into contracts
+- billing: send event back to sales UI so that the customer can pay directly for the first billed period
 - https://quarkus.io/guides/redis
 - https://zipkin.io/ => also for billing!
   - or this? https://www.hashicorp.com/blog/service-mesh-visualization-in-hashicorp-consul-1-9
   - https://piotrminkowski.com/2020/11/24/quarkus-microservices-with-consul-discovery/
   - https://www.consul.io/docs/intro/vs/istio
-- billing2 => compare to using DB to store state
 - billing
   - billing - stopping => send control command to inform that a selection has been cancelled and it is to be ignored (all pods need to listen to this topic!)
   - tombstone records and compaction, including deleting jobs from UI
-  - send event back to sales UI so that the customer can pay directly for the first billed period
 - allow changing the quantity in the offer, so you can get under the approval threshold
   - somethings not quite right - the price doesnt account for the quantity in the box!
+- discounts can be added to any component in the tree, as a child component! still not sure to which component these belong
 - display existing draft so that you can continue working from there
 - change from external to internal, if you arent sure and need a consultation
 - add createdAt/By to all entities and order partner relationships by that and load only the latest ones

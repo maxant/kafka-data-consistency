@@ -240,7 +240,14 @@ class BillingStreamApplication(
     val jobsAggregator = Aggregator {_: String, v: String, j: String ->
         val jobState = om.readValue<JobState>(j)
         val group = om.readValue<Group>(v)
+
+        jobState.jobId = group.jobId // just in case its not set yet
         jobState.numContractsByGroupId[group.groupId] = group.contracts.size
+        if(!jobState.groups.containsKey(group.groupId)) {
+            jobState.groups[group.groupId] = State.STARTED
+        }
+        jobState.numContractsTotal = jobState.numContractsByGroupId.values.sum()
+
         when(group.failedProcessStep) {
             BillingProcessStep.READ_PRICE, BillingProcessStep.RECALCULATE_PRICE  -> {
                 jobState.groups[group.groupId] = State.FAILED
@@ -254,9 +261,6 @@ class BillingStreamApplication(
         }
         when(group.nextProcessStep) {
             BillingProcessStep.READ_PRICE, BillingProcessStep.RECALCULATE_PRICE  -> {
-                jobState.jobId = group.jobId // just in case its not set yet
-                jobState.groups[group.groupId] = State.STARTED
-                jobState.numContractsTotal += group.contracts.size
                 jobState.numContractsPricing += group.contracts.size
             }
             BillingProcessStep.BILL -> {
