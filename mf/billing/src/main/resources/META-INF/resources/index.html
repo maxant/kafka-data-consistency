@@ -156,13 +156,16 @@ function redrawSelectedJob() {
     `;
     table += `</table><h3>Groups in Job</h3><table border="1"><tr>
         <th>Group ID</th>
+        <th># Contracts</th>
         <th>State</th>
     </tr>`;
 
     for(groupId in selectedJob.groups) {
         let state = selectedJob.groups[groupId];
+        let numContractsInGroup = selectedJob.numContractsByGroupId[groupId];
         table += `<tr>
             <td><a href="#" onclick="selectGroup('${groupId}')">${groupId}</a></td>
+            <td>${numContractsInGroup}</td>
             <td>${state}</td>
         </tr>`;
     }

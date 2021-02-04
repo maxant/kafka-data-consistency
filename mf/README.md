@@ -250,12 +250,17 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 - billing: restart it and bill the fixed contract. if that works, then change temp sql to `AND c.starttime > '2021-01-29'` => instead of contractId = blahblah
   - check grouping by day and max group size works
   - work on latency
-- discounts can be added to any component in the tree, as a child component! still not sure to which component these belong
 - fix external sales
+- grafana parameterisation
+- add kafka metrics to grafana
+- discounts can be added to any component in the tree, as a child component! still not sure to which component these belong
 - show bills on contract UI
 - link from billing application back into contracts
 - https://quarkus.io/guides/redis
 - https://zipkin.io/ => also for billing!
+  - or this? https://www.hashicorp.com/blog/service-mesh-visualization-in-hashicorp-consul-1-9
+  - https://piotrminkowski.com/2020/11/24/quarkus-microservices-with-consul-discovery/
+  - https://www.consul.io/docs/intro/vs/istio
 - billing2 => compare to using DB to store state
 - billing
   - billing - stopping => send control command to inform that a selection has been cancelled and it is to be ignored (all pods need to listen to this topic!)

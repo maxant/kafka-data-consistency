@@ -9,6 +9,7 @@ import ch.maxant.kdc.mf.billing.entity.BilledToEntity
 import ch.maxant.kdc.mf.billing.entity.BillsEntity
 import ch.maxant.kdc.mf.library.Context
 import org.apache.commons.collections4.ListUtils
+import java.sql.Date
 import java.sql.Timestamp
 import java.time.LocalDate
 import java.util.*
@@ -50,8 +51,9 @@ AND c.STARTTIME <= ?
 AND c.ENDTIME >= ? 
 AND c.STATE = 'RUNNING' 
 AND p.PRODUCT_ID is not null 
-AND c.ID = 'ffa9c87d-f39c-4518-baaa-c663166720f2' 
+AND c.starttime > '2021-02-03'
 """
+//AND c.ID = 'ffa9c87d-f39c-4518-baaa-c663166720f2'
 
     @Transactional
     fun billGroup(group: Group) {
@@ -177,7 +179,7 @@ AND c.ID = 'ffa9c87d-f39c-4518-baaa-c663166720f2'
             (row[1] as Timestamp).toLocalDateTime().toLocalDate(),
             (row[4] as Timestamp).toLocalDateTime().toLocalDate(),
             ofNullable(row[2])
-                .map { (it as Timestamp).toLocalDateTime().toLocalDate().plusDays(1) } // the day after billing enddate
+                .map { (it as Date).toLocalDate().plusDays(1) } // the day after billing enddate
                 .orElse((row[1] as Timestamp).toLocalDateTime().toLocalDate()), // contract start date
             ProductId.valueOf(row[3] as String),
             BillingDefinitions.get(ProductId.valueOf(row[3] as String))

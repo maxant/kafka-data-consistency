@@ -79,7 +79,7 @@ class PricingService(
             require(commandsForContract.size == 1) { "Request to read price of contract for more than one period is not currently supported! $commandsForContract" }
             val commandForContract = commandsForContract[0]
 
-            val componentIds = entitiesOrderedByStart.map { it.componentId }.distinct()
+            val componentIds = entitiesForContractOrderedByStart.map { it.componentId }.distinct()
             val componentPrices = mutableMapOf<UUID, ComponentPriceWithValidity>()
             for(componentId in componentIds) {
                 val entity = entitiesForContractOrderedByStart.filter { it.componentId == componentId }
@@ -120,7 +120,7 @@ class PricingService(
             //        |-- date from which a new price is needed => reduces to case 1
             //
             // case 3 - anything else => error, unexpected
-            val componentIds = entitiesOrderedByStart.map { it.componentId }.distinct()
+            val componentIds = entitiesForContractOrderedByStart.map { it.componentId }.distinct()
             for(componentId in componentIds) {
                 val lastEntityForComponentAndContract = entitiesForContractOrderedByStart.filter { it.componentId == componentId }.last()
 

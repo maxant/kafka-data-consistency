@@ -125,7 +125,7 @@ class ContractsConsumer(
         }
 
         // now send a group message so that the app can update its state for the old group.
-        streamService.sendGroup(Group(originalGroup.jobId, originalGroup.groupId, originalGroup.contracts, null, processStep, failedReason = originalGroup.failedReason))
+        streamService.sendGroup(Group(originalGroup.jobId, originalGroup.groupId, originalGroup.contracts, null, processStep, failedReason = group.failedReason))
     }
 
     private fun getContract(group: Group, contractId: UUID) = group.contracts.find { it.contractId == contractId }!!

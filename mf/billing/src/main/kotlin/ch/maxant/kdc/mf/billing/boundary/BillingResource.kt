@@ -47,7 +47,7 @@ class BillingResource(
     @Operation(summary = "select all contracts that need billing and do it")
     fun billRecurring(@Parameter(name = "from", required = true) @PathParam("from") from: String,
                       @Parameter(name = "maxSizeOfGroup", required = false) @QueryParam("maxSizeOfGroup") maxSizeOfGroup: Int?): Response {
-        val job = billingService.startRecurringBilling(LocalDate.parse(from), maxSizeOfGroup?:50)
+        val job = billingService.startRecurringBilling(LocalDate.parse(from), maxSizeOfGroup?:100)
         return Response.accepted(job).build()
     }
 

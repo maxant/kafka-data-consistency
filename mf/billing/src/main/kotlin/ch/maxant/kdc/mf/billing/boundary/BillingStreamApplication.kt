@@ -85,6 +85,10 @@ class BillingStreamApplication(
         props[StreamsConfig.BOOTSTRAP_SERVERS_CONFIG] = kafkaBootstrapServers
         props[StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG] = Serdes.String()::class.java
         props[StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG] = Serdes.String()::class.java
+        // tune, so we dont wait for a long time:
+        // we'd like to keep this higher but for individual billing,
+        // we end up waiting 7 seconds in total if this is at 1000
+        props[StreamsConfig.COMMIT_INTERVAL_MS_CONFIG] = 100
 
         val builder = StreamsBuilder()
 
@@ -236,6 +240,7 @@ class BillingStreamApplication(
     val jobsAggregator = Aggregator {_: String, v: String, j: String ->
         val jobState = om.readValue<JobState>(j)
         val group = om.readValue<Group>(v)
+        jobState.numContractsByGroupId[group.groupId] = group.contracts.size
         when(group.failedProcessStep) {
             BillingProcessStep.READ_PRICE, BillingProcessStep.RECALCULATE_PRICE  -> {
                 jobState.groups[group.groupId] = State.FAILED
@@ -451,6 +456,7 @@ class MfTransformer(private val headerName: String, private var headerValue: Str
 data class JobState(var jobId: UUID,
                     var state: State,
                     var groups: HashMap<UUID, State>, // 1'000 x 36-chars-UUID + 10-chars-state => less than 100kb?
+                    var numContractsByGroupId: HashMap<UUID, Int> = hashMapOf(), // 1'000 x 4 bytes => less than 4kb
 
                     // estimates:
 
@@ -465,7 +471,7 @@ data class JobState(var jobId: UUID,
                     var completed: LocalDateTime?
 ) {
     constructor():
-            this(UUID.randomUUID(), State.STARTED, hashMapOf<UUID, State>(), 0, 0, 0, 0, 0, 0, emptyList(), LocalDateTime.now(), null)
+            this(UUID.randomUUID(), State.STARTED, hashMapOf<UUID, State>(), hashMapOf<UUID, Int>(), 0, 0, 0, 0, 0, 0, emptyList(), LocalDateTime.now(), null)
 
 }
 
