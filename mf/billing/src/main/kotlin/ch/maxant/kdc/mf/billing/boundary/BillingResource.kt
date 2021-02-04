@@ -1,6 +1,7 @@
 package ch.maxant.kdc.mf.billing.boundary
 
 import ch.maxant.kdc.mf.billing.control.BillingService
+import ch.maxant.kdc.mf.billing.control.StreamService
 import ch.maxant.kdc.mf.billing.definitions.ProductId
 import ch.maxant.kdc.mf.billing.entity.BillsEntity
 import ch.maxant.kdc.mf.library.MessageBuilder
@@ -30,6 +31,12 @@ class BillingResource(
     var em: EntityManager,
 
     @Inject
+    var billingStreamApplication: BillingStreamApplication,
+
+    @Inject
+    var streamService: StreamService,
+
+    @Inject
     var billingService: BillingService
 ) {
     @GET
@@ -38,8 +45,8 @@ class BillingResource(
         Response.ok(em.find(BillsEntity::class.java, id)).build()
 
     @POST
-    @Path("/byContractId")
-    fun getByContractIds(@PathParam("contractIds") contractIds: List<UUID>) =
+    @Path("/readByContractId")
+    fun readByContractIds(@PathParam("contractIds") contractIds: List<UUID>) =
         Response.ok(BillsEntity.Queries.selectByContractIds(em, contractIds)).build()
 
     @PUT
@@ -49,6 +56,18 @@ class BillingResource(
                       @Parameter(name = "maxSizeOfGroup", required = false) @QueryParam("maxSizeOfGroup") maxSizeOfGroup: Int?): Response {
         val job = billingService.startRecurringBilling(LocalDate.parse(from), maxSizeOfGroup?:100)
         return Response.accepted(job).build()
+    }
+
+    @PUT
+    @Path("/retry/{groupId}")
+    @Operation(summary = "retry a group which failed")
+    fun retryGroup(@Parameter(name = "groupId", required = true) @PathParam("groupId") groupId: String): Response {
+        val group = om.readValue(billingStreamApplication.getGlobalGroup(groupId), GroupState::class.java).group
+        if(group.failedProcessStep == null) return Response.status(Response.Status.BAD_REQUEST).entity("group didnt fail").build()
+        val newGroupId = UUID.randomUUID()
+        val newGroup = Group(group.jobId, newGroupId, group.contracts, nextProcessStep = group.failedProcessStep, started = LocalDateTime.now())
+        streamService.sendGroup(newGroup)
+        return Response.ok(newGroupId).build()
     }
 
     @DELETE

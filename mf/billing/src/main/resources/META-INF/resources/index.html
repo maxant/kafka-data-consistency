@@ -139,19 +139,36 @@ function redrawJobs() {
     document.getElementById("jobs").innerHTML = table;
 }
 
+function getProgress(num, total) {
+    let progress = 1.0 * num / total;
+    if(progress > 1.0) progress = 1.0;
+    progress *= 200.0; // up to so many pixels wide
+    progress = parseInt(`${progress}`);
+    return progress;
+}
+
 function redrawSelectedJob() {
     if(!selectedJob) {
         document.getElementById("job").innerHTML = ``;
         return;
     }
 
+    let progressPricing = getProgress(selectedJob.numContractsPricing, selectedJob.numContractsTotal);
+    let progressBilling = getProgress(selectedJob.numContractsBilling, selectedJob.numContractsTotal);
+    let progressComplete = getProgress(selectedJob.numContractsComplete, selectedJob.numContractsTotal);
     let table = `<table>
         <tr><td style="padding: 2px;" align="right">num Contracts Total:</td><td>${selectedJob.numContractsTotal}</td></tr>
-        <tr><td style="padding: 2px;" align="right">num Contracts Pricing:</td><td>${selectedJob.numContractsPricing}</td></tr>
+        <tr><td style="padding: 2px;" align="right">num Contracts Pricing:</td><td>${selectedJob.numContractsPricing}
+            <span style="width: ${progressPricing}px; border: 1px solid black; display: inline-block; background: blue;">&nbsp;</span>
+        </td></tr>
         <tr><td style="padding: 2px;" align="right">num Contracts PricingFailed:</td><td>${selectedJob.numContractsPricingFailed}</td></tr>
-        <tr><td style="padding: 2px;" align="right">num Contracts Billing:</td><td>${selectedJob.numContractsBilling}</td></tr>
+        <tr><td style="padding: 2px;" align="right">num Contracts Billing:</td><td>${selectedJob.numContractsBilling}
+            <span style="width: ${progressBilling}px; border: 1px solid black; display: inline-block; background: blue;">&nbsp;</span>
+        </td></tr>
         <tr><td style="padding: 2px;" align="right">num Contracts BillingFailed:</td><td>${selectedJob.numContractsBillingFailed}</td></tr>
-        <tr><td style="padding: 2px;" align="right">num Contracts Complete:</td><td>${selectedJob.numContractsComplete}</td></tr>
+        <tr><td style="padding: 2px;" align="right">num Contracts Complete:</td><td>${selectedJob.numContractsComplete}
+            <span style="width: ${progressComplete}px; border: 1px solid black; display: inline-block; background: blue;">&nbsp;</span>
+        </td></tr>
         <tr><td style="padding: 2px;" align="right">failed contract IDs:</td><td>${selectedJob.failedContractIds.join(",")}</td></tr>
     `;
     table += `</table><h3>Groups in Job</h3><table border="1"><tr>
@@ -190,10 +207,18 @@ function redrawSelectedGroup() {
             <a href="#" onclick="selectedGroup = undefined; redrawSelectedGroup();">x</a>
         </h2>
         <table>
-            <tr><td style="padding: 2px;" align="right">started:</td><td>${toDisplayDate(selectedGroup.started)}</td></tr>
-            <tr><td style="padding: 2px;" align="right">finished:</td><td>${toDisplayDate(selectedGroup.finished)}</td></tr>
-            <tr><td style="padding: 2px;" align="right">state:</td><td>${selectedGroup.state}</td></tr>
-        </table>`;
+            <tr><td style="padding: 2px;" align="right">Started:</td><td>${toDisplayDate(selectedGroup.started)}</td></tr>
+            <tr><td style="padding: 2px;" align="right">Finished:</td><td>${toDisplayDate(selectedGroup.finished)}</td></tr>
+            <tr><td style="padding: 2px;" align="right">State:</td><td>${selectedGroup.state}</td></tr>
+        `;
+    if(selectedGroup.group.contracts.length == 1 && selectedGroup.history[0].failedProcessStep){
+        table += `<tr><td style="padding: 2px;" align="center" colspan="2">
+            <button onclick="retryGroup('${selectedGroup.group.groupId}')">retry</button>
+        </td></tr>
+        `;
+    }
+
+    table += `</table>`;
 
     table += `<h3>History</h3><table border="1"><tr>
         <th>Time</th>
@@ -297,5 +322,25 @@ function deleteAll() {
         alert("ERROR: " + e);
     }).finally(() => $("body").css("cursor", "default"))
 }
+
+function retryGroup(groupId) {
+    $("body").css("cursor", "progress");
+    fetch("/billing/retry/" + groupId, {method: "PUT"})
+    .then(r => {
+        console.log("");
+        if(r.status !== 200) {
+            return r.text()
+                    .then(r => {
+                        throw new Error(r);
+                    });
+        } else return r.json();
+    }).then(newGroupId => {
+        document.getElementById("toast").innerHTML =
+            `Resubmitted group ${groupId} with new group ID ${newGroupId} <a href='#' onclick="closeToast()">x</a>`;
+    }).catch(e => {
+        alert("ERROR: " + e);
+    }).finally(() => $("body").css("cursor", "default"))
+}
+
 </script>
 </html>

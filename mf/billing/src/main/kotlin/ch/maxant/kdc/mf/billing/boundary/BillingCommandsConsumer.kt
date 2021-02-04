@@ -63,17 +63,21 @@ class BillingCommandsConsumer(
             streamService.sendGroup(Group(group.jobId, group.groupId, group.contracts, BillingProcessStep.COMMS))
         } catch (e: Exception) {
             if(group.contracts.size == 1) {
-                log.error("failed to bill contract as part of group ${group.groupId} in job ${group.jobId}, " +
-                        "with contractId ${group.contracts[0].contractId}", e)
-                streamService.sendGroup(Group(group.jobId, group.groupId, group.contracts, null, BillingProcessStep.BILL))
+                val msg = "failed to bill contract due to ${e.message}, as part of group ${group.groupId} in job ${group.jobId}, " +
+                        "with contractId ${group.contracts[0].contractId}"
+                log.error(msg, e)
+                streamService.sendGroup(Group(group.jobId, group.groupId, group.contracts, null, BillingProcessStep.BILL, failedReason = msg))
             } else {
-                log.info("failed to bill group => sending individually ${group.groupId}")
+                val msg = "failed to bill group because of ${e.message} => sending individually ${group.groupId}"
+                log.info(msg)
                 // resend individually
                 group.contracts.forEach { contract ->
                     val newGroupId = UUID.randomUUID() // we create a new group - one for each individual contract, containing the periods to price
                     val newGroup = Group(group.jobId, newGroupId, listOf(contract), BillingProcessStep.BILL)
                     streamService.sendGroup(newGroup)
                 }
+                // now send a group message so that the app can update its state for the old group.
+                streamService.sendGroup(Group(group.jobId, group.groupId, group.contracts, null, BillingProcessStep.BILL, failedReason = msg))
             }
         }
     }

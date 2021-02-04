@@ -359,7 +359,7 @@ class BillingStreamApplication(
         }
 
     /** seems to not like immediate fetching of the store during init - so lets do it lazily */
-    private fun getGlobalGroup(key: String) =
+    fun getGlobalGroup(key: String) =
         try {
             globalGroupsView.get(key)
         } catch(e: UninitializedPropertyAccessException) {

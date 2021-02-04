@@ -8,6 +8,7 @@ import ch.maxant.kdc.mf.billing.definitions.ProductId
 import ch.maxant.kdc.mf.billing.entity.BilledToEntity
 import ch.maxant.kdc.mf.billing.entity.BillsEntity
 import ch.maxant.kdc.mf.library.Context
+import io.quarkus.narayana.jta.runtime.TransactionConfiguration
 import org.apache.commons.collections4.ListUtils
 import java.sql.Date
 import java.sql.Timestamp
@@ -51,10 +52,11 @@ AND c.STARTTIME <= ?
 AND c.ENDTIME >= ? 
 AND c.STATE = 'RUNNING' 
 AND p.PRODUCT_ID is not null 
-AND c.starttime > '2021-02-03'
+AND c.starttime > '2021-01-01'
 """
 //AND c.ID = 'ffa9c87d-f39c-4518-baaa-c663166720f2'
 
+    @TransactionConfiguration(timeout = 600) // 10 minutes, since with larger data sets we can have problems
     @Transactional
     fun billGroup(group: Group) {
         group.contracts.forEach { contract ->
