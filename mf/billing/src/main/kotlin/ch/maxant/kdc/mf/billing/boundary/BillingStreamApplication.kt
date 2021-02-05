@@ -122,7 +122,10 @@ class BillingStreamApplication(
         // ... and then get any completed jobs and send an event about that fact
         jobsStateStream
             .filter(
-                { _, v -> catching(v) { om.readValue<JobState>(v).completed != null } },
+                { _, v -> catching(v) {
+                    val js = om.readValue<JobState>(v)
+                    js.completed != null && js.state == State.COMPLETED
+                } },
                 Named.`as`("billing-internal-branch-job-successful")
             )
             .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
@@ -243,7 +246,6 @@ class BillingStreamApplication(
 
         jobState.jobId = group.jobId // just in case its not set yet
         jobState.state = State.STARTED
-        jobState.completed = null
         jobState.numContractsByGroupId[group.groupId] = group.contracts.size
         if(!jobState.groups.containsKey(group.groupId)) {
             jobState.groups[group.groupId] = State.STARTED
@@ -270,17 +272,21 @@ class BillingStreamApplication(
             }
             BillingProcessStep.COMMS -> {
                 jobState.groups[group.groupId] = State.COMPLETED
-                if(jobState.groups.values.all { it == State.COMPLETED || it == State.FAILED }) {
-                    jobState.state = State.COMPLETED
-                    jobState.completed = LocalDateTime.now()
-                }
                 jobState.numContractsComplete += group.contracts.size
             }
         }
-        if(jobState.groups.all { it.value == State.FAILED }) {
+        if(jobState.groups.values.all { it == State.COMPLETED || it == State.FAILED }) {
+            if(jobState.groups.values.all { it == State.COMPLETED }) {
+                jobState.state = State.COMPLETED
+            } else {
+                jobState.state = State.FAILED
+            }
             jobState.completed = LocalDateTime.now()
-            jobState.state = State.FAILED
+        } else {
+            jobState.state = State.STARTED
+            jobState.completed = null
         }
+
         om.writeValueAsString(jobState)
     }
 
@@ -513,7 +519,8 @@ data class Group(val jobId: UUID,
                                                             // the next process step. null if failed.
                  val failedProcessStep: BillingProcessStep? = null, // where, if at all the group failed
                  val started: LocalDateTime = LocalDateTime.now(),
-                 val failedReason: String? = null
+                 val failedReason: String? = null,
+                 val failedGroupId: UUID? = null // the group that this one is replacing
 )
 
 data class Contract(val jobId: UUID,

@@ -117,7 +117,7 @@ function selectGroup(groupId) {
 }
 
 function redrawJobs() {
-    let table = `<div style="overflow-y: scroll; overflow-x: hidden; height: 200px;"><table border="1"><tr>
+    let table = `<div style="overflow-y: scroll; overflow-x: hidden; max-height: 200px;"><table border="1"><tr>
         <th>Job ID</th>
         <th>Started</th>
         <th>Completed</th>
@@ -171,7 +171,7 @@ function redrawSelectedJob() {
         </td></tr>
         <tr><td style="padding: 2px;" align="right">failed contract IDs:</td><td>${selectedJob.failedContractIds.join(",")}</td></tr>
     `;
-    table += `</table><h3>Groups in Job</h3><div  style="overflow-y: scroll; overflow-x: hidden; height: 400px;"><table border="1"><tr>
+    table += `</table><h3>Groups in Job</h3><div  style="overflow-y: scroll; overflow-x: hidden; max-height: 400px;"><table border="1"><tr>
         <th>Group ID</th>
         <th># Contracts</th>
         <th>State</th>
@@ -211,20 +211,29 @@ function redrawSelectedGroup() {
             <tr><td style="padding: 2px;" align="right">Finished:</td><td>${toDisplayDate(selectedGroup.finished)}</td></tr>
             <tr><td style="padding: 2px;" align="right">State:</td><td>${selectedGroup.state}</td></tr>
         `;
-    if(selectedGroup.group.contracts.length == 1 && selectedGroup.history[0].failedProcessStep){
+    let failedProcessSteps = _(selectedGroup.history).map("failedProcessStep").filter(e => !!e);
+    if(/*selectedGroup.group.contracts.length == 1 &&*/ !failedProcessSteps.isEmpty() ){
         table += `<tr><td style="padding: 2px;" align="center" colspan="2">
-            <button onclick="retryGroup('${selectedGroup.group.groupId}')">retry</button>
-        </td></tr>
         `;
+        if(failedProcessSteps.includes("READ_PRICE")){
+            table += `<button onclick="retryGroup('${selectedGroup.group.groupId}', 'READ_PRICE')">retry read pricing</button>`;
+        } else if(failedProcessSteps.includes("RECALCULATE_PRICE")){
+            table += `<button onclick="retryGroup('${selectedGroup.group.groupId}', 'RECALCULATE_PRICE')">retry recalculate pricing</button>`;
+        } else if(failedProcessSteps.includes("BILL")){
+            table += `<button onclick="retryGroup('${selectedGroup.group.groupId}', 'READ_PRICE')">retry read pricing</button>`;
+            table += `<button onclick="retryGroup('${selectedGroup.group.groupId}', 'RECALCULATE_PRICE')">retry recalculate pricing</button>`;
+            table += `<button onclick="retryGroup('${selectedGroup.group.groupId}', 'BILL')">retry billing</button>`;
+        }
+        table += `</td></tr>`;
     }
 
     table += `</table>`;
 
     table += `<h3>History</h3><table border="1"><tr>
         <th>Time</th>
-        <th>next process step</th>
-        <th>failed process step</th>
-        <th>failed reason</th>
+        <th>Next process step</th>
+        <th>Failed process step</th>
+        <th>Replaces Group</th>
     </tr>`;
     for(i in selectedGroup.history) {
         let history = selectedGroup.history[i];
@@ -233,6 +242,7 @@ function redrawSelectedGroup() {
             <td>${history.nextProcessStep}</td>
             <td>${history.failedProcessStep}</td>
             <td>${history.failedReason}</td>
+            <td>${history.failedGroupId}</td>
         </tr>`;
     }
     table += `</table>`;
@@ -323,9 +333,9 @@ function deleteAll() {
     }).finally(() => $("body").css("cursor", "default"))
 }
 
-function retryGroup(groupId) {
+function retryGroup(groupId, step) {
     $("body").css("cursor", "progress");
-    fetch("/billing/retry/" + groupId, {method: "PUT"})
+    fetch("/billing/retry/" + groupId + "/" + step, {method: "PUT"})
     .then(r => {
         console.log("");
         if(r.status !== 200) {

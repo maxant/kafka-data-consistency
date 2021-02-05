@@ -73,7 +73,7 @@ class BillingCommandsConsumer(
                 // resend individually
                 group.contracts.forEach { contract ->
                     val newGroupId = UUID.randomUUID() // we create a new group - one for each individual contract, containing the periods to price
-                    val newGroup = Group(group.jobId, newGroupId, listOf(contract), BillingProcessStep.BILL)
+                    val newGroup = Group(group.jobId, newGroupId, listOf(contract), BillingProcessStep.BILL, failedGroupId = group.groupId)
                     streamService.sendGroup(newGroup)
                 }
                 // now send a group message so that the app can update its state for the old group.

@@ -6,6 +6,7 @@ import ch.maxant.kdc.mf.billing.definitions.ProductId
 import ch.maxant.kdc.mf.billing.entity.BillsEntity
 import ch.maxant.kdc.mf.library.MessageBuilder
 import com.fasterxml.jackson.databind.ObjectMapper
+import io.quarkus.narayana.jta.runtime.TransactionConfiguration
 import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.eclipse.microprofile.reactive.messaging.Channel
@@ -59,13 +60,14 @@ class BillingResource(
     }
 
     @PUT
-    @Path("/retry/{groupId}")
+    @Path("/retry/{groupId}/{processStep}")
     @Operation(summary = "retry a group which failed")
-    fun retryGroup(@Parameter(name = "groupId", required = true) @PathParam("groupId") groupId: String): Response {
+    fun retryGroup(@Parameter(name = "groupId", required = true) @PathParam("groupId") groupId: String,
+                   @Parameter(name = "processStep", required = true) @PathParam("processStep") processStep: String): Response {
         val group = om.readValue(billingStreamApplication.getGlobalGroup(groupId), GroupState::class.java).group
         if(group.failedProcessStep == null) return Response.status(Response.Status.BAD_REQUEST).entity("group didnt fail").build()
         val newGroupId = UUID.randomUUID()
-        val newGroup = Group(group.jobId, newGroupId, group.contracts, nextProcessStep = group.failedProcessStep, started = LocalDateTime.now())
+        val newGroup = Group(group.jobId, newGroupId, group.contracts, nextProcessStep = BillingProcessStep.valueOf(processStep), started = LocalDateTime.now(), failedGroupId = UUID.fromString(groupId))
         streamService.sendGroup(newGroup)
         return Response.ok(newGroupId).build()
     }
@@ -74,6 +76,7 @@ class BillingResource(
     @Path("/all")
     @Operation(summary = "delete all bills - only useful for testing!")
     @Transactional
+    @TransactionConfiguration(timeout = 600) // 10 minutes, since with larger data sets we can have problems
     fun deleteAllBills(): Response {
         val numBills = em.createQuery("delete from BillsEntity").executeUpdate()
         val numContracts = em.createQuery("delete from BilledToEntity").executeUpdate()
@@ -83,4 +86,3 @@ class BillingResource(
     data class ApprovedContract(val contract: ContractDto, val productId: ProductId)
     data class Deleted(val numBills: Int, val numContracts: Int)
 }
-

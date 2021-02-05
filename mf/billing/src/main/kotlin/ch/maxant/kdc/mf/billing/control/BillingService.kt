@@ -10,6 +10,7 @@ import ch.maxant.kdc.mf.billing.entity.BillsEntity
 import ch.maxant.kdc.mf.library.Context
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration
 import org.apache.commons.collections4.ListUtils
+import org.jboss.logging.Logger
 import java.sql.Date
 import java.sql.Timestamp
 import java.time.LocalDate
@@ -56,9 +57,12 @@ AND c.starttime > '2021-01-01'
 """
 //AND c.ID = 'ffa9c87d-f39c-4518-baaa-c663166720f2'
 
-    @TransactionConfiguration(timeout = 600) // 10 minutes, since with larger data sets we can have problems
+    private val log = Logger.getLogger(this.javaClass)
+
     @Transactional
+    @TransactionConfiguration(timeout = 600) // 10 minutes, since with larger data sets we can have problems
     fun billGroup(group: Group) {
+        log.info("billing group ${group.groupId} containing ${group.contracts.size} contracts and a total of ${group.contracts.flatMap { it.periodsToBill }.count()} billing periods")
         group.contracts.forEach { contract ->
             contract.periodsToBill.forEach { period ->
                 val bill = BillsEntity(UUID.randomUUID(), contract.contractId,
@@ -200,3 +204,4 @@ AND c.starttime > '2021-01-01'
 }
 
 data class RecurringBillingJob(val jobId: UUID, val numSelectedContracts: Int, val numGroups: Int)
+

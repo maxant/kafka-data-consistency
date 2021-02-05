@@ -114,13 +114,13 @@ class ContractsConsumer(
             val newGroupId = UUID.randomUUID() // we create a new group - one for each individual contract, containing the periods to price
             val contract = Contract(
                 originalContract.jobId,
-                group.groupId,
+                newGroupId,
                 originalContract.contractId,
                 originalContract.billingDefinitionId,
                 originalContract.basePeriodsToPrice,
-                emptyList()
+                originalContract.periodsToBill
             )
-            val newGroup = Group(originalContract.jobId, newGroupId, listOf(contract), processStep)
+            val newGroup = Group(originalContract.jobId, newGroupId, listOf(contract), processStep, failedGroupId = group.groupId)
             streamService.sendGroup(newGroup)
         }
 
