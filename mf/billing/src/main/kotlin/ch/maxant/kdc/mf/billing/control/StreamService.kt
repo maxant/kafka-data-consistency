@@ -21,7 +21,7 @@ class StreamService(
 
     fun sendGroup(group: Group) {
         val md = OutgoingKafkaRecordMetadata.builder<String>()
-                .withKey(group.jobId.toString())
+                .withKey(group.groupId.toString()) // MUST be group Id, so that local ktable of groups contains the right data
                 .build()
         val msg = Message.of(om.writeValueAsString(group))
         stream.send(msg.addMetadata(md))

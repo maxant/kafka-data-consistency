@@ -104,7 +104,7 @@ class BillingStreamApplication(
         // after a group is processed and sent downstream, processed and returned! the single source of synchronous
         // truth is the group state!
         val jobsStateStream = streamOfGroups
-                .groupByKey()
+                .groupBy { _, v -> om.readTree(v).get("jobId").asText() }
                 .aggregate(Initializer { om.writeValueAsString(JobState()) },
                             jobsAggregator,
                             Named.`as`("billing-internal-aggregate-state-jobs"),
@@ -113,7 +113,7 @@ class BillingStreamApplication(
 
         // publish aggregated job state to a topic in order to build a GKT from it...
         jobsStateStream
-                .peek {k, _ -> log.info("aggregated group into job $k")}
+                //.peek {k, _ -> log.info("aggregated group into job $k")}
                 .to(BILLING_INTERNAL_STATE_JOBS)
 
         val allJobsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`(allJobsStoreName)
@@ -137,13 +137,13 @@ class BillingStreamApplication(
         // GROUPS - single source of truth of true state relating to the billing of a groups of contracts
         val groupsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`(groupsStoreName)
         val groupsTable = streamOfGroups
-                .groupBy { _, value -> om.readTree(value).get("groupId").asText() }
+                .groupByKey()
                 .aggregate(Initializer { om.writeValueAsString(GroupState()) },
                         groupsAggregator,
                         Named.`as`("billing-internal-aggregate-state-groups"),
                         groupsStore)
         val groupsStream = groupsTable.toStream(Named.`as`("billing-internal-stream-state-groups"))
-        groupsStream.peek {k, _ -> log.info("aggregated group $k")}
+        groupsStream.peek {k, v -> log.info("aggregated group $k with ${om.readTree(v).get("group").get("contracts").size()} contracts")}
                     .to(BILLING_INTERNAL_STATE_GROUPS)
 
         // global GROUPS - just so that we can fetch data for the UI!
@@ -166,7 +166,7 @@ class BillingStreamApplication(
             .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
                 MfTransformer(COMMAND, "READ_PRICES_FOR_GROUP_OF_CONTRACTS")
             })
-            .peek {k, _ -> log.info("sending group to read prices $k")}
+            .peek {k, v -> log.info("sending group $k with ${om.readTree(v).get("commands").size()} contracts to pricing#read")}
             .to("contracts-event-bus")
 
         // RECALCULATE_PRICE
@@ -177,7 +177,7 @@ class BillingStreamApplication(
             .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
                 MfTransformer(COMMAND, "RECALCULATE_PRICES_FOR_GROUP_OF_CONTRACTS")
             })
-            .peek {k, _ -> log.info("sending group to recalculate prices $k")}
+            .peek {k, v -> log.info("sending group $k with ${om.readTree(v).get("commands").size()} contracts to pricing#recalculate")}
             .to("contracts-event-bus")
 
         // BILL
@@ -188,7 +188,7 @@ class BillingStreamApplication(
             .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
                 MfTransformer(COMMAND, BILL_GROUP)
             })
-            .peek {k, _ -> log.info("sending group for internal billing $k")}
+            .peek {k, v -> log.info("sending group $k with ${om.readTree(v).get("contracts").size()} contracts for internal billing")}
             .to("billing-internal-bill")
 
         val topology = builder.build()
@@ -242,6 +242,8 @@ class BillingStreamApplication(
         val group = om.readValue<Group>(v)
 
         jobState.jobId = group.jobId // just in case its not set yet
+        jobState.state = State.STARTED
+        jobState.completed = null
         jobState.numContractsByGroupId[group.groupId] = group.contracts.size
         if(!jobState.groups.containsKey(group.groupId)) {
             jobState.groups[group.groupId] = State.STARTED

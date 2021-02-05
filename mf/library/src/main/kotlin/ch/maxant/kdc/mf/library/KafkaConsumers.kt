@@ -119,13 +119,20 @@ class KafkaConsumers(
 annotation class WithFreshContext
 
 @ApplicationScoped
-class ManagedExecutorWithFreshContextProducer {
-
+class ManagedExecutorWithFreshContextProducer(
+    /** 0 means base it on num processors; -2 or lower is a factor of num processors; -1 means unbounded.
+     * otherwise value is aboslute. default is 10 */
+    @ConfigProperty(name = "ch.maxant.kdc.mf.library.max.async", defaultValue = "10")
+    var maxAsync: Int
+) {
     @Produces @ApplicationScoped @WithFreshContext
     fun createExecutor(): ManagedExecutor {
         return ManagedExecutor.builder()
                 .propagated(*ThreadContext.NONE)
                 .cleared(ThreadContext.ALL_REMAINING)
+                .maxAsync(if(maxAsync == 0) Runtime.getRuntime().availableProcessors()
+                            else if(maxAsync < -1) Runtime.getRuntime().availableProcessors()*-1*maxAsync
+                            else maxAsync)
                 .build()
     }
 

@@ -171,7 +171,7 @@ function redrawSelectedJob() {
         </td></tr>
         <tr><td style="padding: 2px;" align="right">failed contract IDs:</td><td>${selectedJob.failedContractIds.join(",")}</td></tr>
     `;
-    table += `</table><h3>Groups in Job</h3><table border="1"><tr>
+    table += `</table><h3>Groups in Job</h3><div  style="overflow-y: scroll; overflow-x: hidden; height: 400px;"><table border="1"><tr>
         <th>Group ID</th>
         <th># Contracts</th>
         <th>State</th>
@@ -187,7 +187,7 @@ function redrawSelectedJob() {
         </tr>`;
     }
 
-    table += `</table>`;
+    table += `</div></table>`;
     document.getElementById("job").innerHTML = `<hr>
         <h2>Job ${selectedJob.jobId}
             <a href="#" onclick="selectedJob = undefined; redrawSelectedJob();selectedGroup = undefined; redrawSelectedGroup();">x</a>
