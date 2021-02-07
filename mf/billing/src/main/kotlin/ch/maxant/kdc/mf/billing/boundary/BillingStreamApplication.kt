@@ -95,8 +95,9 @@ class BillingStreamApplication(
         // we'd like to keep this higher but for individual billing,
         // we end up waiting 7 seconds in total if this is at 1000.
         // see: https://kafka.apache.org/documentation/streams/developer-guide/memory-mgmt.html
-        props[StreamsConfig.COMMIT_INTERVAL_MS_CONFIG] = 100 // default is 30_000 for at_least_once
-        props[StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG] = 1024 * 1024 // default is 10 mb
+        props[StreamsConfig.PROCESSING_GUARANTEE_CONFIG] = StreamsConfig.EXACTLY_ONCE // default is AT_LEAST_ONCE
+        // props[StreamsConfig.COMMIT_INTERVAL_MS_CONFIG] = 100 // default is 30_000 for at_least_once
+        // props[StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG] = 1024 * 1024 // default is 10 mb
 
         // lets scale internally a little
         props[StreamsConfig.NUM_STREAM_THREADS_CONFIG] = 3 // default is 1
