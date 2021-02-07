@@ -42,7 +42,7 @@ var selectedGroup;
 var lastMessageReceived = new Date().getTime();
 var source;
 function sse() {
-    source = new EventSource("/billing-stream/notifications");
+    source = new EventSource("/notifications");
     source.onopen = function (e) {
         lastMessageReceived = new Date().getTime();
     };
@@ -96,6 +96,7 @@ sse();
 // for some reason, this SSE isnt too stable, so let's rebuild if if we aren't getting any messages
 setInterval(() => {
     if(new Date().getTime() - lastMessageReceived > 5000) {
+        console.log("restarting sse");
         source.close();
         sse();
     }

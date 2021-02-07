@@ -62,6 +62,7 @@ class WebResource {
                 .forEach {
                     synchronized(it.value) { // TODO is this necessary? does it hurt??
                         log.info("emitting request $requestId to subscriber ${it.key}: $json. context.requestId is ${context.getRequestIdSafely().requestId}")
+                        it.value.touch()
                         it.value.emitter.emit(json)
                     }
                 }
@@ -138,11 +139,14 @@ class WebResource {
         }""".trimIndent().replace(" ", "").replace("\r", "").replace("\n", "")).build()
 }
 
-data class EmitterState(val emitter: MultiEmitter<in String?>, val created: Long) {
+data class EmitterState(val emitter: MultiEmitter<in String?>, var lastUsed: Long = System.currentTimeMillis()) {
     val FIVE_MINUTES = 5 * 60 * 1_000
 
-    fun isExpired() = System.currentTimeMillis() - this.created > FIVE_MINUTES
+    fun isExpired() = System.currentTimeMillis() - this.lastUsed > FIVE_MINUTES
 
     fun isExpiredOrCancelled() = this.emitter.isCancelled || isExpired()
 
+    fun touch() {
+        lastUsed = System.currentTimeMillis()
+    }
 }

@@ -8,7 +8,6 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import io.quarkus.arc.Arc
 import io.quarkus.runtime.StartupEvent
 import io.smallrye.mutiny.Multi
-import io.smallrye.mutiny.subscription.MultiEmitter
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.common.utils.Bytes
 import org.apache.kafka.streams.*
@@ -24,7 +23,7 @@ import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import org.jboss.logging.Logger
-import org.jboss.resteasy.annotations.SseElementType
+import java.io.PrintWriter
 import java.math.BigDecimal
 import java.nio.charset.StandardCharsets
 import java.time.Duration
@@ -36,9 +35,8 @@ import javax.annotation.PreDestroy
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.event.Observes
 import javax.inject.Inject
-import javax.servlet.http.HttpServletResponse
+import javax.servlet.AsyncContext
 import javax.ws.rs.*
-import javax.ws.rs.core.Context
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
@@ -95,8 +93,8 @@ class BillingStreamApplication(
         // we'd like to keep this higher but for individual billing,
         // we end up waiting 7 seconds in total if this is at 1000.
         // see: https://kafka.apache.org/documentation/streams/developer-guide/memory-mgmt.html
-        props[StreamsConfig.PROCESSING_GUARANTEE_CONFIG] = StreamsConfig.EXACTLY_ONCE // default is AT_LEAST_ONCE
-        // props[StreamsConfig.COMMIT_INTERVAL_MS_CONFIG] = 100 // default is 30_000 for at_least_once
+        // props[StreamsConfig.PROCESSING_GUARANTEE_CONFIG] = StreamsConfig.EXACTLY_ONCE // default is AT_LEAST_ONCE
+        props[StreamsConfig.COMMIT_INTERVAL_MS_CONFIG] = 100 // default is 30_000 for at_least_once
         // props[StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG] = 1024 * 1024 // default is 10 mb
 
         // lets scale internally a little
@@ -367,25 +365,49 @@ class BillingStreamApplication(
         val toRemove = mutableSetOf<String>()
         subscriptions
             .entries
-            .filter { it.value.isExpiredOrCancelled() }
             .forEach {
-                synchronized(it.value.emitter) { // TODO is this necessary? does it hurt??
-                    log.info("closing cancelled/expired emitter. cancelled: ${it.value.emitter.isCancelled}, expired: ${it.value.isExpired()}")
-                    it.value.emitter.complete()
-                    toRemove.add(it.key)
+                synchronized(it.value) { // TODO is this necessary? does it hurt??
+                    if(it.value.isExpired()) {
+                        handleExpiredSubscriber(it, toRemove)
+                    } else {
+                        sendToSubscriber(it, data, toRemove)
+                    }
                 }
             }
         toRemove.forEach { subscriptions.remove(it) }
+    }
 
-        subscriptions
-            .entries
-            .filter { !it.value.isExpiredOrCancelled() }
-            .forEach {
-                synchronized(it.value) { // TODO is this necessary? does it hurt??
-                    log.info("emitting data to subscriber ${it.key}")
-                    it.value.emitter.emit(data)
-                }
+    private fun sendToSubscriber(
+        subscriber: MutableMap.MutableEntry<String, EmitterState>,
+        data: String,
+        toRemove: MutableSet<String>
+    ): Any {
+        subscriber.value.touch()
+        if (!data.contains("Heartbeat")) {
+            log.info("emitting data to subscriber ${subscriber.key}")
+        }
+        return try {
+            subscriber.value.writer.write("data: $data\n\n")
+            // https://stackoverflow.com/questions/10878243/sse-and-servlet-3-0
+            if (subscriber.value.writer.checkError()) { //checkError calls flush, and flush() does not throw IOException
+                toRemove.add(subscriber.key)
             }
+            Unit
+        } catch (e: Exception) {
+            toRemove.add(subscriber.key)
+        }
+    }
+
+    private fun handleExpiredSubscriber(subscriber: MutableMap.MutableEntry<String, EmitterState>, toRemove: MutableSet<String>
+    ) {
+        log.info("closing expired sse connection. expired: ${subscriber.value.isExpired()}")
+        toRemove.add(subscriber.key)
+        try {
+            subscriber.value.async.complete()
+        } catch (e: Exception) {
+            // TODO could be normal if the client is gone?
+            log.warn("failed to close expired sse for ${subscriber.key}", e)
+        }
     }
 
     /** seems to not like immediate fetching of the store during init - so lets do it lazily */
@@ -448,27 +470,6 @@ class BillingStreamApplication(
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun getGlobalGroup(@Parameter(name = "id") @PathParam("id") id: UUID): Response {
         return Response.ok(getGlobalGroup(id.toString())).build()
-    }
-
-    @GET
-    @Path("/notifications")
-    @Produces(MediaType.SERVER_SENT_EVENTS)
-    @SseElementType(MediaType.APPLICATION_JSON)
-    @Operation(summary = "get notification of changes to all groups of any job that is currently running")
-    fun notifications(@Context response: HttpServletResponse): Multi<String> {
-        // https://serverfault.com/questions/801628/for-server-sent-events-sse-what-nginx-proxy-configuration-is-appropriate
-        response.setHeader("Cache-Control", "no-cache")
-        response.setHeader("X-Accel-Buffering", "no")
-        return Multi.createFrom()
-            .emitter { e: MultiEmitter<in String?> ->
-                val id = UUID.randomUUID().toString()
-                subscriptions[id] = EmitterState(e, System.currentTimeMillis())
-                e.onTermination {
-                    e.complete()
-                    log.info("removing termindated subscription $id")
-                    subscriptions.remove(id)
-                }
-            } // TODO if we get memory problems, add a different BackPressureStrategy as a second parameter to the emitter method
     }
 
     /** NOTE: only knows about local state! */
@@ -612,10 +613,12 @@ data class PricingCommand(val contractId: UUID, val from: LocalDate, val to: Loc
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SSE model
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-data class EmitterState(val emitter: MultiEmitter<in String?>, val created: Long) {
+data class EmitterState(val async: AsyncContext, val writer: PrintWriter, var lastUsed: Long = System.currentTimeMillis()) {
     private val fiveMins = 5 * 60 * 1_000
 
-    fun isExpired() = System.currentTimeMillis() - this.created > fiveMins
+    fun isExpired() = System.currentTimeMillis() - this.lastUsed > fiveMins
 
-    fun isExpiredOrCancelled() = this.emitter.isCancelled || isExpired()
+    fun touch() {
+        lastUsed = System.currentTimeMillis()
+    }
 }
