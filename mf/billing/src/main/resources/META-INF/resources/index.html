@@ -210,10 +210,14 @@ function redrawSelectedJob() {
     for(groupId in selectedJob.groups) {
         let state = selectedJob.groups[groupId];
         let numContractsInGroup = selectedJob.numContractsByGroupId[groupId];
+        let style = "";
+        if(state.indexOf("FAILED") >= 0) {
+            style = `style="color: red;"`;
+        }
         table += `<tr>
             <td><a href="#" onclick="selectGroup('${groupId}')">${groupId}</a></td>
             <td>${numContractsInGroup}</td>
-            <td>${state}</td>
+            <td ${style}>${state}</td>
         </tr>`;
     }
 
