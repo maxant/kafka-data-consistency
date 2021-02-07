@@ -246,11 +246,10 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
-- billing: failedGroupId isnt show right?
-- run recurring billing again and see if its more stable now. should no longer be getting tons of jdbc errors
 - billing2 => compare to using DB to store state
 - remove old stuff from this git repo so we can link to this repo in presentations
 - fix external sales
+- make sites a little prettier / responsive
 - grafana parameterisation
 - add kafka metrics from applications (prod/consumers/streams) to grafana
 - show bills on contract UI
