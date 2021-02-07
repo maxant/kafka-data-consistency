@@ -54,7 +54,10 @@ class BillingStreamApplication(
     val kafkaBootstrapServers: String,
 
     @ConfigProperty(name = "ch.maxant.kdc.mf.billing.failRandomlyForTestingPurposes", defaultValue = "true")
-    var failRandomlyForTestingPurposes: Boolean
+    var failRandomlyForTestingPurposes: Boolean,
+
+    @ConfigProperty(name = "ch.maxant.kdc.mf.billing.numStreamThreads", defaultValue = "3")
+    var numStreamThreads: Int
 ) {
     // TODO tidy the entries up when they are no longer in use! tip: see isCancelled below - altho theyre already removed with onterminate at the bottom?
     val subscriptions = ConcurrentHashMap<String, EmitterState>()
@@ -98,7 +101,7 @@ class BillingStreamApplication(
         // props[StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG] = 1024 * 1024 // default is 10 mb
 
         // lets scale internally a little
-        props[StreamsConfig.NUM_STREAM_THREADS_CONFIG] = 3 // default is 1
+        props[StreamsConfig.NUM_STREAM_THREADS_CONFIG] = numStreamThreads // default is 1
 
         val builder = StreamsBuilder()
 

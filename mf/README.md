@@ -246,6 +246,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- finish optimising dc-services.yaml with docker names rather than maxant.ch names
 - billing2 => compare to using DB to store state
 - remove old stuff from this git repo so we can link to this repo in presentations
 - fix external sales

@@ -188,6 +188,9 @@ services:
       quarkus.datasource.jdbc.url: "jdbc:mysql://kdc-mysql:3306/mfbilling"
       quarkus.log.handler.gelf.host: "logstash"
       quarkus.log.handler.gelf.port: 12201
+      quarkus.datasource.jdbc.max-size: 50
+      ch.maxant.kdc.mf.library.max.async: 30
+      ch.maxant.kdc.mf.billing.numStreamThreads: 10
     volumes:
       - ./mf/billing/target:/project
     command:
