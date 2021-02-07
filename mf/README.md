@@ -246,7 +246,8 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
-
+- billing: failedGroupId isnt show right?
+- run recurring billing again and see if its more stable now. should no longer be getting tons of jdbc errors
 - billing2 => compare to using DB to store state
 - remove old stuff from this git repo so we can link to this repo in presentations
 - fix external sales
@@ -569,14 +570,22 @@ Hmmm... not really needed ATM since we access using root:
     CREATE DATABASE mfbilling CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
     GRANT ALL PRIVILEGES ON mfbilling.* TO mf@'%' IDENTIFIED BY 'the_password';
 
-    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper zeus.com:30000 --replication-factor 2 --partitions 5 --topic billing-internal-state-jobs
-    kafka_2.12-2.7.0/bin/kafka-topics.sh --alter --topic billing-internal-state-jobs --zookeeper zeus.com:30000 --config cleanup.policy=compact
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --zookeeper maxant.ch:30000 --delete --topic billing-events
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --zookeeper maxant.ch:30000 --delete --topic billing-internal-state-groups
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --zookeeper maxant.ch:30000 --delete --topic billing-internal-state-jobs
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --zookeeper maxant.ch:30000 --delete --topic billing-internal-stream
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --zookeeper maxant.ch:30000 --delete --topic mf-billing-streamapplication-billing-store-groups-changelog
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --zookeeper maxant.ch:30000 --delete --topic mf-billing-streamapplication-billing-store-jobs-changelog
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --zookeeper maxant.ch:30000 --delete --topic mf-billing-streamapplication-billing-store-groups-repartition
 
-    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper zeus.com:30000 --replication-factor 2 --partitions 5 --topic billing-internal-state-groups
-    kafka_2.12-2.7.0/bin/kafka-topics.sh --alter --topic billing-internal-state-groups --zookeeper zeus.com:30000 --config cleanup.policy=compact
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 5 --topic billing-internal-state-jobs
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --alter --topic billing-internal-state-jobs --zookeeper maxant.ch:30000 --config cleanup.policy=compact
 
-    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper zeus.com:30000 --replication-factor 2 --partitions 5 --topic billing-internal-stream
-    kafka_2.12-2.7.0/bin/kafka-topics.sh --alter --topic billing-internal-stream --zookeeper zeus.com:30000 --config cleanup.policy=compact
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 5 --topic billing-internal-state-groups
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --alter --topic billing-internal-state-groups --zookeeper maxant.ch:30000 --config cleanup.policy=compact
+
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --create --zookeeper maxant.ch:30000 --replication-factor 2 --partitions 5 --topic billing-internal-stream
+    kafka_2.12-2.7.0/bin/kafka-topics.sh --alter --topic billing-internal-stream --zookeeper maxant.ch:30000 --config cleanup.policy=compact
 
 ## Bugs
 

@@ -13,10 +13,15 @@
 <div class="container">
     <h2>Jobs
         <button onclick="billNow()">Bill now...</button>
-        <button onclick="deleteAll()" style="background: #ffeeee">Delete all bills!</button>
+        <button onclick="deleteBills('all')" style="background: #ffeeee">Delete all bills!</button>
+        <button onclick="deleteBills('today')" style="background: #ffeeee">Delete today's bills!</button>
     </h2>
 
+    <p style="font-size: small;">Heartbeat: <span id="heartbeat"></span></p>
+
     <div id="toast"></div>
+
+    <hr>
 
     <div id="jobs"></div>
 
@@ -24,8 +29,6 @@
 
     <div id="group"></div>
 
-    <hr>
-    <div id="test"></div>
 </div>
 </body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.20/lodash.min.js"></script>
@@ -36,41 +39,67 @@ window.jobs = jobs; // for debugging
 var selectedJob;
 var selectedGroup;
 
-// TODO delete this once it works
-var sourceTest = new EventSource("/test/sse");
-sourceTest.onmessage = function (event) {
-    document.getElementById("test").innerHTML = event.data;
+var lastMessageReceived = new Date().getTime();
+var source;
+function sse() {
+    source = new EventSource("/billing-stream/notifications");
+    source.onopen = function (e) {
+        lastMessageReceived = new Date().getTime();
+    };
+    source.onerror = function (e) {
+        console.warn("error on source: " + e);
+        try {
+            source.close();
+        } catch(e) {
+            console.warn("failed to close source after error");
+        } finally {
+            sse();
+        }
+    };
+    source.onmessage = function (event) {
+        lastMessageReceived = new Date().getTime();
+        var entity = JSON.parse(event.data);
+
+        if(entity.type == "Heartbeat") {
+            document.getElementById("heartbeat").innerHTML = entity.beat;
+        } else if(entity.type == "Job") {
+            // job entity
+            if(!selectedJob) {
+                selectedJob = entity;
+            }
+            if(selectedJob.jobId == entity.jobId) {
+                selectedJob = entity;
+                redrawSelectedJob();
+            }
+            jobs[entity.jobId] = entity; // update entity, as well as handle new jobs
+            redrawJobs();
+        } else {
+            // group entity
+            if(!selectedGroup) {
+                selectedGroup = entity;
+                selectedGroup.history = [];
+            }
+            if(selectedGroup.group.groupId == entity.group.groupId) {
+                entity.history = selectedGroup.history; // take over existing history
+                selectedGroup = entity; // take over entity
+                selectedGroup.history.push(entity.group); // add history
+                redrawSelectedGroup();
+            }
+        }
+    };
+    source.onclose = function (event) {
+        sse();
+    };
 }
+sse();
 
-var source = new EventSource("/billing-stream/notifications");
-source.onmessage = function (event) {
-    var state = JSON.parse(event.data);
-    if(state.failedContractIds) {
-        // job state
-        if(!selectedJob) {
-            selectedJob = state;
-        }
-        if(selectedJob.jobId == state.jobId) {
-            selectedJob = state;
-            redrawSelectedJob();
-        }
-
-        jobs[state.jobId] = state; // update state, as well as handle new jobs
-        redrawJobs();
-    } else {
-        // group state
-        if(!selectedGroup) {
-            selectedGroup = state;
-            selectedGroup.history = [];
-        }
-        if(selectedGroup.group.groupId == state.group.groupId) {
-            state.history = selectedGroup.history; // take over existing history
-            selectedGroup = state; // take over state
-            selectedGroup.history.push(state.group); // add history
-            redrawSelectedGroup();
-        }
+// for some reason, this SSE isnt too stable, so let's rebuild if if we aren't getting any messages
+setInterval(() => {
+    if(new Date().getTime() - lastMessageReceived > 5000) {
+        source.close();
+        sse();
     }
-};
+}, 1000);
 
 fetch("/billing-stream/jobs", {method: "GET"})
 .then(r => {
@@ -105,13 +134,13 @@ function selectJob(jobId) {
     redrawSelectedGroup();
 }
 
-function selectGroup(groupId) {
-    // TODO how to make this compatible with cluster? need a GTK for just this call too!
+function selectGroup(groupId, isRetried) {
     fetch("/billing-stream/group/" + groupId, {method: "GET"})
     .then(r => r.json())
     .then(r => {
         selectedGroup = r;
         selectedGroup.history = [selectedGroup.group];
+        selectedGroup.$isRetried = isRetried;
         redrawSelectedGroup();
     });
 }
@@ -157,19 +186,19 @@ function redrawSelectedJob() {
     let progressBilling = getProgress(selectedJob.numContractsBilling, selectedJob.numContractsTotal);
     let progressComplete = getProgress(selectedJob.numContractsComplete, selectedJob.numContractsTotal);
     let table = `<table>
-        <tr><td style="padding: 2px;" align="right">num Contracts Total:</td><td>${selectedJob.numContractsTotal}</td></tr>
-        <tr><td style="padding: 2px;" align="right">num Contracts Pricing:</td><td>${selectedJob.numContractsPricing}
+        <tr><td style="padding: 2px;" align="right">Num Contracts Total:</td><td>${selectedJob.numContractsTotal}</td></tr>
+        <tr><td style="padding: 2px;" align="right">Num Contracts Pricing:</td><td>${selectedJob.numContractsPricing}
             <span style="width: ${progressPricing}px; border: 1px solid black; display: inline-block; background: blue;">&nbsp;</span>
         </td></tr>
-        <tr><td style="padding: 2px;" align="right">num Contracts PricingFailed:</td><td>${selectedJob.numContractsPricingFailed}</td></tr>
-        <tr><td style="padding: 2px;" align="right">num Contracts Billing:</td><td>${selectedJob.numContractsBilling}
+        <tr><td style="padding: 2px;" align="right">Num Contracts PricingFailed:</td><td>${selectedJob.numContractsPricingFailed}</td></tr>
+        <tr><td style="padding: 2px;" align="right">Num Contracts Billing:</td><td>${selectedJob.numContractsBilling}
             <span style="width: ${progressBilling}px; border: 1px solid black; display: inline-block; background: blue;">&nbsp;</span>
         </td></tr>
-        <tr><td style="padding: 2px;" align="right">num Contracts BillingFailed:</td><td>${selectedJob.numContractsBillingFailed}</td></tr>
-        <tr><td style="padding: 2px;" align="right">num Contracts Complete:</td><td>${selectedJob.numContractsComplete}
+        <tr><td style="padding: 2px;" align="right">Num Contracts BillingFailed:</td><td>${selectedJob.numContractsBillingFailed}</td></tr>
+        <tr><td style="padding: 2px;" align="right">Num Contracts Complete:</td><td>${selectedJob.numContractsComplete}
             <span style="width: ${progressComplete}px; border: 1px solid black; display: inline-block; background: blue;">&nbsp;</span>
         </td></tr>
-        <tr><td style="padding: 2px;" align="right">failed contract IDs:</td><td>${selectedJob.failedContractIds.join(",")}</td></tr>
+        <tr><td style="padding: 2px;" align="right">Num retried Groups:</td><td>${selectedJob.numRetriedGroups}</td></tr>
     `;
     table += `</table><h3>Groups in Job</h3><div  style="overflow-y: scroll; overflow-x: hidden; max-height: 400px;"><table border="1"><tr>
         <th>Group ID</th>
@@ -184,6 +213,16 @@ function redrawSelectedJob() {
             <td><a href="#" onclick="selectGroup('${groupId}')">${groupId}</a></td>
             <td>${numContractsInGroup}</td>
             <td>${state}</td>
+        </tr>`;
+    }
+
+    for(groupId in selectedJob.retriedGroups) {
+        let state = selectedJob.retriedGroups[groupId];
+        let numContractsInGroup = selectedJob.retriedNumContractsByGroupId[groupId];
+        table += `<tr>
+            <td style="color: red"><a href="#" onclick="selectGroup('${groupId}', true)">${groupId}</a></td>
+            <td style="color: red">${numContractsInGroup}</td>
+            <td style="color: red">${state}</td>
         </tr>`;
     }
 
@@ -210,6 +249,7 @@ function redrawSelectedGroup() {
             <tr><td style="padding: 2px;" align="right">Started:</td><td>${toDisplayDate(selectedGroup.started)}</td></tr>
             <tr><td style="padding: 2px;" align="right">Finished:</td><td>${toDisplayDate(selectedGroup.finished)}</td></tr>
             <tr><td style="padding: 2px;" align="right">State:</td><td>${selectedGroup.state}</td></tr>
+            <tr><td style="padding: 2px;" align="right">Replaces group:</td><td>${selectedGroup.group.failedGroupId}</td></tr>
         `;
     let failedProcessSteps = _(selectedGroup.history).map("failedProcessStep").filter(e => !!e);
     if(/*selectedGroup.group.contracts.length == 1 &&*/ !failedProcessSteps.isEmpty() ){
@@ -233,7 +273,7 @@ function redrawSelectedGroup() {
         <th>Time</th>
         <th>Next process step</th>
         <th>Failed process step</th>
-        <th>Replaces Group</th>
+        <th>Failed reason</th>
     </tr>`;
     for(i in selectedGroup.history) {
         let history = selectedGroup.history[i];
@@ -242,7 +282,6 @@ function redrawSelectedGroup() {
             <td>${history.nextProcessStep}</td>
             <td>${history.failedProcessStep}</td>
             <td>${history.failedReason}</td>
-            <td>${history.failedGroupId}</td>
         </tr>`;
     }
     table += `</table>`;
@@ -289,7 +328,7 @@ function toDisplayDate(date, withMs) {
 }
 
 function billNow() {
-    $("body").css("cursor", "progress");
+    $("body").css("cursor", "wait");
     let date = new Date().toISOString().substr(0,10);
     fetch("/billing/recurring/" + date, {method: "PUT"})
     .then(r => {
@@ -314,9 +353,9 @@ function closeToast() {
     document.getElementById("toast").innerHTML = "";
 }
 
-function deleteAll() {
-    $("body").css("cursor", "progress");
-    fetch("/billing/all", {method: "DELETE"})
+function deleteBills(when) {
+    $("body").css("cursor", "wait");
+    fetch("/billing/" + when, {method: "DELETE"})
     .then(r => {
         console.log("");
         if(r.status !== 200) {
@@ -334,7 +373,7 @@ function deleteAll() {
 }
 
 function retryGroup(groupId, step) {
-    $("body").css("cursor", "progress");
+    $("body").css("cursor", "wait");
     fetch("/billing/retry/" + groupId + "/" + step, {method: "PUT"})
     .then(r => {
         console.log("");

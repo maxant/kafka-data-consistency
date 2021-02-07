@@ -35,7 +35,7 @@ class BillingCommandsConsumer(
 
     override fun getKey() = "billing-in"
 
-    override fun getRunInParallel() = false
+    override fun getRunInParallel() = true
 
     /**
      * this is the general entry point into the billing application. this is either called because a contract is
@@ -60,13 +60,13 @@ class BillingCommandsConsumer(
 
         try {
             billingService.billGroup(group)
-            streamService.sendGroup(Group(group.jobId, group.groupId, group.contracts, BillingProcessStep.COMMS))
+            streamService.sendGroup(Group(group.jobId, group.groupId, group.contracts, BillingProcessStep.COMMS, failedGroupId = group.failedGroupId))
         } catch (e: Exception) {
             if(group.contracts.size == 1) {
                 val msg = "failed to bill contract due to ${e.message}, as part of group ${group.groupId} in job ${group.jobId}, " +
                         "with contractId ${group.contracts[0].contractId}"
                 log.error(msg, e)
-                streamService.sendGroup(Group(group.jobId, group.groupId, group.contracts, null, BillingProcessStep.BILL, failedReason = msg))
+                streamService.sendGroup(Group(group.jobId, group.groupId, group.contracts, null, BillingProcessStep.BILL, failedReason = msg, failedGroupId = group.failedGroupId))
             } else {
                 val msg = "failed to bill group because of ${e.message} => sending individually ${group.groupId}"
                 log.info(msg)
@@ -77,7 +77,7 @@ class BillingCommandsConsumer(
                     streamService.sendGroup(newGroup)
                 }
                 // now send a group message so that the app can update its state for the old group.
-                streamService.sendGroup(Group(group.jobId, group.groupId, group.contracts, null, BillingProcessStep.BILL, failedReason = msg))
+                streamService.sendGroup(Group(group.jobId, group.groupId, group.contracts, null, BillingProcessStep.BILL, failedReason = msg, failedGroupId = group.failedGroupId))
             }
         }
     }

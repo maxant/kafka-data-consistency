@@ -124,6 +124,7 @@ class WebResource {
                     subscriptions[requestId] = EmitterState(e, System.currentTimeMillis())
                     e.onTermination {
                         e.complete()
+                        log.info("removing termindated subscription ${requestId}")
                         subscriptions.remove(requestId)
                     }
                 } // TODO if we get memory problems, add a different BackPressureStrategy as a second parameter to the emitter method

@@ -64,7 +64,7 @@ class BillingResource(
     @Operation(summary = "retry a group which failed")
     fun retryGroup(@Parameter(name = "groupId", required = true) @PathParam("groupId") groupId: String,
                    @Parameter(name = "processStep", required = true) @PathParam("processStep") processStep: String): Response {
-        val group = om.readValue(billingStreamApplication.getGlobalGroup(groupId), GroupState::class.java).group
+        val group = om.readValue(billingStreamApplication.getGlobalGroup(groupId), GroupEntity::class.java).group
         if(group.failedProcessStep == null) return Response.status(Response.Status.BAD_REQUEST).entity("group didnt fail").build()
         val newGroupId = UUID.randomUUID()
         val newGroup = Group(group.jobId, newGroupId, group.contracts, nextProcessStep = BillingProcessStep.valueOf(processStep), started = LocalDateTime.now(), failedGroupId = UUID.fromString(groupId))
@@ -73,13 +73,21 @@ class BillingResource(
     }
 
     @DELETE
-    @Path("/all")
-    @Operation(summary = "delete all bills - only useful for testing!")
+    @Path("/{when}")
+    @Operation(summary = "delete bills - only useful for testing! either 'all' or 'today'")
     @Transactional
     @TransactionConfiguration(timeout = 600) // 10 minutes, since with larger data sets we can have problems
-    fun deleteAllBills(): Response {
-        val numBills = em.createQuery("delete from BillsEntity").executeUpdate()
-        val numContracts = em.createQuery("delete from BilledToEntity").executeUpdate()
+    fun deleteBills(@Parameter(name = "when") @PathParam("when") `when`: String): Response {
+        val numBills = if(`when` == "today") {
+            em.createQuery("delete from BillsEntity where start >= :start").setParameter("start", LocalDate.now()).executeUpdate()
+        } else {
+            em.createQuery("delete from BillsEntity").executeUpdate()
+        }
+        val numContracts = if(`when` == "today") {
+            em.createQuery("update BilledToEntity b set b.billedTo = :date").setParameter("date", LocalDate.now().minusDays(1)).executeUpdate()
+        } else {
+            em.createQuery("delete from BilledToEntity").executeUpdate()
+        }
         return Response.ok(Deleted(numBills, numContracts)).build()
     }
 

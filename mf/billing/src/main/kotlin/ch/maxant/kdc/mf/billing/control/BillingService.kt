@@ -67,7 +67,7 @@ AND c.starttime > '2021-01-01'
             contract.periodsToBill.forEach { period ->
                 val bill = BillsEntity(UUID.randomUUID(), contract.contractId,
                         contract.billingDefinitionId, period.from, period.to, period.price)
-                em.persist(bill)
+                em.persist(bill) // TODO idempotency!
                 period.billId = bill.id
             }
             val billedToDate = contract.periodsToBill.map { it.to }.max()!!

@@ -27,6 +27,7 @@ import org.jboss.logging.Logger
 import org.jboss.resteasy.annotations.SseElementType
 import java.math.BigDecimal
 import java.nio.charset.StandardCharsets
+import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
@@ -80,6 +81,11 @@ class BillingStreamApplication(
 
     @SuppressWarnings("unused")
     fun init(@Observes e: StartupEvent) {
+        Multi.createFrom()
+            .ticks() // create a heartbeat
+            .every(Duration.ofSeconds(1))
+            .subscribe().with { sendToSubscribers("""{"type": "Heartbeat", "beat": $it}""") }
+
         val props = Properties()
         props[StreamsConfig.APPLICATION_ID_CONFIG] = "mf-billing-streamapplication"
         props[StreamsConfig.BOOTSTRAP_SERVERS_CONFIG] = kafkaBootstrapServers
@@ -87,8 +93,13 @@ class BillingStreamApplication(
         props[StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG] = Serdes.String()::class.java
         // tune, so we dont wait for a long time:
         // we'd like to keep this higher but for individual billing,
-        // we end up waiting 7 seconds in total if this is at 1000
-        props[StreamsConfig.COMMIT_INTERVAL_MS_CONFIG] = 100
+        // we end up waiting 7 seconds in total if this is at 1000.
+        // see: https://kafka.apache.org/documentation/streams/developer-guide/memory-mgmt.html
+        props[StreamsConfig.COMMIT_INTERVAL_MS_CONFIG] = 100 // default is 30_000 for at_least_once
+        props[StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG] = 1024 * 1024 // default is 10 mb
+
+        // lets scale internally a little
+        props[StreamsConfig.NUM_STREAM_THREADS_CONFIG] = 3 // default is 1
 
         val builder = StreamsBuilder()
 
@@ -105,7 +116,7 @@ class BillingStreamApplication(
         // truth is the group state!
         val jobsStateStream = streamOfGroups
                 .groupBy { _, v -> om.readTree(v).get("jobId").asText() }
-                .aggregate(Initializer { om.writeValueAsString(JobState()) },
+                .aggregate(Initializer { om.writeValueAsString(JobEntity()) },
                             jobsAggregator,
                             Named.`as`("billing-internal-aggregate-state-jobs"),
                             Materialized.`as`("billing-store-jobs"))
@@ -123,8 +134,8 @@ class BillingStreamApplication(
         jobsStateStream
             .filter(
                 { _, v -> catching(v) {
-                    val js = om.readValue<JobState>(v)
-                    js.completed != null && js.state == State.COMPLETED
+                    val js = om.readValue<JobEntity>(v)
+                    js.completed != null && js.state == JobState.COMPLETED
                 } },
                 Named.`as`("billing-internal-branch-job-successful")
             )
@@ -141,7 +152,7 @@ class BillingStreamApplication(
         val groupsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`(groupsStoreName)
         val groupsTable = streamOfGroups
                 .groupByKey()
-                .aggregate(Initializer { om.writeValueAsString(GroupState()) },
+                .aggregate(Initializer { om.writeValueAsString(GroupEntity()) },
                         groupsAggregator,
                         Named.`as`("billing-internal-aggregate-state-groups"),
                         groupsStore)
@@ -156,9 +167,9 @@ class BillingStreamApplication(
         // now route the processed group to wherever it needs to go, depending on the next process step
         val branches = groupsStream
             .branch(Named.`as`("billing-internal-branch"),
-                Predicate{ _, v -> catching(v) { om.readValue<GroupState>(v).group.nextProcessStep == BillingProcessStep.READ_PRICE } },
-                Predicate{ _, v -> catching(v) { om.readValue<GroupState>(v).group.nextProcessStep == BillingProcessStep.RECALCULATE_PRICE } },
-                Predicate{ _, v -> catching(v) { om.readValue<GroupState>(v).group.nextProcessStep == BillingProcessStep.BILL } }
+                Predicate{ _, v -> catching(v) { om.readValue<GroupEntity>(v).group.nextProcessStep == BillingProcessStep.READ_PRICE } },
+                Predicate{ _, v -> catching(v) { om.readValue<GroupEntity>(v).group.nextProcessStep == BillingProcessStep.RECALCULATE_PRICE } },
+                Predicate{ _, v -> catching(v) { om.readValue<GroupEntity>(v).group.nextProcessStep == BillingProcessStep.BILL } }
             )
 
         // READ_PRICE
@@ -186,7 +197,7 @@ class BillingStreamApplication(
         // BILL
         branches[2]
             .map<String, String>({ k, v ->
-                KeyValue(k, mapGroupStateToGroup(v))
+                KeyValue(k, mapGroupEntityToGroup(v))
             }, Named.`as`("billing-internal-to-billing-mapper"))
             .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
                 MfTransformer(COMMAND, BILL_GROUP)
@@ -218,7 +229,7 @@ class BillingStreamApplication(
         }
 
     private fun buildReadPricesCommand(v: String): String {
-        val state = om.readValue<GroupState>(v)
+        val state = om.readValue<GroupEntity>(v)
 
         val fail = failRandomlyForTestingPurposes && random.nextInt(50) == 1
         if(fail) {
@@ -235,86 +246,110 @@ class BillingStreamApplication(
         return om.writeValueAsString(command)
     }
 
-    private fun mapGroupStateToGroup(v: String): String {
-        val state = om.readValue<GroupState>(v)
+    private fun mapGroupEntityToGroup(v: String): String {
+        val state = om.readValue<GroupEntity>(v)
         return om.writeValueAsString(state.group)
     }
 
     val jobsAggregator = Aggregator {_: String, v: String, j: String ->
-        val jobState = om.readValue<JobState>(j)
+        val jobEntity = om.readValue<JobEntity>(j)
         val group = om.readValue<Group>(v)
 
-        jobState.jobId = group.jobId // just in case its not set yet
-        jobState.state = State.STARTED
-        jobState.numContractsByGroupId[group.groupId] = group.contracts.size
-        if(!jobState.groups.containsKey(group.groupId)) {
-            jobState.groups[group.groupId] = State.STARTED
+        // remove groups that are being retried, so that in the end, the state will be successful, rather than a mix
+        moveFailedGroupInJobEntity(group, jobEntity)
+
+        jobEntity.jobId = group.jobId // just in case its not set yet
+        jobEntity.state = JobState.STARTED
+        jobEntity.numContractsByGroupId[group.groupId] = group.contracts.size
+        if(!jobEntity.groups.containsKey(group.groupId)) {
+            jobEntity.groups[group.groupId] = GroupState.STARTED
         }
-        jobState.numContractsTotal = jobState.numContractsByGroupId.values.sum()
 
         when(group.failedProcessStep) {
             BillingProcessStep.READ_PRICE, BillingProcessStep.RECALCULATE_PRICE  -> {
-                jobState.groups[group.groupId] = State.FAILED
-                jobState.numContractsPricingFailed += group.contracts.size
+                jobEntity.groups[group.groupId] = GroupState.FAILED_PRICING
             }
             BillingProcessStep.BILL  -> {
-                jobState.groups[group.groupId] = State.FAILED
-                jobState.numContractsBillingFailed += group.contracts.size
+                jobEntity.groups[group.groupId] = GroupState.FAILED_BILLING
             }
             else -> Unit // noop
         }
         when(group.nextProcessStep) {
             BillingProcessStep.READ_PRICE, BillingProcessStep.RECALCULATE_PRICE  -> {
-                jobState.numContractsPricing += group.contracts.size
+                jobEntity.groups[group.groupId] = GroupState.PRICING
             }
             BillingProcessStep.BILL -> {
-                jobState.numContractsBilling += group.contracts.size
+                jobEntity.groups[group.groupId] = GroupState.BILLING
             }
             BillingProcessStep.COMMS -> {
-                jobState.groups[group.groupId] = State.COMPLETED
-                jobState.numContractsComplete += group.contracts.size
+                jobEntity.groups[group.groupId] = GroupState.COMPLETED
             }
         }
-        if(jobState.groups.values.all { it == State.COMPLETED || it == State.FAILED }) {
-            if(jobState.groups.values.all { it == State.COMPLETED }) {
-                jobState.state = State.COMPLETED
+        if(jobEntity.groups.values.all { it == GroupState.COMPLETED || it == GroupState.FAILED_PRICING || it == GroupState.FAILED_BILLING }) {
+            if(jobEntity.groups.values.all { it == GroupState.COMPLETED }) {
+                jobEntity.state = JobState.COMPLETED
             } else {
-                jobState.state = State.FAILED
+                jobEntity.state = JobState.FAILED
             }
-            jobState.completed = LocalDateTime.now()
+            jobEntity.completed = LocalDateTime.now()
         } else {
-            jobState.state = State.STARTED
-            jobState.completed = null
+            jobEntity.state = JobState.STARTED
+            jobEntity.completed = null
         }
 
-        om.writeValueAsString(jobState)
+        jobEntity.numContractsTotal = jobEntity.numContractsByGroupId.values.sum()
+        jobEntity.numContractsPricing = jobEntity.groups.filter { it.value == GroupState.PRICING || it.value == GroupState.BILLING || it.value == GroupState.COMPLETED }.map { jobEntity.numContractsByGroupId[it.key]?:0 }.sum()
+        jobEntity.numContractsPricingFailed = jobEntity.groups.filter { it.value == GroupState.FAILED_PRICING }.map { jobEntity.numContractsByGroupId[it.key]?:0 }.sum()
+        jobEntity.numContractsBilling = jobEntity.groups.filter { it.value == GroupState.BILLING || it.value == GroupState.COMPLETED }.map { jobEntity.numContractsByGroupId[it.key]?:0 }.sum()
+        jobEntity.numContractsBillingFailed = jobEntity.groups.filter { it.value == GroupState.FAILED_BILLING }.map { jobEntity.numContractsByGroupId[it.key]?:0 }.sum()
+        jobEntity.numContractsComplete = jobEntity.groups.filter { it.value == GroupState.COMPLETED }.map { jobEntity.numContractsByGroupId[it.key]?:0 }.sum()
+        jobEntity.numRetriedGroups = jobEntity.retriedGroups.size
+
+        om.writeValueAsString(jobEntity)
+    }
+
+    private fun moveFailedGroupInJobEntity(group: Group, jobEntity: JobEntity) {
+        if (group.failedGroupId != null) {
+            if (jobEntity.numContractsByGroupId.containsKey(group.failedGroupId)) {
+                jobEntity.retriedNumContractsByGroupId[group.failedGroupId] = jobEntity.numContractsByGroupId[group.failedGroupId]!!
+            }
+            jobEntity.numContractsByGroupId.remove(group.failedGroupId)
+
+            if (jobEntity.groups.containsKey(group.failedGroupId)) {
+                jobEntity.retriedGroups[group.failedGroupId] = jobEntity.groups[group.failedGroupId]!!
+            }
+            jobEntity.groups.remove(group.failedGroupId)
+        }
     }
 
     val groupsAggregator = Aggregator {k: String, v: String, g: String ->
         try {
-            val groupState = om.readValue<GroupState>(g)
+            val groupEntity = om.readValue<GroupEntity>(g)
             val group = om.readValue<Group>(v)
 
             // copy latest state from group into state object
-            groupState.group = group
+            groupEntity.group = group
 
             if(group.failedProcessStep != null) {
-                groupState.state = State.FAILED
-                groupState.finished = LocalDateTime.now()
-                groupState.failedReason = group.failedReason
+                groupEntity.state = when(group.failedProcessStep) {
+                    BillingProcessStep.READ_PRICE, BillingProcessStep.RECALCULATE_PRICE -> GroupState.FAILED_PRICING
+                    BillingProcessStep.BILL -> GroupState.FAILED_BILLING
+                    BillingProcessStep.COMMS -> TODO()
+                }
+                groupEntity.finished = LocalDateTime.now()
+                groupEntity.failedReason = group.failedReason
             }
 
             when(group.nextProcessStep) {
-                BillingProcessStep.READ_PRICE,
-                BillingProcessStep.RECALCULATE_PRICE,
-                BillingProcessStep.BILL -> Unit // noop
+                BillingProcessStep.READ_PRICE, BillingProcessStep.RECALCULATE_PRICE -> groupEntity.state = GroupState.PRICING
+                BillingProcessStep.BILL -> groupEntity.state = GroupState.BILLING
                 BillingProcessStep.COMMS -> {
-                    groupState.state = State.COMPLETED
-                    groupState.finished = LocalDateTime.now()
+                    groupEntity.state = GroupState.COMPLETED
+                    groupEntity.finished = LocalDateTime.now()
                 }
             }
 
-            om.writeValueAsString(groupState)
+            om.writeValueAsString(groupEntity)
         } catch(e: Exception) {
             log.error("BSA001 Failed to aggregate group ${e.message} - DISPOSING OF RECORD WITH KEY $k AND VALUE $v", e)
             g
@@ -393,7 +428,7 @@ class BillingStreamApplication(
     @Operation(summary = "NOTE: knows about every job!")
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun getJobs(): Response {
-        val jobs = mutableListOf<JobState>()
+        val jobs = mutableListOf<JobEntity>()
         getAllJobs().forEachRemaining { jobs.add(om.readValue(it.value)) }
         return Response.ok(jobs).build()
     }
@@ -429,13 +464,14 @@ class BillingStreamApplication(
                 subscriptions[id] = EmitterState(e, System.currentTimeMillis())
                 e.onTermination {
                     e.complete()
+                    log.info("removing termindated subscription $id")
                     subscriptions.remove(id)
                 }
             } // TODO if we get memory problems, add a different BackPressureStrategy as a second parameter to the emitter method
     }
 
     /** NOTE: only knows about local state! */
-    fun getGroup(groupId: UUID) = om.readValue<GroupState>(getGroup(groupId.toString())).group
+    fun getGroup(groupId: UUID) = om.readValue<GroupEntity>(getGroup(groupId.toString())).group
 
     companion object {
         const val BILL_GROUP = "BILL_GROUP"
@@ -465,12 +501,14 @@ class MfTransformer(private val headerName: String, private var headerValue: Str
     }
 }
 
-data class JobState(var jobId: UUID,
-                    var state: State,
-                    var groups: HashMap<UUID, State>, // 1'000 x 36-chars-UUID + 10-chars-state => less than 100kb?
+data class JobEntity(var jobId: UUID,
+                    var state: JobState,
+                    var groups: HashMap<UUID, GroupState>, // 1'000 x 36-chars-UUID + 10-chars-state => less than 100kb?
                     var numContractsByGroupId: HashMap<UUID, Int> = hashMapOf(), // 1'000 x 4 bytes => less than 4kb
 
-                    // estimates:
+                    // we move groups from main state to here, when they are retried, so that in the end, the job can become successful
+                    var retriedGroups: HashMap<UUID, GroupState>, // 1'000 x 36-chars-UUID + 10-chars-state => less than 100kb?
+                    var retriedNumContractsByGroupId: HashMap<UUID, Int> = hashMapOf(), // 1'000 x 4 bytes => less than 4kb
 
                     var numContractsTotal: Int,
                     var numContractsPricing: Int,
@@ -478,29 +516,43 @@ data class JobState(var jobId: UUID,
                     var numContractsBilling: Int,
                     var numContractsBillingFailed: Int,
                     var numContractsComplete: Int,
-                    var failedContractIds: List<UUID>, // if every contract failed, that'd be 36MB... a litle big!
+                    var numRetriedGroups: Int,
+
                     var started: LocalDateTime,
-                    var completed: LocalDateTime?
+                    var completed: LocalDateTime?,
+                    var type: String = "Job"
 ) {
     constructor():
-            this(UUID.randomUUID(), State.STARTED, hashMapOf<UUID, State>(), hashMapOf<UUID, Int>(), 0, 0, 0, 0, 0, 0, emptyList(), LocalDateTime.now(), null)
-
+            this(UUID.randomUUID(), JobState.STARTED, hashMapOf<UUID, GroupState>(), hashMapOf<UUID, Int>(),
+                hashMapOf<UUID, GroupState>(), hashMapOf<UUID, Int>(), 0, 0, 0, 0, 0, 0, 0, LocalDateTime.now(), null)
 }
 
-enum class State {
-    STARTED, COMPLETED, FAILED
+enum class JobState {
+    STARTED,
+    COMPLETED,
+    FAILED
+}
+
+enum class GroupState {
+    STARTED,
+    PRICING,
+    FAILED_PRICING,
+    BILLING,
+    FAILED_BILLING,
+    COMPLETED
 }
 
 // 1'000 x 1'000 bytes => less than 1MB? that's the aim, as kafkas default max record size is 1mb
 // - control it using group size! 1'000 is probably too big as it is, regarding reading/writing to DB
-data class GroupState(var group: Group,
-                      var state: State,
+data class GroupEntity(var group: Group,
+                      var state: GroupState,
                       var started: LocalDateTime,
                       var finished: LocalDateTime?,
-                      var failedReason: String? = null
+                      var failedReason: String? = null,
+                      var type: String = "Group"
 ) {
     constructor():
-            this(Group(UUID.randomUUID(), UUID.randomUUID(), listOf(), BillingProcessStep.READ_PRICE), State.STARTED, LocalDateTime.now(), null)
+            this(Group(UUID.randomUUID(), UUID.randomUUID(), listOf(), BillingProcessStep.READ_PRICE), GroupState.STARTED, LocalDateTime.now(), null)
 }
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

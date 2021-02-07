@@ -94,9 +94,10 @@ class ContractsConsumer(
         group: PricingCommandGroupResult,
         recalculated: Boolean
     ) {
-        val originalContract = getContract(getGroup(group.groupId), group.commands[0].contractId)
+        val originalGroup = getGroup(group.groupId)
+        val originalContract = getContract(originalGroup, group.commands[0].contractId)
         val processStep = if (recalculated) BillingProcessStep.RECALCULATE_PRICE else BillingProcessStep.READ_PRICE
-        streamService.sendGroup(Group(originalContract.jobId, group.groupId, listOf(originalContract), null, processStep, failedReason = group.failedReason))
+        streamService.sendGroup(Group(originalContract.jobId, group.groupId, listOf(originalContract), null, processStep, failedReason = group.failedReason, failedGroupId = originalGroup.failedGroupId))
     }
 
     /** the following can't fail, because the group is sent to pricing after it's written to the stream which is
@@ -125,7 +126,7 @@ class ContractsConsumer(
         }
 
         // now send a group message so that the app can update its state for the old group.
-        streamService.sendGroup(Group(originalGroup.jobId, originalGroup.groupId, originalGroup.contracts, null, processStep, failedReason = group.failedReason))
+        streamService.sendGroup(Group(originalGroup.jobId, originalGroup.groupId, originalGroup.contracts, null, processStep, failedReason = group.failedReason, failedGroupId = originalGroup.failedGroupId))
     }
 
     private fun getContract(group: Group, contractId: UUID) = group.contracts.find { it.contractId == contractId }!!
@@ -150,7 +151,7 @@ class ContractsConsumer(
             }
             contract
         }
-        streamService.sendGroup(Group(contracts[0].jobId/*they all have the same one!*/, group.groupId, contracts, BillingProcessStep.BILL))
+        streamService.sendGroup(Group(contracts[0].jobId/*they all have the same one!*/, group.groupId, contracts, BillingProcessStep.BILL, failedGroupId = originalGroup.failedGroupId))
     }
 }
 
