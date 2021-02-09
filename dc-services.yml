@@ -7,9 +7,6 @@ services:
 #    ports:
 #      - "30601:8086"
 
-# TODO the following use extra_hosts, but its not necessary for locally deployed services. we should rename
-# the services kdc-mf-*, so that it works inside DC as well as outside
-
   kdc-mf-contracts:
     image: maxant/jdk
     container_name: kdc-mf-contracts
@@ -17,13 +14,13 @@ services:
       - "8080:8080"
     environment:
       ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://kdc-mf-organisation:8086"
-      ch.maxant.kdc.mf.contracts.adapter.PricingAdapter/mp-rest/url: "http://kdc-mf-pricing:8081"
-      ch.maxant.kdc.mf.contracts.adapter.PartnerRelationshipsAdapter/mp-rest/uri: "http://kdc-mf-partners:8083"
-      ch.maxant.kdc.mf.contracts.adapter.OrganisationAdapter/mp-rest/uri: "http://kdc-mf-organisation:8086"
       kafka.bootstrap.servers: "kdc-kafka-1:9092,kdc-kafka-2:9092"
       quarkus.datasource.jdbc.url: "jdbc:mysql://kdc-mysql:3306/mfcontracts"
       quarkus.log.handler.gelf.host: "logstash"
       quarkus.log.handler.gelf.port: 12201
+      ch.maxant.kdc.mf.contracts.adapter.PricingAdapter/mp-rest/url: "http://kdc-mf-pricing:8081"
+      ch.maxant.kdc.mf.contracts.adapter.PartnerRelationshipsAdapter/mp-rest/uri: "http://kdc-mf-partners:8083"
+      ch.maxant.kdc.mf.contracts.adapter.OrganisationAdapter/mp-rest/uri: "http://kdc-mf-organisation:8086"
     volumes:
       - ./mf/contracts/target:/project
     command:
@@ -69,7 +66,7 @@ services:
     ports:
       - "8082:8082"
     environment:
-      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://kdc-mf-organisation:8086"
       ch.maxant.kdc.mf.components.contracts.url:     "http://mf-contracts.maxant.ch"
       ch.maxant.kdc.mf.components.pricing.url:       "http://mf-pricing.maxant.ch"
       ch.maxant.kdc.mf.components.web.url:           "http://mf-web.maxant.ch"
@@ -79,6 +76,9 @@ services:
       ch.maxant.kdc.mf.components.organisation.url:  "http://mf-organisation.maxant.ch"
       ch.maxant.kdc.mf.components.billing.url:       "http://mf-billing.maxant.ch"
       ch.maxant.kdc.mf.components.elasticsearch.url: "http://kdc.elasticsearch.maxant.ch"
+      kafka.bootstrap.servers: "kdc-kafka-1:9092,kdc-kafka-2:9092"
+      quarkus.log.handler.gelf.host: "logstash"
+      quarkus.log.handler.gelf.port: 12201
     volumes:
       - ./mf/web/target:/project
     command:
@@ -99,7 +99,12 @@ services:
     ports:
       - "8083:8083"
     environment:
-      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://kdc-mf-organisation:8086"
+      kafka.bootstrap.servers: "kdc-kafka-1:9092,kdc-kafka-2:9092"
+      quarkus.datasource.jdbc.url: "jdbc:mysql://kdc-mysql:3306/mfpartners"
+      quarkus.log.handler.gelf.host: "logstash"
+      quarkus.log.handler.gelf.port: 12201
+      ch.maxant.kdc.mf.partners.adapter.OrganisationAdapter/mp-rest/uri: "http://kdc-mf-organisation:8086"
     volumes:
       - ./mf/partners/target:/project
     command:
@@ -120,7 +125,12 @@ services:
     ports:
       - "8084:8084"
     environment:
-      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://kdc-mf-organisation:8086"
+      kafka.bootstrap.servers: "kdc-kafka-1:9092,kdc-kafka-2:9092"
+      quarkus.datasource.jdbc.url: "jdbc:mysql://kdc-mysql:3306/mfcases"
+      quarkus.log.handler.gelf.host: "logstash"
+      quarkus.log.handler.gelf.port: 12201
+      ch.maxant.kdc.mf.partners.adapter.OrganisationAdapter/mp-rest/uri: "http://kdc-mf-organisation:8086"
     volumes:
       - ./mf/cases/target:/project
     command:
@@ -141,7 +151,10 @@ services:
     ports:
       - "8085:8085"
     environment:
-      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://kdc-mf-organisation:8086"
+      kafka.bootstrap.servers: "kdc-kafka-1:9092,kdc-kafka-2:9092"
+      quarkus.log.handler.gelf.host: "logstash"
+      quarkus.log.handler.gelf.port: 12201
     volumes:
       - ./mf/waitingroom/target:/project
     command:
@@ -162,7 +175,10 @@ services:
     ports:
       - "8086:8086"
     environment:
-      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://organisation:8086"
+      ch.maxant.kdc.mf.library.SecurityAdapter/mp-rest/uri: "http://kdc-mf-organisation:8086"
+      kafka.bootstrap.servers: "kdc-kafka-1:9092,kdc-kafka-2:9092"
+      quarkus.log.handler.gelf.host: "logstash"
+      quarkus.log.handler.gelf.port: 12201
     volumes:
       - ./mf/organisation/target:/project
     command:

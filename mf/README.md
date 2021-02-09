@@ -246,16 +246,16 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
-- finish optimising dc-services.yaml with docker names rather than maxant.ch names
+- fix cases
+- fix external sales
 - billing2 => compare to using DB to store state
 - remove old stuff from this git repo so we can link to this repo in presentations
-- fix external sales
 - make sites a little prettier / responsive
 - grafana parameterisation
 - add kafka metrics from applications (prod/consumers/streams) to grafana
+- billing: send event back to sales UI so that the customer can pay directly for the first billed period
 - show bills on contract UI
 - link from billing application back into contracts
-- billing: send event back to sales UI so that the customer can pay directly for the first billed period
 - https://quarkus.io/guides/redis
 - https://zipkin.io/ => also for billing!
   - or this? https://www.hashicorp.com/blog/service-mesh-visualization-in-hashicorp-consul-1-9

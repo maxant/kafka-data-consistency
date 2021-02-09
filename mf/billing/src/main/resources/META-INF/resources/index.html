@@ -187,6 +187,7 @@ function redrawSelectedJob() {
     let progressBilling = getProgress(selectedJob.numContractsBilling, selectedJob.numContractsTotal);
     let progressComplete = getProgress(selectedJob.numContractsComplete, selectedJob.numContractsTotal);
     let table = `<table>
+        <tr><td style="padding: 2px;" align="right">State:</td><td>${selectedJob.state}</td></tr>
         <tr><td style="padding: 2px;" align="right">Num Contracts Total:</td><td>${selectedJob.numContractsTotal}</td></tr>
         <tr><td style="padding: 2px;" align="right">Num Contracts Pricing:</td><td>${selectedJob.numContractsPricing}
             <span style="width: ${progressPricing}px; border: 1px solid black; display: inline-block; background: blue;">&nbsp;</span>
