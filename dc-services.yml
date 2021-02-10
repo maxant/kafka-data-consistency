@@ -22,7 +22,7 @@ services:
       ch.maxant.kdc.mf.contracts.adapter.PartnerRelationshipsAdapter/mp-rest/uri: "http://kdc-mf-partners:8083"
       ch.maxant.kdc.mf.contracts.adapter.OrganisationAdapter/mp-rest/uri: "http://kdc-mf-organisation:8086"
       quarkus.jaeger.agent-host-port: "jaeger-agent:6831"
-      # added jaeger agent on line above, and tracing to jdbc url
+      # added jaeger agent on line above, and tracing to jdbc url, add kafka stuff, update quarkus.jaeger.service-name in app props
     volumes:
       - ./mf/contracts/target:/project
     command:
