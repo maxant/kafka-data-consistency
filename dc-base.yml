@@ -245,11 +245,24 @@ services:
     volumes:
       - ./grafanadata:/var/lib/grafana
 
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin
+    # Environment settings are defined here https://github.com/openzipkin/zipkin/blob/master/zipkin-server/README.md#environment-variables
+    environment:
+      - STORAGE_TYPE=elasticsearch
+      - MYSQL_HOST=mysql
+      - ES_HOSTS=http://elasticsearch:9200
+      # Uncomment to enable debug logging
+      # - JAVA_OPTS=-Dlogging.level.zipkin2=DEBUG
+    ports:
+      # Port used for the Zipkin UI and HTTP Api
+      - 30560:9411
+    depends_on:
+      - elasticsearch
+
 # TODO https://docs.docker.com/compose/compose-file/#healthcheck
 # TODO https://docs.docker.com/compose/compose-file/#restart
-# TODO add kafka to prometheus
-# TODO add quarkus app to prometheus
-# TODO add a docker registry to maxant.ch?
 # TODO JMX for other confluent components: https://docs.confluent.io/current/installation/docker/operations/monitoring.html#configure-other-cp-components
 # build a stream app and deploy using quarkus and integrate metrics - see also https://quarkus.io/guides/microprofile-metrics
 # use kafka-rest to add topics at deployment. whats this? https://docs.docker.com/compose/compose-file/compose-file-v2/#init
