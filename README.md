@@ -106,6 +106,7 @@ Open ports like this:
     #   confluent-control-center:30500:9021  exposed, inactive
     #            schemaregistry: 30550:8085  mapped in nginx
     #          schemaregistry-ui:30555:8000  mapped in nginx
+    #                     zipkin:30560:9411  exposed
     #                kdc-objects:30601:8086  mapped in nginx
     #           kdc-mf-contracts:30780:8080  just on retropie!
     #             kdc-mf-pricing:30781:8080  just on retropie!
@@ -125,6 +126,7 @@ Open ports like this:
     firewall-cmd --zone=public --permanent --add-port=30402/tcp
     firewall-cmd --zone=public --permanent --add-port=30410/tcp
     firewall-cmd --zone=public --permanent --add-port=30500/tcp
+    firewall-cmd --zone=public --permanent --add-port=30560/tcp
     firewall-cmd --zone=public --permanent --add-port=30601/tcp
     firewall-cmd --reload
     firewall-cmd --list-all

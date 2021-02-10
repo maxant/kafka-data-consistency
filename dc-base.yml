@@ -245,19 +245,55 @@ services:
     volumes:
       - ./grafanadata:/var/lib/grafana
 
-  zipkin:
-    image: openzipkin/zipkin
-    container_name: zipkin
-    # Environment settings are defined here https://github.com/openzipkin/zipkin/blob/master/zipkin-server/README.md#environment-variables
+  jaeger-agent:
+    image: jaegertracing/jaeger-agent:1.21.0
+    container_name: jaeger-agent
     environment:
-      - STORAGE_TYPE=elasticsearch
-      - MYSQL_HOST=mysql
-      - ES_HOSTS=http://elasticsearch:9200
-      # Uncomment to enable debug logging
-      # - JAVA_OPTS=-Dlogging.level.zipkin2=DEBUG
+      # --reporter.grpc.host-port=jaeger-collector:14250
+      - reporter.grpc.host-port=jaeger-collector:14250
     ports:
-      # Port used for the Zipkin UI and HTTP Api
-      - 30560:9411
+      # thrift compact:
+      - "30561:6831/udp"
+      # thrift binary:
+      - "30562:6832/udp"
+      # HTTP serve configs, sampling strategies:
+      - "30563:5778"
+      # zipkin thrift compact:
+      - "30564:5775"
+      # admin port: health check at / and metrics at /metrics:
+      - "30565:14271"
+
+  jaeger-collector:
+    image: jaegertracing/jaeger-collector:1.21.0
+    container_name: jaeger-collector
+    environment:
+      - SPAN_STORAGE_TYPE=elasticsearch
+      - ES_SERVER_URLS=http://elasticsearch:9200
+    ports:
+      # gRPC, used by jaeger-agent to send spans in model.proto format:
+      - "30566:14250"
+      # HTTP, can accept spans directly from clients in jaeger.thrift format over binary thrift protocol:
+      - "30567:14268"
+      # HTTP, can accept Zipkin spans in Thrift, JSON and Proto (disabled by default)
+      - "30568:9411"
+      # HTTP, admin port: health check at / and metrics at /metrics
+      - "30569:14269"
+    depends_on:
+      - elasticsearch
+
+  jaeger-query:
+    image: jaegertracing/jaeger-query:1.21.0
+    container_name: jaeger-query
+    environment:
+      - SPAN_STORAGE_TYPE=elasticsearch
+      - ES_SERVER_URLS=http://elasticsearch:9200
+    ports:
+      # HTTP, /api/* endpoints and Jaeger UI at /
+      - "30570:16686"
+      # Protobuf/gRPC QueryService
+      - "30571:16686"
+      # HTTP, admin port: health check at / and metrics at /metrics
+      - "30572:16687"
     depends_on:
       - elasticsearch
 

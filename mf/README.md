@@ -246,9 +246,14 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- throttle sse requests on error
 - fix cases
+- sales => why isnt the draft button locked when clicked?
+- sales => kafka business error doesnt return to browser
 - fix external sales
+- nginx + http2
 - billing2 => compare to using DB to store state
+- contracts view should allow you to view a draft in detail and then offer it
 - remove old stuff from this git repo so we can link to this repo in presentations
 - make sites a little prettier / responsive
 - grafana parameterisation
@@ -258,6 +263,8 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 - link from billing application back into contracts
 - https://quarkus.io/guides/redis
 - https://zipkin.io/ => also for billing!
+  - zipkin lens is their ui
+  - https://www.confluent.io/blog/importance-of-distributed-tracing-for-apache-kafka-based-applications/
   - or this? https://www.hashicorp.com/blog/service-mesh-visualization-in-hashicorp-consul-1-9
   - https://piotrminkowski.com/2020/11/24/quarkus-microservices-with-consul-discovery/
   - https://www.consul.io/docs/intro/vs/istio
