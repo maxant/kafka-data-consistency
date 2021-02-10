@@ -248,8 +248,9 @@ services:
   jaeger-agent:
     image: jaegertracing/jaeger-agent:1.21.0
     container_name: jaeger-agent
-    # https://github.com/jaegertracing/jaeger/issues/286  --reporter.grpc.host-port=jaeger-collector:14250
-    command: /go/bin/agent-linux -collector.host-port=jaeger-collector:14268
+    # to get help, run this: docker run -it --rm jaegertracing/jaeger-agent:1.21.0 --help
+    # to add command line args, use the command:
+    command: --reporter.grpc.host-port=jaeger-collector:14250
     ports:
       # thrift compact:
       - "30561:6831/udp"

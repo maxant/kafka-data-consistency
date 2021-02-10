@@ -106,7 +106,8 @@ Open ports like this:
     #   confluent-control-center:30500:9021  exposed, inactive
     #             schemaregistry:30550:8085  mapped in nginx
     #          schemaregistry-ui:30555:8000  mapped in nginx
-    #                     jaeger:30570:16686 mapped in nginx
+    #               jaeger-agent:30561:6831  exposed
+    #               jaeger-query:30570:16686 mapped in nginx
     #                kdc-objects:30601:8086  inactive
     #           kdc-mf-contracts:30780:8080  mapped in nginx
     #             kdc-mf-pricing:30781:8081  mapped in nginx
@@ -127,6 +128,7 @@ Open ports like this:
     firewall-cmd --zone=public --permanent --add-port=30410/tcp
     firewall-cmd --zone=public --permanent --add-port=30500/tcp
     firewall-cmd --zone=public --permanent --add-port=30560/tcp
+    firewall-cmd --zone=public --permanent --add-port=30561/udp
     firewall-cmd --zone=public --permanent --add-port=30601/tcp
     firewall-cmd --reload
     firewall-cmd --list-all
