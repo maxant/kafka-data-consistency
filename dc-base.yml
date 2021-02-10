@@ -248,9 +248,8 @@ services:
   jaeger-agent:
     image: jaegertracing/jaeger-agent:1.21.0
     container_name: jaeger-agent
-    environment:
-      # --reporter.grpc.host-port=jaeger-collector:14250
-      - reporter.grpc.host-port=jaeger-collector:14250
+    # https://github.com/jaegertracing/jaeger/issues/286  --reporter.grpc.host-port=jaeger-collector:14250
+    command: /go/bin/agent-linux -collector.host-port=jaeger-collector:14268
     ports:
       # thrift compact:
       - "30561:6831/udp"
@@ -262,6 +261,8 @@ services:
       - "30564:5775"
       # admin port: health check at / and metrics at /metrics:
       - "30565:14271"
+    depends_on:
+      - jaeger-collector
 
   jaeger-collector:
     image: jaegertracing/jaeger-collector:1.21.0
@@ -296,6 +297,8 @@ services:
       - "30572:16687"
     depends_on:
       - elasticsearch
+      - jaeger-agent
+      - jaeger-collector
 
 # TODO https://docs.docker.com/compose/compose-file/#healthcheck
 # TODO https://docs.docker.com/compose/compose-file/#restart

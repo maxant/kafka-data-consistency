@@ -104,17 +104,17 @@ Open ports like this:
     #              ksql-server-2:30402:8088  exposed, inactive
     #            ksqldb-server-1:30410:8088  exposed, inactive
     #   confluent-control-center:30500:9021  exposed, inactive
-    #            schemaregistry: 30550:8085  mapped in nginx
+    #             schemaregistry:30550:8085  mapped in nginx
     #          schemaregistry-ui:30555:8000  mapped in nginx
-    #                     zipkin:30560:9411  exposed
-    #                kdc-objects:30601:8086  mapped in nginx
-    #           kdc-mf-contracts:30780:8080  just on retropie!
-    #             kdc-mf-pricing:30781:8080  just on retropie!
-    #                 kdc-mf-web:30782:8080  just on retropie!
-    #            kdc-mf-partners:30783:8080  just on retropie!
-    #               kdc-mf-cases:30784:8080  just on retropie!
-    #         kdc-mf-waitingroom:30785:8080  just on retropie!
-    #        kdc-mf-organisation:30786:8080  just on retropie!
+    #                     jaeger:30570:16686 mapped in nginx
+    #                kdc-objects:30601:8086  inactive
+    #           kdc-mf-contracts:30780:8080  mapped in nginx
+    #             kdc-mf-pricing:30781:8081  mapped in nginx
+    #                 kdc-mf-web:30782:8082  mapped in nginx
+    #            kdc-mf-partners:30783:8083  mapped in nginx
+    #               kdc-mf-cases:30784:8084  mapped in nginx
+    #         kdc-mf-waitingroom:30785:8085  mapped in nginx
+    #        kdc-mf-organisation:30786:8086  mapped in nginx
     firewall-cmd --zone=public --permanent --add-port=30000/tcp
     firewall-cmd --zone=public --permanent --add-port=30001/tcp
     firewall-cmd --zone=public --permanent --add-port=30002/tcp
@@ -130,7 +130,7 @@ Open ports like this:
     firewall-cmd --zone=public --permanent --add-port=30601/tcp
     firewall-cmd --reload
     firewall-cmd --list-all
-    firewall-cmd --zone=public --permanent --remove-port=30055/tcp
+    firewall-cmd --zone=public --permanent --remove-port=30560/tcp
 
 Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-consistency.conf):
 
@@ -281,10 +281,16 @@ Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-co
       }
 
       # ############################################################
-      # kdc.objects.maxant.ch
+      # kdc.jaeger.maxant.ch
       # ############################################################
 
-      server { listen 80; server_name kdc.objects.maxant.ch; location / { proxy_pass http://localhost:30601/; } }
+      server { listen 80; server_name kdc.jaeger.maxant.ch; location / { proxy_pass http://localhost:30570/; } }
+
+      # ############################################################
+      # mf-*.maxant.ch
+      # ############################################################
+
+      # server { listen 80; server_name kdc.objects.maxant.ch; location / { proxy_pass http://localhost:30601/; } }
 
       # https://serverfault.com/questions/801628/for-server-sent-events-sse-what-nginx-proxy-configuration-is-appropriate
       server { listen 80; server_name mf-contracts.maxant.ch;    proxy_http_version 1.1; proxy_set_header Connection ""; location / { proxy_pass http://localhost:8080/; } }
