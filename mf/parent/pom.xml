@@ -118,6 +118,8 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-opentracing</artifactId>
         </dependency>
+
+        <!-- https://quarkusio.zulipchat.com/#narrow/stream/187030-users/topic/NoSuchMethod.20in.20opentracing.20jdbc -->
         <dependency>
             <groupId>io.opentracing.contrib</groupId>
             <artifactId>opentracing-jdbc</artifactId>

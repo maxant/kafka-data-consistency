@@ -318,6 +318,13 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 - output
 - requisition orders
 - replace my cors with quarkus cors? can it do everything i need?
+  - https://quarkus.io/guides/all-config
+  - quarkus.http.cors.origins
+  - quarkus.http.cors.methods
+  - quarkus.http.cors.headers
+  - quarkus.http.cors.exposed-headers
+  - quarkus.http.cors.access-control-max-age
+  - quarkus.http.cors.access-control-allow-credentials
 - components diff for warning user after changing to a different product release
 - additional info - to hang stuff external to the contract onto components
 - add a structure rule to components, to ensure there is always a bottle or container in a milk product
