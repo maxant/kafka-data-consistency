@@ -5,6 +5,7 @@ import ch.maxant.kdc.mf.contracts.adapter.OrganisationAdapter
 import ch.maxant.kdc.mf.contracts.adapter.PartnerRelationshipsAdapter
 import ch.maxant.kdc.mf.contracts.dto.CreatePartnerRelationshipCommand.Role
 import ch.maxant.kdc.mf.library.Context
+import org.eclipse.microprofile.opentracing.Traced
 import org.eclipse.microprofile.rest.client.inject.RestClient
 import org.jboss.logging.Logger
 import java.util.*
@@ -14,6 +15,7 @@ import javax.ws.rs.NotAuthorizedException
 
 /** A class for coping with Attribute Based Access Control. */
 @Dependent
+@Traced
 class Abac {
 
     @Inject

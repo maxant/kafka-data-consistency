@@ -123,7 +123,6 @@
         <dependency>
             <groupId>io.opentracing.contrib</groupId>
             <artifactId>opentracing-jdbc</artifactId>
-            <version>0.2.12</version>
         </dependency>
         <dependency>
             <groupId>io.opentracing.contrib</groupId>
