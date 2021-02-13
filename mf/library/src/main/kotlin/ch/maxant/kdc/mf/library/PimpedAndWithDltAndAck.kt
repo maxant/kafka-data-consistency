@@ -7,6 +7,9 @@ import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
 import ch.maxant.kdc.mf.library.Context.Companion.RETRY_COUNT
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.opentracing.SpanContext
+import io.opentracing.Tracer
+import io.opentracing.contrib.kafka.TracingKafkaUtils
 import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecordMetadata
 import io.smallrye.reactive.messaging.kafka.OutgoingKafkaRecordMetadata
 import org.apache.commons.lang3.StringUtils
@@ -17,7 +20,6 @@ import org.apache.kafka.common.header.internals.RecordHeader
 import org.eclipse.microprofile.reactive.messaging.Message
 import org.jboss.logging.Logger
 import org.jboss.logging.MDC
-import java.lang.UnsupportedOperationException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletableFuture.completedFuture
 import java.util.concurrent.CompletionStage
@@ -29,6 +31,7 @@ import javax.interceptor.InvocationContext
 import javax.validation.ConstraintViolationException
 import javax.validation.ValidationException
 
+
 /**
  * deals with exceptions and acks messages so you don't have to. in the case of an exception, the
  * errors are sent to the DLT, unless you set `sendToDlt=false`.<br>
@@ -37,7 +40,9 @@ import javax.validation.ValidationException
  * <br>
  * can be added to incoming handlers which take a string, or a message. <br>
  * <br>
- * adds the requestId, command and event from the header/root to the MDC so it can be logged
+ * adds the requestId, command and event from the header/root to the MDC so it can be logged<br>
+ * <br>
+ * sets up opentracing too.
  */
 @InterceptorBinding
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.TYPE, AnnotationTarget.CLASS)
@@ -55,7 +60,10 @@ class PimpedAndWithDltAndAckInterceptor(
         var context: Context,
 
         @Inject
-        var om: ObjectMapper
+        var om: ObjectMapper,
+
+        @Inject
+        val tracer: Tracer
 ) {
     var log: Logger = Logger.getLogger(this.javaClass)
 
@@ -65,6 +73,17 @@ class PimpedAndWithDltAndAckInterceptor(
         val firstParam = ctx.parameters[0]
         require((firstParam is String) || (firstParam is Message<*>) || (firstParam is ConsumerRecord<*, *>)) { "EH002 @PimpedAndWithDltAndAck on method ${ctx.target.javaClass.name}::${ctx.method.name} must contain one String/Message/ConsumerRecord parameter" }
 
+        val headers = if(firstParam is Message<*>) {
+            firstParam
+                .getMetadata(IncomingKafkaRecordMetadata::class.java)
+                .orElse(null)
+                ?.headers
+        } else if(firstParam is ConsumerRecord<*, *>) {
+            firstParam.headers()
+        } else {
+            null
+        }
+
         // set context into request scoped bean, so downstream can use it. also works with quarkus context propogation
         setContext(firstParam)
 
@@ -73,7 +92,19 @@ class PimpedAndWithDltAndAckInterceptor(
 
         // set/clear MDC for this thread and proceed into intercepted code
         return withMdcSet(copyOfContext) {
-            proceed(copyOfContext, ctx, firstParam)
+            if(headers != null) {
+                val parent: SpanContext = TracingKafkaUtils.extractSpanContext(headers, tracer)
+                val span = tracer.buildSpan("${ctx.method.declaringClass.name}#${ctx.method.name}")
+                    .asChildOf(parent)
+                    .startActive(true)
+                try {
+                    proceed(copyOfContext, ctx, firstParam)
+                } finally {
+                    span.close()
+                }
+            } else {
+                proceed(copyOfContext, ctx, firstParam)
+            }
         }
     }
 

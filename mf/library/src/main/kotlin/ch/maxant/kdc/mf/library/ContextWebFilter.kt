@@ -5,6 +5,7 @@ import ch.maxant.kdc.mf.library.Context.Companion.DEMO_CONTEXT
 import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.opentracing.Tracer
 import org.apache.commons.lang3.StringUtils
 import org.jboss.logging.Logger
 import org.jboss.logging.MDC
@@ -29,6 +30,9 @@ class ContextWebFilter: Filter {
     @Inject
     lateinit var om: ObjectMapper
 
+    @Inject
+    lateinit var tracer: Tracer
+
     val log: Logger = Logger.getLogger(this.javaClass)
 
     override fun doFilter(req: ServletRequest, res: ServletResponse, filterChain: FilterChain) {
@@ -40,6 +44,7 @@ class ContextWebFilter: Filter {
 
         MDC.put(REQUEST_ID, context.requestId)
         MDC.put(COMMAND, "${request.method} ${request.requestURI}")
+        tracer.activeSpan().setTag(REQUEST_ID, context.requestId.requestId)
 
         ensureResteasyWillWork()
 

@@ -1,6 +1,7 @@
 package ch.maxant.kdc.mf.library
 
 import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
+import io.opentracing.Tracer
 import org.jboss.logging.Logger
 import java.util.*
 import javax.inject.Inject

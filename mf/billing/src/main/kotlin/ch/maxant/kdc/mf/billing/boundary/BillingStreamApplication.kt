@@ -5,9 +5,13 @@ import ch.maxant.kdc.mf.library.Context.Companion.EVENT
 import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.opentracing.Tracer
+import io.opentracing.contrib.kafka.streams.TracingKafkaClientSupplier
 import io.quarkus.arc.Arc
 import io.quarkus.runtime.StartupEvent
 import io.smallrye.mutiny.Multi
+import org.apache.kafka.clients.consumer.ConsumerConfig
+import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.common.utils.Bytes
 import org.apache.kafka.streams.*
@@ -48,16 +52,19 @@ import javax.ws.rs.core.Response
 @SuppressWarnings("unused")
 class BillingStreamApplication(
     @Inject
-    var om: ObjectMapper,
+    val om: ObjectMapper,
 
     @ConfigProperty(name = "kafka.bootstrap.servers")
     val kafkaBootstrapServers: String,
 
     @ConfigProperty(name = "ch.maxant.kdc.mf.billing.failRandomlyForTestingPurposes", defaultValue = "true")
-    var failRandomlyForTestingPurposes: Boolean,
+    val failRandomlyForTestingPurposes: Boolean,
 
     @ConfigProperty(name = "ch.maxant.kdc.mf.billing.numStreamThreads", defaultValue = "3")
-    var numStreamThreads: Int
+    val numStreamThreads: Int,
+
+    @Inject
+    val tracer: Tracer
 ) {
     // TODO tidy the entries up when they are no longer in use! tip: see isCancelled below - altho theyre already removed with onterminate at the bottom?
     val subscriptions = ConcurrentHashMap<String, EmitterState>()
@@ -102,6 +109,9 @@ class BillingStreamApplication(
 
         // lets scale internally a little
         props[StreamsConfig.NUM_STREAM_THREADS_CONFIG] = numStreamThreads // default is 1
+
+        props[StreamsConfig.CONSUMER_PREFIX + ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG] = "io.opentracing.contrib.kafka.TracingConsumerInterceptor"
+        props[StreamsConfig.PRODUCER_PREFIX + ProducerConfig.INTERCEPTOR_CLASSES_CONFIG] = "io.opentracing.contrib.kafka.TracingProducerInterceptor"
 
         val builder = StreamsBuilder()
 
@@ -210,7 +220,8 @@ class BillingStreamApplication(
         val topology = builder.build()
         println(topology.describe())
 
-        streams = KafkaStreams(topology, props)
+        // https://github.com/opentracing-contrib/java-kafka-client =>
+        streams = KafkaStreams(topology, props, TracingKafkaClientSupplier(tracer))
 
         streams.setUncaughtExceptionHandler { thread, throwable ->
             log.error("BSA002 handling an uncaught error on thread $thread: ${throwable.message} AND SHUTTING DOWN", throwable )
@@ -432,7 +443,7 @@ class BillingStreamApplication(
         }
 
     /** seems to not like immediate fetching of the store during init - so lets do it lazily */
-    fun getGlobalGroup(key: String) =
+    fun getGlobalGroup(key: String): String =
         try {
             globalGroupsView.get(key)
         } catch(e: UninitializedPropertyAccessException) {

@@ -2,6 +2,8 @@ package ch.maxant.kdc.mf.library
 
 import ch.maxant.kdc.mf.library.Context.Companion.COMMAND
 import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
+import io.opentracing.Tracer
+import io.opentracing.tag.Tags
 import org.jboss.logging.Logger
 import org.jboss.logging.MDC
 import java.util.*
@@ -17,12 +19,16 @@ class ContextRequestFilter : ContainerRequestFilter {
     @Inject
     lateinit var context: Context
 
+    @Inject
+    lateinit var tracer: Tracer
+
     val log: Logger = Logger.getLogger(this.javaClass)
 
     override fun filter(ctx: ContainerRequestContext) {
         context.requestId = getRequestId(ctx)
         MDC.put(REQUEST_ID, context.requestId)
         MDC.put(COMMAND, "${ctx.request.method} ${ctx.uriInfo.requestUri.path}")
+        tracer.activeSpan().setTag(REQUEST_ID, context.requestId.requestId)
     }
 
     private fun getRequestId(ctx: ContainerRequestContext): RequestId {

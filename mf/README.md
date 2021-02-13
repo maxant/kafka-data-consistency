@@ -568,6 +568,19 @@ Create new:
     export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.9.11-0.el7_9.x86_64
     mvn --version
 
+Update Jaeger Dependencies:
+
+    # https://www.jaegertracing.io/docs/1.21/faq/ => Why is the Dependencies page empty?
+    #  The Dependencies page shows a graph of services traced by Jaeger and connections between them.
+    #  However, if you are using a real distributed storage like Elasticsearch, it is too expensive to scan all the data 
+    #  in the database to build the service graph. Instead, the Jaeger project provides “big data” jobs that can be used 
+    #  to extract the service graph data from traces:
+    #    https://github.com/jaegertracing/spark-dependencies - the older Spark job that can be run periodically
+    #    https://github.com/jaegertracing/jaeger-analytics - the new (experimental) streaming Flink jobs that run continuously and builds the service graph in smaller time intervals
+    #
+    # https://github.com/jaegertracing/spark-dependencies
+    docker run --rm --env STORAGE=elasticsearch --env ES_NODES=http://kdc.elasticsearch.maxant.ch:80 jaegertracing/spark-dependencies
+
 ## Infrastructure
 
 Hmmm... not really needed ATM since we access using root:
