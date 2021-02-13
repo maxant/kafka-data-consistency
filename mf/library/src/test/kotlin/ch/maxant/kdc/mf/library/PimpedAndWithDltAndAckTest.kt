@@ -4,6 +4,8 @@ import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nhaarman.mockito_kotlin.*
+import io.opentracing.Tracer
+import io.opentracing.noop.NoopTracerFactory
 import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecordMetadata
 import org.apache.kafka.common.header.internals.RecordHeaders
 import org.eclipse.microprofile.reactive.messaging.Message
@@ -26,6 +28,7 @@ class PimpedAndWithDltAndAckTest {
     private lateinit var log: Logger
     private lateinit var errorHandler: ErrorHandler
     private lateinit var ic: InvocationContext
+    private val tracer: Tracer = NoopTracerFactory.create()
 
     @BeforeEach
     fun setup() {
@@ -48,7 +51,7 @@ class PimpedAndWithDltAndAckTest {
 
         // when + then
         assertEquals("EH001 @ErrorHandled on method ch.maxant.kdc.mf.library.TestConsumerWrongNumParams::process must contain exactly one parameter",
-                assertThrows<IllegalArgumentException> { PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper()).invoke(ic) }.message)
+                assertThrows<IllegalArgumentException> { PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper(), tracer).invoke(ic) }.message)
         verify(ic).parameters
         verify(ic).target
         verify(ic).method
@@ -64,7 +67,7 @@ class PimpedAndWithDltAndAckTest {
 
         // when + then
         assertEquals("EH002 @ErrorHandled on method ch.maxant.kdc.mf.library.TestConsumerWrongParamType::process must contain one String/Message parameter",
-                assertThrows<IllegalArgumentException> { PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper()).invoke(ic) }.message)
+                assertThrows<IllegalArgumentException> { PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper(), tracer).invoke(ic) }.message)
         verify(ic, times(2)).parameters
         verify(ic).target
         verify(ic).method
@@ -77,7 +80,7 @@ class PimpedAndWithDltAndAckTest {
             on { method } doReturn(TestStringConsumerSendToDlt::class.java.getMethod("process", String::class.java))
             on { target } doReturn(TestStringConsumerSendToDlt())
         }
-        val sut = PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper())
+        val sut = PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper(), tracer)
         sut.log = log
 
         // when + then
@@ -97,7 +100,7 @@ class PimpedAndWithDltAndAckTest {
             on { target } doReturn(TestStringConsumerSendToDlt())
         }
         whenever(ic.proceed()).thenReturn(null)
-        val sut = PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper())
+        val sut = PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper(), tracer)
         sut.log = log
 
         // when
@@ -123,7 +126,7 @@ class PimpedAndWithDltAndAckTest {
             on { target } doReturn(TestMessageConsumerSendToDlt())
         }
         whenever(ic.proceed()).thenReturn(completedFuture(null))
-        val sut = PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper())
+        val sut = PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper(), tracer)
         sut.log = log
 
         // when
@@ -152,7 +155,7 @@ class PimpedAndWithDltAndAckTest {
         val e = RuntimeException("test")
         whenever(ic.proceed()).thenThrow(e) // <--- STEERS TEST
         whenever(errorHandler.dlt(msg, e)).thenReturn(completedFuture(null))
-        val sut = PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper())
+        val sut = PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper(), tracer)
         sut.log = log
 
         // when
@@ -185,7 +188,7 @@ class PimpedAndWithDltAndAckTest {
         val e = RuntimeException("test")
         whenever(ic.proceed()).thenReturn(failedFuture<Unit>(e)) // <--- STEERS TEST
         whenever(errorHandler.dlt(msg, e)).thenReturn(completedFuture(null))
-        val sut = PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper())
+        val sut = PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper(), tracer)
         sut.log = log
 
         // when
@@ -207,7 +210,7 @@ class PimpedAndWithDltAndAckTest {
     @Test
     fun dealWithExceptionIfNecessary_noException() {
         ic = mock {}
-        val sut = PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper())
+        val sut = PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper(), tracer)
 
         // when
         val ret = sut.dealWithExceptionIfNecessary(null, ic, Context())
@@ -230,7 +233,7 @@ class PimpedAndWithDltAndAckTest {
         val originalException = RuntimeException("original")
         val dltException = RuntimeException("test")
         whenever(errorHandler.dlt(msg, originalException)).thenThrow(dltException) // <--- STEERS TEST
-        val sut = PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper())
+        val sut = PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper(), tracer)
         sut.log = log
 
         // when
@@ -260,7 +263,7 @@ class PimpedAndWithDltAndAckTest {
             on { target } doReturn(TestMessageConsumerDontSendToDlt())
         }
         val originalException = RuntimeException("original")
-        val sut = PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper())
+        val sut = PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper(), tracer)
         sut.log = log
 
         // when
@@ -288,7 +291,7 @@ class PimpedAndWithDltAndAckTest {
             on { target } doReturn(TestMessageConsumerDontSendToDlt())
         }
         val originalException = RuntimeException("original")
-        val sut = PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper())
+        val sut = PimpedAndWithDltAndAckInterceptor(errorHandler, Context(), ObjectMapper(), tracer)
         sut.log = log
 
         // when

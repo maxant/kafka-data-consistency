@@ -217,6 +217,8 @@ services:
       quarkus.jaeger.agent-host-port: "jaeger-agent:6831"
     volumes:
       - ./mf/billing/target:/project
+      # add one so that the stream stores dont always need to be replicated
+      - ./mf-billing-kafkastreams:/tmp/kafkastreams
     command:
       java -jar billing-1.0-SNAPSHOT-runner.jar -Xmx300m
     extra_hosts:
