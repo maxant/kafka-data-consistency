@@ -111,7 +111,7 @@ class BillingStreamApplication(
         props[StreamsConfig.NUM_STREAM_THREADS_CONFIG] = numStreamThreads // default is 1
 
         props[StreamsConfig.CONSUMER_PREFIX + ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG] = "io.opentracing.contrib.kafka.TracingConsumerInterceptor"
-        props[StreamsConfig.PRODUCER_PREFIX + ProducerConfig.INTERCEPTOR_CLASSES_CONFIG] = "io.opentracing.contrib.kafka.TracingProducerInterceptor"
+        props[StreamsConfig.PRODUCER_PREFIX + ProducerConfig.INTERCEPTOR_CLASSES_CONFIG] = "ch.maxant.kdc.mf.library.TracingProducerInterceptor"
 
         val builder = StreamsBuilder()
 

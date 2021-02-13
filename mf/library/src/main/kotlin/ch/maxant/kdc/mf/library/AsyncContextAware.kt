@@ -1,5 +1,7 @@
 package ch.maxant.kdc.mf.library
 
+import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
+import io.opentracing.Tracer
 import org.eclipse.microprofile.context.ManagedExecutor
 import org.eclipse.microprofile.context.ThreadContext
 import java.util.concurrent.CompletionStage
@@ -35,7 +37,10 @@ class AsyncContextAwareInterceptor(
         val managedExecutor: ManagedExecutor,
 
         @Inject
-        val context: Context
+        val context: Context,
+
+        @Inject
+        val tracer: Tracer
 ) {
     @AroundInvoke
     fun invoke(ctx: InvocationContext): Any {
@@ -43,10 +48,21 @@ class AsyncContextAwareInterceptor(
         // copy elements out, as the proxy might not work inside the supplier, and MDC isnt propagated coz smallrye doesnt know about it
         val copyOfContext = Context.of(context)
 
-        return managedExecutor.supplyAsync(threadContext.contextualSupplier {
+        // seems that the new span isn't correctly propagated, so lets insert a new one, to ensure it is
+        val parent = tracer.activeSpan()
 
+        return managedExecutor.supplyAsync(threadContext.contextualSupplier {
             withMdcSet(copyOfContext) {
-                ctx.proceed() as CompletionStage<Any>
+                val newScope = tracer.buildSpan("${ctx.method.declaringClass.name}.${ctx.method.name} (async)")
+                    .asChildOf(parent)
+                    .startActive(true)
+                newScope.span().setTag(REQUEST_ID, copyOfContext.requestId.toString())
+                newScope.span().setTag("__origin", "AsyncContextAware")
+                try {
+                    ctx.proceed() as CompletionStage<Any>
+                } finally {
+                    newScope.close()
+                }
             }
         }).thenCompose { it } // unwrap the nested CS from type CS<CS<Any>> to CS<Any>
 
