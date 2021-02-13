@@ -22,7 +22,6 @@ services:
       ch.maxant.kdc.mf.contracts.adapter.PartnerRelationshipsAdapter/mp-rest/uri: "http://kdc-mf-partners:8083"
       ch.maxant.kdc.mf.contracts.adapter.OrganisationAdapter/mp-rest/uri: "http://kdc-mf-organisation:8086"
       quarkus.jaeger.agent-host-port: "jaeger-agent:6831"
-      quarkus.jaeger.service-name: "tmf"
       quarkus.log.category."io.opentracing".level: ALL
     volumes:
       - ./mf/contracts/target:/project
@@ -50,7 +49,6 @@ services:
       quarkus.log.handler.gelf.host: "logstash"
       quarkus.log.handler.gelf.port: 12201
       quarkus.jaeger.agent-host-port: "jaeger-agent:6831"
-      quarkus.jaeger.service-name: "tmf"
       quarkus.log.category."io.opentracing".level: ALL
     volumes:
       - ./mf/pricing/target:/project
@@ -86,7 +84,6 @@ services:
       quarkus.log.handler.gelf.host: "logstash"
       quarkus.log.handler.gelf.port: 12201
       quarkus.jaeger.agent-host-port: "jaeger-agent:6831"
-      quarkus.jaeger.service-name: "tmf"
       quarkus.log.category."io.opentracing".level: ALL
     volumes:
       - ./mf/web/target:/project
@@ -115,7 +112,6 @@ services:
       quarkus.log.handler.gelf.port: 12201
       ch.maxant.kdc.mf.partners.adapter.OrganisationAdapter/mp-rest/uri: "http://kdc-mf-organisation:8086"
       quarkus.jaeger.agent-host-port: "jaeger-agent:6831"
-      quarkus.jaeger.service-name: "tmf"
       quarkus.log.category."io.opentracing".level: ALL
     volumes:
       - ./mf/partners/target:/project
@@ -144,7 +140,6 @@ services:
       quarkus.log.handler.gelf.port: 12201
       ch.maxant.kdc.mf.partners.adapter.OrganisationAdapter/mp-rest/uri: "http://kdc-mf-organisation:8086"
       quarkus.jaeger.agent-host-port: "jaeger-agent:6831"
-      quarkus.jaeger.service-name: "tmf"
       quarkus.log.category."io.opentracing".level: ALL
     volumes:
       - ./mf/cases/target:/project
@@ -171,7 +166,6 @@ services:
       quarkus.log.handler.gelf.host: "logstash"
       quarkus.log.handler.gelf.port: 12201
       quarkus.jaeger.agent-host-port: "jaeger-agent:6831"
-      quarkus.jaeger.service-name: "tmf"
       quarkus.log.category."io.opentracing".level: ALL
     volumes:
       - ./mf/waitingroom/target:/project
@@ -198,7 +192,6 @@ services:
       quarkus.log.handler.gelf.host: "logstash"
       quarkus.log.handler.gelf.port: 12201
       quarkus.jaeger.agent-host-port: "jaeger-agent:6831"
-      quarkus.jaeger.service-name: "tmf"
       quarkus.log.category."io.opentracing".level: ALL
     volumes:
       - ./mf/organisation/target:/project
@@ -229,7 +222,6 @@ services:
       ch.maxant.kdc.mf.library.max.async: 30
       ch.maxant.kdc.mf.billing.numStreamThreads: 10
       quarkus.jaeger.agent-host-port: "jaeger-agent:6831"
-      quarkus.jaeger.service-name: "tmf"
       quarkus.log.category."io.opentracing".level: ALL
     volumes:
       - ./mf/billing/target:/project
