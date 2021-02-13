@@ -3,10 +3,8 @@ package ch.maxant.kdc.mf.library
 import ch.maxant.kdc.mf.library.Context.Companion.COMMAND
 import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
 import io.opentracing.Tracer
-import io.opentracing.tag.Tags
 import org.jboss.logging.Logger
 import org.jboss.logging.MDC
-import java.util.*
 import javax.inject.Inject
 import javax.ws.rs.container.ContainerRequestContext
 import javax.ws.rs.container.ContainerRequestFilter
@@ -41,7 +39,7 @@ class ContextRequestFilter : ContainerRequestFilter {
                 context.requestId.requestId
             } else {
                 val rId2 = context.getRequestIdSafely().requestId
-                log.info("creating new requestId as it is missing in the request: $rId2 on path ${ctx.request.method} ${ctx.uriInfo.requestUri.path}")
+                log.debug("creating new requestId as it is missing in the request: $rId2 on path ${ctx.request.method} ${ctx.uriInfo.requestUri.path}")
                 rId2
             }
         }

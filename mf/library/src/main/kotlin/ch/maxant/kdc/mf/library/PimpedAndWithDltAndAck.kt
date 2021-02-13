@@ -93,11 +93,13 @@ class PimpedAndWithDltAndAckInterceptor(
         // set/clear MDC for this thread and proceed into intercepted code
         return withMdcSet(copyOfContext) {
             if(headers != null) {
+                val ce = if(context.command != null) context.command else context.event
                 val parent: SpanContext = TracingKafkaUtils.extractSpanContext(headers, tracer)
-                val span = tracer.buildSpan("${ctx.method.declaringClass.name}#${ctx.method.name}")
+                val span = tracer.buildSpan("${ctx.method.declaringClass.name}#${ctx.method.name}-->$ce")
                     .asChildOf(parent)
                     .startActive(true)
                 try {
+                    span.span().setTag(REQUEST_ID, context.requestId.toString())
                     proceed(copyOfContext, ctx, firstParam)
                 } finally {
                     span.close()
@@ -365,4 +367,3 @@ fun <U> withMdcSet(context: Context, f: () -> U) =
         } finally {
             clearMdc()
         }
-

@@ -2,6 +2,7 @@ package ch.maxant.kdc.mf.library
 
 import ch.maxant.kdc.mf.library.Context.Companion.DEMO_CONTEXT
 import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
+import org.eclipse.microprofile.opentracing.Traced
 import org.jboss.resteasy.core.ResteasyContext
 import java.util.HashMap
 import javax.servlet.Filter
@@ -13,6 +14,7 @@ import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 @WebFilter(urlPatterns = ["/*"], asyncSupported = true)
+@Traced(value = false)
 class CorsFilter : Filter {
     //https://stackoverflow.com/questions/10636611/how-does-access-control-allow-origin-header-work/10636765#10636765
     override fun doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain) {

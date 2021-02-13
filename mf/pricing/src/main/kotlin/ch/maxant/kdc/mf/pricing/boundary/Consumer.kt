@@ -5,6 +5,7 @@ import ch.maxant.kdc.mf.pricing.control.*
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.eclipse.microprofile.opentracing.Traced
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.jboss.logging.Logger

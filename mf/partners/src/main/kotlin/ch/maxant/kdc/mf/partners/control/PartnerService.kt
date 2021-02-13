@@ -9,6 +9,7 @@ import ch.maxant.kdc.mf.partners.entity.PartnerRelationshipEntity
 import ch.maxant.kdc.mf.partners.entity.Role
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
+import org.eclipse.microprofile.opentracing.Traced
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.eclipse.microprofile.rest.client.inject.RestClient
@@ -24,6 +25,7 @@ import javax.validation.ValidationException
 
 @ApplicationScoped
 @SuppressWarnings("unused")
+@Traced
 class PartnerService(
         @Inject
         var em: EntityManager,

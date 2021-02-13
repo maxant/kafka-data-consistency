@@ -249,6 +249,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 - cron job for jaeger
 - requestId in tracing
 - tracing kafka produer to use existing span as parent
+- spans from browser
 - throttle sse requests on error
 - fix cases
 - sales => why isnt the draft button locked when clicked?

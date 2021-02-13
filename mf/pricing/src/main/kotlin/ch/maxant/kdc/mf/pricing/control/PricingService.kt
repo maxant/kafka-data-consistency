@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
+import org.eclipse.microprofile.opentracing.Traced
 import org.jboss.logging.Logger
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -27,6 +28,7 @@ import kotlin.collections.HashMap
 
 @ApplicationScoped
 @SuppressWarnings("unused")
+@Traced
 class PricingService(
         @Inject
         var em: EntityManager,

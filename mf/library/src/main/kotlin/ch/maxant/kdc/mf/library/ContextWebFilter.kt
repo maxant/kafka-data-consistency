@@ -50,8 +50,7 @@ class ContextWebFilter: Filter {
         ensureResteasyWillWork()
 
         var scope: Scope? = if(tracer.activeSpan() == null) {
-            val scope = tracer.buildSpan(cmd).startActive(true)
-            scope
+            tracer.buildSpan(cmd).startActive(true)
         } else {
             null
         }
@@ -92,7 +91,7 @@ class ContextWebFilter: Filter {
                 context.requestId.requestId
             } else {
                 val rId2 = context.getRequestIdSafely().requestId
-                log.info("creating new requestId as it is missing in the request: $rId2 on path ${request.method} ${request.requestURI}")
+                log.debug("creating new requestId as it is missing in the request: $rId2 on path ${request.method} ${request.requestURI}")
                 rId2
             }
         }
