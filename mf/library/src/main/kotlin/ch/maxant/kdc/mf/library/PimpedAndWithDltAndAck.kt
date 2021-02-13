@@ -96,7 +96,7 @@ class PimpedAndWithDltAndAckInterceptor(
         return withMdcSet(copyOfContext) {
             if(headers != null) {
                 val ce = if(isNotEmpty(context.command)) "command ${context.command}" else "event ${context.event}"
-                val parent: SpanContext = TracingKafkaUtils.extractSpanContext(headers, tracer)
+                val parent = TracingKafkaUtils.extractSpanContext(headers, tracer)
                 val span = tracer.buildSpan("${ctx.method.declaringClass.name}.${ctx.method.name} ($ce)")
                     .asChildOf(parent)
                     .startActive(true)
