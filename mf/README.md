@@ -246,6 +246,9 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- cron job for jaeger
+- requestId in tracing
+- tracing kafka produer to use existing span as parent
 - throttle sse requests on error
 - fix cases
 - sales => why isnt the draft button locked when clicked?

@@ -5,6 +5,7 @@ import ch.maxant.kdc.mf.library.Context.Companion.DEMO_CONTEXT
 import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.opentracing.Scope
 import io.opentracing.Tracer
 import org.apache.commons.lang3.StringUtils
 import org.jboss.logging.Logger
@@ -43,16 +44,25 @@ class ContextWebFilter: Filter {
         context.demoContext = readDemoContext(request)
 
         MDC.put(REQUEST_ID, context.requestId)
-        MDC.put(COMMAND, "${request.method} ${request.requestURI}")
-        tracer.activeSpan().setTag(REQUEST_ID, context.requestId.requestId)
+        val cmd = "${request.method} ${request.requestURI}"
+        MDC.put(COMMAND, cmd)
 
         ensureResteasyWillWork()
+
+        var scope: Scope? = if(tracer.activeSpan() == null) {
+            val scope = tracer.buildSpan(cmd).startActive(true)
+            scope
+        } else {
+            null
+        }
+        tracer.activeSpan().setTag(REQUEST_ID, context.requestId.toString())
 
         try {
             filterChain.doFilter(request, response)
         } finally {
             response.setHeader(REQUEST_ID, context.requestId.toString())
             MDC.clear()
+            scope?.close()
         }
     }
 
