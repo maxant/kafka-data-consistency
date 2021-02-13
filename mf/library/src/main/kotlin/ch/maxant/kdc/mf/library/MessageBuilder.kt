@@ -1,6 +1,7 @@
 package ch.maxant.kdc.mf.library
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import io.opentracing.Tracer
 import java.util.concurrent.CompletableFuture
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
@@ -13,6 +14,9 @@ class MessageBuilder {
 
     @Inject
     lateinit var om: ObjectMapper
+
+    @Inject
+    lateinit var tracer: Tracer
 
     /**
      * Build the message, with header propagation
@@ -31,7 +35,8 @@ class MessageBuilder {
                     command,
                     event
             ),
-            ack
+            ack,
+            tracer
         )
 
     fun build(key: Any?,
@@ -43,6 +48,7 @@ class MessageBuilder {
                     context,
                     command,
                     event
-            )
+            ),
+            tracer
         )
 }

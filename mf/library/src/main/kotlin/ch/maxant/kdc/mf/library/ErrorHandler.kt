@@ -1,6 +1,7 @@
 package ch.maxant.kdc.mf.library
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import io.opentracing.Tracer
 import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecordMetadata
 import org.apache.commons.lang3.exception.ExceptionUtils
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -34,6 +35,9 @@ class ErrorHandler {
 
     @Inject
     lateinit var om: ObjectMapper
+
+    @Inject
+    lateinit var tracer: Tracer
 
     /**
      * Provides a transport mechanism for distributing errors back to the microservice which started the
@@ -69,7 +73,7 @@ class ErrorHandler {
         val msg = messageWithMetadata(key, value, Headers(
                     context,
                     event = "ERROR"
-            ), ack)
+            ), ack, tracer)
         errors.send(msg)
         return ack
     }
@@ -95,7 +99,7 @@ class ErrorHandler {
             rhs.add(RecordHeader(ORIGINAL_TOPIC, record.topic.toByteArray()))
             record.headers.forEach { rhs.add(RecordHeader(it.key(), it.value())) }
             val ack = CompletableFuture<Unit>()
-            val msg = messageWithMetadata(record.key as String, originalMessage.payload as String, rhs, ack)
+            val msg = messageWithMetadata(record.key as String, originalMessage.payload as String, rhs, ack, tracer)
 
             if (waitShort) waitingroom01.send(msg)
             else waitingroom10.send(msg)
@@ -108,7 +112,7 @@ class ErrorHandler {
             rhs.add(RecordHeader(ORIGINAL_TOPIC, record.topic().toByteArray()))
             record.headers().forEach { rhs.add(RecordHeader(it.key(), it.value())) }
             val ack = CompletableFuture<Unit>()
-            val msg = messageWithMetadata(record.key().toString(), originalMessage.value().toString(), rhs, ack)
+            val msg = messageWithMetadata(record.key().toString(), originalMessage.value().toString(), rhs, ack, tracer)
 
             if(waitShort) waitingroom01.send(msg)
             else waitingroom10.send(msg)

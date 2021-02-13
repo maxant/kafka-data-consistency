@@ -306,24 +306,24 @@ data class Headers(val requestId: RequestId,
  */
 @Deprecated(message = "use the one without ack")
 fun messageWithMetadata(key: String?, value: String, headers: Headers,
-                        ack: CompletableFuture<Unit>): Message<String> {
+                        ack: CompletableFuture<Unit>, tracer: Tracer): Message<String> {
     val headersList = mutableListOf(RecordHeader(REQUEST_ID, headers.requestId.toString().toByteArray()))
     if(headers.demoContext != null) headersList.add(RecordHeader(DEMO_CONTEXT, (headers.demoContext.json?:"").toByteArray()))
     if(isNotEmpty(headers.command)) headersList.add(RecordHeader(COMMAND, headers.command!!.toByteArray()))
     if(isNotEmpty(headers.event)) headersList.add(RecordHeader(EVENT, headers.event!!.toByteArray()))
     if(isNotEmpty(headers.originalCommand)) headersList.add(RecordHeader("originalCommand", headers.originalCommand!!.toByteArray()))
     if(isNotEmpty(headers.originalEvent)) headersList.add(RecordHeader("originalEvent", headers.originalEvent!!.toByteArray()))
-    return messageWithMetadata(key, value, headersList, ack)
+    return messageWithMetadata(key, value, headersList, ack, tracer)
 }
 
-fun messageWithMetadata(key: String?, value: String, headers: Headers): Message<String> {
+fun messageWithMetadata(key: String?, value: String, headers: Headers, tracer: Tracer): Message<String> {
     val headersList = mutableListOf(RecordHeader(REQUEST_ID, headers.requestId.toString().toByteArray()))
     if(headers.demoContext != null) headersList.add(RecordHeader(DEMO_CONTEXT, (headers.demoContext.json?:"").toByteArray()))
     if(isNotEmpty(headers.command)) headersList.add(RecordHeader(COMMAND, headers.command!!.toByteArray()))
     if(isNotEmpty(headers.event)) headersList.add(RecordHeader(EVENT, headers.event!!.toByteArray()))
     if(isNotEmpty(headers.originalCommand)) headersList.add(RecordHeader("originalCommand", headers.originalCommand!!.toByteArray()))
     if(isNotEmpty(headers.originalEvent)) headersList.add(RecordHeader("originalEvent", headers.originalEvent!!.toByteArray()))
-    return messageWithMetadata(key, value, headersList)
+    return messageWithMetadata(key, value, headersList, tracer)
 }
 
 /**
@@ -331,9 +331,11 @@ fun messageWithMetadata(key: String?, value: String, headers: Headers): Message<
  */
 @Deprecated(message = "use one without ack")
 fun messageWithMetadata(key: String?, value: String, headers: List<RecordHeader>,
-                        ack: CompletableFuture<Unit>): Message<String> {
+                        ack: CompletableFuture<Unit>, tracer: Tracer): Message<String> {
     val hs = RecordHeaders()
-    TracingKafkaUtils.inject(GlobalTracer.get().activeSpan().context(), hs, GlobalTracer.get())
+    if(tracer.activeSpan() != null) {
+        TracingKafkaUtils.inject(tracer.activeSpan().context(), hs, tracer)
+    }
     val headersWithTrace = headers + hs.map { RecordHeader(it.key(), it.value()) }
     val metadata = OutgoingKafkaRecordMetadata.builder<Any>()
         .withKey(key)
@@ -344,9 +346,11 @@ fun messageWithMetadata(key: String?, value: String, headers: List<RecordHeader>
 
 }
 
-fun messageWithMetadata(key: String?, value: String, headers: List<RecordHeader>): Message<String> {
+fun messageWithMetadata(key: String?, value: String, headers: List<RecordHeader>, tracer: Tracer): Message<String> {
     val hs = RecordHeaders()
-    TracingKafkaUtils.inject(GlobalTracer.get().activeSpan().context(), hs, GlobalTracer.get())
+    if(tracer.activeSpan() != null) {
+        TracingKafkaUtils.inject(tracer.activeSpan().context(), hs, tracer)
+    }
     val headersWithTrace = headers + hs.map { RecordHeader(it.key(), it.value()) }
     val metadata = OutgoingKafkaRecordMetadata.builder<Any>()
             .withKey(key)
