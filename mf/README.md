@@ -246,6 +246,10 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- how come no sql traced in cases?
+- how come getEm and such is logged in eg partner service?
+- why is REST request traced twice?
+- why doesnt contracts draft create not include calls to kafka? ah coz parent isnt propagated
 - cron job for jaeger
 - requestId in tracing
 - tracing kafka produer to use existing span as parent

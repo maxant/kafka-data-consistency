@@ -55,6 +55,7 @@ class ContextWebFilter: Filter {
             null
         }
         tracer.activeSpan().setTag(REQUEST_ID, context.requestId.toString())
+        tracer.activeSpan().setTag("origin", "ContextWebFilter")
 
         try {
             filterChain.doFilter(request, response)

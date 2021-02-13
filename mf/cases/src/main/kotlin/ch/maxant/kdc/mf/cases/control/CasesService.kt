@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
+import org.eclipse.microprofile.opentracing.Traced
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.jboss.logging.Logger
@@ -46,6 +47,7 @@ class CasesService(
 
     @AsyncContextAware
     @Timed(unit = MetricUnits.MILLISECONDS)
+    @Traced
     fun createCase(caseCommand: CreateCaseCommand): CompletionStage<*> {
         log.info("creating a case: $caseCommand")
 
@@ -58,6 +60,7 @@ class CasesService(
 
     @AsyncContextAware
     @Timed(unit = MetricUnits.MILLISECONDS)
+    @Traced
     fun createTask(taskCommand: CreateTaskCommand): CompletionStage<*> {
         log.info("creating a task: $taskCommand")
 
@@ -77,6 +80,7 @@ class CasesService(
 
     @AsyncContextAware
     @Timed(unit = MetricUnits.MILLISECONDS)
+    @Traced
     fun updateTask(taskCommand: UpdateTaskCommand): CompletionStage<*> {
         log.info("updating a task: $taskCommand")
 
@@ -95,6 +99,7 @@ class CasesService(
 
     @AsyncContextAware
     @Timed(unit = MetricUnits.MILLISECONDS)
+    @Traced
     fun completeTasks(tasksCommand: CompleteTasksCommand): CompletionStage<*> {
         log.info("completing tasks: $tasksCommand")
 

@@ -27,6 +27,7 @@ class ContextRequestFilter : ContainerRequestFilter {
         MDC.put(REQUEST_ID, context.requestId)
         MDC.put(COMMAND, "${ctx.request.method} ${ctx.uriInfo.requestUri.path}")
         tracer.activeSpan().setTag(REQUEST_ID, context.requestId.requestId)
+        tracer.activeSpan().setTag("origin", "ContextRequestFilter")
     }
 
     private fun getRequestId(ctx: ContainerRequestContext): RequestId {

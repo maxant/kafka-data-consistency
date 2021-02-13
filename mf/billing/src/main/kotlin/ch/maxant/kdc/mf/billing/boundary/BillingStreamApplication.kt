@@ -221,7 +221,8 @@ class BillingStreamApplication(
         println(topology.describe())
 
         // https://github.com/opentracing-contrib/java-kafka-client =>
-        streams = KafkaStreams(topology, props, TracingKafkaClientSupplier(tracer))
+        // TODO streams = KafkaStreams(topology, props, TracingKafkaClientSupplier(tracer))
+        streams = KafkaStreams(topology, props)
 
         streams.setUncaughtExceptionHandler { thread, throwable ->
             log.error("BSA002 handling an uncaught error on thread $thread: ${throwable.message} AND SHUTTING DOWN", throwable )

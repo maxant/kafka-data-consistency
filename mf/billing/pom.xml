@@ -30,7 +30,7 @@
         <dependency>
             <groupId>io.opentracing.contrib</groupId>
             <artifactId>opentracing-kafka-streams</artifactId>
-            <version>0.1.15</version>
+            <version>${opentracing-kafka.version}</version>
         </dependency>
 
     </dependencies>

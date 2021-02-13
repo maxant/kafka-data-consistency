@@ -25,7 +25,6 @@ import javax.validation.ValidationException
 
 @ApplicationScoped
 @SuppressWarnings("unused")
-@Traced
 class PartnerService(
         @Inject
         var em: EntityManager,
@@ -48,6 +47,7 @@ class PartnerService(
 
     @Transactional
     @Timed(unit = MetricUnits.MILLISECONDS)
+    @Traced
     fun createRelationship(command: CreatePartnerRelationshipCommand) {
         log.info("creating a partner relationship: $command")
 
@@ -80,11 +80,13 @@ class PartnerService(
         relationships.forEach { sendPartnerRelationshipChangedEvent(it) }
     }
 
+    @Traced
     private fun sendPartnerRelationshipChangedEvent(relationship: PartnerRelationshipEntity) {
         partnerRelationshipEvent.fire(relationship)
     }
 
     @SuppressWarnings("unused")
+    @Traced
     private fun send(@Observes(during = TransactionPhase.AFTER_SUCCESS) relationship: PartnerRelationshipEntity) {
         val prce = PartnerRelationshipChangedEvent(relationship.partnerId, relationship.foreignId, relationship.role)
         val msg = messageBuilder.build(relationship.foreignId, prce, event = "CHANGED_PARTNER_RELATIONSHIP")

@@ -28,7 +28,6 @@ import kotlin.collections.HashMap
 
 @ApplicationScoped
 @SuppressWarnings("unused")
-@Traced
 class PricingService(
         @Inject
         var em: EntityManager,
@@ -43,6 +42,7 @@ class PricingService(
 
     @Transactional
     @Timed(unit = MetricUnits.MILLISECONDS)
+    @Traced
     fun priceDraft(draft: JsonNode): PricingResult {
         // TODO add extension method to make this fetchable via a path => ur use JsonPath?
         // TODO replace with DTO
@@ -66,6 +66,7 @@ class PricingService(
 
     @Transactional
     @Timed(unit = MetricUnits.MILLISECONDS)
+    @Traced
     fun readPrices(group: PricingCommandGroup): PricingCommandGroupResult {
         if(group.failForTestingPurposes) {
             log.error("FAILING FOR TEST PURPOSES")
@@ -101,6 +102,7 @@ class PricingService(
 
     @Transactional
     @Timed(unit = MetricUnits.MILLISECONDS)
+    @Traced
     fun repriceContract(group: PricingCommandGroup): PricingCommandGroupResult {
         if(group.failForTestingPurposes) {
             log.error("FAILING FOR TEST PURPOSES")
@@ -163,6 +165,7 @@ class PricingService(
         return map(byId.values.find { it.parentId == null } !!)
     }
 
+    @Traced
     private fun priceDraft(contractId: UUID, syncTimestamp: Long, start: LocalDateTime, end: LocalDateTime, root: TreeComponent): PricingResult {
         log.info("starting to price individual components for contract $contractId...")
 
