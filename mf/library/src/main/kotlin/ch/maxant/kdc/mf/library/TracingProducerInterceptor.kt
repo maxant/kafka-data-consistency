@@ -9,7 +9,7 @@ import org.apache.kafka.clients.producer.ProducerRecord
 
 class TracingProducerInterceptor<K, V> : io.opentracing.contrib.kafka.TracingProducerInterceptor<K, V>() {
     override fun onSend(producerRecord: ProducerRecord<K, V>): ProducerRecord<K, V> {
-        val parent = GlobalTracer.get().activeSpan().context()
+        val parent = TracingKafkaUtils.extractSpanContext(producerRecord.headers(), GlobalTracer.get())
         val span = TracingKafkaUtils.buildAndInjectSpan(
             producerRecord,
             GlobalTracer.get(),

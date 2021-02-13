@@ -10,6 +10,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import org.eclipse.microprofile.faulttolerance.Retry
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
+import org.eclipse.microprofile.opentracing.Traced
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.eclipse.microprofile.reactive.messaging.Incoming
@@ -56,6 +57,7 @@ class ESAdapter {
     }
 
     @Timed(unit = MetricUnits.MILLISECONDS)
+    @Traced
     fun createOffer(draft: Draft, partnerId: UUID?) {
         val esContract = EsContract(draft, partnerId, flatten(draft.pack))
         val r = EsRequest("PUT", "/contracts/_doc/${draft.contract.id}", om.writeValueAsString(esContract))
@@ -69,6 +71,7 @@ class ESAdapter {
     }
 
     @Timed(unit = MetricUnits.MILLISECONDS)
+    @Traced
     fun updateOffer(contractId: UUID, allComponents: List<Component>) {
         /*
             {
@@ -93,6 +96,7 @@ class ESAdapter {
     }
 
     @Timed(unit = MetricUnits.MILLISECONDS)
+    @Traced
     fun updateOffer(contractId: UUID, newState: ContractState) {
         val request = Request(
                 "POST",

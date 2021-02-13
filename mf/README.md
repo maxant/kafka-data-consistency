@@ -588,6 +588,10 @@ Update Jaeger Dependencies:
     # https://github.com/jaegertracing/spark-dependencies
     docker run --rm --env STORAGE=elasticsearch --env ES_NODES=http://kdc.elasticsearch.maxant.ch:80 jaegertracing/spark-dependencies
 
+Kibana searches:
+
+    operationName:*DraftsResource*
+
 ## Infrastructure
 
 Hmmm... not really needed ATM since we access using root:

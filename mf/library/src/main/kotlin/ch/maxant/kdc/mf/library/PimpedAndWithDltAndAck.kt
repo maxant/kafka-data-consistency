@@ -10,6 +10,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import io.opentracing.SpanContext
 import io.opentracing.Tracer
 import io.opentracing.contrib.kafka.TracingKafkaUtils
+import io.opentracing.util.GlobalTracer
 import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecordMetadata
 import io.smallrye.reactive.messaging.kafka.OutgoingKafkaRecordMetadata
 import org.apache.commons.lang3.StringUtils
@@ -17,6 +18,7 @@ import org.apache.commons.lang3.StringUtils.isNotEmpty
 import org.apache.commons.lang3.exception.ExceptionUtils
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.header.internals.RecordHeader
+import org.apache.kafka.common.header.internals.RecordHeaders
 import org.eclipse.microprofile.reactive.messaging.Message
 import org.jboss.logging.Logger
 import org.jboss.logging.MDC
@@ -98,6 +100,7 @@ class PimpedAndWithDltAndAckInterceptor(
                 val span = tracer.buildSpan("${ctx.method.declaringClass.name}.${ctx.method.name} ($ce)")
                     .asChildOf(parent)
                     .startActive(true)
+
                 try {
                     span.span().setTag(REQUEST_ID, context.requestId.toString())
                     proceed(copyOfContext, ctx, firstParam)
@@ -329,20 +332,25 @@ fun messageWithMetadata(key: String?, value: String, headers: Headers): Message<
 @Deprecated(message = "use one without ack")
 fun messageWithMetadata(key: String?, value: String, headers: List<RecordHeader>,
                         ack: CompletableFuture<Unit>): Message<String> {
-//println("sending value: $value")
+    val hs = RecordHeaders()
+    TracingKafkaUtils.inject(GlobalTracer.get().activeSpan().context(), hs, GlobalTracer.get())
+    val headersWithTrace = headers + hs.map { RecordHeader(it.key(), it.value()) }
     val metadata = OutgoingKafkaRecordMetadata.builder<Any>()
-            .withKey(key)
-            .withHeaders(headers)
-            .build()
+        .withKey(key)
+        .withHeaders(headersWithTrace)
+        .build()
     val ackSupplier: () -> CompletableFuture<Void> = { ack.complete(null); completedFuture(null) }
     return Message.of(value, ackSupplier).addMetadata(metadata)
 
 }
 
 fun messageWithMetadata(key: String?, value: String, headers: List<RecordHeader>): Message<String> {
+    val hs = RecordHeaders()
+    TracingKafkaUtils.inject(GlobalTracer.get().activeSpan().context(), hs, GlobalTracer.get())
+    val headersWithTrace = headers + hs.map { RecordHeader(it.key(), it.value()) }
     val metadata = OutgoingKafkaRecordMetadata.builder<Any>()
             .withKey(key)
-            .withHeaders(headers)
+            .withHeaders(headersWithTrace)
             .build()
     return Message.of(value).addMetadata(metadata)
 

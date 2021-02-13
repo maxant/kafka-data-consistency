@@ -9,6 +9,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import org.eclipse.microprofile.faulttolerance.Retry
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
+import org.eclipse.microprofile.opentracing.Traced
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.eclipse.microprofile.reactive.messaging.Incoming
@@ -54,6 +55,7 @@ class ESAdapter {
     }
 
     @Timed(unit = MetricUnits.MILLISECONDS)
+    @Traced
     fun createPartner(partner: PartnerEntity) {
         val esPartner = EsPartner(partner)
         val r = EsRequest("PUT", "/partners/_doc/${partner.id}", om.writeValueAsString(esPartner))
