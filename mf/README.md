@@ -246,6 +246,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- add optional select partner details in contracts.js tile, for when displaying contract in search
 - show bills on contract UI
 - check async tracing now works - it does, but cases SQL isnt traced. BUT it is when creating a task. maybe it's related to flush time? UGLY
 - why is REST request traced twice? how come not connected?! => jaxrs contrib ignores existing spans and adds a parent based on headers

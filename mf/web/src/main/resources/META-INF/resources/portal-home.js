@@ -23,7 +23,8 @@ var template =
             :contract-id="contractId"
             allowAcceptOffer="true"
             hideDrafts="true"
-            #default="sp">
+            #default="sp"
+            @loaded="contractLoaded">
     <div v-if="sp.theContract.contractState == 'RUNNING'">
         <p-button @click="details(sp.theContract)">details</p-button>
         &nbsp;
@@ -101,6 +102,9 @@ window.mfPortalHome = {
         },
         terminate(contract){
             alert("TODO - terminate " + contract.id);
+        },
+        contractLoaded(contract) {
+            this.timeTaken = new Date().getTime() - this.start;
         }
     },
     components: {
