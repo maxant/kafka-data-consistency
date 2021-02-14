@@ -25,11 +25,11 @@ var template =
             hideDrafts="true"
             #default="sp">
     <div v-if="sp.theContract.contractState == 'RUNNING'">
-        <button @click="details(sp.theContract)">details</button>
+        <p-button @click="details(sp.theContract)">details</p-button>
         &nbsp;
-        <button @click="terminate(sp.theContract)">terminate</button>
+        <p-button @click="terminate(sp.theContract)">terminate</p-button>
         &nbsp;
-        <button @click="order(sp.theContract)">order</button>
+        <p-button @click="order(sp.theContract)">order</p-button>
     </div>
 </mf-contract>
 
@@ -104,6 +104,7 @@ window.mfPortalHome = {
         }
     },
     components: {
+        'p-button': button,
         'mf-partner': mfPartnerTile,
         'mf-contract': mfContractTile
     }

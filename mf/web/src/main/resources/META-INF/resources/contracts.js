@@ -7,7 +7,9 @@
 const template =
 // start template
 `
-<div style="border: 1px solid #999999; width: 450px; margin-bottom: 5px;" v-if="fetchedContract && (fetchedContract.contractState != 'DRAFT' || !hideDrafts)">
+<div style="border: 1px solid #999999; box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.2), 0 6px 10px 0 rgba(0, 0, 0, 0.2); width: 450px; margin: 10px 10px 20px 10px; padding: 5px;"
+     v-if="fetchedContract && (fetchedContract.contractState != 'DRAFT' || !hideDrafts)"
+>
     <div>
         <div v-if="fetchedContract">
             <i class="pi pi-file"></i>
@@ -40,7 +42,7 @@ const template =
                 <i v-if="clickable" id="viewContractIcon" class="pi pi-eye" @click="navigateToContract()"></i>
             </div>
             <div v-if="allowAcceptOffer && fetchedContract.contractState == 'OFFERED'">
-                <button id="acceptOfferButton" @click="acceptOffer()">accept offer</button>
+                <p-button id="acceptOfferButton" @click="acceptOffer()">accept offer</p-button>
             </div>
         </div>
     </div>
@@ -112,6 +114,7 @@ window.mfContractTile = {
                 if(r.ok) {
                     console.log("accepted contract " + this.fetchedContract.id + ", for requestId " + self.requestId);
                     self.fetchedContract = r.payload;
+                    self.$emit('accepted', self.fetchedContract);
                 } else {
                     let msg = "Failed to accept contract: " + r.payload;
                     console.error(msg);
@@ -121,6 +124,9 @@ window.mfContractTile = {
                 alert("received error: " + error);
             });
         }
+    },
+    components: {
+        'p-button': button
     }
 }
 

@@ -10,7 +10,7 @@ var template =
     Drafted in {{ timeTaken }}ms
 </div>
 <div v-if="get(model, 'draft.contract')">
-    <button @click="newDraft()">create a new draft</button>
+    <p-button @click="newDraft()">create a new draft</p-button>
 </div>
 <div v-if="get(model, 'draft.contract')">
     <mf-contract :contract="model.draft.contract"></mf-contract>
@@ -30,7 +30,7 @@ Offer created for partner {{draftCreatedFor.id}} ({{getNameOfPartner()}})
     </ul>
 </div>
 <div>
-    <button :disabled="!allowOffer" @click="offerDraftAndAcceptOffer()">accept offer</button>
+    <p-button :disabled="!allowOffer" @click="offerDraftAndAcceptOffer()">accept offer</p-button>
 </div>
 <div v-if="get(model, 'draft.contract')">
     <mf-partner v-if="model.salesRep" :partner-id="model.salesRep" role="SALES_REP"></mf-partner>
@@ -134,6 +134,7 @@ window.mfPortalSales = {
         }
     },
     components: {
+        'p-button': button,
         'mf-partner': mfPartnerTile,
         'mf-contract': mfContractTile
     }

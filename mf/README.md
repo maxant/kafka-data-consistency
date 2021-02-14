@@ -246,27 +246,23 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
-- check async tracing now works
-- why is REST request traced twice? how come not connected?!
-- why doesnt contracts draft create not include calls to kafka? ah coz parent isnt propagated
-  - tracing kafka producer to use existing span as parent
-- billing stream with tracing see todo
-- spans from browser
+- show bills on contract UI
+- check async tracing now works - it does, but cases SQL isnt traced. BUT it is when creating a task. maybe it's related to flush time? UGLY
+- why is REST request traced twice? how come not connected?! => jaxrs contrib ignores existing spans and adds a parent based on headers
+- billing stream with tracing see TODO in streaming application
+- spans from browser => debug and see what headers are set when calling downstream. or look for jeager web?
 - cron job for jaeger
-- throttle sse requests on error
-- fix cases
+- fix cases that dont show in ui
 - sales => why isnt the draft button locked when clicked?
 - sales => kafka business error doesnt return to browser
 - fix external sales
 - nginx + http2
-- billing2 => compare to using DB to store state
-- contracts view should allow you to view a draft in detail and then offer it
+- billing2 => compare to using DB to store state?
 - remove old stuff from this git repo so we can link to this repo in presentations
 - make sites a little prettier / responsive
 - grafana parameterisation
 - add kafka metrics from applications (prod/consumers/streams) to grafana
 - billing: send event back to sales UI so that the customer can pay directly for the first billed period
-- show bills on contract UI
 - link from billing application back into contracts
 - https://quarkus.io/guides/redis
 - https://zipkin.io/ => also for billing!

@@ -50,7 +50,7 @@ class PortalTemplate {
     fun get(): TemplateInstance =
         portal.instance()
             .addStandardLibraries()
-            .addPvWidgets(listOf("calendar", "dropdown", "autocomplete", "tabview", "tabpanel"))
+            .addPvWidgets(listOf("calendar", "dropdown", "autocomplete", "tabview", "tabpanel", "inputtext", "button"))
             .addMfWidgets(listOf(Component.Contracts, Component.Partners),
                     listOf("vue-rxjs", "portal-home", "portal-sales",
                             "portal-order", "portal-order-details",

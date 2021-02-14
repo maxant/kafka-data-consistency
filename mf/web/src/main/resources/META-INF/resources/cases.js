@@ -6,7 +6,7 @@
 var template =
 // start template
 `
-<div style="border: 1px solid #999999; width: 450px; margin-bottom: 5px;">
+<div style="border: 1px solid #999999; box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.2), 0 6px 10px 0 rgba(0, 0, 0, 0.2); width: 450px; margin: 10px 10px 20px 10px; padding: 5px;">
     <div>
         {{task.title}}
     </div>
@@ -26,25 +26,28 @@ var template =
         Assigned to: {{task.userId}}
     </div>
     <div v-if="task.action && isTaskAssignedToUser(task)">
-        <button @click="callActionHandler(task)">{{getActionText(task.action)}}</button>
+        <p-button @click="callActionHandler(task)">{{getActionText(task.action)}}</p-button>
     </div>
 </div>
 ` // end template
 
 window.mfTask = {
-  props: ['task'],
-  template,
-  methods: {
-    getActionText(action) {
-        return cases.getActionText(action)
+    props: ['task'],
+    template,
+    methods: {
+        getActionText(action) {
+            return cases.getActionText(action)
+        },
+        callActionHandler(task) {
+            cases.callActionHandler(task)
+        },
+        isTaskAssignedToUser(task) {
+            return security.getCurrentUsername() == task.userId;
+        }
     },
-    callActionHandler(task) {
-        cases.callActionHandler(task)
-    },
-    isTaskAssignedToUser(task) {
-        return security.getCurrentUsername() == task.userId;
+    components: {
+        'p-button': button
     }
-  }
 }
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

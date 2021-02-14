@@ -3,3 +3,6 @@
     cursor: wait !important;
     background-color: grey;
 }
+.p-component {
+    margin: 3px;
+}

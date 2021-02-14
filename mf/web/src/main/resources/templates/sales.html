@@ -7,18 +7,15 @@
     </p-dropdown>
 </div>
 
-<div>
+<div v-if="partnerId">
+    <mf-partner :partner-id="partnerId" @loaded="partnerLoaded" clickable="true">
+        <i style="width: 100%; text-align: right;" id="chooseDifferentPartner" class="pi pi-times" @click="chooseNewPartner()"></i>
+    </mf-partner>
+</div>
+<div v-else>
     <mf-partner-select :allow-create-new="true"
                        @selected="partnerSelected" >
     </mf-partner-select>
-</div>
-<div>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
 </div>
 <div>
     <p-calendar id="startDate"
@@ -31,7 +28,7 @@
                 :show-button-bar="true"
                 select-other-months="true"
     ></p-calendar>
-    <button @click="newDraft()">get new draft</button>
+    <p-button @click="newDraft()">get new draft</p-button>
 </div>
 <div style="font-size: small;">
     Drafted in {{ timeTaken }}ms
@@ -73,8 +70,8 @@
     </ul>
 </div>
 <div>
-    <button id="offerDraft" :disabled="!allowOffer" @click="offerDraft()">offer draft</button>
-    (test if locked: <button @click="offerDraft()">offer draft</button>)
+    <p-button id="offerDraft" :disabled="!allowOffer" @click="offerDraft()">offer draft</p-button>
+    (test if locked: <p-button @click="offerDraft()">offer draft</p-button>)
 </div>
 
 </span>
@@ -82,6 +79,10 @@
 
 </div> |}{! end of app div !}{|
 <script>
+var urlParams = new URLSearchParams(window.location.search);
+var partnerId = urlParams.get('partnerId');
+console.log("using partner id from url: " + partnerId);
+
 const forcibleErrors = [ {label: 'none', value: 'none'},
                         {label: 'business error in contracts (REST)', value: 'businessErrorInContracts'},
                         {label: 'technical error in contracts (REST)', value: 'technicalErrorInContracts'},
@@ -91,8 +92,9 @@ const forcibleErrors = [ {label: 'none', value: 'none'},
 const App = {
     data() {
         return {
+            partnerId,
             partner: null,
-            model: {"draft": {"prices": {}}, "startDate": new Date(), salesRep: null},
+            model: {"draft": {}, "startDate": new Date(), salesRep: null},
             start: 0,
             timeTaken: 0,
             requestId: uuidv4(),
@@ -118,6 +120,7 @@ const App = {
         },
         partnerSelected(partner) {
             this.partner = partner;
+            this.partnerId = partner.id;
         },
         validate() {
             if(!this.partner) {
@@ -234,11 +237,20 @@ const App = {
         },
         getDemoContext() {
             return JSON.stringify( { forceError: this.forceError.value } )
+        },
+        partnerLoaded(partner) {
+            this.partner = partner;
+        },
+        chooseNewPartner() {
+            this.partnerId = null;
+            this.partner = null;
+            this.model.draft = {};
         }
     },
     components: {
         'p-calendar': calendar,
         'p-dropdown': dropdown,
+        'p-button': button,
         'mf-partner-select': mfPartnerSelect,
         'mf-partner': mfPartnerTile,
         'mf-contract': mfContractTile,

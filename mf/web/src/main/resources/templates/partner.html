@@ -13,6 +13,7 @@
     DoB: {{model.partner.dob}}<br>
     Type: {{model.partner.type}}<br>
 </div>
+<p-button id="sales" label="sales" @click="navigateToSales()"></p-button>
 <hr>
 <mf-contract v-for="contractId in model.contractIds" :contract-id="contractId" clickable="true"></mf-contract>
 <div v-if="model.hasMoreContracts">
@@ -91,9 +92,13 @@ const App = {
         },
         tileLoaded() {
             this.timeTaken = new Date().getTime() - this.start;
+        },
+        navigateToSales() {
+            window.location.href = '/sales?partnerId=' + this.model.id;
         }
     },
     components: {
+        'p-button': button,
         'mf-partner': mfPartnerTile,
         'mf-contract': mfContractTile,
         'mf-users': mfUsers,

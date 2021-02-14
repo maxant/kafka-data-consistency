@@ -2,7 +2,10 @@
 
 <input ref="searchTerm" id="searchTerm" v-stream:keyup="'searchRequest$'" /><br>
 <small>
-    Use * for wildcard searches e.g. when searching for an ID, or <code>reserve:>999"</code> to search for entities with that field <br>
+    Use * for wildcard searches e.g. when searching for an ID <code>*331e5c18-e330-4204-95a1-371e54a12f5c*</code>,
+    or a specific ID <code>partnerId:"331e5c18-e330-4204-95a1-371e54a12f5c"</code>,
+    or a specific state <code>state:DRAFT</code>,
+    or <code>reserve:>999"</code> to search for entities with that field <br>
     greater than that value. You can even do crazy shit like this: <code>date:<2018-12-31 AND date:>2018-05-31</code>
 </small>
 

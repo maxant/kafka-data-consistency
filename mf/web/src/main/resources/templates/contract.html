@@ -4,10 +4,28 @@
     Fetched in {{ timeTaken }}ms
 </div>
 
-<mf-contract v-if="model.contract.id" :contract="model.contract" allow-accept-offer="true"></mf-contract>
+<mf-contract v-if="model.contract.id" :contract="model.contract" allow-accept-offer="true" @accepted="acceptedOffer"></mf-contract>
 <div v-if="model.contract.offeredBy">Offered by {{model.contract.offeredBy}} at {{model.contract.offeredAt}}</div>
 <div v-if="model.contract.acceptedBy">Accepted by {{model.contract.acceptedBy}} at {{model.contract.acceptedAt}}</div>
 <div v-if="model.contract.approvedBy">Approved by {{model.contract.approvedBy}} at {{model.contract.approvedAt}}</div>
+<div v-if="model.contract.contractState == 'DRAFT'">
+    <p-button id="offerDraftButton" @click="offerDraft()">Offer draft</p-button>
+</div>
+<div v-if="model.contract.contractState == 'AWAITING_APPROVAL'">
+    |}{! TODO add a text field where the user can justify this !}{|
+    <p-button id="approveContractButton" @click="approveContract()">Approve contract</p-button>
+</div>
+<hr>
+<div>
+    <ul>
+        <li v-for="component in model.contract.components">
+            <div>{{component.componentDefinitionId}}</div>
+            <ul>
+                <li v-for="config in component.configs">{{config.name}} {{config.value}} {{config.units}}</li>
+            </ul>
+        </li>
+    </ul>
+</div>
 <hr>
 <mf-partner v-for="partnerRelationship in model.partnerRelationships"
             :partner-id="partnerRelationship.partnerId"
@@ -15,11 +33,6 @@
             clickable="true"
             @loaded="partnerLoaded">
 </mf-partner>
-<hr>
-<div v-if="model.contract.contractState == 'AWAITING_APPROVAL'">
-    |}{! TODO add a text field where the user can justify this !}{|
-    <button id="approveContractButton" @click="approveContract()">Approve contract</button>
-</div>
 
 </span>
 </div>
@@ -50,7 +63,7 @@ const App = {
     methods: {
         fetchContract() {
             let self = this;
-            let url = CONTRACTS_BASE_URL + "/contracts/" + this.model.id;
+            let url = CONTRACTS_BASE_URL + "/contracts/" + this.model.id + "?withDetails=true";
             let contract$ = fetchIt(url, "GET", this).then(r => {
                 self.timeTaken = new Date().getTime() - self.start;
                 if(r.ok) {
@@ -101,9 +114,36 @@ const App = {
         },
         partnerLoaded() {
             this.timeTaken = new Date().getTime() - this.start;
+        },
+        offerDraft() {
+            console.log("offering contract...")
+            let self = this;
+            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.id + "/offer";
+            fetchIt(url, "PUT", this).then(r => {
+                if(r.ok) {
+                    self.model.contract = r.payload;
+                    console.log("offered contract with id " + self.model.contract.id);
+                } else {
+                    if(r.payload.class == "ch.maxant.kdc.mf.partners.boundary.NoRelationshipsFoundValidationException") {
+                        alert("No partner relationships exist, please create a new offer");
+                    } else if(r.payload.class == "ch.maxant.kdc.mf.partners.boundary.NotEnoughRelationshipsForForeignIdTypeValidationException") {
+                        alert("A partner relationship is missing: " + r.payload.data);
+                    } else {
+                        let msg = "Failed to offer contract: " + r.payload;
+                        console.error(msg);
+                        alert(msg);
+                    }
+                }
+            }).catch(error => {
+                console.error("received error: " + error);
+            });
+        },
+        acceptedOffer(contract) {
+            this.model.contract = contract;
         }
     },
     components: {
+        'p-button': button,
         'mf-partner': mfPartnerTile,
         'mf-contract': mfContractTile,
         'mf-users': mfUsers

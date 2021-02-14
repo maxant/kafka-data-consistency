@@ -218,7 +218,7 @@ function getName(p) {
 template =
 // start template
 `
-<div style="border: 1px solid #999999; width: 450px; margin-top: 3px; margin-bottom: 5px;">
+<div style="border: 1px solid #999999; box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.2), 0 6px 10px 0 rgba(0, 0, 0, 0.2); width: 450px; margin: 10px 10px 20px 10px; padding: 5px;">
     <div v-if="error">
         Error loading partner<br>
         {{error}}
@@ -253,6 +253,7 @@ template =
             <i class="pi pi-eye" @click="navigateToPartner()"></i>
         </div>
     </div>
+    <slot></slot>
 </div>
 ` // end template
 
@@ -284,7 +285,7 @@ window.mfPartnerTile = {
         if(r.ok) {
             console.log("got partner " + self.partnerId + " for requestId " + self.requestId);
             self.partner = r.payload;
-            self.$emit('loaded', null);
+            self.$emit('loaded', self.partner);
         } else {
             let msg = "Failed to get partner " + self.partnerId + ": " + r.payload;
             self.error = msg;
