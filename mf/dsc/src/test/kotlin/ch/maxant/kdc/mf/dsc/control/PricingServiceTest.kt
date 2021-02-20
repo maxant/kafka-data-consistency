@@ -1,8 +1,9 @@
-package ch.maxant.kdc.mf.pricing.control
+package ch.maxant.kdc.mf.dsc.control
 
+import ch.maxant.kdc.mf.dsc.control.DiscountSurchargeService
+import ch.maxant.kdc.mf.dsc.dto.Configuration
+import ch.maxant.kdc.mf.dsc.dto.FlatComponent
 import ch.maxant.kdc.mf.library.Context
-import ch.maxant.kdc.mf.pricing.dto.Configuration
-import ch.maxant.kdc.mf.pricing.dto.FlatComponent
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nhaarman.mockito_kotlin.mock
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -11,15 +12,15 @@ import org.junit.jupiter.api.Test
 import java.util.*
 import javax.persistence.EntityManager
 
-class PricingServiceTest {
+class DiscountSurchargeServiceTest {
 
-    lateinit var sut: PricingService
+    private lateinit var sut: DiscountSurchargeService
 
     @BeforeEach
     fun setup() {
         val em = mock<EntityManager> {  }
         val om = mock<ObjectMapper> {  }
-        sut = PricingService(em, om, Context())
+        sut = DiscountSurchargeService(em, om, Context())
     }
 
     @Test
@@ -38,11 +39,11 @@ class PricingServiceTest {
         val uuid5 = UUID.randomUUID()
 
         val flats = listOf(
-                FlatComponent(uuid1, null, "1", listOf(Configuration("c1", "v1", "u1"))),
-                FlatComponent(uuid2, uuid1, "2", listOf(Configuration("c2", "v2", "u2"))),
-                FlatComponent(uuid3, uuid2, "3", listOf(Configuration("c3", "v3", "u3"))),
-                FlatComponent(uuid4, uuid1, "4", listOf(Configuration("c4", "v4", "u4"))),
-                FlatComponent(uuid5, uuid4, "5", listOf(Configuration("c5", "v5", "u5")))
+                FlatComponent(uuid1, null, "1", listOf(Configuration("c1", "v1", "u1")), ""),
+                FlatComponent(uuid2, uuid1, "2", listOf(Configuration("c2", "v2", "u2")), ""),
+                FlatComponent(uuid3, uuid2, "3", listOf(Configuration("c3", "v3", "u3")), ""),
+                FlatComponent(uuid4, uuid1, "4", listOf(Configuration("c4", "v4", "u4")), ""),
+                FlatComponent(uuid5, uuid4, "5", listOf(Configuration("c5", "v5", "u5")), "")
         )
 
         // when
