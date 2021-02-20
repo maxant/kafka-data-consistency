@@ -88,7 +88,7 @@ class ContractTemplate {
             contract.instance()
             .addStandardLibraries()
             .addPvWidgets(listOf("calendar", "dropdown", "autocomplete", "inputtext", "button"))
-            .addMfWidgets(listOf(Component.Contracts, Component.Partners))
+            .addMfWidgets(listOf(Component.Cases, Component.Contracts, Component.Partners))
             .addMfComponents()
 }
 
@@ -171,5 +171,6 @@ enum class Component(val constantName: String, val uiWidgetsJavascript: String, 
     Waitingroom   ("WAITINGROOM",   "waitingroom.js",  ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.waitingroom.url",   String::class.java).orElse("http://waitingroom:8085")),
     Organisation  ("ORGANISATION",  "organisation.js", ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.organisation.url",  String::class.java).orElse("http://organisation:8086")),
     Billing       ("BILLING",       "billing.js",      ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.billing.url",       String::class.java).orElse("http://billing:8087")),
+    Dsc           ("DSC",           "dsc.js",          ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.dsc.url",           String::class.java).orElse("http://dsc:8088")),
     ElasticSearch ("ELASTICSEARCH", "elastic.js",      ConfigProvider.getConfig().getOptionalValue("ch.maxant.kdc.mf.components.elasticsearch.url", String::class.java).orElse("http://kdc.elasticsearch.maxant.ch")),
 }

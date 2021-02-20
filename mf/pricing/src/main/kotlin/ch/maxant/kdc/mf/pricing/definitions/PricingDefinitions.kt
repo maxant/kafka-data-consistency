@@ -135,7 +135,7 @@ private fun getConfig(component: TreeComponent, name: String, expectedUnits: Str
     return config
 }
 
-private fun roundAddTaxAndMakePrice(unroundedNet: BigDecimal): Price {
+fun roundAddTaxAndMakePrice(unroundedNet: BigDecimal): Price {
     val net = unroundedNet.setScale(2, RoundingMode.HALF_UP)
     val tax = TAX.times(net).setScale(2, RoundingMode.HALF_DOWN)
     val total = net.add(tax)

@@ -345,6 +345,7 @@
         <module>../organisation</module>
         <module>../partners</module>
         <module>../pricing</module>
+        <module>../dsc</module>
         <module>../waitingroom</module>
         <module>../web</module>
     </modules>

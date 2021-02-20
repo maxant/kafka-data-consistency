@@ -35,6 +35,9 @@
 </mf-partner>
 
 </span>
+<span>
+    <mf-cases :case-reference-ids="model.allContractIds"></mf-cases>
+</span>
 </div>
 </div> |}{! end of app div !}{|
 <script>
@@ -45,7 +48,7 @@ console.log("using id from url: " + id);
 const App = {
     data() {
         return {
-            model: { id, contract: {}, tasks: [] },
+            model: { id, contract: {} },
             start: 0,
             timeTaken: 0,
             requestId: uuidv4(),
@@ -69,6 +72,7 @@ const App = {
                 if(r.ok) {
                     console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
                     self.model.contract = r.payload;
+                    self.model.allContractIds = [id];
                 } else {
                     let msg = "Failed to get contract: " + r.payload;
                     console.error(msg);
@@ -146,7 +150,8 @@ const App = {
         'p-button': button,
         'mf-partner': mfPartnerTile,
         'mf-contract': mfContractTile,
-        'mf-users': mfUsers
+        'mf-users': mfUsers,
+        'mf-cases': mfCases
     }
 }
 const app = Vue.createApp(App)

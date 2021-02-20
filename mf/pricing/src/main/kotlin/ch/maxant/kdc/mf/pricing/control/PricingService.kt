@@ -1,10 +1,10 @@
 package ch.maxant.kdc.mf.pricing.control
 
+import com.fasterxml.jackson.module.kotlin.readValue
 import ch.maxant.kdc.mf.library.Context
 import ch.maxant.kdc.mf.pricing.definitions.Price
 import ch.maxant.kdc.mf.pricing.definitions.Prices
-import ch.maxant.kdc.mf.pricing.dto.Configuration
-import ch.maxant.kdc.mf.pricing.dto.FlatComponent
+import ch.maxant.kdc.mf.pricing.definitions.roundAddTaxAndMakePrice
 import ch.maxant.kdc.mf.pricing.dto.TreeComponent
 import ch.maxant.kdc.mf.pricing.dto.Visitor
 import ch.maxant.kdc.mf.pricing.entity.PriceEntity
@@ -12,11 +12,11 @@ import ch.maxant.kdc.mf.pricing.entity.PriceEntity.Queries.deleteByContractId
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.opentracing.Traced
 import org.jboss.logging.Logger
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
@@ -53,12 +53,9 @@ class PricingService(
         val end = LocalDateTime.parse(contract.get("end").asText())
         if(draft.has("pack")) {
             val pack = draft.get("pack").toString()
+            val discountsSurcharges = om.readValue<Map<UUID, DiscountSurcharge>>(draft.get("discountsSurcharges").toString())
             val root = om.readValue(pack, TreeComponent::class.java)
-            return priceDraft(contractId, syncTimestamp, start, end, root)
-        } else if(draft.has("allComponents")) {
-            val allComponents = draft.get("allComponents").toString()
-            val list = om.readValue<ArrayList<FlatComponent>>(allComponents)
-            return priceDraft(contractId, syncTimestamp, start, end, toTree(list))
+            return priceDraft(contractId, syncTimestamp, start, end, root, discountsSurcharges)
         } else {
             throw IllegalArgumentException("unexpected draft structure")
         }
@@ -139,34 +136,9 @@ class PricingService(
         return PricingCommandGroupResult(group.groupId, TODO(), true)
     }
 
-    fun toTree(list: List<FlatComponent>): TreeComponent {
-
-        data class MutableTreeComponent(
-                val componentId: UUID,
-                val parentId: UUID?,
-                val componentDefinitionId: String,
-                val configs: List<Configuration>,
-                val children: MutableList<MutableTreeComponent> = mutableListOf()
-        )
-
-        // map to temporary structure that contains all info (see class just above)
-        val byId = list.map { MutableTreeComponent(it.id, it.parentId, it.componentDefinitionId, it.configs) }
-                       .map { it.componentId to it }
-                       .toMap()
-
-        // add to kids
-        byId.values.forEach { byId[it.parentId]?.children?.add(it) }
-
-        fun map(node: MutableTreeComponent): TreeComponent {
-            val children = node.children.map { map(it) }
-            return TreeComponent(node.componentId.toString(), node.componentDefinitionId, node.configs, children)
-        }
-
-        return map(byId.values.find { it.parentId == null } !!)
-    }
-
     @Traced
-    private fun priceDraft(contractId: UUID, syncTimestamp: Long, start: LocalDateTime, end: LocalDateTime, root: TreeComponent): PricingResult {
+    private fun priceDraft(contractId: UUID, syncTimestamp: Long, start: LocalDateTime, end: LocalDateTime,
+                           root: TreeComponent, discountsSurcharges: Map<UUID, DiscountSurcharge>): PricingResult {
         log.info("starting to price individual components for contract $contractId...")
 
         context.throwExceptionInPricingIfRequiredForDemo()
@@ -181,11 +153,21 @@ class PricingService(
 
                 val rule = Prices.findRule(component)
 
-                val price = rule(component)
-                prices[componentId] = price
+                var price = rule(component)
 
                 val ruleName = rule.javaClass.name.substring(rule.javaClass.name.indexOf("$")+1)
                 log.info("priced component ${component.componentDefinitionId}: $price using rule $ruleName")
+
+                val discountSurcharge = discountsSurcharges[componentId]
+                if(discountSurcharge != null) {
+                    log.info("applying discount/surcharge ${discountSurcharge.definitionId} to component " +
+                            "${component.componentDefinitionId}: ${discountSurcharge.value}")
+                    val multiplicand = BigDecimal.ONE.add(discountSurcharge.value)
+                    price = roundAddTaxAndMakePrice(price.total.subtract(price.tax).multiply(multiplicand))
+                    log.info("new price is $price")
+                }
+
+                prices[componentId] = price
 
                 val pe = PriceEntity(UUID.randomUUID(), contractId, start, end,
                         componentId, ruleName, price.total, price.tax, syncTimestamp)
@@ -213,6 +195,15 @@ class PricingService(
         */
     }
 }
+
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// input from DSC
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+data class DiscountSurcharge(
+    val componentId: UUID,
+    val definitionId: String,
+    val value: BigDecimal
+)
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // pricing result for drafts and updates to drafts

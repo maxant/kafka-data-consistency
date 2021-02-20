@@ -65,11 +65,14 @@ not just for the UI, rather for the entire landscape.
 ## Applications & Microservices
 
 - contracts
-  - contracts themselves including conditions and contract components including products, 
+  - contracts themselves including contract components and products, 
     releases and profiles used to initialise draft contracts
   - additional information
-  - discounts
   - pricing
+- dsc
+  - discounts
+  - surcharges
+  - conditions
 - billing
 - partners
   - partners, including addresses and partner relationships (to contracts, orders, etc.)
@@ -246,6 +249,13 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- add displaying DSC to portal sales
+- add displaying C to sales
+- discounts can use DS if they want - add a note about that
+- add conditions to DscConsumer
+- add explicit discount or condition from user
+- delete DSC where componentId is no longer in model, otherwise we'd have orphans hanging around
+- add dsc to sales UI
 - add optional select partner details in contracts.js tile, for when displaying contract in search
 - show bills on contract UI
 - check async tracing now works - it does, but cases SQL isnt traced. BUT it is when creating a task. maybe it's related to flush time? UGLY
@@ -253,10 +263,8 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 - billing stream with tracing see TODO in streaming application
 - spans from browser => debug and see what headers are set when calling downstream. or look for jeager web?
 - cron job for jaeger
-- fix cases that dont show in ui
 - sales => why isnt the draft button locked when clicked?
 - sales => kafka business error doesnt return to browser
-- fix external sales
 - nginx + http2
 - billing2 => compare to using DB to store state?
 - remove old stuff from this git repo so we can link to this repo in presentations
@@ -277,7 +285,6 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
   - tombstone records and compaction, including deleting jobs from UI
 - allow changing the quantity in the offer, so you can get under the approval threshold
   - somethings not quite right - the price doesnt account for the quantity in the box!
-- discounts can be added to any component in the tree, as a child component! still not sure to which component these belong
 - display existing draft so that you can continue working from there
 - change from external to internal, if you arent sure and need a consultation
 - add createdAt/By to all entities and order partner relationships by that and load only the latest ones

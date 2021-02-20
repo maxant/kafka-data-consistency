@@ -65,52 +65,52 @@ Tasks:
 ` // end template
 
 window.mfCases = {
-  props: ['caseReferenceIds'],
-  template,
-  watch: {
-    caseReferenceIds(newCaseReferenceIds, oldCaseReferenceIds) {
-        this.loadCases();
-    }
-  },
-  data() {
-    return {
-        cases: [],
-        tasks: [], // flattened
-        state: "OPEN", // ready for a toggle, should one want to view closed tasks at the push of a button
-        error: null,
-        requestId: uuidv4()
-    }
-  },
-  mounted() {
-    this.loadCases();
-  },
-  methods: {
-    loadCases: function() {
-      if(!this.caseReferenceIds || this.caseReferenceIds.length === 0) return;
-      this.cases = [];
-      this.tasks = [];
-      this.error = null;
-      let self = this;
-      let url = CASES_BASE_URL + "/cases/byReferenceIds/" + this.state + "?" + _.map(this.caseReferenceIds, crid => { return "referenceIds=" + crid; }).join("&");
-      fetchIt(url, "GET", this).then(r => {
-        if(r.ok) {
-            console.log("got cases for requestId " + self.requestId);
-            self.cases = r.payload;
-            self.tasks = _(self.cases).map("tasks").flatten().value();
-        } else {
-            let msg = "Failed to get cases: " + r.payload;
-            self.error = msg;
-            console.error(msg);
+    props: ['caseReferenceIds'],
+    template,
+    watch: {
+        caseReferenceIds(newCaseReferenceIds, oldCaseReferenceIds) {
+            this.loadCases();
         }
-      }).catch(error => {
-        self.error = error;
-        console.error("received error: " + error);
-      });
+    },
+    data() {
+        return {
+            cases: [],
+            tasks: [], // flattened
+            state: "OPEN", // ready for a toggle, should one want to view closed tasks at the push of a button
+            error: null,
+            requestId: uuidv4()
+        }
+    },
+    mounted() {
+        this.loadCases();
+    },
+    methods: {
+        loadCases: function() {
+            if(!this.caseReferenceIds || this.caseReferenceIds.length === 0) return;
+            this.cases = [];
+            this.tasks = [];
+            this.error = null;
+            let self = this;
+            let url = CASES_BASE_URL + "/cases/byReferenceIds/" + this.state + "?" + _.map(this.caseReferenceIds, crid => { return "referenceIds=" + crid; }).join("&");
+            fetchIt(url, "GET", this).then(r => {
+                if(r.ok) {
+                    console.log("got cases for requestId " + self.requestId);
+                    self.cases = r.payload;
+                    self.tasks = _(self.cases).map("tasks").flatten().value();
+                } else {
+                    let msg = "Failed to get cases: " + r.payload;
+                    self.error = msg;
+                    console.error(msg);
+                }
+            }).catch(error => {
+                self.error = error;
+                console.error("received error: " + error);
+            });
+        }
+    },
+    components: {
+        'mf-task': mfTask
     }
-  },
-  components: {
-    'mf-task': mfTask
-  }
 }
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

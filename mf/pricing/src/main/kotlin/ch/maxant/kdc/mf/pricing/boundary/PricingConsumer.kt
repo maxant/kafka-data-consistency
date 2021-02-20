@@ -1,11 +1,13 @@
 package ch.maxant.kdc.mf.pricing.boundary
 
-import ch.maxant.kdc.mf.library.*
+import ch.maxant.kdc.mf.library.Context
+import ch.maxant.kdc.mf.library.KafkaHandler
+import ch.maxant.kdc.mf.library.MessageBuilder
+import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
 import ch.maxant.kdc.mf.pricing.control.*
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.apache.kafka.clients.consumer.ConsumerRecord
-import org.eclipse.microprofile.opentracing.Traced
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.jboss.logging.Logger
@@ -16,7 +18,7 @@ import javax.inject.Inject
 
 @ApplicationScoped
 @SuppressWarnings("unused")
-class Consumer(
+class PricingConsumer(
         @Inject
         var om: ObjectMapper,
 
@@ -51,7 +53,7 @@ class Consumer(
     override fun handle(record: ConsumerRecord<String, String>) {
         var unhandled = false
         when (context.event) {
-            "CREATED_DRAFT", "UPDATED_DRAFT" -> priceDraft(record)
+            "ADDED_DSC_FOR_DRAFT" -> priceDraft(record)
             else -> unhandled = true
         }
         when (context.command) {
@@ -88,7 +90,11 @@ class Consumer(
                     "publishing failed event"
             log.error(msg, e)
             val commands = group.commands.map { PricingCommandResult(it.contractId) }
-            sendEvent(PricingCommandGroupResult(group.groupId, commands, false, true, "$msg: ${e.message}"))
+            sendEvent(PricingCommandGroupResult(group.groupId, commands,
+                recalculated = false,
+                failed = true,
+                failedReason = "$msg: ${e.message}"
+            ))
         }
     }
 
@@ -104,7 +110,11 @@ class Consumer(
                     "publishing failed event"
             log.error(msg, e)
             val commands = group.commands.map { PricingCommandResult(it.contractId) }
-            sendEvent(PricingCommandGroupResult(group.groupId, commands, true, true, "$msg: ${e.message}"))
+            sendEvent(PricingCommandGroupResult(group.groupId, commands,
+                recalculated = true,
+                failed = true,
+                failedReason = "$msg: ${e.message}"
+            ))
         }
     }
 

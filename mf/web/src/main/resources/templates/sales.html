@@ -40,28 +40,46 @@
     <mf-partner v-if="model.salesRep" :partner-id="model.salesRep" role="SALES_REP" clickable="true"></mf-partner>
 </div>
 <div v-if="!!get(model, 'draft.pack.$price')">
-    Product: {{ model.draft.pack.children[0].productId }} {{ model.draft.pack.$price.total }} CHF ({{ model.draft.pack.$price.tax }} CHF VAT)
-</div>
-<div v-if="!!get(model, 'draft.pack.$price')">
     <ul>
-        <li v-for="child in model.draft.pack.children">
-            {{ child.componentDefinitionId }}: {{ child.$price.total }} CHF
-            <ul v-if="get(child, 'children.length') > 0">
-                <li v-for="child2 in child.children">
-                    {{ child2.componentDefinitionId }}: {{ child2.$price.total }} CHF
-                    <div v-if="child2.configPossibilities && child2.configPossibilities.length > 0">
-                        <div v-for="paramName in getDistinctParamNames(child2.configPossibilities)">
-                            {{paramName}}: <p-dropdown :id="getId(paramName, 'config-param')"
-                                                       :options="getParamOptions(paramName, child2)"
-                                                       v-model="child2.$configs[paramName].value"
-                                                       @change="changeParam(child2, paramName, $event)"
-                                                       :disabled="child2.$configs[paramName].waiting"
-                        ></p-dropdown>
-                        </div>
+        <li>
+            <div>Product: {{ model.draft.pack.children[0].productId }} {{ model.draft.pack.$price.total }} CHF ({{ model.draft.pack.$price.tax }} CHF VAT)
+                {{ model.draft.pack.componentDefinitionId }}
+            </div>
+            <div v-if="get(model, 'draft.pack.$discountSurcharge.value') > 0">
+                Surcharge "{{ model.draft.pack.$discountSurcharge.definitionId }}" {{ model.draft.pack.$discountSurcharge.value*100 }}%
+            </div>
+            <div v-if="get(model, 'draft.pack.$discountSurcharge.value') < 0">
+                Discount "{{ model.draft.pack.$discountSurcharge.definitionId }}" {{ model.draft.pack.$discountSurcharge.value*-100 }}%
+            </div>
+            <ul>
+                <li v-for="child in model.draft.pack.children">
+                    <div>
+                        {{ child.componentDefinitionId }}: {{ child.$price.total }} CHF
                     </div>
-                    <ul v-if="get(child2, 'children.length') > 0">
-                        <li v-for="child3 in child2.children">
-                            {{ child3.componentDefinitionId }}: {{ child3.$price.total }} CHF
+                    <div v-if="child.$discountSurcharge && child.$discountSurcharge.value > 0">
+                        Surcharge "{{ child.$discountSurcharge.definitionId }}" {{ child.$discountSurcharge.value*100 }}%
+                    </div>
+                    <div v-if="child.$discountSurcharge && child.$discountSurcharge.value < 0">
+                        Discount "{{ child.$discountSurcharge.definitionId }}" {{ child.$discountSurcharge.value*-100 }}%
+                    </div>
+                    <ul v-if="get(child, 'children.length') > 0">
+                        <li v-for="child2 in child.children">
+                            {{ child2.componentDefinitionId }}: {{ child2.$price.total }} CHF
+                            <div v-if="child2.configPossibilities && child2.configPossibilities.length > 0">
+                                <div v-for="paramName in getDistinctParamNames(child2.configPossibilities)">
+                                    {{paramName}}: <p-dropdown :id="getId(paramName, 'config-param')"
+                                                               :options="getParamOptions(paramName, child2)"
+                                                               v-model="child2.$configs[paramName].value"
+                                                               @change="changeParam(child2, paramName, $event)"
+                                                               :disabled="child2.$configs[paramName].waiting"
+                                ></p-dropdown>
+                                </div>
+                            </div>
+                            <ul v-if="get(child2, 'children.length') > 0">
+                                <li v-for="child3 in child2.children">
+                                    {{ child3.componentDefinitionId }}: {{ child3.$price.total }} CHF
+                                </li>
+                            </ul>
                         </li>
                     </ul>
                 </li>
@@ -261,14 +279,22 @@ const app = Vue.createApp(App)
 app.use(primevue, {ripple: true});
 app.mount("#app")
 
+function addDsc(component, id, dsc) {
+    if(component.componentId == id) {
+        component.$discountSurcharge = dsc;
+    } else {
+        _.forEach(component.children, child => addDsc(child, id, dsc));
+    }
+}
+
 function addPrice(component, id, price) {
     if(component.componentId == id) {
-        component.$price = price
+        component.$price = price;
         _.forEach(component.$configs, c => {
-            c.waiting = false
+            c.waiting = false;
         }) // reset the waiting flag as we're now complete
     } else {
-        _.forEach(component.children, child => addPrice(child, id, price))
+        _.forEach(component.children, child => addPrice(child, id, price));
     }
 }
 
@@ -285,6 +311,12 @@ function sse(requestId, self) {
         } else if(msg.event == "UPDATED_DRAFT") {
             updateDraft(msg.payload.allComponents, self.model.draft.pack);
             // dont update any waiting or timing state, because this is just the first of many events to come
+        } else if(msg.event == "ADDED_DSC_FOR_DRAFT") {
+            self.model.draft.discountsSurcharges = msg.payload.discountsSurcharges;
+            _.forEach(self.model.draft.discountsSurcharges, (v,k) => {
+                addDsc(self.model.draft.pack, k, v);
+            });
+            self.timeTaken = new Date().getTime() - self.start;
         } else if(msg.event == "UPDATED_PRICES_FOR_DRAFT") {
             self.model.draft.prices = msg.payload.priceByComponentId;
             _.forEach(self.model.draft.prices, (v,k) => {

@@ -131,7 +131,7 @@ window.mfContractTile = {
 }
 
 if(window.cases) { // not required in every UI which uses this library
-    cases.registerActionHandler("APPROVE_CONTRACT", "Approve contract", (task) => {
+    cases.registerActionHandler("APPROVE_CONTRACT", "View and approve contract", (task) => {
         // navigate to contract details page, so that the user can assess the contract and approve it.
         // approval there is based on the state, and not simply a task
         window.location.href = '/contract?id=' + task.params["contractId"];

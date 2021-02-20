@@ -116,6 +116,8 @@ Open ports like this:
     #               kdc-mf-cases:30784:8084  mapped in nginx
     #         kdc-mf-waitingroom:30785:8085  mapped in nginx
     #        kdc-mf-organisation:30786:8086  mapped in nginx
+    #             kdc-mf-billing:30787:8087  mapped in nginx
+    #                 kdc-mf-dsc:30788:8088  mapped in nginx
     firewall-cmd --zone=public --permanent --add-port=30000/tcp
     firewall-cmd --zone=public --permanent --add-port=30001/tcp
     firewall-cmd --zone=public --permanent --add-port=30002/tcp
@@ -303,6 +305,7 @@ Update nginx with a file under vhosts like this (/etc/nginx/vhosts/kafka-data-co
       server { listen 80; server_name mf-waitingroom.maxant.ch;  proxy_http_version 1.1; proxy_set_header Connection ""; location / { proxy_pass http://localhost:8085/; } }
       server { listen 80; server_name mf-organisation.maxant.ch; proxy_http_version 1.1; proxy_set_header Connection ""; location / { proxy_pass http://localhost:8086/; } }
       server { listen 80; server_name mf-billing.maxant.ch;      proxy_http_version 1.1; proxy_set_header Connection ""; location / { proxy_pass http://localhost:8087/; } }
+      server { listen 80; server_name mf-dsc.maxant.ch;          proxy_http_version 1.1; proxy_set_header Connection ""; location / { proxy_pass http://localhost:8088/; } }
 
       server {
         listen 80;
@@ -554,7 +557,7 @@ Create the databases in MySql:
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p -e "CREATE DATABASE mfoutput CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p -e "CREATE DATABASE mfcases CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p -e "CREATE DATABASE mfbilling CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
-    docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p -e "CREATE DATABASE mfdiscounts CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+    docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p -e "CREATE DATABASE mfdsc CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p -e "CREATE DATABASE mfpartners CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p -e "CREATE DATABASE mfaddinfo CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
     docker run -it --rm mysql mysql -h maxant.ch --port 30300 -u root -p
