@@ -69,6 +69,10 @@ abstract class Configuration<T> (
         return "Configuration(name=$name, value=$value, units=$units, clazz=$clazz)"
     }
 
+    fun setValueExplicit(value: Any?) {
+        this.value = value as T
+    }
+
 }
 
 class ConfigurationSerializer: StdSerializer<Configuration<*>>(Configuration::class.java) {

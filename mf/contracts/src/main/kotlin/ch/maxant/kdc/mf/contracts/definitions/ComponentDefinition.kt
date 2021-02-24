@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import org.mvel2.MVEL
 import java.math.BigDecimal
+import java.time.LocalDate
 import java.util.*
 
 // TODO only works like this at the mo.
@@ -133,18 +134,12 @@ class GlassBottle(volumeMl: Int) : ComponentDefinition(
 
 /** @return the definition configured with the given configs, with rules and config possibilities from the actual product */
 fun getDefinition(product: Product, componentDefinitionId: String, configs: ArrayList<Configuration<*>>): ComponentDefinition {
-    val cd = if(componentDefinitionId == Milk::class.java.simpleName) {
-        Milk(
-                configs.find { it.name == ConfigurableParameter.VOLUME }!!.value as Int,
-                configs.find { it.name == ConfigurableParameter.FAT_CONTENT }!!.value as BigDecimal
-        )
-    } else {
-        TODO()
-    }
     val componentDefinition = findComponentDefinitionRecursively(product, componentDefinitionId)!!
-    cd.rules = componentDefinition.rules
-    cd.configPossibilities = componentDefinition.configPossibilities
-    return cd
+    configs.forEach { config ->
+        val c = componentDefinition.configs.find { it.name == config.name }!!
+        c.setValueExplicit(config.value)
+    }
+    return componentDefinition
 }
 
 private fun findComponentDefinitionRecursively(componentDefinition: ComponentDefinition, componentDefinitionId: String): ComponentDefinition? {
