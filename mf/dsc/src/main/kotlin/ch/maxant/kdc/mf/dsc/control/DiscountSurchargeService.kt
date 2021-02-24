@@ -54,8 +54,12 @@ class DiscountSurchargeService(
                 val list = om.readValue<ArrayList<FlatComponent>>(allComponents)
                 val root = toTree(list)
                 val discountsSurcharges = handleDraft(contractId, syncTimestamp, root)
-                val draftAsTree = om.valueToTree<JsonNode>(root)
-                (draftAsTree as ObjectNode).set<ObjectNode>("discountsSurcharges", om.valueToTree<JsonNode>(discountsSurcharges))
+                val pack = om.valueToTree<ObjectNode>(root)
+                val draftAsTree = om.createObjectNode()
+                draftAsTree
+                    .set<ObjectNode>("pack", pack)
+                    .set<ObjectNode>("discountsSurcharges", om.valueToTree<JsonNode>(discountsSurcharges))
+                    .set<ObjectNode>("contract", contract)
                 draftAsTree
             }
             else -> {

@@ -62,8 +62,8 @@ class DscConsumer(
     private fun handleDraft(record: ConsumerRecord<String, String>) {
         try {
             log.info("handling draft")
-            val model = om.readTree(record.value())
-            discountSurchargeService.handleDraft(model)
+            var model = om.readTree(record.value())
+            model = discountSurchargeService.handleDraft(model)
             sendEvent(model)
         } catch (e: Exception) {
             log.error("FAILED TO PRICE", e)

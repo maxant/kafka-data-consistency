@@ -52,7 +52,12 @@ class ComponentsRepo(
             else -> TODO()
         }
 
-        getDefinition(component.componentDefinitionId, configs).ensureConfigValueIsPermitted(config)
+        val productId = components.find { it.productId != null }!!.productId!!
+        val product = Products.find(productId, 1)
+        val definition = getDefinition(product, component.componentDefinitionId, configs)
+
+        definition.ensureConfigValueIsPermitted(config)
+        definition.runRules(configs)
 
         // it's valid, so let's update the entity so that the change is persisted
         component.configuration = om.writeValueAsString(configs)

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.math.BigDecimal
 
 class DslTest {
@@ -13,7 +14,7 @@ class DslTest {
     @Test
     fun dsl() {
 
-        val cookiesMilkshake = Milkshake(ProductId.COOKIES_MILKSHAKE, 1000) { qty ->
+        val cookiesMilkshake = Drink(ProductId.COOKIES_MILKSHAKE, 1000) { qty ->
             listOf(
                     Milk(95 * qty / 100, BigDecimal("1.8")),
                     Cookies(45 * (qty / 1000)),
@@ -64,6 +65,23 @@ class DslTest {
         // at the leaves. but I dont actually have a use case for that yet...
         // val pack = om.readValue<Packaging>(s)
         // assertEquals(1, pack.componentDefinitionId, CardboardBox::class.java.simpleName)
+    }
+
+    @Test
+    fun mvel() {
+        val skinnyMilk = Milk(1, BigDecimal("0.2"))
+        skinnyMilk.rules = listOf("FAT_CONTENT <= 0.25", "component.children.size == 0")
+        skinnyMilk.runRules(skinnyMilk.configs)
+    }
+
+    @Test
+    fun mvel_negative() {
+        val skinnyMilk = Milk(1, BigDecimal("1.8"))
+        skinnyMilk.rules = listOf("FAT_CONTENT <= 0.25", "component.children.size == 0")
+        val message = assertThrows<IllegalArgumentException> {
+                skinnyMilk.runRules(skinnyMilk.configs)
+            }.message!!
+        assertTrue(message!!.startsWith("Rule evaluated to false: FAT_CONTENT <= 0.25 with context {VOLUME=1, FAT_CONTENT=1.8, MATERIAL=MILK, component=ch.maxant.kdc.mf.contracts.definitions.Milk"), message)
     }
 }
 

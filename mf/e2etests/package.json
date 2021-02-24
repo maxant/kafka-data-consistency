@@ -15,6 +15,7 @@
     "eventsource": "^1.0.7",
     "lodash": "^4.17.20",
     "node-fetch": "^2.6.1",
+    "opentracing": "^0.14.5",
     "uuid": "^8.3.2",
     "uuidv4": "^6.2.6"
   }

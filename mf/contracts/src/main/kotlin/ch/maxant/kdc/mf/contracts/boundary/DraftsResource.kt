@@ -205,6 +205,5 @@ class DraftsResource(
                 .entity(contract)
                 .build()
     }
-
 }
 

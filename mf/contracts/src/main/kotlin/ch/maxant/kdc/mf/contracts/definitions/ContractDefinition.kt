@@ -24,6 +24,15 @@ class ContractDefinition(
                         720
                         // TODO components definition release number
                         // TODO conditions definition release number
+                ),
+                ContractDefinition(LocalDate.of(2021, 2, 1).atStartOfDay(),
+                        LocalDate.of(10000, 1, 1).atTime(LocalTime.MIDNIGHT),
+                        LocalDate.of(2021, 2, 1).atStartOfDay(),
+                        LocalDate.of(10000, 1, 1).atTime(LocalTime.MIDNIGHT),
+                        ProductId.COFFEE_LATTE_SKINNY,
+                        390
+                        // TODO components definition release number
+                        // TODO conditions definition release number
                 )
         )
 

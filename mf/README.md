@@ -249,6 +249,12 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- DSC broke changing fat content
+- add changing quantity
+- show dsc in contract details
+- after approving, the task isnt made to disappear in the contract UI
+  - this is a timing issue as the tree/prices arent shown either
+  - same after offering draft!
 - add displaying DSC to portal sales
 - add displaying C to sales
 - discounts can use DS if they want - add a note about that

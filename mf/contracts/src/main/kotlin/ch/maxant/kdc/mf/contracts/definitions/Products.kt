@@ -12,7 +12,7 @@ abstract class Product(
 /**
  * @param recipe a function taking the total quantity of liquid, and returning all the components used to make the drink
  */
-class Milkshake(productId: ProductId, quantityMl: Int, recipe: (Int)-> List<ComponentDefinition>) : Product(
+class Drink(productId: ProductId, quantityMl: Int, recipe: (Int)-> List<ComponentDefinition>) : Product(
         productId,
         listOf(IntConfiguration(ConfigurableParameter.VOLUME, quantityMl, Units.MILLILITRES)),
         recipe(quantityMl)
@@ -20,6 +20,7 @@ class Milkshake(productId: ProductId, quantityMl: Int, recipe: (Int)-> List<Comp
 
 enum class ProductId {
     COOKIES_MILKSHAKE,
+    COFFEE_LATTE_SKINNY,
 
     /**
      * used for testing only as it contains every possible complexity so that we can test them all live.
@@ -32,7 +33,7 @@ class UnknownProductException(productId: ProductId) : RuntimeException(productId
 
 object Products {
 
-    private fun cookiesMilkshake(quantityMl: Int) = Milkshake(ProductId.COOKIES_MILKSHAKE, quantityMl) { qty ->
+    private fun cookiesMilkshake(quantityMl: Int) = Drink(ProductId.COOKIES_MILKSHAKE, quantityMl) { qty ->
         listOf(
                 Milk(95 * qty / 100, BigDecimal("1.8")),
                 Cookies(45 * (qty / 1000)),
@@ -40,9 +41,25 @@ object Products {
         )
     }
 
+    fun coffeeLatteSkinny(quantityMl: Int) = Drink(ProductId.COFFEE_LATTE_SKINNY, quantityMl) { qty ->
+        val skinnyMilk = Milk(300 * qty / 1000, BigDecimal("0.2"))
+        skinnyMilk.rules = listOf("FAT_CONTENT <= 1.5")
+        val newConfigPossibilities = skinnyMilk.configPossibilities.toMutableList()
+        newConfigPossibilities.add(PercentConfiguration(ConfigurableParameter.FAT_CONTENT, BigDecimal("1.4")))
+        skinnyMilk.configPossibilities = newConfigPossibilities
+        listOf("FAT_CONTENT <= 0.25")
+        listOf(
+                skinnyMilk,
+                CoffeePowder(10 * (qty / 1000)),
+                Sugar(10 * (qty / 1000)),
+                GlassBottle(qty)
+        )
+    }
+
     fun find(productId: ProductId, quantityMl: Int): Product {
         return when(productId) {
             ProductId.COOKIES_MILKSHAKE -> cookiesMilkshake(quantityMl)
+            ProductId.COFFEE_LATTE_SKINNY -> coffeeLatteSkinny(quantityMl)
             else -> throw UnknownProductException(productId)
         }
     }

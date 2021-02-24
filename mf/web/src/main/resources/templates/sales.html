@@ -17,6 +17,21 @@
                        @selected="partnerSelected" >
     </mf-partner-select>
 </div>
+<div style="display:table;">
+    <div style="display:table-row;">
+        <div style="display:table-cell; vertical-align: middle;">
+            <p-dropdown :options="products" v-model="product">
+            </p-dropdown>
+        </div>
+        <div style="display:table-cell; vertical-align: middle">
+            <span style="font-size: 0.8em;">
+                choose "coffee latte" to see how a <br>
+                product specific ui-widget is used<br>
+                rather than a generic one
+            </span>
+        </div>
+    </div>
+</div>
 <div>
     <p-calendar id="startDate"
                 v-model="model.startDate"
@@ -53,35 +68,46 @@
             </div>
             <ul>
                 <li v-for="child in model.draft.pack.children">
-                    <div>
-                        {{ child.componentDefinitionId }}: {{ child.$price.total }} CHF
+                    <div v-if="child.productId == 'COFFEE_LATTE_SKINNY'">
+                        <!-- -------------------------------------------- -->
+                        <!-- PRODUCT SPECIFIC UI:                         -->
+                        <!-- -------------------------------------------- -->
+                        <mf-components-coffee-milk :contract-id="model.draft.contract.id" :node="child"></mf-components-coffee-milk>
                     </div>
-                    <div v-if="child.$discountSurcharge && child.$discountSurcharge.value > 0">
-                        Surcharge "{{ child.$discountSurcharge.definitionId }}" {{ child.$discountSurcharge.value*100 }}%
-                    </div>
-                    <div v-if="child.$discountSurcharge && child.$discountSurcharge.value < 0">
-                        Discount "{{ child.$discountSurcharge.definitionId }}" {{ child.$discountSurcharge.value*-100 }}%
-                    </div>
-                    <ul v-if="get(child, 'children.length') > 0">
-                        <li v-for="child2 in child.children">
-                            {{ child2.componentDefinitionId }}: {{ child2.$price.total }} CHF
-                            <div v-if="child2.configPossibilities && child2.configPossibilities.length > 0">
-                                <div v-for="paramName in getDistinctParamNames(child2.configPossibilities)">
-                                    {{paramName}}: <p-dropdown :id="getId(paramName, 'config-param')"
-                                                               :options="getParamOptions(paramName, child2)"
-                                                               v-model="child2.$configs[paramName].value"
-                                                               @change="changeParam(child2, paramName, $event)"
-                                                               :disabled="child2.$configs[paramName].waiting"
-                                ></p-dropdown>
+                    <div v-else>
+                        <!-- -------------------------------------------- -->
+                        <!-- GENERIC UI:                                  -->
+                        <!-- -------------------------------------------- -->
+                        <div>
+                            {{ child.componentDefinitionId }}: {{ child.$price.total }} CHF
+                        </div>
+                        <div v-if="child.$discountSurcharge && child.$discountSurcharge.value > 0">
+                            Surcharge "{{ child.$discountSurcharge.definitionId }}" {{ child.$discountSurcharge.value*100 }}%
+                        </div>
+                        <div v-if="child.$discountSurcharge && child.$discountSurcharge.value < 0">
+                            Discount "{{ child.$discountSurcharge.definitionId }}" {{ child.$discountSurcharge.value*-100 }}%
+                        </div>
+                        <ul v-if="get(child, 'children.length') > 0">
+                            <li v-for="child2 in child.children">
+                                {{ child2.componentDefinitionId }}: {{ child2.$price.total }} CHF
+                                <div v-if="child2.configPossibilities && child2.configPossibilities.length > 0">
+                                    <div v-for="paramName in getDistinctParamNames(child2.configPossibilities)">
+                                        {{paramName}}: <p-dropdown :id="getId(paramName, 'config-param')"
+                                                                   :options="getParamOptions(paramName, child2)"
+                                                                   v-model="child2.$configs[paramName].value"
+                                                                   @change="changeParam(child2, paramName, $event)"
+                                                                   :disabled="child2.$configs[paramName].waiting"
+                                        ></p-dropdown>
+                                    </div>
                                 </div>
-                            </div>
-                            <ul v-if="get(child2, 'children.length') > 0">
-                                <li v-for="child3 in child2.children">
-                                    {{ child3.componentDefinitionId }}: {{ child3.$price.total }} CHF
-                                </li>
-                            </ul>
-                        </li>
-                    </ul>
+                                <ul v-if="get(child2, 'children.length') > 0">
+                                    <li v-for="child3 in child2.children">
+                                        {{ child3.componentDefinitionId }}: {{ child3.$price.total }} CHF
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
                 </li>
             </ul>
         </li>
@@ -97,6 +123,76 @@
 
 </div> |}{! end of app div !}{|
 <script>
+
+
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// product specific ui-component for milk inside coffee
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+var template =
+`
+<div>
+    Choose fat content of milk:
+    <ul>
+        <li><p-button @click="changeParam('0.2', true)">0.2%</p-button></li>
+        <li><p-button @click="changeParam('1.4', true)">1.4%</p-button></li>
+        <li><p-button @click="changeParam('1.8', true)">1.8% Front End</p-button><span style="font-size: 0.8em;">front end validation</span></li>
+        <li><p-button @click="changeParam('1.8', false)">1.8% Back End</p-button><<span style="font-size: 0.8em;">back end validation</span></li>
+        <li><p-button @click="changeParam('6.0')">6.0%</p-button><span style="font-size: 0.8em;">not in sync with definitions</span></li>
+    </ul>
+</div>
+` // end template
+
+var coffeeMilkSpecificUiComponent = {
+    props: ['node', 'contractId'],
+    template,
+    data() {
+        return {
+        }
+    },
+    methods: {
+        changeParam(percent, doFrontendValidation) {
+
+            if(doFrontendValidation) {
+                try {
+                    _.find(window.componentDefinitions["COFFEE_LATTE_SKINNY"].children, e => e.componentDefinitionId == "Milk").rules.forEach(r => {
+                        var FAT_CONTENT = percent;
+                        if(!eval(r)) {
+                            throw new Error("FAILED: " + r);
+                        }
+                    });
+                } catch(e) {
+                    alert(e);
+                    return;
+                }
+            }
+
+            let componentId = this.node.children[0].componentId;
+            let paramName = "FAT_CONTENT";
+            console.log("change param " + paramName + " on component " + componentId + " to " + percent)
+            let self = this;
+            self.requestId = window.requestId;
+            let url = CONTRACTS_BASE_URL + "/drafts/" + this.contractId + "/" + this.node.children[0].componentId + "/" + paramName + "/" + percent;
+            fetchIt(url, "PUT", this).then(r => {
+                if(r.ok) console.log("updated contract with id " + r.payload.id + ", for requestId " + self.requestId);
+                else {
+                    let msg = "Failed: " + r.payload;
+                    console.error(msg);
+                    alert(msg);
+                }
+            }).catch(error => {
+                console.error("received error: " + error);
+            });
+        }
+    },
+    components: {
+        'p-button': button
+    }
+}
+
+
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// application
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 var urlParams = new URLSearchParams(window.location.search);
 var partnerId = urlParams.get('partnerId');
 console.log("using partner id from url: " + partnerId);
@@ -110,12 +206,13 @@ const forcibleErrors = [ {label: 'none', value: 'none'},
 const App = {
     data() {
         return {
+            product: null,
+            products: [],
             partnerId,
             partner: null,
             model: {"draft": {}, "startDate": new Date(), salesRep: null},
             start: 0,
             timeTaken: 0,
-            requestId: uuidv4(),
             source: null,
             currentAction: null,
             forcibleErrors,
@@ -128,9 +225,43 @@ const App = {
         this.minStartDate = new Date(new Date().getTime() - 3600000);
         this.maxStartDate = new Date();
         this.maxStartDate.setFullYear(this.maxStartDate.getFullYear() + 1);
+
+        window.requestId = uuidv4();
     },
     mounted() {
         window.model = this.model; // just for debugging purposes
+
+        let self = this;
+        let url = CONTRACTS_BASE_URL + "/definitions/products"
+        let products$ = fetchIt(url, "GET", self).then(r => {
+            if(r.ok) {
+                console.log("got products: " + r.payload);
+                self.products = r.payload;
+                self.product = self.products[0]; // milkshake is default
+            } else {
+                let msg = "Failed to get products: " + r.payload;
+                console.error(msg);
+                alert(msg);
+            }
+        }).catch(error => {
+            console.error("received error: " + error);
+        });
+
+        url = CONTRACTS_BASE_URL + "/definitions/components"
+        let componentDefinitions$ = fetchIt(url, "GET", self).then(r => {
+            if(r.ok) {
+                console.log("got component definitions: " + r.payload);
+                window.componentDefinitions = r.payload;
+            } else {
+                let msg = "Failed to get component definitions: " + r.payload;
+                console.error(msg);
+                alert(msg);
+            }
+        }).catch(error => {
+            console.error("received error: " + error);
+        });
+
+        return Promise.all([products$, componentDefinitions$]);
     },
     methods: {
         getId(paramName, prefix) {
@@ -166,21 +297,22 @@ const App = {
 
             this.allowOffer = false;
             let body = {
-                "productId": "COOKIES_MILKSHAKE",
+                "productId": this.product,
                 "start": this.model.startDate.toISOString().substr(0,10),
                 "partnerId": this.partner.id
             }
             this.currentAction = {action: "newDraft"}
 
             // subscribe before sending request to server, to ensure we receive ALL of the events, and any errors
-            sse(this.requestId, this);
+            sse(window.requestId, this);
 
             let self = this;
+            self.requestId = window.requestId;
             let url = CONTRACTS_BASE_URL + "/drafts"
             fetchIt(url, "POST", this, body).then(r => {
                 if(r.ok) console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
                 else {
-                    let msg = "Failed to offer contract: " + r.payload;
+                    let msg = "Failed: " + r.payload;
                     console.error(msg);
                     alert(msg);
                     ameliorateCurrentAction(self)
@@ -217,7 +349,7 @@ const App = {
                 fetchIt(url, "PUT", this).then(r => {
                     if(r.ok) console.log("updated contract with id " + r.payload.id + ", for requestId " + self.requestId);
                     else {
-                        let msg = "Failed to offer contract: " + r.payload;
+                        let msg = "Failed: " + r.payload;
                         console.error(msg);
                         alert(msg);
                         ameliorateCurrentAction(self)
@@ -242,7 +374,7 @@ const App = {
                     } else if(r.payload.class == "ch.maxant.kdc.mf.partners.boundary.NotEnoughRelationshipsForForeignIdTypeValidationException") {
                         alert("A partner relationship is missing: " + r.payload.data);
                     } else {
-                        let msg = "Failed to offer contract: " + r.payload;
+                        let msg = "Failed: " + r.payload;
                         console.error(msg);
                         alert(msg);
                     }
@@ -272,7 +404,8 @@ const App = {
         'mf-partner-select': mfPartnerSelect,
         'mf-partner': mfPartnerTile,
         'mf-contract': mfContractTile,
-        'mf-users': mfUsers
+        'mf-users': mfUsers,
+        'mf-components-coffee-milk': coffeeMilkSpecificUiComponent
     }
 }
 const app = Vue.createApp(App)

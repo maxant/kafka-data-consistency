@@ -136,7 +136,7 @@ open class ConfigurationDefinition<T>(val units: Units, val clazz: Class<T>) {
 }
 
 enum class Material {
-    MILK, SUGAR, GLASS, FLOUR, BUTTER, CARDBOARD, WOOD
+    MILK, SUGAR, GLASS, FLOUR, BUTTER, CARDBOARD, WOOD, COFFEE_POWDER
 }
 
 enum class Units {

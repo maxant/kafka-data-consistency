@@ -93,6 +93,21 @@ private val sugar = fun(component: TreeComponent): Price {
     return roundAddTaxAndMakePrice(net)
 }
 
+private val coffeePowder = fun(component: TreeComponent): Price {
+    /*
+                  {
+                    "name": "WEIGHT",
+                    "value": 15,
+                    "units": "GRAMS",
+                    "type": "int"
+                  },
+    */
+    val weightConfig = getConfig(component, "WEIGHT", "GRAMS")
+
+    val net = BigDecimal("0.028").times(BigDecimal(weightConfig.value))
+    return roundAddTaxAndMakePrice(net)
+}
+
 private val flour = fun(component: TreeComponent): Price {
     /*
                 "configs": [
@@ -154,6 +169,7 @@ object Prices {
             "Sugar" -> sugar
             "Flour" -> flour
             "GlassBottle" -> glassBottle
+            "CoffeePowder" -> coffeePowder
             else -> if(component.children.isNotEmpty()) sumChildren // default for things like cookies
                     else throw ValidationException("no pricing rule found for leaf component ${component.componentDefinitionId}")
         }
