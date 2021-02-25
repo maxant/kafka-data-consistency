@@ -41,13 +41,12 @@ object Products {
         )
     }
 
-    fun coffeeLatteSkinny(quantityMl: Int) = Drink(ProductId.COFFEE_LATTE_SKINNY, quantityMl) { qty ->
+    private fun coffeeLatteSkinny(quantityMl: Int) = Drink(ProductId.COFFEE_LATTE_SKINNY, quantityMl) { qty ->
         val skinnyMilk = Milk(300 * qty / 1000, BigDecimal("0.2"))
         skinnyMilk.rules = listOf("FAT_CONTENT <= 1.5")
         val newConfigPossibilities = skinnyMilk.configPossibilities.toMutableList()
         newConfigPossibilities.add(PercentConfiguration(ConfigurableParameter.FAT_CONTENT, BigDecimal("1.4")))
         skinnyMilk.configPossibilities = newConfigPossibilities
-        listOf("FAT_CONTENT <= 0.25")
         listOf(
                 skinnyMilk,
                 CoffeePowder(10 * (qty / 1000)),

@@ -249,19 +249,16 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
-- DSC broke changing fat content
-- add changing quantity
 - show dsc in contract details
+- contract view is flakey and doesnt always show components, esp after clicking thru process buttons
 - after approving, the task isnt made to disappear in the contract UI
   - this is a timing issue as the tree/prices arent shown either
   - same after offering draft!
-- add displaying DSC to portal sales
 - add displaying C to sales
 - discounts can use DS if they want - add a note about that
 - add conditions to DscConsumer
 - add explicit discount or condition from user
 - delete DSC where componentId is no longer in model, otherwise we'd have orphans hanging around
-- add dsc to sales UI
 - add optional select partner details in contracts.js tile, for when displaying contract in search
 - show bills on contract UI
 - check async tracing now works - it does, but cases SQL isnt traced. BUT it is when creating a task. maybe it's related to flush time? UGLY

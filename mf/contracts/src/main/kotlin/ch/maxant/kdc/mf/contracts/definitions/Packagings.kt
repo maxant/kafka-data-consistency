@@ -2,15 +2,22 @@ package ch.maxant.kdc.mf.contracts.definitions
 
 /** like a marker interface to show that this is packaging */
 abstract class Packaging(configs: List<Configuration<*>>,
-                         children: List<ComponentDefinition>
-) : ComponentDefinition(configs, children)
+                         children: List<ComponentDefinition>,
+                         configPossibilities: List<Configuration<*>> = emptyList()
+) : ComponentDefinition(configs, children, configPossibilities)
 
 class CardboardBox(space: CardboardBoxSize, quantity: Int, contents: Product) : Packaging(
         listOf(
                 IntConfiguration(ConfigurableParameter.SPACES, space.size, Units.NONE),
-                IntConfiguration(ConfigurableParameter.QUANTITY, quantity, Units.PIECES),
+                IntConfiguration(ConfigurableParameter.QUANTITY, quantity, Units.NONE),
                 MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.CARDBOARD)
-        ), listOf(contents)) {
+        ),
+        listOf(contents),
+        listOf(
+            IntConfiguration(ConfigurableParameter.QUANTITY, 5, Units.NONE),
+            IntConfiguration(ConfigurableParameter.QUANTITY, 10, Units.NONE)
+        )
+) {
     init {
         require(space.size >= quantity)
     }
@@ -50,6 +57,14 @@ object Packagings {
              */
         } else {
             throw OrderTooLargeException(quantity, maxOrderSize)
+        }
+    }
+
+    fun find(componentDefinitionIds: List<String>): Packaging {
+        if(componentDefinitionIds.contains(CardboardBox::class.java.simpleName)) {
+            return CardboardBox(CardboardBox.CardboardBoxSize.TEN, 10, object: Product(ProductId.TEST_PRODUCT, emptyList(), emptyList()){})
+        } else {
+            TODO()
         }
     }
 }

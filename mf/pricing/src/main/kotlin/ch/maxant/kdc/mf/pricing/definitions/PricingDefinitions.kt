@@ -14,6 +14,7 @@ private val TAX = BigDecimal(0.077)
 
 data class Price(val total: BigDecimal, val tax: BigDecimal) {
     fun add(p: Price) = Price(this.total.add(p.total), this.tax.add(p.tax))
+    fun multiply(value: BigDecimal): Price = Price(this.total.multiply(value), this.tax.multiply(value))
 }
 
 private val cardboardBox = fun(component: TreeComponent): Price {
@@ -32,9 +33,10 @@ private val cardboardBox = fun(component: TreeComponent): Price {
       }...
      */
     val spacesConfig = getConfig(component, "SPACES", "NONE")
+    val quantityConfig = getConfig(component, "QUANTITY", "NONE")
 
     return if(spacesConfig.value == "10") {
-        val kids = sumChildren(component)
+        val kids = sumChildren(component).multiply(BigDecimal(quantityConfig.value))
         val boxPrice = roundAddTaxAndMakePrice(BigDecimal("0.12"))
         kids.add(boxPrice)
     } else throw MissingRuleException("unexpected spaces for cardboard box: ${spacesConfig.value}")

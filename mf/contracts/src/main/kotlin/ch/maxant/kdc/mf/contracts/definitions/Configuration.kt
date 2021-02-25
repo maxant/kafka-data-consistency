@@ -28,7 +28,7 @@ abstract class Configuration<T> (
 ) {
     init {
         require(name != ConfigurableParameter.VOLUME || listOf(Units.MILLILITRES).contains(units))
-        require(name != ConfigurableParameter.QUANTITY || listOf(Units.PIECES).contains(units))
+        require(name != ConfigurableParameter.QUANTITY || listOf(Units.NONE).contains(units))
         require(name != ConfigurableParameter.WEIGHT || listOf(Units.GRAMS).contains(units))
         require(name != ConfigurableParameter.MATERIAL || listOf(Units.NONE).contains(units))
         require(name != ConfigurableParameter.FAT_CONTENT || listOf(Units.PERCENT).contains(units))

@@ -27,7 +27,8 @@
             <span style="font-size: 0.8em;">
                 choose "coffee latte" to see how a <br>
                 product specific ui-widget is used<br>
-                rather than a generic one
+                rather than a generic one, and howh<br>
+                rules are executed in the UI
             </span>
         </div>
     </div>
@@ -58,13 +59,27 @@
     <ul>
         <li>
             <div>Product: {{ model.draft.pack.children[0].productId }} {{ model.draft.pack.$price.total }} CHF ({{ model.draft.pack.$price.tax }} CHF VAT)
+            <div>
                 {{ model.draft.pack.componentDefinitionId }}
+                with quantity
+                {{ findConfig(model.draft.pack.configs, 'QUANTITY').value }}
+            </div>
             </div>
             <div v-if="get(model, 'draft.pack.$discountSurcharge.value') > 0">
                 Surcharge "{{ model.draft.pack.$discountSurcharge.definitionId }}" {{ model.draft.pack.$discountSurcharge.value*100 }}%
             </div>
             <div v-if="get(model, 'draft.pack.$discountSurcharge.value') < 0">
                 Discount "{{ model.draft.pack.$discountSurcharge.definitionId }}" {{ model.draft.pack.$discountSurcharge.value*-100 }}%
+            </div>
+            <div v-if="model.draft && model.draft.pack && model.draft.pack.configPossibilities && model.draft.pack.configPossibilities.length > 0">
+                <div v-for="paramName in getDistinctParamNames(model.draft.pack.configPossibilities)">
+                    {{paramName}}: <p-dropdown :id="getId(paramName, 'config-param')"
+                                               :options="getParamOptions(paramName, model.draft.pack)"
+                                               v-model="model.draft.pack.$configs[paramName].value"
+                                               @change="changeParam(model.draft.pack, paramName, $event)"
+                                               :disabled="model.draft.pack.$configs[paramName].waiting"
+                ></p-dropdown>
+                </div>
             </div>
             <ul>
                 <li v-for="child in model.draft.pack.children">
@@ -326,6 +341,9 @@ const App = {
             // vue3 doesnt like seeing underscores in attribute values => so lets create an alias with this method
             return _.get(obj, path);
         },
+        findConfig(configs, name) {
+            return _.find(configs, e => e.name == name);
+        },
         getDistinctParamNames(configPossibilities) {
             return _(configPossibilities).map("name").uniq().value()
         },
@@ -412,6 +430,11 @@ const app = Vue.createApp(App)
 app.use(primevue, {ripple: true});
 app.mount("#app")
 
+function clearDscsRecursively(component) {
+    delete component.$discountSurcharge;
+    _.forEach(component.children, child => clearDscsRecursively(child));
+}
+
 function addDsc(component, id, dsc) {
     if(component.componentId == id) {
         component.$discountSurcharge = dsc;
@@ -446,6 +469,7 @@ function sse(requestId, self) {
             // dont update any waiting or timing state, because this is just the first of many events to come
         } else if(msg.event == "ADDED_DSC_FOR_DRAFT") {
             self.model.draft.discountsSurcharges = msg.payload.discountsSurcharges;
+            clearDscsRecursively(self.model.draft.pack);
             _.forEach(self.model.draft.discountsSurcharges, (v,k) => {
                 addDsc(self.model.draft.pack, k, v);
             });

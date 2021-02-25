@@ -21,9 +21,17 @@ Offer created for partner {{draftCreatedFor.id}} ({{getNameOfPartner()}})
 <div v-if="!!get(model, 'draft.pack.$price')">
     Product: {{ model.draft.pack.children[0].productId }} {{ model.draft.pack.$price.total }} CHF ({{ model.draft.pack.$price.tax }} CHF VAT)
 </div>
+<div v-if="get(model, 'draft.pack.$discountSurcharge.value') > 0">
+    Surcharge "{{ model.draft.pack.$discountSurcharge.definitionId }}" {{ model.draft.pack.$discountSurcharge.value*100 }}%
+</div>
+<div v-if="get(model, 'draft.pack.$discountSurcharge.value') < 0">
+    Discount "{{ model.draft.pack.$discountSurcharge.definitionId }}" {{ model.draft.pack.$discountSurcharge.value*-100 }}%
+</div>
 <div v-if="!!get(model, 'draft.pack.$price')">
     <ul>
-        <li>{{ model.draft.pack.componentDefinitionId }} {{ priceOf(model.draft.pack) }} CHF</li>
+        <li>{{ model.draft.pack.componentDefinitionId }}
+            containing {{ findConfig(model.draft.pack.configs, 'QUANTITY').value }}
+        </li>
         <li v-for="child in model.draft.pack.children">
             {{ child.componentDefinitionId }}: {{ child.$price.total }} CHF
         </li>
@@ -126,6 +134,9 @@ window.mfPortalSales = {
             // vue3 doesnt like seeing underscores in attribute values => so lets create an alias with this method
             return _.get(obj, path);
         },
+        findConfig(configs, name) {
+            return _.find(configs, e => e.name == name);
+        },
         priceOf(component) {
             return (component.$price.total - _.sumBy(component.children, '$price.total')).toFixed(2);
         },
@@ -137,6 +148,19 @@ window.mfPortalSales = {
         'p-button': button,
         'mf-partner': mfPartnerTile,
         'mf-contract': mfContractTile
+    }
+}
+
+function clearDscsRecursively(component) {
+    delete component.$discountSurcharge;
+    _.forEach(component.children, child => clearDscsRecursively(child));
+}
+
+function addDsc(component, id, dsc) {
+    if(component.componentId == id) {
+        component.$discountSurcharge = dsc;
+    } else {
+        _.forEach(component.children, child => addDsc(child, id, dsc));
     }
 }
 
@@ -158,6 +182,13 @@ function sse(requestId, self) {
             self.model.draft = msg.payload;
             initialiseDraft(self.model.draft.pack);
             // dont update any waiting or timing state, because this is just the first of many events to come
+        } else if(msg.event == "ADDED_DSC_FOR_DRAFT") {
+            self.model.draft.discountsSurcharges = msg.payload.discountsSurcharges;
+            clearDscsRecursively(self.model.draft.pack);
+            _.forEach(self.model.draft.discountsSurcharges, (v,k) => {
+                addDsc(self.model.draft.pack, k, v);
+            });
+            self.timeTaken = new Date().getTime() - self.start;
         } else if(msg.event == "UPDATED_PRICES_FOR_DRAFT") {
             self.model.draft.prices = msg.payload.priceByComponentId;
             _.forEach(self.model.draft.prices, (v,k) => {
