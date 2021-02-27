@@ -6,6 +6,7 @@ import ch.maxant.kdc.mf.contracts.dto.Component
 import ch.maxant.kdc.mf.contracts.dto.Draft
 import ch.maxant.kdc.mf.contracts.entity.ContractState
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.eclipse.microprofile.faulttolerance.Retry
 import org.eclipse.microprofile.metrics.MetricUnits
@@ -39,7 +40,11 @@ class ESAdapter {
 
     val log: Logger = Logger.getLogger(this.javaClass)
 
-    data class EsRequest(val method: String, val path: String, val json: String)
+    data class EsRequest(val context: EsRequestType, val method: String, val path: String, val json: String)
+
+    enum class EsRequestType {
+        CREATE, UPDATE_STATE, UPDATE_COMPONENTS
+    }
 
     @Timed(unit = MetricUnits.MILLISECONDS)
     @Incoming("contracts-es-in")
@@ -48,7 +53,11 @@ class ESAdapter {
             val r = om.readValue<EsRequest>(payload)
             val request = Request(r.method, r.path)
             request.setJsonEntity(r.json)
-            sender.performRequest(request)
+            when(r.context) {
+                EsRequestType.CREATE -> sender.create(request)
+                EsRequestType.UPDATE_COMPONENTS -> sender.updateComponents(request)
+                EsRequestType.UPDATE_STATE -> sender.updateState(request)
+            }
             log.info("called elasticsearch with request $r")
         } catch(e: Exception) {
             // TODO DLT?
@@ -60,7 +69,7 @@ class ESAdapter {
     @Traced
     fun createOffer(draft: Draft, partnerId: UUID?) {
         val esContract = EsContract(draft, partnerId, flatten(draft.pack))
-        val r = EsRequest("PUT", "/contracts/_doc/${draft.contract.id}", om.writeValueAsString(esContract))
+        val r = EsRequest(EsRequestType.CREATE, "PUT", "/contracts/_doc/${draft.contract.id}", om.writeValueAsString(esContract))
         esOut.send(om.writeValueAsString(r))
     }
 
@@ -84,40 +93,44 @@ class ESAdapter {
               }
             }
          */
-        val root = om.createObjectNode()
-        val script = om.createObjectNode()
+        val components = om.readTree(om.writeValueAsString(allComponents.map { ESComponent(it) }.flatMap { it.toMetainfo() }))
         val params = om.createObjectNode()
-        root.replace("script", script)
+        params.set<ObjectNode>("metainfo", components)
+
+        val script = om.createObjectNode()
+        script.set<ObjectNode>("params", params)
         script.put("source", "ctx._source.metainfo = params.metainfo")
         script.put("lang", "painless")
-        script.replace("params", params)
-        val components = om.readTree(om.writeValueAsString(allComponents.map { ESComponent(it) }.flatMap { it.toMetainfo() }))
-        params.replace("components", components)
+
+        val root = om.createObjectNode()
+        root.set<ObjectNode>("script", script)
+
+        val r = EsRequest(EsRequestType.UPDATE_COMPONENTS, "POST", "/contracts/_update/$contractId", om.writeValueAsString(root))
+        // TODO use transactional outbox
+        esOut.send(om.writeValueAsString(r))
     }
 
     @Timed(unit = MetricUnits.MILLISECONDS)
     @Traced
     fun updateOffer(contractId: UUID, newState: ContractState) {
-        val request = Request(
-                "POST",
-                "/contracts/_update/$contractId")
         val root = om.createObjectNode()
         val script = om.createObjectNode()
         val params = om.createObjectNode()
-        root.replace("script", script)
+        root.set<ObjectNode>("script", script)
         script.put("source", "ctx._source.state = params.state")
         script.put("lang", "painless")
-        script.replace("params", params)
+        script.set<ObjectNode>("params", params)
         params.put("state", newState.toString())
 
-        val r = EsRequest("POST", "/contracts/_update/$contractId", om.writeValueAsString(root))
+        val r = EsRequest(EsRequestType.UPDATE_STATE, "POST", "/contracts/_update/$contractId", om.writeValueAsString(root))
         // TODO use transactional outbox
         esOut.send(om.writeValueAsString(r))
     }
 
-    data class EsContract(val partnerId: UUID?, val start: LocalDateTime, val end: LocalDateTime, val state: ContractState,
+    data class EsContract(val contractId: UUID, val partnerId: UUID?, val start: LocalDateTime, val end: LocalDateTime, val state: ContractState,
                           val metainfo: List<String>, val totalPrice: BigDecimal = BigDecimal.ZERO) {
         constructor(draft: Draft, partnerId: UUID?, components: List<ESComponent>) : this(
+                draft.contract.id,
                 partnerId,
                 draft.contract.start.withNano(0),
                 draft.contract.end.withNano(0),
@@ -145,7 +158,24 @@ class EsAdapterSender {
     lateinit var restClient: RestClient
 
     @Retry(delay = 1000)
-    fun performRequest(request: Request) {
+    @Timed(unit = MetricUnits.MILLISECONDS)
+    fun create(request: Request) {
+        _performRequest(request)
+    }
+
+    @Retry(delay = 1000)
+    @Timed(unit = MetricUnits.MILLISECONDS)
+    fun updateState(request: Request) {
+        _performRequest(request)
+    }
+
+    @Retry(delay = 1000)
+    @Timed(unit = MetricUnits.MILLISECONDS)
+    fun updateComponents(request: Request) {
+        _performRequest(request)
+    }
+
+    fun _performRequest(request: Request) {
         try {
             val response = restClient.performRequest(request)
             // TODO tidy up exception handling. status code isnt returned if the server returns an error, eg 4xx coz of bad request

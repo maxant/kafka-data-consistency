@@ -249,6 +249,8 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- add explicit discount or condition from user
+- measure what's so slow with ES contract creation/updates
 - show dsc in contract details
 - contract view is flakey and doesnt always show components, esp after clicking thru process buttons
 - after approving, the task isnt made to disappear in the contract UI
@@ -257,7 +259,6 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 - add displaying C to sales
 - discounts can use DS if they want - add a note about that
 - add conditions to DscConsumer
-- add explicit discount or condition from user
 - delete DSC where componentId is no longer in model, otherwise we'd have orphans hanging around
 - add optional select partner details in contracts.js tile, for when displaying contract in search
 - show bills on contract UI
@@ -469,12 +470,13 @@ Create new:
     {
         "settings" : {
             "index" : {
-                "number_of_shards" : 1,
+                "number_of_shards" : 10,
                 "number_of_replicas" : 1
             }
         },
         "mappings" : {
             "properties": {
+                "contractId": { "type": "keyword" },
                 "partnerId": { "type": "keyword" },
                 "totalPrice": { "type": "double" },
                 "start": { "type": "date", "format": "date_hour_minute_second" },
@@ -490,7 +492,7 @@ Create new:
     {
         "settings" : {
             "index" : {
-                "number_of_shards" : 1,
+                "number_of_shards" : 10,
                 "number_of_replicas" : 1
             },
             "analysis": {

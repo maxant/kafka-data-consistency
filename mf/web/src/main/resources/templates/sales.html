@@ -71,23 +71,14 @@
             <div v-if="get(model, 'draft.pack.$discountSurcharge.value') < 0">
                 Discount "{{ model.draft.pack.$discountSurcharge.definitionId }}" {{ model.draft.pack.$discountSurcharge.value*-100 }}%
             </div>
-            <div v-if="model.draft && model.draft.pack && model.draft.pack.configPossibilities && model.draft.pack.configPossibilities.length > 0">
-                <div v-for="paramName in getDistinctParamNames(model.draft.pack.configPossibilities)">
-                    {{paramName}}: <p-dropdown :id="getId(paramName, 'config-param')"
-                                               :options="getParamOptions(paramName, model.draft.pack)"
-                                               v-model="model.draft.pack.$configs[paramName].value"
-                                               @change="changeParam(model.draft.pack, paramName, $event)"
-                                               :disabled="model.draft.pack.$configs[paramName].waiting"
-                ></p-dropdown>
-                </div>
-            </div>
+            <mf-contract-modifiable-config v-if="model.draft && model.draft.pack" :component="model.draft.pack"></mf-contract-modifiable-config>
             <ul>
                 <li v-for="child in model.draft.pack.children">
                     <div v-if="child.productId == 'COFFEE_LATTE_SKINNY'">
                         <!-- -------------------------------------------- -->
                         <!-- PRODUCT SPECIFIC UI:                         -->
                         <!-- -------------------------------------------- -->
-                        <mf-components-coffee-milk :contract-id="model.draft.contract.id" :node="child"></mf-components-coffee-milk>
+                        <mf-contract-products-coffee-latte-skinny :node="child"></mf-contract-products-coffee-latte-skinny>
                     </div>
                     <div v-else>
                         <!-- -------------------------------------------- -->
@@ -105,16 +96,7 @@
                         <ul v-if="get(child, 'children.length') > 0">
                             <li v-for="child2 in child.children">
                                 {{ child2.componentDefinitionId }}: {{ child2.$price.total }} CHF
-                                <div v-if="child2.configPossibilities && child2.configPossibilities.length > 0">
-                                    <div v-for="paramName in getDistinctParamNames(child2.configPossibilities)">
-                                        {{paramName}}: <p-dropdown :id="getId(paramName, 'config-param')"
-                                                                   :options="getParamOptions(paramName, child2)"
-                                                                   v-model="child2.$configs[paramName].value"
-                                                                   @change="changeParam(child2, paramName, $event)"
-                                                                   :disabled="child2.$configs[paramName].waiting"
-                                        ></p-dropdown>
-                                    </div>
-                                </div>
+                                <mf-contract-modifiable-config :component="child2"></mf-contract-modifiable-config>
                                 <ul v-if="get(child2, 'children.length') > 0">
                                     <li v-for="child3 in child2.children">
                                         {{ child3.componentDefinitionId }}: {{ child3.$price.total }} CHF
@@ -141,39 +123,36 @@
 
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// product specific ui-component for milk inside coffee
+// product specific ui-component for coffee latte skinny
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 var template =
 `
 <div>
     Choose fat content of milk:
     <ul>
-        <li><p-button @click="changeParam('0.2', true)">0.2%</p-button></li>
-        <li><p-button @click="changeParam('1.4', true)">1.4%</p-button></li>
+        <li><p-button @click="changeParam('0.2', true)" :disabled="milkFatContentIs('0.2')">0.2%</p-button></li>
+        <li><p-button @click="changeParam('1.4', true)" :disabled="milkFatContentIs('1.4')">1.4%</p-button></li>
         <li><p-button @click="changeParam('1.8', true)">1.8% Front End</p-button><span style="font-size: 0.8em;">front end validation</span></li>
-        <li><p-button @click="changeParam('1.8', false)">1.8% Back End</p-button><<span style="font-size: 0.8em;">back end validation</span></li>
+        <li><p-button @click="changeParam('1.8', false)">1.8% Back End</p-button><span style="font-size: 0.8em;">back end validation</span></li>
         <li><p-button @click="changeParam('6.0')">6.0%</p-button><span style="font-size: 0.8em;">not in sync with definitions</span></li>
     </ul>
 </div>
 ` // end template
 
-var coffeeMilkSpecificUiComponent = {
-    props: ['node', 'contractId'],
+var coffeeLatteSkinnySpecificUiComponent = {
+    props: ['node'],
     template,
-    data() {
-        return {
-        }
-    },
     methods: {
+        getRules(componentDefinitionId) {
+            let defns = window.componentDefinitions["COFFEE_LATTE_SKINNY"];
+            return _.find(defns.children, e => e.componentDefinitionId == componentDefinitionId).rules;
+        },
         changeParam(percent, doFrontendValidation) {
-
             if(doFrontendValidation) {
                 try {
-                    _.find(window.componentDefinitions["COFFEE_LATTE_SKINNY"].children, e => e.componentDefinitionId == "Milk").rules.forEach(r => {
+                    this.getRules("Milk").forEach(r => {
                         var FAT_CONTENT = percent;
-                        if(!eval(r)) {
-                            throw new Error("FAILED: " + r);
-                        }
+                        if(!eval(r)) throw new Error("FAILED: " + r);
                     });
                 } catch(e) {
                     alert(e);
@@ -181,22 +160,13 @@ var coffeeMilkSpecificUiComponent = {
                 }
             }
 
-            let componentId = this.node.children[0].componentId;
+            let component = this.node.children[0];
             let paramName = "FAT_CONTENT";
-            console.log("change param " + paramName + " on component " + componentId + " to " + percent)
-            let self = this;
-            self.requestId = window.requestId;
-            let url = CONTRACTS_BASE_URL + "/drafts/" + this.contractId + "/" + this.node.children[0].componentId + "/" + paramName + "/" + percent;
-            fetchIt(url, "PUT", this).then(r => {
-                if(r.ok) console.log("updated contract with id " + r.payload.id + ", for requestId " + self.requestId);
-                else {
-                    let msg = "Failed: " + r.payload;
-                    console.error(msg);
-                    alert(msg);
-                }
-            }).catch(error => {
-                console.error("received error: " + error);
-            });
+            component.$configs[paramName].value = percent
+            this.$parent.changeParam(component, paramName);
+        },
+        milkFatContentIs(percent) {
+            return _.find(this.node.children[0].configs, e => e.name == 'FAT_CONTENT').value == percent;
         }
     },
     components: {
@@ -204,6 +174,48 @@ var coffeeMilkSpecificUiComponent = {
     }
 }
 
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ui-component for modifying configs
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+template =
+`
+<div v-if="component.configPossibilities && component.configPossibilities.length > 0">
+    <div v-for="paramName in getDistinctParamNames(component.configPossibilities)">
+        {{paramName}}: <p-dropdown :id="getId(paramName, 'config-param')"
+                                   :options="getParamOptions(paramName, component)"
+                                   v-model="component.$configs[paramName].value"
+                                   @change="changeParam(component, paramName)"
+                                   :disabled="component.$configs[paramName].waiting"
+        ></p-dropdown>
+    </div>
+</div>
+` // end template
+
+var modifiableConfigComponent = {
+    props: ['component'],
+    template,
+    methods: {
+        getId(paramName, prefix) {
+            return paramName + "-" + prefix;
+        },
+        getDistinctParamNames(configPossibilities) {
+            return _(configPossibilities).map("name").uniq().value()
+        },
+        getParamOptions(paramName, component) {
+            let vals = _(component.configPossibilities)
+                        .filter(c => c.name === paramName)
+                        .map("value")
+                        .value()
+            return vals;
+        },
+        changeParam(component, paramName) {
+            this.$parent.changeParam(component, paramName);
+        }
+    },
+    components: {
+        'p-dropdown': dropdown
+    }
+}
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // application
@@ -279,9 +291,6 @@ const App = {
         return Promise.all([products$, componentDefinitions$]);
     },
     methods: {
-        getId(paramName, prefix) {
-            return paramName + "-" + prefix;
-        },
         partnerSelected(partner) {
             this.partner = partner;
             this.partnerId = partner.id;
@@ -344,21 +353,11 @@ const App = {
         findConfig(configs, name) {
             return _.find(configs, e => e.name == name);
         },
-        getDistinctParamNames(configPossibilities) {
-            return _(configPossibilities).map("name").uniq().value()
-        },
-        getParamOptions(paramName, component) {
-            let vals = _(component.configPossibilities)
-                        .filter(c => c.name === paramName)
-                        .map("value")
-                        .value()
-            return vals;
-        },
-        changeParam(component, paramName, e) {
-            this.allowOffer = false;
+        changeParam(component, paramName) {
             let newValue = component.$configs[paramName].value
             let oldValue = _(component.configs).find(c => c.name === paramName).value
             if(newValue != oldValue) {
+                this.allowOffer = false;
                 component.$configs[paramName].waiting = true // causes disabled
                 console.log("change param " + paramName + " on component " + component.componentId + " to " + newValue)
                 this.currentAction = {action: "changeParam", paramName, componentId: component.componentId, oldValue, newValue}
@@ -423,7 +422,8 @@ const App = {
         'mf-partner': mfPartnerTile,
         'mf-contract': mfContractTile,
         'mf-users': mfUsers,
-        'mf-components-coffee-milk': coffeeMilkSpecificUiComponent
+        'mf-contract-products-coffee-latte-skinny': coffeeLatteSkinnySpecificUiComponent,
+        'mf-contract-modifiable-config': modifiableConfigComponent
     }
 }
 const app = Vue.createApp(App)

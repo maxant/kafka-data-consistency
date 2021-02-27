@@ -5,6 +5,7 @@
 </div>
 
 <mf-contract v-if="model.contract.id" :contract="model.contract" allow-accept-offer="true" @accepted="acceptedOffer"></mf-contract>
+<div v-if="model.contract.createdBy">Created by {{model.contract.createdBy}} at {{model.contract.createdAt}}</div>
 <div v-if="model.contract.offeredBy">Offered by {{model.contract.offeredBy}} at {{model.contract.offeredAt}}</div>
 <div v-if="model.contract.acceptedBy">Accepted by {{model.contract.acceptedBy}} at {{model.contract.acceptedAt}}</div>
 <div v-if="model.contract.approvedBy">Approved by {{model.contract.approvedBy}} at {{model.contract.approvedAt}}</div>

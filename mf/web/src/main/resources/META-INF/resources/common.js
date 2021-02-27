@@ -21,6 +21,13 @@ window.fetchIt = function(url, method, self, body, responseIsText) {
                        body: JSON.stringify(body),
                        "headers": getHeaders(self.requestId, self.getDemoContext)
                      };
+        if(url.indexOf(ELASTICSEARCH_BASE_URL) >= 0) {
+            // ES doesnt like all our custom headers. we could add them to dc-base.yml, but it doesnt use them, so lets not send them
+            data = { "method": method,
+                       body: JSON.stringify(body),
+                       "headers": {"Content-Type": "application/json" }
+                     };
+        }
         return fetch(url, data)
         .then(r => {
             if(r.status >= 200 && r.status < 300) {

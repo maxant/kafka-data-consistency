@@ -35,9 +35,6 @@ const template =
                 Valid from {{fetchedContract.start.toString().substr(0,10)}} until {{fetchedContract.end.toString().substr(0,10)}}
             </div>
             <div>
-                Created by {{fetchedContract.createdBy}} on {{fetchedContract.createdAt}}
-            </div>
-            <div>
                 State: {{fetchedContract.contractState}}
                 <i v-if="clickable" id="viewContractIcon" class="pi pi-eye" @click="navigateToContract()"></i>
             </div>
@@ -88,11 +85,22 @@ window.mfContractTile = {
             this.fetchedContract = null;
             this.error = null;
             let self = this;
-            let url = CONTRACTS_BASE_URL + "/contracts/" + this.contractId + "?withDetails=" + (this.withDetails?true:false);
+
+            // if no details are required, lets get the data from ES and relieve our operative db
+            let url = ELASTICSEARCH_BASE_URL + "/contracts/_doc/" + this.contractId
+            if(this.withDetails) {
+                url = CONTRACTS_BASE_URL + "/contracts/" + this.contractId + "?withDetails=" + (this.withDetails?true:false);
+            }
             return fetchIt(url, "GET", this).then(r => {
                 if(r.ok) {
                     console.log("got contract " + self.contractId + " for requestId " + self.requestId);
-                    self.fetchedContract = r.payload;
+                    if(this.withDetails) {
+                        self.fetchedContract = r.payload;
+                    } else {
+                        self.fetchedContract = r.payload._source;
+                        self.fetchedContract.id = r.payload._id;
+                        self.fetchedContract.contractState = r.payload._source.state;
+                    }
                     self.$emit('loaded', null);
                 } else {
                     let msg = "Failed to get contract " + self.contractId + ": " + r.payload;
