@@ -5,7 +5,7 @@ data class TreeComponent(
         val componentDefinitionId: String,
         val configs: List<Configuration>,
         val children: List<TreeComponent>,
-        val productId: String?
+        val productId: String? = null
 ) {
     fun accept(visitor: Visitor) {
         visitor.visit(this)

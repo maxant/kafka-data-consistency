@@ -47,10 +47,10 @@ class PricingDefinitionsTest {
         // + random 10 cents
         val milk = TreeComponent("1", "Milk", listOf(Configuration("VOLUME", "100", "MILLILITRES"), Configuration("FAT_CONTENT", "6", "PERCENT")), emptyList())
         val price = Prices.findRule(milk)(milk)
-        assertTrue(BigDecimal("1.08").compareTo(price.total) <= 0)
-        assertTrue(BigDecimal("1.18").compareTo(price.total) >= 0)
-        assertTrue(BigDecimal("0.08").compareTo(price.tax) <= 0)
-        assertTrue(BigDecimal("0.10").compareTo(price.tax) >= 0)
+        assertTrue(BigDecimal("1.08") <= price.total)
+        assertTrue(BigDecimal("1.18") >= price.total)
+        assertTrue(BigDecimal("0.08") <= price.tax)
+        assertTrue(BigDecimal("0.10") >= price.tax)
     }
 
 }
