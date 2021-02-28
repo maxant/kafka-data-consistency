@@ -1,6 +1,5 @@
 package ch.maxant.kdc.mf.pricing.definitions
 
-import ch.maxant.kdc.mf.pricing.definitions.Prices.findRule
 import ch.maxant.kdc.mf.pricing.dto.TreeComponent
 import ch.maxant.kdc.mf.pricing.dto.Configuration
 import org.jboss.logging.Logger
@@ -19,7 +18,7 @@ data class Price(val total: BigDecimal, val tax: BigDecimal) {
     fun multiply(value: BigDecimal): Price = Price(this.total.multiply(value), this.tax.multiply(value))
 }
 
-private val cardboardBox = fun(component: TreeComponent): Price {
+private val cardboardBox = fun(component: TreeComponent, kidsPrices: Map<UUID, Price>): Price {
     /*
       {
         "name": "SPACES",
@@ -38,14 +37,14 @@ private val cardboardBox = fun(component: TreeComponent): Price {
     val quantityConfig = getConfig(component, "QUANTITY", "NONE")
 
     return if(spacesConfig.value == "10") {
-        val kids = sumChildren(component).multiply(BigDecimal(quantityConfig.value))
+        val kids = sumChildren(component, kidsPrices).multiply(BigDecimal(quantityConfig.value))
         log.info("kids cost $kids")
         val boxPrice = roundAddTaxAndMakePrice(BigDecimal("0.12"))
         kids.add(boxPrice)
     } else throw MissingRuleException("unexpected spaces for cardboard box: ${spacesConfig.value}")
 }
 
-private val milk = fun(component: TreeComponent): Price {
+private val milk = fun(component: TreeComponent, kidsPrices: Map<UUID, Price>): Price {
     /*
               {
                 "name": "VOLUME",
@@ -68,7 +67,7 @@ private val milk = fun(component: TreeComponent): Price {
     return roundAddTaxAndMakePrice(net)
 }
 
-private val butter = fun(component: TreeComponent): Price {
+private val butter = fun(component: TreeComponent, kidsPrices: Map<UUID, Price>): Price {
     /*
                  {
                     "name": "WEIGHT",
@@ -83,7 +82,7 @@ private val butter = fun(component: TreeComponent): Price {
     return roundAddTaxAndMakePrice(net)
 }
 
-private val sugar = fun(component: TreeComponent): Price {
+private val sugar = fun(component: TreeComponent, kidsPrices: Map<UUID, Price>): Price {
     /*
                   {
                     "name": "WEIGHT",
@@ -98,7 +97,7 @@ private val sugar = fun(component: TreeComponent): Price {
     return roundAddTaxAndMakePrice(net)
 }
 
-private val coffeePowder = fun(component: TreeComponent): Price {
+private val coffeePowder = fun(component: TreeComponent, kidsPrices: Map<UUID, Price>): Price {
     /*
                   {
                     "name": "WEIGHT",
@@ -113,7 +112,7 @@ private val coffeePowder = fun(component: TreeComponent): Price {
     return roundAddTaxAndMakePrice(net)
 }
 
-private val flour = fun(component: TreeComponent): Price {
+private val flour = fun(component: TreeComponent, kidsPrices: Map<UUID, Price>): Price {
     /*
                 "configs": [
                   {
@@ -129,7 +128,7 @@ private val flour = fun(component: TreeComponent): Price {
     return roundAddTaxAndMakePrice(net)
 }
 
-private val glassBottle = fun(component: TreeComponent): Price {
+private val glassBottle = fun(component: TreeComponent, kidsPrices: Map<UUID, Price>): Price {
     /*
               {
                 "name": "VOLUME",
@@ -145,8 +144,8 @@ private val glassBottle = fun(component: TreeComponent): Price {
     } else throw MissingRuleException("unexpected volume for glass bottle : ${volumeConfig.value}")
 }
 
-private val sumChildren = fun(component: TreeComponent) =
-        component.children.map { findRule(it)(it) }
+private val sumChildren = fun(component: TreeComponent, kidsPrices: Map<UUID, Price>) =
+        component.children.map { kidsPrices[UUID.fromString(it.componentId)]!! }
                 .reduce { acc, price -> acc.add(price) }
 
 private fun getConfig(component: TreeComponent, name: String, expectedUnits: String): Configuration {
@@ -166,7 +165,7 @@ class MissingConfigException(msg: String) : RuntimeException(msg)
 class MissingRuleException(msg: String) : RuntimeException(msg)
 
 object Prices {
-    fun findRule(component: TreeComponent): (TreeComponent) -> Price {
+    fun findRule(component: TreeComponent): (TreeComponent, Map<UUID, Price>) -> Price {
         return when (component.componentDefinitionId) {
             "CardboardBox" -> cardboardBox // its not a leaf, but has its own pricing function, as well as that of the children
             "Milk" -> milk

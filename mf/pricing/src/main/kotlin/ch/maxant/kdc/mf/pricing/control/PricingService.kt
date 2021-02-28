@@ -150,7 +150,7 @@ class PricingService(
 
                 val rule = Prices.findRule(component)
 
-                var price = rule(component)
+                var price = rule(component, prices)
 
                 val ruleName = rule.javaClass.name.substring(rule.javaClass.name.indexOf("$")+1)
                 log.info("priced component ${component.componentDefinitionId}: $price using rule $ruleName")
