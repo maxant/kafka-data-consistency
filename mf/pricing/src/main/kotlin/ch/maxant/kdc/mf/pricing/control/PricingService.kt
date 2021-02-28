@@ -51,14 +51,10 @@ class PricingService(
         val syncTimestamp = contract.get("syncTimestamp").asLong()
         val start = LocalDateTime.parse(contract.get("start").asText())
         val end = LocalDateTime.parse(contract.get("end").asText())
-        if(draft.has("pack")) {
-            val pack = draft.get("pack").toString()
-            val discountsSurcharges = om.readValue<Map<UUID, DiscountSurcharge>>(draft.get("discountsSurcharges").toString())
-            val root = om.readValue(pack, TreeComponent::class.java)
-            return priceDraft(contractId, syncTimestamp, start, end, root, discountsSurcharges)
-        } else {
-            throw IllegalArgumentException("unexpected draft structure")
-        }
+        val pack = draft.get("pack").toString()
+        val discountsSurcharges = om.readValue<List<DiscountSurcharge>>(draft.get("discountsSurcharges").toString())
+        val root = om.readValue(pack, TreeComponent::class.java)
+        return priceDraft(contractId, syncTimestamp, start, end, root, discountsSurcharges)
     }
 
     @Transactional
@@ -138,7 +134,7 @@ class PricingService(
 
     @Traced
     private fun priceDraft(contractId: UUID, syncTimestamp: Long, start: LocalDateTime, end: LocalDateTime,
-                           root: TreeComponent, discountsSurcharges: Map<UUID, DiscountSurcharge>): PricingResult {
+                           root: TreeComponent, discountsSurcharges: List<DiscountSurcharge>): PricingResult {
         log.info("starting to price individual components for contract $contractId...")
 
         context.throwExceptionInPricingIfRequiredForDemo()
@@ -146,6 +142,7 @@ class PricingService(
         val deletedCount = deleteByContractId(em, contractId) // start from scratch
         log.info("deleted $deletedCount existing price rows for contract $contractId")
 
+        val discountsSurchargesByComponentId = discountsSurcharges.groupBy { it.componentId }
         val prices = HashMap<UUID, Price>()
         root.accept(object: Visitor {
             override fun visit(component: TreeComponent) {
@@ -158,11 +155,12 @@ class PricingService(
                 val ruleName = rule.javaClass.name.substring(rule.javaClass.name.indexOf("$")+1)
                 log.info("priced component ${component.componentDefinitionId}: $price using rule $ruleName")
 
-                val discountSurcharge = discountsSurcharges[componentId]
-                if(discountSurcharge != null) {
-                    log.info("applying discount/surcharge ${discountSurcharge.definitionId} to component " +
-                            "${component.componentDefinitionId}: ${discountSurcharge.value}")
-                    val multiplicand = BigDecimal.ONE.add(discountSurcharge.value)
+                val discountsSurcharges = discountsSurchargesByComponentId[componentId] ?: emptyList()
+                if(discountsSurcharges.isNotEmpty()) {
+                    log.info("applying discounts/surcharges ${discountsSurcharges.map { it.definitionId }} to component " +
+                            "${component.componentDefinitionId} with values: ${discountsSurcharges.map { it.value }}")
+
+                    val multiplicand = discountsSurcharges.map { it.value }.reduce { acc, it -> acc.add(it) }.add(BigDecimal.ONE)
                     price = roundAddTaxAndMakePrice(price.total.subtract(price.tax).multiply(multiplicand))
                     log.info("new price is $price")
                 }

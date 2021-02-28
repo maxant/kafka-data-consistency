@@ -104,7 +104,7 @@ class SalesTemplate {
     fun get(): TemplateInstance =
             sales.instance()
             .addStandardLibraries()
-            .addPvWidgets(listOf("calendar", "dropdown", "autocomplete", "inputtext", "button"))
+            .addPvWidgets(listOf("calendar", "dropdown", "autocomplete", "inputtext", "button", "inputnumber"))
             .addMfWidgets(listOf(Component.Contracts, Component.Partners))
             .addMfComponents()
 }

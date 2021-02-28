@@ -6,11 +6,13 @@ import ch.maxant.kdc.mf.contracts.control.EventBus
 import ch.maxant.kdc.mf.contracts.control.ValidationService
 import ch.maxant.kdc.mf.contracts.definitions.*
 import ch.maxant.kdc.mf.contracts.dto.*
+import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractState
 import ch.maxant.kdc.mf.library.Context
 import ch.maxant.kdc.mf.library.Secure
 import ch.maxant.kdc.mf.library.doByHandlingValidationExceptions
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.openapi.annotations.Operation
@@ -21,6 +23,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import org.jboss.logging.Logger
+import java.math.BigDecimal
 import java.net.URI
 import java.time.LocalDateTime
 import java.util.*
@@ -55,7 +58,10 @@ class DraftsResource(
         var context: Context,
 
         @Inject
-        var esAdapter: ESAdapter
+        var esAdapter: ESAdapter,
+
+        @Inject
+        var om: ObjectMapper
 ) {
     val log: Logger = Logger.getLogger(this.javaClass)
 
@@ -161,7 +167,43 @@ class DraftsResource(
         // info like possible inputs, we publish a simpler model here
         eventBus.publish(UpdatedDraft(contract, allComponents))
 
-        Response.created(URI.create("/${contract.id}"))
+        Response.ok()
+                .entity(contract)
+                .build()
+    }
+
+    @Operation(summary = "Add discount")
+    @APIResponses(
+            APIResponse(description = "let's the user set a discount", responseCode = "200", content = [
+                Content(mediaType = MediaType.APPLICATION_JSON, schema = Schema(implementation = ContractEntity::class))
+            ])
+    )
+    @PUT
+    @Path("/{contractId}/{componentId}/set-discount/{value}/")
+    @Transactional
+    @Timed(unit = MetricUnits.MILLISECONDS)
+    fun setDiscount(
+            @PathParam("contractId") @Parameter(name = "contractId", required = true) contractId: UUID,
+            @PathParam("componentId") @Parameter(name = "componentId", required = true) componentId: UUID,
+            @PathParam("value") @Parameter(name = "value", required = true) value: String
+    ): Response = doByHandlingValidationExceptions {
+
+        log.info("setting discount on $contractId with value $value on component $componentId")
+
+        // check draft status
+        val contract = em.find(ContractEntity::class.java, contractId)
+        require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
+        contract.syncTimestamp = System.currentTimeMillis()
+
+        val allComponents = ComponentEntity.Queries.selectByContractId(em, contractId)
+
+        context.throwExceptionInContractsIfRequiredForDemo()
+
+        // instead of publishing the initial model based on definitions, which contain extra
+        // info like possible inputs, we publish a simpler model here
+        eventBus.publish(SetDiscountCommand(contract, allComponents.map { Component(om, it) }, componentId, BigDecimal(value).abs().negate()))
+
+        Response.ok()
                 .entity(contract)
                 .build()
     }
@@ -200,6 +242,8 @@ class DraftsResource(
 
         log.info("publishing OfferedDraft event")
         eventBus.publish(OfferedDraft(contract))
+
+        esAdapter.updateOffer(contractId, contract.contractState)
 
         Response.created(URI.create("/${contract.id}"))
                 .entity(contract)

@@ -113,14 +113,16 @@ class ESAdapter {
     @Timed(unit = MetricUnits.MILLISECONDS)
     @Traced
     fun updateOffer(contractId: UUID, newState: ContractState) {
-        val root = om.createObjectNode()
-        val script = om.createObjectNode()
         val params = om.createObjectNode()
-        root.set<ObjectNode>("script", script)
+        params.put("state", newState.toString())
+
+        val script = om.createObjectNode()
+        script.set<ObjectNode>("params", params)
         script.put("source", "ctx._source.state = params.state")
         script.put("lang", "painless")
-        script.set<ObjectNode>("params", params)
-        params.put("state", newState.toString())
+
+        val root = om.createObjectNode()
+        root.set<ObjectNode>("script", script)
 
         val r = EsRequest(EsRequestType.UPDATE_STATE, "POST", "/contracts/_update/$contractId", om.writeValueAsString(root))
         // TODO use transactional outbox

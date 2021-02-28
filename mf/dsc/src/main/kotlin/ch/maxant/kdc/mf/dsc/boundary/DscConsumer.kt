@@ -51,6 +51,7 @@ class DscConsumer(
         var unhandled = false
         when (context.event) {
             "CREATED_DRAFT", "UPDATED_DRAFT" -> handleDraft(record)
+            "SET_DISCOUNT" -> handleSetDiscount(record)
             else -> unhandled = true
         }
         if(unhandled) {
@@ -64,6 +65,17 @@ class DscConsumer(
             log.info("handling draft")
             var model = om.readTree(record.value())
             model = discountSurchargeService.handleDraft(model)
+            sendEvent(model)
+        } catch (e: Exception) {
+            log.error("FAILED TO PRICE", e)
+        }
+    }
+
+    private fun handleSetDiscount(record: ConsumerRecord<String, String>) {
+        try {
+            log.info("handling setting discount")
+            var model = om.readTree(record.value())
+            model = discountSurchargeService.handleSetDiscount(model)
             sendEvent(model)
         } catch (e: Exception) {
             log.error("FAILED TO PRICE", e)

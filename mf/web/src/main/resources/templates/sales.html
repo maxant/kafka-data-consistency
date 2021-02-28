@@ -24,7 +24,7 @@
             </p-dropdown>
         </div>
         <div style="display:table-cell; vertical-align: middle">
-            <span style="font-size: 0.8em;">
+            <span style="font-size: 0.8em; font-style: italic;">
                 choose "coffee latte" to see how a <br>
                 product specific ui-widget is used<br>
                 rather than a generic one, and howh<br>
@@ -59,18 +59,13 @@
     <ul>
         <li>
             <div>Product: {{ model.draft.pack.children[0].productId }} {{ model.draft.pack.$price.total }} CHF ({{ model.draft.pack.$price.tax }} CHF VAT)
-            <div>
-                {{ model.draft.pack.componentDefinitionId }}
-                with quantity
-                {{ findConfig(model.draft.pack.configs, 'QUANTITY').value }}
+                <div>
+                    {{ model.draft.pack.componentDefinitionId }}
+                    with quantity
+                    {{ findConfig(model.draft.pack.configs, 'QUANTITY').value }}
+                </div>
             </div>
-            </div>
-            <div v-if="get(model, 'draft.pack.$discountSurcharge.value') > 0">
-                Surcharge "{{ model.draft.pack.$discountSurcharge.definitionId }}" {{ model.draft.pack.$discountSurcharge.value*100 }}%
-            </div>
-            <div v-if="get(model, 'draft.pack.$discountSurcharge.value') < 0">
-                Discount "{{ model.draft.pack.$discountSurcharge.definitionId }}" {{ model.draft.pack.$discountSurcharge.value*-100 }}%
-            </div>
+            <mf-contract-discounts-surcharges :component="model.draft.pack"></mf-contract-discounts-surcharges>
             <mf-contract-modifiable-config v-if="model.draft && model.draft.pack" :component="model.draft.pack"></mf-contract-modifiable-config>
             <ul>
                 <li v-for="child in model.draft.pack.children">
@@ -87,12 +82,7 @@
                         <div>
                             {{ child.componentDefinitionId }}: {{ child.$price.total }} CHF
                         </div>
-                        <div v-if="child.$discountSurcharge && child.$discountSurcharge.value > 0">
-                            Surcharge "{{ child.$discountSurcharge.definitionId }}" {{ child.$discountSurcharge.value*100 }}%
-                        </div>
-                        <div v-if="child.$discountSurcharge && child.$discountSurcharge.value < 0">
-                            Discount "{{ child.$discountSurcharge.definitionId }}" {{ child.$discountSurcharge.value*-100 }}%
-                        </div>
+                        <mf-contract-discounts-surcharges :component="child"></mf-contract-discounts-surcharges>
                         <ul v-if="get(child, 'children.length') > 0">
                             <li v-for="child2 in child.children">
                                 {{ child2.componentDefinitionId }}: {{ child2.$price.total }} CHF
@@ -128,20 +118,42 @@
 var template =
 `
 <div>
-    Choose fat content of milk:
-    <ul>
-        <li><p-button @click="changeParam('0.2', true)" :disabled="milkFatContentIs('0.2')">0.2%</p-button></li>
-        <li><p-button @click="changeParam('1.4', true)" :disabled="milkFatContentIs('1.4')">1.4%</p-button></li>
-        <li><p-button @click="changeParam('1.8', true)">1.8% Front End</p-button><span style="font-size: 0.8em;">front end validation</span></li>
-        <li><p-button @click="changeParam('1.8', false)">1.8% Back End</p-button><span style="font-size: 0.8em;">back end validation</span></li>
-        <li><p-button @click="changeParam('6.0')">6.0%</p-button><span style="font-size: 0.8em;">not in sync with definitions</span></li>
-    </ul>
+    <div>
+        Discount <p-inputnumber v-model="discount" suffix="%" :step="5" :min="0" :max="10" :disabled="isDisabledInput" @input="setDiscount()" />
+        <span v-if="node && node.$discountsSurcharges && node.$discountsSurcharges.length >= 1" style="font-size: 0.8em; font-style: italic;">
+            (backend value: {{ node.$discountsSurcharges[0].value }})
+        </span>
+    </div>
+    <div>
+        Choose fat content of milk:
+        <ul>
+            <li><p-button @click="changeParam('0.2', true)" :disabled="milkFatContentIs('0.2')">0.2%</p-button></li>
+            <li><p-button @click="changeParam('1.4', true)" :disabled="milkFatContentIs('1.4')">1.4%</p-button></li>
+            <li><p-button @click="changeParam('1.8', true)">1.8% Front End</p-button><span style="font-size: 0.8em; font-style: italic;">front end validation</span></li>
+            <li><p-button @click="changeParam('1.8', false)">1.8% Back End</p-button><span style="font-size: 0.8em; font-style: italic;">back end validation</span></li>
+            <li><p-button @click="changeParam('6.0')">6.0%</p-button><span style="font-size: 0.8em; font-style: italic;">not in sync with definitions</span></li>
+        </ul>
+    </div>
 </div>
-` // end template
+`; // end template
 
 var coffeeLatteSkinnySpecificUiComponent = {
     props: ['node'],
     template,
+    data() {
+        return {
+            discount: 0
+        }
+    },
+    computed: {
+        isDisabledInput() {
+            return (this.discount != 0 && !this.node.$discountsSurcharges) ||
+                   (this.node.$discountsSurcharges &&
+                    this.node.$discountsSurcharges.length == 1 &&
+                    this.node.$discountsSurcharges[0].value != -0.01 * this.discount
+                   );
+        }
+    },
     methods: {
         getRules(componentDefinitionId) {
             let defns = window.componentDefinitions["COFFEE_LATTE_SKINNY"];
@@ -167,10 +179,14 @@ var coffeeLatteSkinnySpecificUiComponent = {
         },
         milkFatContentIs(percent) {
             return _.find(this.node.children[0].configs, e => e.name == 'FAT_CONTENT').value == percent;
+        },
+        setDiscount() {
+            this.$parent.setDiscount(this.discount / 100.0, this.node.componentId);
         }
     },
     components: {
-        'p-button': button
+        'p-button': button,
+        'p-inputnumber': inputnumber
     }
 }
 
@@ -189,7 +205,7 @@ template =
         ></p-dropdown>
     </div>
 </div>
-` // end template
+`; // end template
 
 var modifiableConfigComponent = {
     props: ['component'],
@@ -215,6 +231,26 @@ var modifiableConfigComponent = {
     components: {
         'p-dropdown': dropdown
     }
+}
+
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ui-component for displaying discounts and surcharges
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+template =
+`
+<div v-for="dsc in component.$discountsSurcharges">
+    <div v-if="dsc.value > 0">
+        Surcharge "{{ dsc.definitionId }}" {{ dsc.value*100 }}%
+    </div>
+    <div v-if="dsc.value < 0">
+        Discount "{{ dsc.definitionId }}" {{ dsc.value*-100 }}%
+    </div>
+</div>
+`; // end template
+
+var discountsSurchargesComponent = {
+    props: ['component'],
+    template
 }
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -412,6 +448,25 @@ const App = {
             this.partnerId = null;
             this.partner = null;
             this.model.draft = {};
+        },
+        setDiscount(discount, componentId) {
+            this.allowOffer = false;
+            console.log("setting discount of " + discount + " on component " + componentId + "...")
+            this.currentAction = {action: "setDiscount"}
+            let self = this;
+            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/" + componentId + "/set-discount/" + discount;
+            fetchIt(url, "PUT", this).then(r => {
+                if(r.ok) console.log("set discount");
+                else {
+                    let msg = "Failed: " + r.payload;
+                    console.error(msg);
+                    alert(msg);
+                    ameliorateCurrentAction(self)
+                }
+            }).catch(error => {
+                console.error("received error: " + error);
+                ameliorateCurrentAction(self)
+            });
         }
     },
     components: {
@@ -423,7 +478,8 @@ const App = {
         'mf-contract': mfContractTile,
         'mf-users': mfUsers,
         'mf-contract-products-coffee-latte-skinny': coffeeLatteSkinnySpecificUiComponent,
-        'mf-contract-modifiable-config': modifiableConfigComponent
+        'mf-contract-modifiable-config': modifiableConfigComponent,
+        'mf-contract-discounts-surcharges': discountsSurchargesComponent
     }
 }
 const app = Vue.createApp(App)
@@ -431,16 +487,18 @@ app.use(primevue, {ripple: true});
 app.mount("#app")
 
 function clearDscsRecursively(component) {
-    delete component.$discountSurcharge;
+    delete component.$discountsSurcharges;
     _.forEach(component.children, child => clearDscsRecursively(child));
 }
 
-function addDsc(component, id, dsc) {
-    if(component.componentId == id) {
-        component.$discountSurcharge = dsc;
-    } else {
-        _.forEach(component.children, child => addDsc(child, id, dsc));
+function addDsc(component, dsc) {
+    if(!component.$discountsSurcharges) {
+        component.$discountsSurcharges = [];
     }
+    if(component.componentId == dsc.componentId) {
+        component.$discountsSurcharges.push(dsc);
+    }
+    _.forEach(component.children, child => addDsc(child, dsc));
 }
 
 function addPrice(component, id, price) {
@@ -470,10 +528,12 @@ function sse(requestId, self) {
         } else if(msg.event == "ADDED_DSC_FOR_DRAFT") {
             self.model.draft.discountsSurcharges = msg.payload.discountsSurcharges;
             clearDscsRecursively(self.model.draft.pack);
-            _.forEach(self.model.draft.discountsSurcharges, (v,k) => {
-                addDsc(self.model.draft.pack, k, v);
+            _.forEach(self.model.draft.discountsSurcharges, dsc => {
+                addDsc(self.model.draft.pack, dsc);
             });
             self.timeTaken = new Date().getTime() - self.start;
+        } else if(msg.event == "SET_DISCOUNT") {
+            // ignore - its a command from contract->dsc
         } else if(msg.event == "UPDATED_PRICES_FOR_DRAFT") {
             self.model.draft.prices = msg.payload.priceByComponentId;
             _.forEach(self.model.draft.prices, (v,k) => {
@@ -523,6 +583,8 @@ function ameliorateCurrentAction(self) {
         // {action: "changeParam", paramName, componentId, oldValue, newValue}
         removeWaitingAndResetValue(self.currentAction.componentId, self.currentAction.paramName, self.currentAction.oldValue, self.model.draft.pack)
         self.allowOffer = false
+    } else if(self.currentAction.action == "setDiscount") {
+        self.allowOffer = true // so user can retry if they want to. it mustve been enabled in order to get here.
     } else if(self.currentAction.action == "offerDraft") {
         self.allowOffer = true // so user can retry if they want to. it mustve been enabled in order to get here.
     } else {

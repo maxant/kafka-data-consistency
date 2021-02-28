@@ -21,11 +21,13 @@ Offer created for partner {{draftCreatedFor.id}} ({{getNameOfPartner()}})
 <div v-if="!!get(model, 'draft.pack.$price')">
     Product: {{ model.draft.pack.children[0].productId }} {{ model.draft.pack.$price.total }} CHF ({{ model.draft.pack.$price.tax }} CHF VAT)
 </div>
-<div v-if="get(model, 'draft.pack.$discountSurcharge.value') > 0">
-    Surcharge "{{ model.draft.pack.$discountSurcharge.definitionId }}" {{ model.draft.pack.$discountSurcharge.value*100 }}%
-</div>
-<div v-if="get(model, 'draft.pack.$discountSurcharge.value') < 0">
-    Discount "{{ model.draft.pack.$discountSurcharge.definitionId }}" {{ model.draft.pack.$discountSurcharge.value*-100 }}%
+<div v-for="dsc in get(model, 'draft.pack.$discountsSurcharges')">
+    <div v-if="dsc.value > 0">
+        Surcharge "{{ dsc.definitionId }}" {{ dsc.value*100 }}%
+    </div>
+    <div v-if="dsc.value < 0">
+        Discount "{{ dsc.definitionId }}" {{ dsc.value*-100 }}%
+    </div>
 </div>
 <div v-if="!!get(model, 'draft.pack.$price')">
     <ul>
@@ -152,16 +154,18 @@ window.mfPortalSales = {
 }
 
 function clearDscsRecursively(component) {
-    delete component.$discountSurcharge;
+    delete component.$discountsSurcharges;
     _.forEach(component.children, child => clearDscsRecursively(child));
 }
 
-function addDsc(component, id, dsc) {
-    if(component.componentId == id) {
-        component.$discountSurcharge = dsc;
-    } else {
-        _.forEach(component.children, child => addDsc(child, id, dsc));
+function addDsc(component, dsc) {
+    if(!component.$discountsSurcharges) {
+        component.$discountsSurcharges = [];
     }
+    if(component.componentId == dsc.componentId) {
+        component.$discountsSurcharges.push(dsc);
+    }
+    _.forEach(component.children, child => addDsc(child, dsc));
 }
 
 function addPrice(component, id, price) {
@@ -185,8 +189,8 @@ function sse(requestId, self) {
         } else if(msg.event == "ADDED_DSC_FOR_DRAFT") {
             self.model.draft.discountsSurcharges = msg.payload.discountsSurcharges;
             clearDscsRecursively(self.model.draft.pack);
-            _.forEach(self.model.draft.discountsSurcharges, (v,k) => {
-                addDsc(self.model.draft.pack, k, v);
+            _.forEach(self.model.draft.discountsSurcharges, dsc => {
+                addDsc(self.model.draft.pack, dsc);
             });
             self.timeTaken = new Date().getTime() - self.start;
         } else if(msg.event == "UPDATED_PRICES_FOR_DRAFT") {

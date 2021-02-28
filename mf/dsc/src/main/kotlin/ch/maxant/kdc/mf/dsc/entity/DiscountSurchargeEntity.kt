@@ -12,7 +12,9 @@ import javax.persistence.*
     NamedQuery(name = DiscountSurchargeEntity.NqCountByContractIdAndNotSyncTime.name,
         query = DiscountSurchargeEntity.NqCountByContractIdAndNotSyncTime.query),
     NamedQuery(name = DiscountSurchargeEntity.NqDeleteByContractIdAndNotAddedManually.name,
-        query = DiscountSurchargeEntity.NqDeleteByContractIdAndNotAddedManually.query)
+        query = DiscountSurchargeEntity.NqDeleteByContractIdAndNotAddedManually.query),
+    NamedQuery(name = DiscountSurchargeEntity.NqFindByContractId.name,
+        query = DiscountSurchargeEntity.NqFindByContractId.query)
 )
 class DiscountSurchargeEntity(
 
@@ -67,6 +69,16 @@ class DiscountSurchargeEntity(
             """
     }
 
+    object NqFindByContractId {
+        const val name = "findDiscountsSurchargesByContractId"
+        const val contractIdParam = "contractId"
+        const val query = """
+            select e 
+            from DiscountSurchargeEntity e 
+            where e.contractId = :$contractIdParam
+            """
+    }
+
     object Queries {
         private val log = Logger.getLogger(this.javaClass)
 
@@ -83,6 +95,13 @@ class DiscountSurchargeEntity(
             return em.createNamedQuery(NqDeleteByContractIdAndNotAddedManually.name)
                 .setParameter(NqDeleteByContractIdAndNotAddedManually.contractIdParam, contractId)
                 .executeUpdate()
+        }
+
+        fun findByContractId(em: EntityManager, contractId: UUID): List<DiscountSurchargeEntity> {
+            log.info("finding for contract $contractId")
+            return em.createNamedQuery(NqFindByContractId.name, DiscountSurchargeEntity::class.java)
+                .setParameter(NqFindByContractId.contractIdParam, contractId)
+                .resultList
         }
     }
 }

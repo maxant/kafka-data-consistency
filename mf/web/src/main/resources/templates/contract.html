@@ -71,9 +71,9 @@ const App = {
             let contract$ = fetchIt(url, "GET", this).then(r => {
                 self.timeTaken = new Date().getTime() - self.start;
                 if(r.ok) {
-                    console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
                     self.model.contract = r.payload;
                     self.model.allContractIds = [id];
+                    console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
                 } else {
                     let msg = "Failed to get contract: " + r.payload;
                     console.error(msg);
@@ -106,8 +106,11 @@ const App = {
             let contract$ = fetchIt(url, "PUT", this).then(r => {
                 self.timeTaken = new Date().getTime() - self.start;
                 if(r.ok) {
-                    console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
+                    // dont lose the components (details), as they are not returned in this call
+                    r.payload.components = self.model.contract.components;
                     self.model.contract = r.payload;
+                    console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
+                    self.model.allContractIds = [self.model.contract.id];
                 } else {
                     let msg = "Failed to get contract: " + r.payload;
                     console.error(msg);
@@ -126,6 +129,8 @@ const App = {
             let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.id + "/offer";
             fetchIt(url, "PUT", this).then(r => {
                 if(r.ok) {
+                    // dont lose the components (details), as they are not returned in this call
+                    r.payload.components = self.model.contract.components;
                     self.model.contract = r.payload;
                     console.log("offered contract with id " + self.model.contract.id);
                 } else {
@@ -144,7 +149,10 @@ const App = {
             });
         },
         acceptedOffer(contract) {
+            // dont lose the components (details), as they are not returned in this call
+            contract.components = this.model.contract.components;
             this.model.contract = contract;
+            this.model.allContractIds = [contract.id];
         }
     },
     components: {

@@ -3,11 +3,13 @@ package ch.maxant.kdc.mf.pricing.definitions
 import ch.maxant.kdc.mf.pricing.definitions.Prices.findRule
 import ch.maxant.kdc.mf.pricing.dto.TreeComponent
 import ch.maxant.kdc.mf.pricing.dto.Configuration
+import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.util.*
 import javax.validation.ValidationException
 
+private val log: Logger = Logger.getLogger("PricingDefinitions")
 
 private val RANDOM = Random()
 private val TAX = BigDecimal(0.077)
@@ -37,6 +39,7 @@ private val cardboardBox = fun(component: TreeComponent): Price {
 
     return if(spacesConfig.value == "10") {
         val kids = sumChildren(component).multiply(BigDecimal(quantityConfig.value))
+        log.info("kids cost $kids")
         val boxPrice = roundAddTaxAndMakePrice(BigDecimal("0.12"))
         kids.add(boxPrice)
     } else throw MissingRuleException("unexpected spaces for cardboard box: ${spacesConfig.value}")
@@ -61,7 +64,7 @@ private val milk = fun(component: TreeComponent): Price {
     // 4 bucks a litre plus 10 cents per fat content percentage point + random part
     val net = BigDecimal(4).times(BigDecimal(volumeConfig.value)).divide(BigDecimal(1000))
                            .plus(BigDecimal(0.1).times(BigDecimal(fatConfig.value)))
-                           .plus(BigDecimal(RANDOM.nextInt(10)).divide(BigDecimal(100)))
+                           .plus(BigDecimal(RANDOM.nextInt(2)).divide(BigDecimal(100)))
     return roundAddTaxAndMakePrice(net)
 }
 

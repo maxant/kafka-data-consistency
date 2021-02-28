@@ -44,6 +44,10 @@ class EventBus {
         send(eventBus, updatedDraft.contract.id, updatedDraft, event = "UPDATED_DRAFT")
     }
 
+    fun publish(setDiscountCommand: SetDiscountCommand) {
+        send(eventBus, setDiscountCommand.contract.id, setDiscountCommand, event = "SET_DISCOUNT")
+    }
+
     fun publish(offeredDraft: OfferedDraft) {
         send(eventBus, offeredDraft.contract.id, offeredDraft, event = "OFFERED_DRAFT")
     }

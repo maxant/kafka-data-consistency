@@ -7,9 +7,10 @@ data class TreeComponent(
         val children: List<TreeComponent>,
         val productId: String? = null
 ) {
+    /** kids first, so that we price from the bottom upwards */
     fun accept(visitor: Visitor) {
-        visitor.visit(this)
         children.forEach { it.accept(visitor) }
+        visitor.visit(this)
     }
 }
 

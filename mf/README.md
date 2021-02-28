@@ -249,7 +249,15 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- arch principals - use a single topic to ensure ordering, that way, we could say update discounts and are sure anything they'd depend on happened first
+  - also always write the draft via the draft service. (we have to update the syncTimestamp; we have to load components for the downstream services)
 - add explicit discount or condition from user
+  - need to show user chosen discounts differently
+  - need a definition as to which components can have these things
+  - add a condition, if a user based discount has been set! => rule based!
+- add product to contract, so you can see it in the ES tile too
+- add createdAt to ES contract too
+- add signature to tasks => if manual discount is above a certain amount, then john has to approve it and such tasks are always displayed
 - measure what's so slow with ES contract creation/updates
 - show dsc in contract details
 - contract view is flakey and doesnt always show components, esp after clicking thru process buttons
@@ -305,7 +313,6 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 - move sse and other standard things into vue components
 - security: do a view of all methods, and the roles and therefore the users which can run them
 - finish security.html
-- how do cases and then PARTNER RELATIONSHIPS end up in the client, when they use contractId? ok coz of requestId?
 - add accepting and do validation of prices at that point. TRANSPORT still with kafka!
 - add the ability to fix errors, so that the user isnt blocked.
 - call the contract validation service when we load the draft, and provide problems to the client
@@ -403,6 +410,9 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     on a different node, but not yet on this one. you need to use a state store that is clusterable and capable of telling you 
     that the result is now available on all nodes, so that the next attempt to read, will never fail, eg cassandra or a normal DB.
     or you can send the entire model around, but that isnt loosely coupled :-(
+- we could store a syncTimestamp for each part of a contract on the contract, rather than on the individual rows, denomralised like we currently do. it might
+  even be faster that way. and we wouldnt need to make remote calls to validate when we offer the draft
+
 
 ### the five tenets of global data consistency
 
