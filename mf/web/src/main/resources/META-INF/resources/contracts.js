@@ -35,6 +35,12 @@ const template =
                 Valid from {{fetchedContract.start.toString().substr(0,10)}} until {{fetchedContract.end.toString().substr(0,10)}}
             </div>
             <div>
+                Product: {{productId}}
+            </div>
+            <div>
+                Created at: {{fetchedContract.createdAt}} by: {{fetchedContract.createdBy}}
+            </div>
+            <div>
                 State: {{fetchedContract.contractState}}
                 <i v-if="clickable" id="viewContractIcon" class="pi pi-eye" @click="navigateToContract()"></i>
             </div>
@@ -69,6 +75,15 @@ window.mfContractTile = {
             fetchedContract: null,
             error: null,
             requestId: uuidv4()
+        }
+    },
+    computed: {
+        productId: function() {
+            if(!!this.fetchedContract.productId) {
+                return this.fetchedContract.productId;
+            } else if(!!this.fetchedContract.components){
+                return _.find(this.fetchedContract.components, e => !!e.productId).productId;
+            }
         }
     },
     mounted() {

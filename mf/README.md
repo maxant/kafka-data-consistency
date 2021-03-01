@@ -249,11 +249,10 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- all inbound topics in web need to use mf rather than mp, so that eg partner relationships land in right browser, otherwise as soon as we have two pods, it dont work no more
 - arch principals - use a single topic to ensure ordering, that way, we could say update discounts and are sure anything they'd depend on happened first
   - also always write the draft via the draft service. (we have to update the syncTimestamp; we have to load components for the downstream services)
 - add explicit discount or condition from user
-  - need to show user chosen discounts differently
-  - need a definition as to which components can have these things
   - add a condition, if a user based discount has been set! => rule based!
 - add product to contract, so you can see it in the ES tile too
 - add createdAt to ES contract too
@@ -489,6 +488,9 @@ Create new:
                 "contractId": { "type": "keyword" },
                 "partnerId": { "type": "keyword" },
                 "totalPrice": { "type": "double" },
+                "productId": { "type": "text" },
+                "createdAt": { "type": "date", "format": "date_hour_minute_second" },
+                "createdBy": { "type": "text" },
                 "start": { "type": "date", "format": "date_hour_minute_second" },
                 "end": { "type": "date", "format": "date_hour_minute_second" },
                 "state": { "type": "text" },

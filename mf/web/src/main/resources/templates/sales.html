@@ -60,7 +60,7 @@
         <li>
             <div>Product: {{ model.draft.pack.children[0].productId }} {{ model.draft.pack.$price.total }} CHF ({{ model.draft.pack.$price.tax }} CHF VAT)
                 <div>
-                    {{ model.draft.pack.componentDefinitionId }}
+                    <i class="pi pi-folder"></i> {{ model.draft.pack.componentDefinitionId }}
                     with quantity
                     {{ findConfig(model.draft.pack.configs, 'QUANTITY').value }}
                 </div>
@@ -75,21 +75,22 @@
                         <!-- -------------------------------------------- -->
                         <mf-contract-products-coffee-latte-skinny :node="child"></mf-contract-products-coffee-latte-skinny>
                     </div>
-                    <div v-else>
+                    <div v-else style="border: 1px solid #0000ff; width: 400px;">
+                        <div style="font-size: 0.8em; font-style: italic; text-align: right;">generic template</div>
                         <!-- -------------------------------------------- -->
                         <!-- GENERIC UI:                                  -->
                         <!-- -------------------------------------------- -->
                         <div>
-                            {{ child.componentDefinitionId }}: {{ child.$price.total }} CHF
+                            <i class="pi pi-file"></i> {{ child.componentDefinitionId }}: {{ child.$price.total }} CHF
                         </div>
                         <mf-contract-discounts-surcharges :component="child"></mf-contract-discounts-surcharges>
                         <ul v-if="get(child, 'children.length') > 0">
                             <li v-for="child2 in child.children">
-                                {{ child2.componentDefinitionId }}: {{ child2.$price.total }} CHF
+                                <i class="pi pi-book"></i> {{ child2.componentDefinitionId }}: {{ child2.$price.total }} CHF
                                 <mf-contract-modifiable-config :component="child2"></mf-contract-modifiable-config>
                                 <ul v-if="get(child2, 'children.length') > 0">
                                     <li v-for="child3 in child2.children">
-                                        {{ child3.componentDefinitionId }}: {{ child3.$price.total }} CHF
+                                        <i class="pi pi-comment"></i> {{ child3.componentDefinitionId }}: {{ child3.$price.total }} CHF
                                     </li>
                                 </ul>
                             </li>
@@ -117,7 +118,8 @@
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 var template =
 `
-<div>
+<div style="border: 1px solid #0000ff; width: 400px;">
+    <div style="font-size: 0.8em; font-style: italic; text-align: right;">product specific template</div>
     <div>
         Discount <p-inputnumber v-model="discount" suffix="%" :step="5" :min="0" :max="10" :disabled="isDisabledInput" @input="setDiscount()" />
         <span v-if="node && node.$discountsSurcharges && node.$discountsSurcharges.length >= 1" style="font-size: 0.8em; font-style: italic;">
@@ -197,12 +199,15 @@ template =
 `
 <div v-if="component.configPossibilities && component.configPossibilities.length > 0">
     <div v-for="paramName in getDistinctParamNames(component.configPossibilities)">
-        {{paramName}}: <p-dropdown :id="getId(paramName, 'config-param')"
-                                   :options="getParamOptions(paramName, component)"
-                                   v-model="component.$configs[paramName].value"
-                                   @change="changeParam(component, paramName)"
-                                   :disabled="component.$configs[paramName].waiting"
-        ></p-dropdown>
+        <i class="pi pi-wallet"></i>
+        {{paramName}}:
+        <p-dropdown :id="getId(paramName, 'config-param')"
+                   :options="getParamOptions(paramName, component)"
+                   v-model="component.$configs[paramName].value"
+                   @change="changeParam(component, paramName)"
+                   :disabled="component.$configs[paramName].waiting"
+        >
+        </p-dropdown>
     </div>
 </div>
 `; // end template
@@ -240,10 +245,10 @@ template =
 `
 <div v-for="dsc in component.$discountsSurcharges">
     <div v-if="dsc.value > 0">
-        Surcharge "{{ dsc.definitionId }}" {{ dsc.value*100 }}%
+        <i class="pi pi-plus-circle"></i> Surcharge "{{ dsc.definitionId }}" {{ dsc.value*100 }}%
     </div>
     <div v-if="dsc.value < 0">
-        Discount "{{ dsc.definitionId }}" {{ dsc.value*-100 }}%
+        <i class="pi pi-minus-circle"></i> Discount "{{ dsc.definitionId }}" {{ dsc.value*-100 }}%
     </div>
 </div>
 `; // end template
@@ -521,6 +526,7 @@ function sse(requestId, self) {
         if(msg.event == "CREATED_DRAFT") {
             self.model.draft = msg.payload;
             initialiseDraft(self.model.draft.pack);
+            self.model.draft.contract.productId = self.model.draft.pack.children[0].productId;
             // dont update any waiting or timing state, because this is just the first of many events to come
         } else if(msg.event == "UPDATED_DRAFT") {
             updateDraft(msg.payload.allComponents, self.model.draft.pack);

@@ -228,8 +228,9 @@ template =
     </div>
     <div v-else>
         <div>
-        <i class="pi pi-user"></i>
-        Partner: {{partnerId}}
+            <i v-if="isContractHolder()" class="pi pi-user-plus"></i>
+            <i v-else class="pi pi-user"></i>
+            Partner: {{partnerId}}
         </div>
         <div v-if="isSalesRep()">
             Sales Representative: {{partner.firstName}} {{partner.lastName}}
@@ -241,13 +242,13 @@ template =
             {{partner.firstName}} {{partner.lastName}}
         </div>
         <div>
-        Phone: {{partner.phone}}
+            Phone: {{partner.phone}}
         </div>
         <div>
-        Email: {{partner.email}}
+            Email: {{partner.email}}
         </div>
         <div v-if="roles && roles.length >= 0">
-        Roles: {{roles}}
+            Roles: {{roles}}
         </div>
         <div v-if="clickable">
             <i class="pi pi-eye" @click="navigateToPartner()"></i>
@@ -258,7 +259,7 @@ template =
 ` // end template
 
 window.mfPartnerTile = {
-  props: ['partnerId', 'role', 'roles', 'clickable'],
+  props: ['partnerId', 'role', 'roles', 'clickable'], // roles is a string comma separated list of roles
   template,
   watch: {
     partnerId(newPartnerId, oldPartnerId) {
@@ -297,10 +298,12 @@ window.mfPartnerTile = {
       });
     },
     isSalesRep() {
-        return this.role == 'SALES_REP';
+        return this.role == 'SALES_REP' ||
+            (this.roles && this.roles.indexOf('SALES_REP') >= 0);
     },
     isContractHolder() {
-        return this.role == 'CONTRACT_HOLDER';
+        return this.role == 'CONTRACT_HOLDER' ||
+            (this.roles && this.roles.indexOf('CONTRACT_HOLDER') >= 0);
     },
     navigateToPartner() {
         window.location.href = '/partner?id=' + this.partnerId;

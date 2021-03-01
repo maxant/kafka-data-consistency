@@ -2,6 +2,7 @@ package ch.maxant.kdc.mf.contracts.adapter
 
 import ch.maxant.kdc.mf.contracts.definitions.ComponentDefinition
 import ch.maxant.kdc.mf.contracts.definitions.Configuration
+import ch.maxant.kdc.mf.contracts.definitions.Product
 import ch.maxant.kdc.mf.contracts.dto.Component
 import ch.maxant.kdc.mf.contracts.dto.Draft
 import ch.maxant.kdc.mf.contracts.entity.ContractState
@@ -74,7 +75,8 @@ class ESAdapter {
     }
 
     private fun flatten(defn: ComponentDefinition, result: MutableList<ESComponent> = mutableListOf()): MutableList<ESComponent> {
-        result.add(ESComponent(defn))
+        val productId = if(defn is Product) defn.productId.toString() else null
+        result.add(ESComponent(defn, productId))
         defn.children.forEach { flatten(it, result) }
         return result
     }
@@ -129,21 +131,25 @@ class ESAdapter {
         esOut.send(om.writeValueAsString(r))
     }
 
-    data class EsContract(val contractId: UUID, val partnerId: UUID?, val start: LocalDateTime, val end: LocalDateTime, val state: ContractState,
-                          val metainfo: List<String>, val totalPrice: BigDecimal = BigDecimal.ZERO) {
+    data class EsContract(val contractId: UUID, val partnerId: UUID?, val start: LocalDateTime, val end: LocalDateTime,
+                          val state: ContractState, val metainfo: List<String>, val productId: String,
+                          val createdAt: LocalDateTime, val createdBy: String, val totalPrice: BigDecimal = BigDecimal.ZERO) {
         constructor(draft: Draft, partnerId: UUID?, components: List<ESComponent>) : this(
                 draft.contract.id,
                 partnerId,
                 draft.contract.start.withNano(0),
                 draft.contract.end.withNano(0),
                 draft.contract.contractState,
-                components.flatMap { it.toMetainfo() }
+                components.flatMap { it.toMetainfo() },
+                components.map { it.productId }.filter { it != null }.first()?: TODO(),
+                draft.contract.createdAt,
+                draft.contract.createdBy
         )
     }
 
-    data class ESComponent(val componentDefinitionId: String, val configs: List<ESConfiguration>) {
-        constructor(defn: ComponentDefinition): this(defn.componentDefinitionId, defn.configs.map { ESConfiguration(it) })
-        constructor(comp: Component): this(comp.componentDefinitionId, comp.configs.map { ESConfiguration(it) })
+    data class ESComponent(val componentDefinitionId: String, val configs: List<ESConfiguration>, val productId: String?) {
+        constructor(defn: ComponentDefinition, productId: String?): this(defn.componentDefinitionId, defn.configs.map { ESConfiguration(it) }, productId)
+        constructor(comp: Component): this(comp.componentDefinitionId, comp.configs.map { ESConfiguration(it) }, comp.productId?.toString())
 
         fun toMetainfo(): List<String> = configs.map { "$componentDefinitionId ${it.name} ${it.value}" }
     }
