@@ -8,6 +8,9 @@ class BillingDefinitions {
                 // TODO allow customer to actually choose, by having several of these, which the customer can choose from
                 BillingDefinition("CM-MD1", Periodicity.MONTHLY, Periodicity.DAILY, 1) // prices constant for a month; billed daily
             }
+            ProductId.COFFEE_LATTE_SKINNY -> {
+                BillingDefinition("CLS-MD1", Periodicity.MONTHLY, Periodicity.DAILY, 1) // prices constant for a month; billed daily
+            }
         }
     }
 
@@ -29,7 +32,7 @@ data class BillingDefinition(val definitionId: String,
 }
 
 enum class ProductId {
-    COOKIES_MILKSHAKE
+    COOKIES_MILKSHAKE, COFFEE_LATTE_SKINNY
 }
 
 enum class Periodicity(val numDaysInPeriod: Int) {
