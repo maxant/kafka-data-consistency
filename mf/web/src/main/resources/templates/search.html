@@ -25,7 +25,7 @@
 </div>
 <div v-if="!!searchResult.hits">
     <div v-for="hit in searchResult.hits.hits">
-        <mf-contract v-if="hit._index == 'contracts'"     :contract-id="hit._id" clickable="true" @loaded="tileLoaded"></mf-contract>
+        <mf-contract v-if="hit._index == 'contracts'"     :contract="hit._source" clickable="true"></mf-contract>
         <mf-partner  v-else-if="hit._index == 'partners'" :partner-id="hit._id"  clickable="true" @loaded="tileLoaded"></mf-partner>
         <div v-else><b>Unexpected type: '{{hit._index}}'</b><br>{{hit._source}}</div>
     </div>
@@ -85,6 +85,8 @@ const App = {
             }).catch(error => {
                 console.error("error getting search results: " + error + ". please try again"); // TODO handle this better
                 return {};
+            }).finally(() => {
+                self.timeTaken = new Date().getTime() - self.start;
             });
         },
         tileLoaded() {

@@ -249,6 +249,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- update search to use ES results for contracts, since they are alreay there, we dont need to go reload them!
 - all inbound topics in web need to use mf rather than mp, so that eg partner relationships land in right browser, otherwise as soon as we have two pods, it dont work no more
 - arch principals - use a single topic to ensure ordering, that way, we could say update discounts and are sure anything they'd depend on happened first
   - also always write the draft via the draft service. (we have to update the syncTimestamp; we have to load components for the downstream services)

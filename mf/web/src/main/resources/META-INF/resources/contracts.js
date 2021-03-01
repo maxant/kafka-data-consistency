@@ -89,6 +89,9 @@ window.mfContractTile = {
     mounted() {
         if(!!this.contract) {
             this.fetchedContract = this.contract;
+            if(!this.fetchedContract.id && this.fetchContract.contractId) {
+                this.fetchedContract.id = this.fetchContract.contractId; // elastic documents know the id as 'contractId' - without this, the click wont work
+            }
         } else if(!this.contractId) {
             throw new Error("neither a contract nor a contractId was supplied to the contract widget");
         } else { // client provided an ID and no model, so lets load it
