@@ -62,7 +62,7 @@ class ESAdapter {
             log.info("called elasticsearch with request $r")
         } catch(e: Exception) {
             // TODO DLT?
-            log.error("CONES001 FAILED to send data to elastic. Will not be tried again. Please ensure it is entered manually. $payload")
+            log.error("CONES001 FAILED to send data to elastic. Will not be tried again. Please ensure it is entered manually. $payload", e)
         }
     }
 
@@ -142,7 +142,7 @@ class ESAdapter {
                 draft.contract.contractState,
                 components.flatMap { it.toMetainfo() },
                 components.map { it.productId }.filter { it != null }.first()?: TODO(),
-                draft.contract.createdAt,
+                draft.contract.createdAt.withNano(0),
                 draft.contract.createdBy
         )
     }
