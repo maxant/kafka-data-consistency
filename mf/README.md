@@ -252,9 +252,10 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 - add a condition, if a user based discount has been set! => rule based!
 - sales => why isnt the draft button locked when clicked?
 - add signature to tasks => if manual discount is above a certain amount, then john has to approve it and such tasks are always displayed
+- lazy load contract details from contracts component using redis as a cache, and load contract view from there, to remove load from operations db, as load time is now nearly a second
+  - add demo showing how we deal with partial failure during lazy loading
+  - show that there is no need to know all the DTOs, as we only know the components as strings
 - upgrade libraries
-- show bills on contract UI
-- show prices on contract UI
 - all inbound topics in web need to use mf rather than mp, so that eg partner relationships land in right browser, otherwise as soon as we have two pods, it dont work no more
 - arch principals - use a single topic to ensure ordering, that way, we could say update discounts and are sure anything they'd depend on happened first
   - also always write the draft via the draft service. (we have to update the syncTimestamp; we have to load components for the downstream services)
@@ -271,7 +272,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 - spans from browser => debug and see what headers are set when calling downstream. or look for jeager web?
 - cron job for jaeger
 - nginx + http2
-- billing2 => compare to using DB to store state?
+- show prices on contract UI
 - remove old stuff from this git repo so we can link to this repo in presentations
 - make sites a little prettier / responsive
 - grafana parameterisation

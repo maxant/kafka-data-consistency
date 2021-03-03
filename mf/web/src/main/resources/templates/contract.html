@@ -59,11 +59,22 @@
 <hr>
 <div>
     <h3>Bills</h3>
-    <ul v-if="model.bills.length > 0">
-        <li v-for="bill in model.bills">
-            {{JSON.stringify(bill)}}
-        </li>
-    </ul>
+    <table v-if="model.bills.length > 0" border="1" cellpadding="0" cellspacing="0">
+        <tr>
+            <th>Billing Definition</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Price</th>
+            <th>Created At</th>
+        </tr>
+        <tr v-for="bill in model.bills">
+            <td>{{bill.definitionId}}</td>
+            <td>{{bill.start}}</td>
+            <td>{{bill.end}}</td>
+            <td>{{bill.price}}</td>
+            <td>{{bill.createdAt}}</td>
+        </tr>
+    </table>
     <span v-else>None</span>
 </div>
 <hr>
