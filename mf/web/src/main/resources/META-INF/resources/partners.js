@@ -228,6 +228,7 @@ template =
     </div>
     <div v-else>
         <div>
+            <i class="pi pi-eye" v-if="clickable" @click="navigateToPartner()" style="float:right;"></i>
             <i v-if="isContractHolder()" class="pi pi-user-plus"></i>
             <i v-else class="pi pi-user"></i>
             Partner: {{partnerId}}
@@ -249,9 +250,6 @@ template =
         </div>
         <div v-if="roles && roles.length >= 0">
             Roles: {{roles}}
-        </div>
-        <div v-if="clickable">
-            <i class="pi pi-eye" @click="navigateToPartner()"></i>
         </div>
     </div>
     <slot></slot>

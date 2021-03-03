@@ -42,7 +42,9 @@ object Products {
     }
 
     private fun coffeeLatteSkinny(quantityMl: Int) = Drink(ProductId.COFFEE_LATTE_SKINNY, quantityMl) { qty ->
-        val skinnyMilk = Milk(300 * qty / 1000, BigDecimal("0.2"))
+        // filled 990ml of a litre to allow space for other ingredients
+        // default fat content 0.2%
+        val skinnyMilk = Milk(990 * qty / 1000, BigDecimal("0.2"))
         skinnyMilk.rules = listOf("FAT_CONTENT <= 1.5")
         val newConfigPossibilities = skinnyMilk.configPossibilities.toMutableList()
         newConfigPossibilities.add(PercentConfiguration(ConfigurableParameter.FAT_CONTENT, BigDecimal("1.4")))

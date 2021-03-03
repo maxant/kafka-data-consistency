@@ -11,6 +11,8 @@
 <div v-if="model.contract.approvedBy">Approved by {{model.contract.approvedBy}} at {{model.contract.approvedAt}}</div>
 <div v-if="model.contract.contractState == 'DRAFT'">
     <p-button id="offerDraftButton" @click="offerDraft()">Offer draft</p-button>
+    <p-button v-if="showResync" @click="resync()">resync</p-button>
+
 </div>
 <div v-if="model.contract.contractState == 'AWAITING_APPROVAL'">
     |}{! TODO add a text field where the user can justify this !}{|
@@ -18,14 +20,51 @@
 </div>
 <hr>
 <div>
+    <h3>Components</h3>
     <ul>
         <li v-for="component in model.contract.components">
             <div>{{component.componentDefinitionId}}</div>
             <ul>
-                <li v-for="config in component.configs">{{config.name}} {{config.value}} {{config.units}}</li>
+                <li v-for="config in component.configs">{{config.name}} {{config.value}} {{config.units == 'NONE'?'':config.units}}</li>
             </ul>
         </li>
     </ul>
+</div>
+<hr>
+<div>
+    <h3>Discounts and Surcharges</h3>
+    <ul v-if="model.discountssurcharges.length > 0">
+        <li v-for="discountsurcharge in model.discountssurcharges">
+            {{discountsurcharge.definitionId}}:
+            {{Math.abs(discountsurcharge.value*100)}}%
+            {{discountsurcharge.value < 0 ? "discount" : "surcharge"}}
+            on {{getComponentName(discountsurcharge.componentId)}}
+            added {{discountsurcharge.addedManually ? "manually" : "automatically"}}
+        </li>
+    </ul>
+    <span v-else>None</span>
+</div>
+<hr>
+<div>
+    <h3>Conditions</h3>
+    <ul v-if="model.conditions.length > 0">
+        <li v-for="condition in model.conditions">
+            {{condition.definitionId}}:
+            on {{getComponentName(condition.componentId)}}
+            added {{condition.addedManually ? "manually" : "automatically"}}
+        </li>
+    </ul>
+    <span v-else>None</span>
+</div>
+<hr>
+<div>
+    <h3>Bills</h3>
+    <ul v-if="model.bills.length > 0">
+        <li v-for="bill in model.bills">
+            {{JSON.stringify(bill)}}
+        </li>
+    </ul>
+    <span v-else>None</span>
 </div>
 <hr>
 <mf-partner v-for="partnerRelationship in model.partnerRelationships"
@@ -49,7 +88,8 @@ console.log("using id from url: " + id);
 const App = {
     data() {
         return {
-            model: { id, contract: {} },
+            model: { id, contract: {}, partnerRelationships: [], discountssurcharges: [], conditions: [], bills: [] },
+            showResync: false,
             start: 0,
             timeTaken: 0,
             requestId: uuidv4(),
@@ -73,6 +113,16 @@ const App = {
                 if(r.ok) {
                     self.model.contract = r.payload;
                     self.model.allContractIds = [id];
+                    if(self.model.tempDiscountssurcharges) {
+                        // we put them on the side until the components are ready, as theyre dependent on the components
+                        self.model.discountssurcharges = self.model.tempDiscountssurcharges;
+                        delete self.model.tempDiscountssurcharges;
+                    }
+                    if(self.model.tempConditions) {
+                        // we put them on the side until the components are ready, as theyre dependent on the components
+                        self.model.conditions = self.model.tempConditions;
+                        delete self.model.tempConditions;
+                    }
                     console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
                 } else {
                     let msg = "Failed to get contract: " + r.payload;
@@ -98,7 +148,62 @@ const App = {
                 alert("received error: " + error);
             });
 
-            return Promise.all([contract$, partnerRelationships$]);
+            url = DSC_BASE_URL + "/discountssurcharges/" + this.model.id;
+            let discountssurcharges$ = fetchIt(url, "GET", this).then(r => {
+                self.timeTaken = new Date().getTime() - self.start;
+                if(r.ok) {
+                    console.log("got discountssurcharges, for requestId " + self.requestId);
+                    if(self.model.contract.components) {
+                        self.model.discountssurcharges = r.payload;
+                    } else {
+                        // put them on the side until the components are ready, as theyre dependent on the components
+                        self.model.tempDiscountssurcharges = r.payload;
+                    }
+                } else {
+                    let msg = "Failed to get discountssurcharges: " + r.payload;
+                    console.error(msg);
+                    alert(msg);
+                }
+            }).catch(error => {
+                alert("received error: " + error);
+            });
+
+            url = DSC_BASE_URL + "/conditions/" + this.model.id;
+            let conditions$ = fetchIt(url, "GET", this).then(r => {
+                self.timeTaken = new Date().getTime() - self.start;
+                if(r.ok) {
+                    console.log("got conditions, for requestId " + self.requestId);
+                    if(self.model.contract.components) {
+                        self.model.conditions = r.payload;
+                    } else {
+                        // put them on the side until the components are ready, as theyre dependent on the components
+                        self.model.tempConditions = r.payload;
+                    }
+                } else {
+                    let msg = "Failed to get conditions: " + r.payload;
+                    console.error(msg);
+                    alert(msg);
+                }
+            }).catch(error => {
+                alert("received error: " + error);
+            });
+
+            url = BILLING_BASE_URL + "/billing/findByContractId?contractIds=" + this.model.id;
+            let bills$ = fetchIt(url, "GET", this).then(r => {
+                self.timeTaken = new Date().getTime() - self.start;
+                if(r.ok) {
+                    console.log("got bills, for requestId " + self.requestId);
+                    self.model.bills = r.payload;
+                } else {
+                    let msg = "Failed to get bills: " + r.payload;
+                    console.error(msg);
+                    alert(msg);
+                }
+            }).catch(error => {
+                alert("received error: " + error);
+            });
+
+            return Promise.all([contract$, partnerRelationships$, discountssurcharges$, conditions$, bills$]);
         },
         approveContract() {
             let self = this;
@@ -134,15 +239,40 @@ const App = {
                     self.model.contract = r.payload;
                     console.log("offered contract with id " + self.model.contract.id);
                 } else {
+                    if(!_.isObject(r.payload)) { r.payload = JSON.parse(r.payload); }
                     if(r.payload.class == "ch.maxant.kdc.mf.partners.boundary.NoRelationshipsFoundValidationException") {
                         alert("No partner relationships exist, please create a new offer");
                     } else if(r.payload.class == "ch.maxant.kdc.mf.partners.boundary.NotEnoughRelationshipsForForeignIdTypeValidationException") {
                         alert("A partner relationship is missing: " + r.payload.data);
+                    } else if(r.payload.error.indexOf("is not in sync with the contract") >= 0) {
+                        self.showResync = true;
+                        alert("The discounts/surcharges/conditions/price are not in sync - please recalculate them using the 'resync' button provided.");
                     } else {
                         let msg = "Failed to offer contract: " + r.payload;
                         console.error(msg);
                         alert(msg);
+                        self.showResync = true;
                     }
+                }
+            }).catch(error => {
+                console.error("received error: " + error);
+            });
+        },
+        resync() {
+            console.log("resyncing contract")
+            let self = this;
+            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.id + "/resync";
+            fetchIt(url, "PUT", this).then(r => {
+                if(r.ok) {
+                    // dont lose the components (details), as they are not returned in this call
+                    r.payload.components = self.model.contract.components;
+                    self.model.contract = r.payload;
+                    console.log("resynced");
+                    self.showResync = false;
+                } else {
+                    let msg = "Failed: " + r.payload;
+                    console.error(msg);
+                    alert(msg);
                 }
             }).catch(error => {
                 console.error("received error: " + error);
@@ -153,6 +283,9 @@ const App = {
             contract.components = this.model.contract.components;
             this.model.contract = contract;
             this.model.allContractIds = [contract.id];
+        },
+        getComponentName(componentId) {
+            return _.find(this.model.contract.components, c => c.id == componentId).componentDefinitionId;
         }
     },
     components: {

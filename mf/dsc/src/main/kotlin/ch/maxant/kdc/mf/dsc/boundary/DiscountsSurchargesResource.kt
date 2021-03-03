@@ -23,4 +23,10 @@ class DiscountsSurchargesResource(
     fun validateSyncTime(@PathParam("contractId") contractId: UUID, @PathParam("syncTimestamp") syncTimestamp: Long) =
         Response.ok(DiscountSurchargeEntity.Queries.countByContractIdAndNotSyncTimestamp(em, contractId, syncTimestamp)).build()
 
+    @GET
+    @Path("/{contractId}")
+    @Timed(unit = MetricUnits.MILLISECONDS)
+    fun getByContractId(@PathParam("contractId") contractId: UUID) =
+        Response.ok(DiscountSurchargeEntity.Queries.findByContractId(em, contractId)).build()
+
 }

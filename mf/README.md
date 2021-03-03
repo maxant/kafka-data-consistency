@@ -249,34 +249,27 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
-- update search to use ES results for contracts, since they are alreay there, we dont need to go reload them!
+- add a condition, if a user based discount has been set! => rule based!
+- sales => why isnt the draft button locked when clicked?
+- add signature to tasks => if manual discount is above a certain amount, then john has to approve it and such tasks are always displayed
+- upgrade libraries
+- show bills on contract UI
+- show prices on contract UI
 - all inbound topics in web need to use mf rather than mp, so that eg partner relationships land in right browser, otherwise as soon as we have two pods, it dont work no more
 - arch principals - use a single topic to ensure ordering, that way, we could say update discounts and are sure anything they'd depend on happened first
   - also always write the draft via the draft service. (we have to update the syncTimestamp; we have to load components for the downstream services)
-- add explicit discount or condition from user
-  - add a condition, if a user based discount has been set! => rule based!
-- add product to contract, so you can see it in the ES tile too
-- add createdAt to ES contract too
-- add signature to tasks => if manual discount is above a certain amount, then john has to approve it and such tasks are always displayed
 - measure what's so slow with ES contract creation/updates
-- show dsc in contract details
-- contract view is flakey and doesnt always show components, esp after clicking thru process buttons
 - after approving, the task isnt made to disappear in the contract UI
-  - this is a timing issue as the tree/prices arent shown either
+  - we dont subscribe to sse on the contracts page!
   - same after offering draft!
 - add displaying C to sales
-- discounts can use DS if they want - add a note about that
 - add conditions to DscConsumer
 - delete DSC where componentId is no longer in model, otherwise we'd have orphans hanging around
-- add optional select partner details in contracts.js tile, for when displaying contract in search
-- show bills on contract UI
 - check async tracing now works - it does, but cases SQL isnt traced. BUT it is when creating a task. maybe it's related to flush time? UGLY
 - why is REST request traced twice? how come not connected?! => jaxrs contrib ignores existing spans and adds a parent based on headers
 - billing stream with tracing see TODO in streaming application
 - spans from browser => debug and see what headers are set when calling downstream. or look for jeager web?
 - cron job for jaeger
-- sales => why isnt the draft button locked when clicked?
-- sales => kafka business error doesnt return to browser
 - nginx + http2
 - billing2 => compare to using DB to store state?
 - remove old stuff from this git repo so we can link to this repo in presentations
@@ -285,18 +278,9 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 - add kafka metrics from applications (prod/consumers/streams) to grafana
 - billing: send event back to sales UI so that the customer can pay directly for the first billed period
 - link from billing application back into contracts
-- https://quarkus.io/guides/redis
-- https://zipkin.io/ => also for billing!
-  - zipkin lens is their ui
-  - https://www.confluent.io/blog/importance-of-distributed-tracing-for-apache-kafka-based-applications/
-  - or this? https://www.hashicorp.com/blog/service-mesh-visualization-in-hashicorp-consul-1-9
-  - https://piotrminkowski.com/2020/11/24/quarkus-microservices-with-consul-discovery/
-  - https://www.consul.io/docs/intro/vs/istio
 - billing
   - billing - stopping => send control command to inform that a selection has been cancelled and it is to be ignored (all pods need to listen to this topic!)
   - tombstone records and compaction, including deleting jobs from UI
-- allow changing the quantity in the offer, so you can get under the approval threshold
-  - somethings not quite right - the price doesnt account for the quantity in the box!
 - display existing draft so that you can continue working from there
 - change from external to internal, if you arent sure and need a consultation
 - add createdAt/By to all entities and order partner relationships by that and load only the latest ones
@@ -316,7 +300,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 - add accepting and do validation of prices at that point. TRANSPORT still with kafka!
 - add the ability to fix errors, so that the user isnt blocked.
 - call the contract validation service when we load the draft, and provide problems to the client
-- "Must be processed by time X" as a header on messages, after which they are disposed of, since we know 
+- (TTL) "Must be processed by time X" as a header on messages, after which they are disposed of, since we know 
   the UI will deal with the timeout: in online processes the user will get a timeout. At that stage you 
   don't want to have to say, hey no idea whats still going to happen, rather we want to have a 
   determinate state which can be reloaded and allow the user to restart from there
@@ -326,18 +310,12 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
   - terminate
   - cancel
   - etc
-- UI should show progress of updating, calcing discounts, calcing prices, partner relationships. widget can have knowledge of last one it waits for
 - component config inheritance - but only certain stuff makes sense, the rest doesnt
 - component config deviations in cases where the sales team needs to specifically deviate from a normal customisation and it needs to be explicitly mentioned in the contract
 - remove support for string messages in the pimp interceptor
-- introduce discounts, which adds an extra event => choreography vs orchestration, whats it say about that above?
-  - easier to just add an age based discount directly to the root price
-  - saying that, we arleady have a market price for milk, so that means you always need to update the price, before going on to bill for the next period
 - calendar to select startTimestamp (rename start to startTimestamp too, coz of conflict in UI)
-- ok, we want pricing to listen to draft, and we dont want to orchestrate that from the UI. or do we?
 - add action to execute when task is completed or started (ie open UI, or do something)
 - create contract pdf?
-- output
 - requisition orders
 - replace my cors with quarkus cors? can it do everything i need?
   - https://quarkus.io/guides/all-config
@@ -349,10 +327,8 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
   - quarkus.http.cors.access-control-allow-credentials
 - components diff for warning user after changing to a different product release
 - additional info - to hang stuff external to the contract onto components
-- add a structure rule to components, to ensure there is always a bottle or container in a milk product
 - error handling - https://github.com/cloudstark/quarkus-zalando-problem-extension
 - https://quarkus.io/guides/rest-data-panache
-- make sales ui sexier
 - use noArgs for jpa => in pom, but hot deploy doesnt work with mods to entity class
 - quarkus extension for lib in order to avoid reflection when loading @Secure - a) it wasnt working and b) this is a killer: Local Quarkus extension dependency ch.maxant.kdc.mf:library will not be hot-reloadable
 
@@ -412,7 +388,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     or you can send the entire model around, but that isnt loosely coupled :-(
 - we could store a syncTimestamp for each part of a contract on the contract, rather than on the individual rows, denomralised like we currently do. it might
   even be faster that way. and we wouldnt need to make remote calls to validate when we offer the draft
-
+- search results are used to create contract tiles, so that we dont need to go bother our operations DBs. partners should be too, but havent done that yet.
 
 ### the five tenets of global data consistency
 

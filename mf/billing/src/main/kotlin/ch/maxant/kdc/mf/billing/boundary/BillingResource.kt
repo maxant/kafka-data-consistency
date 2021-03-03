@@ -41,13 +41,13 @@ class BillingResource(
     var billingService: BillingService
 ) {
     @GET
-    @Path("/{id}")
+    @Path("/findByBillingId/{id}")
     fun getById(@PathParam("id") id: UUID) =
         Response.ok(em.find(BillsEntity::class.java, id)).build()
 
-    @POST
-    @Path("/readByContractId")
-    fun readByContractIds(@PathParam("contractIds") contractIds: List<UUID>) =
+    @GET
+    @Path("/findByContractId")
+    fun findByContractIds(@QueryParam("contractIds") contractIds: List<UUID>) =
         Response.ok(BillsEntity.Queries.selectByContractIds(em, contractIds)).build()
 
     @PUT

@@ -49,6 +49,11 @@
 <div style="font-size: small;">
     Drafted in {{ timeTaken }}ms
 </div>
+<div v-if="progressText">
+    <p-progressbar :value="progressValue">
+        {{ progressText }}
+    </p-progressbar>
+</div>
 <div v-if="get(model, 'draft.contract')">
     <mf-contract :contract="model.draft.contract"></mf-contract>
 </div>
@@ -104,6 +109,7 @@
 <div>
     <p-button id="offerDraft" :disabled="!allowOffer" @click="offerDraft()">offer draft</p-button>
     (test if locked: <p-button @click="offerDraft()">offer draft</p-button>)
+    <p-button @click="resync()" icon="pi-cloud-download" v-tooltip="'click this if the draft is broken'" style="min-width: 100px;">resync</p-button>
 </div>
 
 </span>
@@ -286,6 +292,8 @@ const App = {
             forcibleErrors,
             forceError: forcibleErrors[0],
             allowOffer: false,
+            progressValue: 0,
+            progressText: null,
             users
         }
     },
@@ -360,6 +368,8 @@ const App = {
                 return;
             }
 
+            this.progressValue = 1;
+            this.progressText = "fetching draft";
             this.allowOffer = false;
             let body = {
                 "productId": this.product,
@@ -375,8 +385,9 @@ const App = {
             self.requestId = window.requestId;
             let url = CONTRACTS_BASE_URL + "/drafts"
             fetchIt(url, "POST", this, body).then(r => {
-                if(r.ok) console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
-                else {
+                if(r.ok) {
+                    console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
+                } else {
                     let msg = "Failed: " + r.payload;
                     console.error(msg);
                     alert(msg);
@@ -398,6 +409,8 @@ const App = {
             let newValue = component.$configs[paramName].value
             let oldValue = _(component.configs).find(c => c.name === paramName).value
             if(newValue != oldValue) {
+                this.progressValue = 1;
+                this.progressText = "updating draft";
                 this.allowOffer = false;
                 component.$configs[paramName].waiting = true // causes disabled
                 console.log("change param " + paramName + " on component " + component.componentId + " to " + newValue)
@@ -455,6 +468,8 @@ const App = {
             this.model.draft = {};
         },
         setDiscount(discount, componentId) {
+            this.progressValue = 1;
+            this.progressText = "updating draft";
             this.allowOffer = false;
             console.log("setting discount of " + discount + " on component " + componentId + "...")
             this.currentAction = {action: "setDiscount"}
@@ -472,12 +487,34 @@ const App = {
                 console.error("received error: " + error);
                 ameliorateCurrentAction(self)
             });
+        },
+        resync() {
+            this.progressValue = 1;
+            this.progressText = "resyncing draft";
+            this.allowOffer = false;
+            console.log("resyncing contract")
+            this.currentAction = {action: "resyncing"}
+            let self = this;
+            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/resync";
+            fetchIt(url, "PUT", this).then(r => {
+                if(r.ok) console.log("resynced");
+                else {
+                    let msg = "Failed: " + r.payload;
+                    console.error(msg);
+                    alert(msg);
+                    ameliorateCurrentAction(self)
+                }
+            }).catch(error => {
+                console.error("received error: " + error);
+                ameliorateCurrentAction(self)
+            });
         }
     },
     components: {
         'p-calendar': calendar,
         'p-dropdown': dropdown,
         'p-button': button,
+        'p-progressbar': progressbar,
         'mf-partner-select': mfPartnerSelect,
         'mf-partner': mfPartnerTile,
         'mf-contract': mfContractTile,
@@ -489,6 +526,7 @@ const App = {
 }
 const app = Vue.createApp(App)
 app.use(primevue, {ripple: true});
+app.directive('tooltip', tooltip);
 app.mount("#app")
 
 function clearDscsRecursively(component) {
@@ -528,9 +566,13 @@ function sse(requestId, self) {
             initialiseDraft(self.model.draft.pack);
             self.model.draft.contract.productId = self.model.draft.pack.children[0].productId;
             // dont update any waiting or timing state, because this is just the first of many events to come
+            self.progressValue = 33;
+            self.progressText = "checking discounts, surcharges and conditions";
         } else if(msg.event == "UPDATED_DRAFT") {
             updateDraft(msg.payload.allComponents, self.model.draft.pack);
             // dont update any waiting or timing state, because this is just the first of many events to come
+            self.progressValue = 33;
+            self.progressText = "checking discounts, surcharges and conditions";
         } else if(msg.event == "ADDED_DSC_FOR_DRAFT") {
             self.model.draft.discountsSurcharges = msg.payload.discountsSurcharges;
             clearDscsRecursively(self.model.draft.pack);
@@ -538,6 +580,8 @@ function sse(requestId, self) {
                 addDsc(self.model.draft.pack, dsc);
             });
             self.timeTaken = new Date().getTime() - self.start;
+            self.progressValue = 66;
+            self.progressText = "updating price";
         } else if(msg.event == "SET_DISCOUNT") {
             // ignore - its a command from contract->dsc
         } else if(msg.event == "UPDATED_PRICES_FOR_DRAFT") {
@@ -547,6 +591,8 @@ function sse(requestId, self) {
             });
             self.allowOffer = true;
             self.timeTaken = new Date().getTime() - self.start;
+            self.progressValue = 100;
+            self.progressText = null;
         } else if(msg.event == "OFFERED_DRAFT") {
             console.log("offered draft for contract " + msg.payload.contract.id);
             self.allowOffer = false;
@@ -577,6 +623,7 @@ function sse(requestId, self) {
         console.log("sse error " + event);
         if(self.source && self.source.readyState != EventSource.CLOSED) self.source.close();
         self.source = null;
+        setTimeout(() => {sse(requestId, self);}, 1000);
     }
 }
 
@@ -593,9 +640,12 @@ function ameliorateCurrentAction(self) {
         self.allowOffer = true // so user can retry if they want to. it mustve been enabled in order to get here.
     } else if(self.currentAction.action == "offerDraft") {
         self.allowOffer = true // so user can retry if they want to. it mustve been enabled in order to get here.
+    } else if(self.currentAction.action == "resyncing") {
+        self.allowOffer = true // so user can retry if they want to. it mustve been enabled in order to get here.
     } else {
         console.error("unexpected current action: " + self.currentaction.action)
     }
+    self.progressText = null;
 }
 
 function removeWaitingAndResetValue(targetComponentId, paramName, oldValue, component) {

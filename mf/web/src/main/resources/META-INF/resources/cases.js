@@ -58,9 +58,12 @@ template =
 // start template
 `
 <hr>
-Tasks:
+<h3>Tasks</h3>
 <div v-for="task in tasks">
     <mf-task :task="task"></mf-task>
+</div>
+<div v-if="tasks.length == 0">
+    None
 </div>
 ` // end template
 

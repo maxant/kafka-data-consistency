@@ -160,7 +160,6 @@ class DraftsResource(
 
         context.throwExceptionInContractsIfRequiredForDemo()
 
-        // TODO use transactional outbox
         esAdapter.updateOffer(contractId, allComponents)
 
         // instead of publishing the initial model based on definitions, which contain extra
@@ -210,7 +209,7 @@ class DraftsResource(
 
     @Operation(summary = "Offer draft", description = "offer a draft which has been configured to the customer needs, to them, in order for it to be accepted")
     @APIResponses(
-            APIResponse(description = "let's the user update a part of the config", responseCode = "200", content = [
+            APIResponse(description = "offered draft", responseCode = "200", content = [
                 Content(mediaType = MediaType.APPLICATION_JSON, schema = Schema(implementation = ContractEntity::class))
             ])
     )
@@ -248,6 +247,34 @@ class DraftsResource(
         Response.created(URI.create("/${contract.id}"))
                 .entity(contract)
                 .build()
+    }
+
+    @Operation(summary = "Resync draft", description = "if a draft is in an inconsistent state because DSC or pricing isnt up to date, this method will force recalculation and the caller should then update their model based on the resulting events")
+    @APIResponses(
+        APIResponse(responseCode = "202", content = [
+            Content(mediaType = MediaType.APPLICATION_JSON, schema = Schema(implementation = ContractEntity::class))
+        ])
+    )
+    @PUT
+    @Path("/{contractId}/resync")
+    @Transactional
+    @Timed(unit = MetricUnits.MILLISECONDS)
+    fun resyncDscAndPricing(
+        @PathParam("contractId") @Parameter(name = "contractId", required = true) contractId: UUID
+    ): Response = doByHandlingValidationExceptions {
+        log.info("resyncing draft $contractId")
+
+        // check draft status
+        val contract = em.find(ContractEntity::class.java, contractId)
+        require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
+
+        val allComponents = ComponentEntity.Queries.selectByContractId(em, contractId)
+
+        eventBus.publish(UpdatedDraft(contract, allComponents.map { Component(om, it) }))
+
+        Response.accepted()
+            .entity(contract)
+            .build()
     }
 }
 

@@ -9,3 +9,6 @@
 .p-slider-horizontal {
 	width: 14rem;
 }
+.p-button {
+    margin: 3px !important;
+}

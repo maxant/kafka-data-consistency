@@ -14,10 +14,12 @@ const template =
         <div v-if="fetchedContract">
             <i class="pi pi-file"></i>
             Contract: {{fetchedContract.id}}
+            <i v-if="clickable" id="viewContractIcon" class="pi pi-eye" @click="navigateToContract()" style="float: right;"></i>
         </div>
         <div v-else-if="contractId">
             <i class="pi pi-file"></i>
             Contract: {{contractId}}
+            <i v-if="clickable" id="viewContractIcon" class="pi pi-eye" @click="navigateToContract()" style="float: right;"></i>
         </div>
         <div v-else>
         </div>
@@ -42,7 +44,7 @@ const template =
             </div>
             <div>
                 State: {{fetchedContract.contractState}}
-                <i v-if="clickable" id="viewContractIcon" class="pi pi-eye" @click="navigateToContract()"></i>
+                <span style="font-size: xxsmall; font-style: italic; float:right;">{{usingES?"elastic":"master"}}</span>
             </div>
             <div v-if="allowAcceptOffer && fetchedContract.contractState == 'OFFERED'">
                 <p-button id="acceptOfferButton" @click="acceptOffer()">accept offer</p-button>
@@ -74,6 +76,7 @@ window.mfContractTile = {
     data() {
         return {
             fetchedContract: null,
+            usingES: false,
             error: null,
             requestId: uuidv4()
         }
@@ -90,6 +93,9 @@ window.mfContractTile = {
     mounted() {
         if(!!this.contract) {
             this.fetchedContract = this.contract;
+            if(this.fetchedContract.metainfo) {
+                this.usingES = true;
+            }
             this.patchElasticSearchContracts();
         } else if(!this.contractId) {
             throw new Error("neither a contract nor a contractId was supplied to the contract widget");
@@ -99,38 +105,43 @@ window.mfContractTile = {
     },
     methods: {
         patchElasticSearchContracts() {
-            if(!this.fetchedContract.id && this.fetchedContract.contractId) {
+            if(this.usingES) {
                 this.fetchedContract.id = this.fetchedContract.contractId; // elastic documents know the id as 'contractId' - without this, the click wont work
-            }
-            if(!this.fetchedContract.contractState && this.fetchedContract.state) {
                 this.fetchedContract.contractState = this.fetchedContract.state; // elastic documents know the contractState as 'state'
             }
         },
-        loadContract$() {
+        loadContract$(forceUseMaster) {
             this.fetchedContract = null;
             this.error = null;
             let self = this;
 
             // if no details are required, lets get the data from ES and relieve our operative db
-            let url = ELASTICSEARCH_BASE_URL + "/contracts/_doc/" + this.contractId
-            if(this.withDetails) {
+            let url = ELASTICSEARCH_BASE_URL + "/contracts/_doc/" + this.contractId;
+            self.usingES = true;
+            if(this.withDetails || forceUseMaster) {
                 url = CONTRACTS_BASE_URL + "/contracts/" + this.contractId + "?withDetails=" + (this.withDetails?true:false);
+                self.usingES = false;
             }
             return fetchIt(url, "GET", this).then(r => {
                 if(r.ok) {
                     console.log("got contract " + self.contractId + " for requestId " + self.requestId);
-                    if(this.withDetails) {
-                        self.fetchedContract = r.payload;
-                    } else {
+                    if(self.usingES) {
                         self.fetchedContract = r.payload._source;
-                        self.fetchedContract.id = r.payload._id;
-                        self.fetchedContract.contractState = r.payload._source.state;
+                        self.patchElasticSearchContracts();
+                    } else {
+                        self.fetchedContract = r.payload;
                     }
                     self.$emit('loaded', null);
                 } else {
-                    let msg = "Failed to get contract " + self.contractId + ": " + r.payload;
-                    self.error = msg;
-                    console.error(msg);
+                    if(self.usingES) {
+                        // if elastic cant find it, try the master, its obviously not yet in sync
+                        console.log("retrying master, since ES failed");
+                        return this.loadContract$(true);
+                    } else {
+                        let msg = "Failed to get contract " + self.contractId + ": " + r.payload;
+                        self.error = msg;
+                        console.error(msg);
+                    }
                 }
             }).catch(error => {
                 self.error = error;

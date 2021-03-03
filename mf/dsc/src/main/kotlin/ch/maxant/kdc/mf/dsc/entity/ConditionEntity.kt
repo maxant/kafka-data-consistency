@@ -12,7 +12,9 @@ import javax.persistence.*
     NamedQuery(name = ConditionEntity.NqCountByContractIdAndNotSyncTime.name,
         query = ConditionEntity.NqCountByContractIdAndNotSyncTime.query),
     NamedQuery(name = ConditionEntity.NqDeleteByContractIdAndNotAddedManually.name,
-        query = ConditionEntity.NqDeleteByContractIdAndNotAddedManually.query)
+        query = ConditionEntity.NqDeleteByContractIdAndNotAddedManually.query),
+    NamedQuery(name = ConditionEntity.NqFindByContractId.name,
+        query = ConditionEntity.NqFindByContractId.query)
 )
 class ConditionEntity(
 
@@ -64,6 +66,16 @@ class ConditionEntity(
             """
     }
 
+    object NqFindByContractId {
+        const val name = "findConditionsByContractId"
+        const val contractIdParam = "contractId"
+        const val query = """
+            select e 
+            from ConditionEntity e 
+            where e.contractId = :$contractIdParam
+            """
+    }
+
     object Queries {
         private val log = Logger.getLogger(this.javaClass)
 
@@ -81,6 +93,12 @@ class ConditionEntity(
                 .setParameter(NqDeleteByContractIdAndNotAddedManually.contractIdParam, contractId)
                 .executeUpdate()
         }
-    }
 
+        fun findByContractId(em: EntityManager, contractId: UUID): List<ConditionEntity> {
+            log.info("finding for contract $contractId")
+            return em.createNamedQuery(NqFindByContractId.name, ConditionEntity::class.java)
+                .setParameter(NqFindByContractId.contractIdParam, contractId)
+                .resultList
+        }
+    }
 }
