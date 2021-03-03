@@ -68,6 +68,7 @@ window.mfContractTile = {
         },
         contract(newContract, oldContract) {
             this.fetchedContract = newContract;
+            this.patchElasticSearchContracts();
         }
     },
     data() {
@@ -89,9 +90,7 @@ window.mfContractTile = {
     mounted() {
         if(!!this.contract) {
             this.fetchedContract = this.contract;
-            if(!this.fetchedContract.id && this.fetchedContract.contractId) {
-                this.fetchedContract.id = this.fetchedContract.contractId; // elastic documents know the id as 'contractId' - without this, the click wont work
-            }
+            this.patchElasticSearchContracts();
         } else if(!this.contractId) {
             throw new Error("neither a contract nor a contractId was supplied to the contract widget");
         } else { // client provided an ID and no model, so lets load it
@@ -99,6 +98,14 @@ window.mfContractTile = {
         }
     },
     methods: {
+        patchElasticSearchContracts() {
+            if(!this.fetchedContract.id && this.fetchedContract.contractId) {
+                this.fetchedContract.id = this.fetchedContract.contractId; // elastic documents know the id as 'contractId' - without this, the click wont work
+            }
+            if(!this.fetchedContract.contractState && this.fetchedContract.state) {
+                this.fetchedContract.contractState = this.fetchedContract.state; // elastic documents know the contractState as 'state'
+            }
+        },
         loadContract$() {
             this.fetchedContract = null;
             this.error = null;

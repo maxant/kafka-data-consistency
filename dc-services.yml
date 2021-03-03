@@ -79,7 +79,7 @@ services:
       ch.maxant.kdc.mf.components.pricing.url:       "http://mf-pricing.maxant.ch"
       ch.maxant.kdc.mf.components.web.url:           "http://mf-web.maxant.ch"
       ch.maxant.kdc.mf.components.partners.url:      "http://mf-partners.maxant.ch"
-      ch.maxant.kdc.mf.components.cases.url:         "http://mf-casescases.maxant.ch"
+      ch.maxant.kdc.mf.components.cases.url:         "http://mf-cases.maxant.ch"
       ch.maxant.kdc.mf.components.waitingroom.url:   "http://mf-waitingroom.maxant.ch"
       ch.maxant.kdc.mf.components.organisation.url:  "http://mf-organisation.maxant.ch"
       ch.maxant.kdc.mf.components.billing.url:       "http://mf-billing.maxant.ch"
