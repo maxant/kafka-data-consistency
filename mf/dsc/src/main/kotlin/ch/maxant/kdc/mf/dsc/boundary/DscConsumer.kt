@@ -61,25 +61,17 @@ class DscConsumer(
     }
 
     private fun handleDraft(record: ConsumerRecord<String, String>) {
-        try {
-            log.info("handling draft")
-            var model = om.readTree(record.value())
-            model = discountSurchargeService.handleDraft(model)
-            sendEvent(model)
-        } catch (e: Exception) {
-            log.error("FAILED TO PRICE", e)
-        }
+        log.info("handling draft")
+        var model = om.readTree(record.value())
+        model = discountSurchargeService.handleDraft(model)
+        sendEvent(model)
     }
 
     private fun handleSetDiscount(record: ConsumerRecord<String, String>) {
-        try {
-            log.info("handling setting discount")
-            var model = om.readTree(record.value())
-            model = discountSurchargeService.handleSetDiscount(model)
-            sendEvent(model)
-        } catch (e: Exception) {
-            log.error("FAILED TO PRICE", e)
-        }
+        log.info("handling setting discount")
+        var model = om.readTree(record.value())
+        model = discountSurchargeService.handleSetDiscount(model)
+        sendEvent(model)
     }
 
     private fun sendEvent(model: JsonNode) {

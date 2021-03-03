@@ -68,14 +68,10 @@ class PricingConsumer(
     }
 
     private fun priceDraft(record: ConsumerRecord<String, String>) {
-        try {
-            log.info("pricing draft")
-            val value = om.readTree(record.value())
-            val result = pricingService.priceDraft(value)
-            sendEvent(result)
-        } catch (e: Exception) {
-            log.error("FAILED TO PRICE", e)
-        }
+        log.info("pricing draft")
+        val value = om.readTree(record.value())
+        val result = pricingService.priceDraft(value)
+        sendEvent(result)
     }
 
     private fun readPricesForGroupOfContracts(record: ConsumerRecord<String, String>) {
