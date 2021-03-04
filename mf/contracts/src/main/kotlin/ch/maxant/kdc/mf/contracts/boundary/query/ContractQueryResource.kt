@@ -20,9 +20,54 @@ import java.util.*
 import javax.inject.Inject
 import javax.persistence.EntityManager
 
-// see https://download.eclipse.org/microprofile/microprofile-graphql-1.0.3/microprofile-graphql.html#graphql_and_rest
-// http://localhost:8080/graphql/schema.graphql
-// http://localhost:8080/graphql-ui
+/**
+ * <pre>
+query {
+    #aggregate { => uses a default value instead of providing one as follows:
+    aggregate(id: "77c1917d-2061-42e6-9631-78f10cbae161") {
+
+        # corresponds to the tolerant reader pattern, in that you only
+        # fetch data you really want - you MUST specify every field
+        # that you want to read
+
+        contract {
+            id
+            createdAt
+            createdAtFormattedByServer
+            contractState
+            createdAtFormattedByClient(pattern: "MMMM dd, YYYY")
+            discountsAddedInNewLocationInTree {
+                definitionId
+            }
+
+            # not currently working in quarkus due to class loading issues in named queries
+            components(definitionIdFilter:"Milk") {
+                id
+                parentId
+                productId
+                configs {key, value}
+                componentDefinitionId
+            }
+        }
+
+        # the following two were attempts to load data generically, but
+        # GraphQL doesnt seem to support that or wildcards
+        #
+        # discountsSurchargesArrayNode
+        # discountsSurchargesString
+        #
+        # so we load this data and have to provide the schema / write DTOs
+        discountsSurchargesDto {
+            componentId addedManually definitionId value
+        }
+    }
+}
+
+* </pre>
+* see https://download.eclipse.org/microprofile/microprofile-graphql-1.0.3/microprofile-graphql.html#graphql_and_rest
+* http://localhost:8080/graphql/schema.graphql
+* http://localhost:8080/graphql-ui
+*/
 @GraphQLApi
 class ContractQueryResource(
     @Inject var em: EntityManager,
@@ -32,7 +77,7 @@ class ContractQueryResource(
     @Inject
     @RestClient // bizarrely this doesnt work with constructor injection
     lateinit var discountsSurchargesAdapter: DiscountsSurchargesAdapter
-
+TODO add lazy loading and caching in ES and use Events to evict it from ES
     private val log = Logger.getLogger(this.javaClass)
 
     @Query("aggregate")
