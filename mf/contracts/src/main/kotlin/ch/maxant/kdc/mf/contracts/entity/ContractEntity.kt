@@ -1,6 +1,7 @@
 package ch.maxant.kdc.mf.contracts.entity
 
 import ch.maxant.kdc.mf.contracts.dto.Component
+import org.eclipse.microprofile.graphql.Ignore
 import org.hibernate.annotations.Type
 import java.time.LocalDateTime
 import java.util.*
@@ -60,5 +61,6 @@ open class ContractEntity( // add open, rather than rely on maven plugin, becaus
             this(id, start, end, ContractState.DRAFT, System.currentTimeMillis(), LocalDateTime.now(), createdBy, null, null, null, null, null, null)
 
     @Transient
+    @Ignore
     var components: List<Component>? = null
 }
