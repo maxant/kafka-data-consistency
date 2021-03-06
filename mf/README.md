@@ -249,6 +249,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- add cache stats to grafana
 - add a condition, if a user based discount has been set! => rule based!
 - sales => why isnt the draft button locked when clicked?
 - add signature to tasks => if manual discount is above a certain amount, then john has to approve it and such tasks are always displayed

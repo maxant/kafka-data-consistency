@@ -104,6 +104,8 @@ class DiscountSurchargeService(
         val deletedCount = DiscountSurchargeEntity.Queries.deleteByContractIdAndNotAddedManually(em, contractId) // start from scratch
         log.info("deleted $deletedCount existing discount/surcharge rows for contract $contractId that were not added manually")
 
+        findByContractId(em, contractId).forEach{ it.syncTimestamp = syncTimestamp} // update these guys otherwise not everything is synced
+
         var discountsSurcharges = DiscountsSurchargesDefinitions.determineDiscountsSurcharges(root)
         discountsSurcharges.forEach {
             it.contractId = contractId

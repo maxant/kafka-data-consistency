@@ -1,16 +1,15 @@
 package ch.maxant.kdc.mf.contracts.boundary.query
 
 import ch.maxant.kdc.mf.contracts.adapter.DiscountsSurchargesAdapter
-import ch.maxant.kdc.mf.contracts.definitions.ConfigurableParameter
-import ch.maxant.kdc.mf.contracts.definitions.Configuration
-import ch.maxant.kdc.mf.contracts.definitions.ProductId
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ArrayNode
-import com.fasterxml.jackson.module.kotlin.readValue
 import io.smallrye.graphql.api.Context
+import io.vertx.ext.web.RoutingContext
 import org.eclipse.microprofile.graphql.*
+import org.eclipse.microprofile.metrics.MetricUnits
+import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.rest.client.inject.RestClient
 import org.jboss.logging.Logger
 import java.math.BigDecimal
@@ -19,7 +18,6 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 import javax.inject.Inject
 import javax.persistence.EntityManager
-
 /**
  * <pre>
 query {
@@ -40,7 +38,6 @@ query {
                 definitionId
             }
 
-            # not currently working in quarkus due to class loading issues in named queries
             components(definitionIdFilter:"Milk") {
                 id
                 parentId
@@ -72,16 +69,19 @@ query {
 class ContractQueryResource(
     @Inject var em: EntityManager,
     @Inject var om: ObjectMapper,
-    @Inject var context: Context
+    @Inject var context: Context,
+    @Inject var routingContext: RoutingContext
 ) {
     @Inject
     @RestClient // bizarrely this doesnt work with constructor injection
     lateinit var discountsSurchargesAdapter: DiscountsSurchargesAdapter
-TODO add lazy loading and caching in ES and use Events to evict it from ES
+
     private val log = Logger.getLogger(this.javaClass)
 
     @Query("aggregate")
-    @Description("Get a contract by it's ID")
+    @Description("Get a contract by it's ID, without the cache")
+    @Timed(unit = MetricUnits.MILLISECONDS)
+    //@Secure // access the token via this.routingContext.request().headers()
     fun findContractById(@Name("id") @DefaultValue("77c1917d-2061-42e6-9631-78f10cbae161") id: UUID): ContractAggregate {
         log.info("getting contract $id with context.arguments ${context.arguments.map { "${it.key}->${it.value}" }}")
         val discountsSurchargesArrayNode = discountsSurchargesAdapter.getByContractIdAsArrayNode(id)
@@ -92,7 +92,7 @@ TODO add lazy loading and caching in ES and use Events to evict it from ES
     }
 
     // adds a field called "discountsAddedInNewLocationInTree" to the entity
-    fun discountsAddedInNewLocationInTree(@Source contract: ContractEntity): List<DiscountSurchargeEntity> =
+    fun discountsAddedInNewLocationInTree(@Source contract: ContractEntity): List<DiscountSurcharge> =
         discountsSurchargesAdapter.getByContractIdAsDto(contract.id).filter { it.value < BigDecimal.ZERO }
 
     // adds a formatted field to the entity
@@ -106,6 +106,7 @@ TODO add lazy loading and caching in ES and use Events to evict it from ES
 
     @Query("components")
     fun components(@Source contract: ContractEntity, @Name("definitionIdFilter") definitionIdFilter: String): List<Component> {
+        // val entities = ComponentEntity.Queries.selectByContractId(em, contract.id)
         val entities = em.createQuery("select c from ComponentEntity c where c.contractId = :contractId")
             .setParameter("contractId", contract.id)
             .resultList as List<ComponentEntity> // avoid named query, and cast because of this: https://quarkusio.zulipchat.com/#narrow/stream/187030-users/topic/Hibernate.2FGraphQL.20SRGQL012000.3A.20Data.20Fetching.20Error
@@ -115,7 +116,7 @@ TODO add lazy loading and caching in ES and use Events to evict it from ES
     }
 }
 
-@Type("Aggregate")
+@Type("Aggregate") // used to rename a class
 data class ContractAggregate(
     @NonNull val contract: ContractEntity?, // if the server dishes up null, the client gets an error!
 
@@ -123,33 +124,6 @@ data class ContractAggregate(
     val discountsSurchargesArrayNode: ArrayNode,
 
     val discountsSurchargesString: String,
-    val discountsSurchargesDto: List<DiscountSurchargeEntity>
+    val discountsSurchargesDto: List<DiscountSurcharge>
 )
 
-data class DiscountSurchargeEntity(
-    var id: UUID,
-    var contractId: UUID,
-    var componentId: UUID,
-    var definitionId: String,
-    var value: BigDecimal,
-    var syncTimestamp: Long,
-    var addedManually: Boolean
-)
-
-data class Component(
-    val id: UUID,
-    val parentId: UUID?,
-    val componentDefinitionId: String,
-    val configs: List<ConfigPair>,
-    val productId: ProductId?
-) {
-    constructor(om: ObjectMapper, entity: ComponentEntity) : this(
-        entity.id,
-        entity.parentId,
-        entity.componentDefinitionId,
-        om.readValue<ArrayList<Configuration<*>>>(entity.configuration).map { ConfigPair(it.name, it.value.toString()) },
-        entity.productId
-    )
-}
-
-data class ConfigPair(val key: ConfigurableParameter, val value: String)

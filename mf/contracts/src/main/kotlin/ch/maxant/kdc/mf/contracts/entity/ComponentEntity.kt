@@ -32,7 +32,6 @@ class ComponentEntity( // add open, rather than rely on maven plugin, because @Q
     var componentDefinitionId: String
 
 ) {
-
     constructor() : this(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "{}", "Milkshake")
 
     @Column(name = "PRODUCT_ID")

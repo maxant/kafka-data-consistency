@@ -1,6 +1,6 @@
 package ch.maxant.kdc.mf.contracts.adapter
 
-import ch.maxant.kdc.mf.contracts.boundary.query.DiscountSurchargeEntity
+import ch.maxant.kdc.mf.contracts.boundary.query.DiscountSurcharge
 import com.fasterxml.jackson.databind.node.ArrayNode
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
@@ -33,6 +33,6 @@ interface DiscountsSurchargesAdapter {
     @GET
     @Path("/{contractId}")
     @Timed(unit = MetricUnits.MILLISECONDS)
-    fun getByContractIdAsDto(@PathParam("contractId") contractId: UUID): List<DiscountSurchargeEntity>
+    fun getByContractIdAsDto(@PathParam("contractId") contractId: UUID): List<DiscountSurcharge>
 }
 
