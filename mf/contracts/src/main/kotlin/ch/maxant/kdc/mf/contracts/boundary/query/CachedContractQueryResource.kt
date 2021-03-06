@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.smallrye.graphql.api.Context
 import org.eclipse.microprofile.graphql.*
+import org.eclipse.microprofile.graphql.DefaultValue
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Gauge
 import org.eclipse.microprofile.metrics.annotation.Timed
@@ -31,10 +32,35 @@ import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
-private val INDEX = "contract-cache"
-
 /**
  * <pre>
+query {
+    cached_aggregate(id: "77c1917d-2061-42e6-9631-78f10cbae161") {
+
+        contract {
+            id
+            createdAt
+            contractState
+        }
+
+        components(definitionIdFilter:"C.*") {
+        id
+        parentId
+        productId
+        configs {key, value}
+        componentDefinitionId
+    }
+
+        discountsAndSurcharges {
+            failed
+            discountsSurcharges {
+                componentId addedManually definitionId value
+            }
+        }
+
+        anythingMissing
+    }
+}
 * </pre>
 * see https://download.eclipse.org/microprofile/microprofile-graphql-1.0.3/microprofile-graphql.html#graphql_and_rest
 * http://localhost:8080/graphql/schema.graphql
@@ -52,17 +78,21 @@ class CachedContractQueryResource(
     @RestClient // bizarrely this doesnt work with constructor injection
     lateinit var discountsSurchargesAdapter: DiscountsSurchargesAdapter
 
-    private val log = Logger.getLogger(this.javaClass)
-
     private val INDEX = "contract-cache"
+
+    private val log = Logger.getLogger(this.javaClass)
 
     @Query("cached_aggregate")
     @Description("Get a contract by it's ID, referring to the cache first and lazy loading if required")
     @Timed(unit = MetricUnits.MILLISECONDS)
-    fun findContractById(@Name("id") id: UUID): CachedAggregate {
+    fun findContractById(@Name("id") id: UUID, @Name("forceReload") @DefaultValue("false") forceReload: Boolean): CachedAggregate {
         log.info("getting contract $id with context.arguments ${context.arguments.map { "${it.key}->${it.value}" }}")
 
         val start = System.currentTimeMillis()
+
+        if(forceReload) {
+            deleteFromCache(id)
+        }
 
         var cached = try {
             readFromCache(id)
@@ -128,43 +158,49 @@ class CachedContractQueryResource(
             .map { Component(om, it) }
     }
 
-    fun writeToCache(aggregate: CachedAggregate) {
+    private fun writeToCache(aggregate: CachedAggregate) {
         log.info("writing aggregate to cache ${aggregate.contract.id}")
         val request = Request("PUT", "/$INDEX/_doc/${aggregate.contract.id}")
         request.setJsonEntity(om.writeValueAsString(aggregate))
-        performESRequest(restClient, request)
+        performESRequest(request)
     }
 
     private fun readFromCache(id: UUID): CachedAggregate? {
         val request = Request("GET", "/$INDEX/_doc/${id}")
-        val response = performESRequest(restClient, request) ?: return null
+        val response = performESRequest(request) ?: return null
         val source = om.readTree(response).get("_source")
         return om.treeToValue(source, CachedAggregate::class.java)
     }
-}
 
-private fun performESRequest(restClient: org.elasticsearch.client.RestClient, request: Request): String? {
-    try {
-        val response = restClient.performRequest(request)
-        val statusCode = response.statusLine.statusCode
-        if(statusCode < 200 || statusCode >= 300) {
-            throw WebApplicationException("failed to ${request.method} contract with ES. ($statusCode) ${response.entity}")
-        }
-        val baos = ByteArrayOutputStream(response.entity.contentLength.toInt())
-        response.entity.writeTo(baos)
-        return String(baos.toByteArray())
-    } catch(e: ConnectException) {
-        throw WebApplicationException("failed to use ES. no connection", e)
-    } catch(e: ResponseException) {
-        if(e.response.statusLine.statusCode == 404) {
-            return null
-        }
-        throw e
-    } catch(e: Exception) {
-        if(e is WebApplicationException){
+    fun deleteFromCache(id: UUID): String? {
+        log.info("deleting from ES $id")
+        val request = Request("DELETE", "/$INDEX/_doc/${id}")
+        return performESRequest(request)
+    }
+
+    private fun performESRequest(request: Request): String? {
+        try {
+            val response = restClient.performRequest(request)
+            val statusCode = response.statusLine.statusCode
+            if(statusCode < 200 || statusCode >= 300) {
+                throw WebApplicationException("failed to ${request.method} contract with ES. ($statusCode) ${response.entity}")
+            }
+            val baos = ByteArrayOutputStream(response.entity.contentLength.toInt())
+            response.entity.writeTo(baos)
+            return String(baos.toByteArray())
+        } catch(e: ConnectException) {
+            throw WebApplicationException("failed to use ES. no connection", e)
+        } catch(e: ResponseException) {
+            if(e.response.statusLine.statusCode == 404) {
+                return null
+            }
             throw e
+        } catch(e: Exception) {
+            if(e is WebApplicationException){
+                throw e
+            }
+            throw WebApplicationException("failed to use ES", e)
         }
-        throw WebApplicationException("failed to use ES", e)
     }
 }
 
@@ -306,25 +342,4 @@ data class DiscountSurcharge(
     var addedManually: Boolean
 ) {
     constructor(): this(UUID.randomUUID(), UUID.randomUUID(), "", BigDecimal.ZERO, 0L, false) // required by smallrye graphql
-}
-
-@GraphQLApi
-@Path("query-cache")
-@Consumes(MediaType.APPLICATION_JSON)
-@Produces(MediaType.APPLICATION_JSON)
-class CachedContractQueryRestResource {
-
-    @Inject
-    lateinit var restClient: org.elasticsearch.client.RestClient
-
-    private val log = Logger.getLogger(this.javaClass)
-
-    @DELETE
-    @Path("/{id}")
-    @Timed(unit = MetricUnits.MILLISECONDS)
-    fun deleteByContractId(@PathParam("id") id: UUID): Response {
-        log.info("deleting document from ES $id")
-        val request = Request("DELETE", "/$INDEX/_doc/${id}")
-        return Response.ok(performESRequest(restClient, request)).build()
-    }
 }
