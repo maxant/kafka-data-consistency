@@ -16,6 +16,8 @@ import javax.persistence.*
                 query = PriceEntity.NqCountByContractIdAndNotSyncTime.query),
         NamedQuery(name = PriceEntity.NqSelectByComponentIdsAndDateTime.name,
                 query = PriceEntity.NqSelectByComponentIdsAndDateTime.query),
+        NamedQuery(name = PriceEntity.NqSelectByContractIdAndDateTime.name,
+                query = PriceEntity.NqSelectByContractIdAndDateTime.query),
         NamedQuery(name = PriceEntity.NqSelectByContractIdsOrderedByStartAsc.name,
                 query = PriceEntity.NqSelectByContractIdsOrderedByStartAsc.query)
 )
@@ -85,6 +87,19 @@ open class PriceEntity( // add open, rather than rely on maven plugin, because @
             """
     }
 
+    object NqSelectByContractIdAndDateTime {
+        const val name = "selectByContractIdAndDateTime"
+        const val contractIdParam = "contractId"
+        const val dateTimeParam = "dateTime"
+        const val query = """
+            select p 
+            from PriceEntity p 
+            where p.contractId in :$contractIdParam
+              and p.start <= :$dateTimeParam
+              and p.end >= :$dateTimeParam
+            """
+    }
+
     object NqSelectByContractIdsOrderedByStartAsc {
         const val name = "selectByContractIds"
         const val contractIdsParam = "contractIds"
@@ -118,6 +133,14 @@ open class PriceEntity( // add open, rather than rely on maven plugin, because @
             log.info("getting price entities for components $componentIds and dateTime $dateTime")
             return em.createNamedQuery(NqSelectByComponentIdsAndDateTime.name, PriceEntity::class.java)
                     .setParameter(NqSelectByComponentIdsAndDateTime.componentIdsParam, componentIds)
+                    .setParameter(NqSelectByComponentIdsAndDateTime.dateTimeParam, dateTime)
+                    .resultList
+        }
+
+        fun selectByContractIdAndDateTime(em: EntityManager, contractId: UUID, dateTime: LocalDateTime): List<PriceEntity> {
+            log.info("getting price entities for contract $contractId and dateTime $dateTime")
+            return em.createNamedQuery(NqSelectByContractIdAndDateTime.name, PriceEntity::class.java)
+                    .setParameter(NqSelectByContractIdAndDateTime.contractIdParam, contractId)
                     .setParameter(NqSelectByComponentIdsAndDateTime.dateTimeParam, dateTime)
                     .resultList
         }

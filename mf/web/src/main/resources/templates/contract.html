@@ -91,9 +91,11 @@
                 <h3>Components</h3>
                 <ul>
                     <li v-for="component in model.contract.components">
-                        <div>{{component.componentDefinitionId}}</div>
+                        <div>{{component.componentDefinitionId}} ({{parseFloat(component.$price).toFixed(2)}} CHF)</div>
                         <ul>
-                            <li v-for="config in component.configs">{{toLower(config.name)}} {{toLower(config.value)}} {{config.units == 'NONE'?'':toLower(config.units)}}</li>
+                            <li v-for="config in component.configs">
+                                {{toLower(config.name)}} {{toLower(config.value)}} {{config.units == 'NONE'?'':toLower(config.units)}}
+                            </li>
                         </ul>
                     </li>
                 </ul>
@@ -164,6 +166,8 @@ const App = {
                     console.error(msg);
                     alert(msg);
                 }
+            }).then(r => {
+                return self.getPrices();
             }).catch(error => {
                 alert("received error: " + error);
             });
@@ -191,6 +195,32 @@ const App = {
                     self.model.bills = r.payload;
                 } else {
                     let msg = "Failed to get bills: " + r.payload;
+                    console.error(msg);
+                    alert(msg);
+                }
+            }).catch(error => {
+                alert("received error: " + error);
+            });
+
+            return Promise.all([aggregate$, partnerRelationships$, bills$]);
+        },
+        getPrices() {
+            let self = this;
+            let url = PRICING_BASE_URL + "/pricing/prices/" + self.model.id + "?dateTime=" + self.model.contract.end;
+            return fetchIt(url, "GET", this).then(r => {
+                self.timeTaken = new Date().getTime() - self.start;
+                if(r.ok) {
+                    console.log("got prices, for requestId " + self.requestId);
+                    self.model.prices = r.payload;
+                    self.model.prices.forEach(p => {
+                        self.model.contract.components.forEach(c => {
+                            if(c.id == p.componentId) {
+                                c.$price = p.price;
+                            }
+                        });
+                    });
+                } else {
+                    let msg = "Failed to get prices: " + r.payload;
                     console.error(msg);
                     alert(msg);
                 }

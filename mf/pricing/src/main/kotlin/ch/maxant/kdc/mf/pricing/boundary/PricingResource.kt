@@ -41,4 +41,11 @@ class PricingResource(
         val tax = entities.map{ it.tax }.reduce{ acc, tax -> acc.add(tax) }
         return Response.ok(Price(price, tax)).build()
     }
+
+    @GET
+    @Path("/prices/{contractId}")
+    @Timed(unit = MetricUnits.MILLISECONDS)
+    fun priceByContractId(@PathParam("contractId") contractId: UUID,
+                          @QueryParam("dateTime") dateTimeString: String
+    ) = Response.ok(PriceEntity.Queries.selectByContractIdAndDateTime(em, contractId, LocalDateTime.parse(dateTimeString))).build()
 }
