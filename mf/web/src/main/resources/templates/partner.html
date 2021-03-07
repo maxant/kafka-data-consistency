@@ -15,7 +15,10 @@
 </div>
 <p-button id="sales" label="sales" @click="navigateToSales()"></p-button>
 <hr>
-<mf-contract v-for="contractId in model.contractIds" :contract-id="contractId" clickable="true"></mf-contract>
+
+<div class="p-grid">
+    <mf-contract v-for="contractId in model.contractIds" :contract-id="contractId" clickable="true"></mf-contract>
+</div>
 <div v-if="model.hasMoreContracts">
     Partner has more contracts. <a href="/search">Search here...</a>
 </div>

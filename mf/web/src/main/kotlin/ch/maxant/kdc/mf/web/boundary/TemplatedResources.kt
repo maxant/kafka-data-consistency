@@ -20,6 +20,7 @@ private fun TemplateInstance.addStandardLibraries() =
             .data("vueversion", "@3.0.4")
             .data("vuerouterversion", "@4.0.2")
             .data("primeiconsversion", "@4.1.0")
+            .data("primeflexversion", "@2.0.0")
             .data("rxjsversion", "@6.6.3")
 
 /** adds the given primevue widgets */

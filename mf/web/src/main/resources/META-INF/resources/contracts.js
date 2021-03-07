@@ -3,11 +3,10 @@
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // display
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// TODO responsive, columns, etc.
 const template =
 // start template
 `
-<div style="border: 1px solid #999999; box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.2), 0 6px 10px 0 rgba(0, 0, 0, 0.2); width: 450px; margin: 10px 10px 20px 10px; padding: 5px;"
+<div class="tile p-col-12 p-sm-12 p-md-6 p-lg-3 p-xl-3"
      v-if="fetchedContract && (fetchedContract.contractState != 'DRAFT' || !hideDrafts)"
 >
     <div>

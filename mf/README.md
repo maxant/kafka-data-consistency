@@ -249,6 +249,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- make portal a little prettier / responsive
 - add cache stats to grafana
   - writeToCache, readFromCache, deleteFromCache CacheEvicter#handle
 - add a condition, if a user based discount has been set! => rule based!
@@ -273,7 +274,6 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 - cron job for jaeger
 - nginx + http2
 - remove old stuff from this git repo so we can link to this repo in presentations
-- make sites a little prettier / responsive
 - grafana parameterisation
 - add kafka metrics from applications (prod/consumers/streams) to grafana
 - billing: send event back to sales UI so that the customer can pay directly for the first billed period
@@ -615,6 +615,14 @@ Update Jaeger Dependencies:
 Kibana searches:
 
     operationName:*DraftsResource*
+
+## Primevue + Primeflex
+
+- https://primefaces.org/primevue/showcase/#/grid
+  - p-sm-* min-width: 576px small devices
+  - p-md-* min-width: 768px tables
+  - p-lg-* min-width: 992px desktops
+  - p-xl-* min-width: 1200px Big screen monitors
 
 ## Infrastructure
 

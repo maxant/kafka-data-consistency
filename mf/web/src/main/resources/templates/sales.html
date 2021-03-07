@@ -17,35 +17,42 @@
                        @selected="partnerSelected" >
     </mf-partner-select>
 </div>
+<div class="p-grid">
+    <div class="p-col-12 p-sm-12 p-md-6 p-lg-3 p-xl-3">
+        <p-dropdown :options="products" v-model="product"></p-dropdown>
+        <span style="font-size: 0.8em; font-style: italic;">
+            choose "coffee latte" above to see how a
+            product specific ui-widget is used
+            rather than a generic one, and how
+            rules are executed in the UI
+        </span>
+    </div>
+    <div class="p-col-12 p-sm-12 p-md-6 p-lg-3 p-xl-3">
+        <p-calendar id="startDate"
+                    v-model="model.startDate"
+                    :show-icon="true"
+                    placeholder="Select a date for your order"
+                    date-format="yy-mm-dd"
+                    :min-date="minStartDate"
+                    :max-date="maxStartDate"
+                    :show-button-bar="true"
+                    select-other-months="true"
+        ></p-calendar>
+    </div>
+    <div class="p-col-12 p-sm-12 p-md-6 p-lg-3 p-xl-3">
+        <p-button @click="newDraft()">get new draft</p-button>
+    </div>
+</div>
+<!--
 <div style="display:table;">
     <div style="display:table-row;">
         <div style="display:table-cell; vertical-align: middle;">
-            <p-dropdown :options="products" v-model="product">
-            </p-dropdown>
         </div>
         <div style="display:table-cell; vertical-align: middle">
-            <span style="font-size: 0.8em; font-style: italic;">
-                choose "coffee latte" to see how a <br>
-                product specific ui-widget is used<br>
-                rather than a generic one, and howh<br>
-                rules are executed in the UI
-            </span>
         </div>
     </div>
 </div>
-<div>
-    <p-calendar id="startDate"
-                v-model="model.startDate"
-                :show-icon="true"
-                placeholder="Select a date for your order"
-                date-format="yy-mm-dd"
-                :min-date="minStartDate"
-                :max-date="maxStartDate"
-                :show-button-bar="true"
-                select-other-months="true"
-    ></p-calendar>
-    <p-button @click="newDraft()">get new draft</p-button>
-</div>
+-->
 <div style="font-size: small;">
     Drafted in {{ timeTaken }}ms
 </div>
@@ -54,10 +61,8 @@
         {{ progressText }}
     </p-progressbar>
 </div>
-<div v-if="get(model, 'draft.contract')">
+<div class="p-grid" v-if="get(model, 'draft.contract')">
     <mf-contract :contract="model.draft.contract"></mf-contract>
-</div>
-<div v-if="get(model, 'draft.contract')">
     <mf-partner v-if="model.salesRep" :partner-id="model.salesRep" role="SALES_REP" clickable="true"></mf-partner>
 </div>
 <div v-if="!!get(model, 'draft.pack.$price')">
@@ -108,8 +113,8 @@
 </div>
 <div>
     <p-button id="offerDraft" :disabled="!allowOffer" @click="offerDraft()">offer draft</p-button>
-    (test if locked: <p-button @click="offerDraft()">offer draft</p-button>)
-    <p-button @click="resync()" icon="pi-cloud-download" v-tooltip="'click this if the draft is broken'" style="min-width: 100px;">resync</p-button>
+    (test if locked: <p-button class="p-button-secondary" @click="offerDraft()">offer draft</p-button>)
+    <p-button class="p-button-secondary" @click="resync()" icon="pi-cloud-download" v-tooltip="'click this if the draft is broken'" style="min-width: 100px;">resync</p-button>
 </div>
 
 </span>

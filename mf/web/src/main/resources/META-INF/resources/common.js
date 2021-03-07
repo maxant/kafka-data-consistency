@@ -7,7 +7,7 @@ window.uuidv4 = function() {
 }
 
 window.getHeaders = function(requestId, getDemoContext) {
-    let ctx = security.addJwt({"Content-Type": "application/json", "request-id": requestId })
+    let ctx = security.addJwt({"Content-Type": "application/json", "Accept": "application/json", "request-id": requestId })
     if(getDemoContext) {
         ctx["demo-context"] = getDemoContext()
     }
