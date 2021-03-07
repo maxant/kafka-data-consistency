@@ -8,9 +8,12 @@ import ch.maxant.kdc.mf.contracts.definitions.Units
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractState
+import ch.maxant.kdc.mf.library.KafkaHandler
+import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.smallrye.graphql.api.Context
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.eclipse.microprofile.graphql.*
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Gauge
@@ -29,6 +32,9 @@ import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
 import javax.persistence.EntityManager
 import javax.ws.rs.WebApplicationException
+
+private const val INDEX = "contract-cache"
+
 
 /**
  * <pre>
@@ -75,8 +81,6 @@ class CachedContractQueryResource(
     @Inject
     @RestClient // bizarrely this doesnt work with constructor injection
     lateinit var discountsSurchargesAdapter: DiscountsSurchargesAdapter
-
-    private val INDEX = "contract-cache"
 
     private val log = Logger.getLogger(this.javaClass)
 
@@ -172,6 +176,7 @@ class CachedContractQueryResource(
             .map { Component(om, it) }
     }
 
+    @Timed
     private fun writeToCache(aggregate: CachedAggregate) {
         log.info("writing aggregate to cache ${aggregate.contract.id}")
         val request = Request("PUT", "/$INDEX/_doc/${aggregate.contract.id}")
@@ -179,6 +184,7 @@ class CachedContractQueryResource(
         performESRequest(request)
     }
 
+    @Timed
     private fun readFromCache(id: UUID): CachedAggregate? {
         val request = Request("GET", "/$INDEX/_doc/${id}")
         val response = performESRequest(request) ?: return null
@@ -341,7 +347,7 @@ data class Component(
     )
 }
 
-data class Config(var key: ConfigurableParameter, var value: String, var units: Units) {
+data class Config(var name: ConfigurableParameter, var value: String, var units: Units) {
     constructor(): this(ConfigurableParameter.VOLUME, "", Units.NONE) // required by smallrye graphql
 }
 
@@ -373,3 +379,46 @@ data class Condition(
 ) {
     constructor(): this(UUID.randomUUID(), UUID.randomUUID(), "", 0L, false) // required by smallrye graphql
 }
+
+@ApplicationScoped
+@SuppressWarnings("unused")
+class CacheEvicter(
+    @Inject var om: ObjectMapper,
+
+    @Inject var context: ch.maxant.kdc.mf.library.Context,
+
+    @Inject var restClient: org.elasticsearch.client.RestClient
+) : KafkaHandler {
+
+    private val log = Logger.getLogger(this.javaClass)
+
+    override fun getKey() = "event-bus-in"
+
+    override fun getRunInParallel() = true
+
+    @PimpedAndWithDltAndAck
+    override fun handle(record: ConsumerRecord<String, String>) {
+        when (context.event) {
+            "UPDATED_DRAFT",
+            "ADDED_DSC_FOR_DRAFT",
+            "OFFERED_DRAFT",
+            "ACCEPTED_OFFER",
+            "APPROVED_CONTRACT" -> evict(record)
+        }
+    }
+
+    @Timed
+    private fun evict(record: ConsumerRecord<String, String>) {
+        log.info("evicting ${record.key()}")
+
+        val request = Request("DELETE", "/$INDEX/_doc/${record.key()}")
+        try {
+            restClient.performRequest(request)
+        } catch(e: ResponseException) {
+            if(e.response.statusLine.statusCode != 404) throw e // 404 is OK, eg no user ever searched for it in the cache
+        } catch(e: Exception) {
+            log.error("failed to evict ${record.key()}", e)
+        }
+    }
+}
+

@@ -5,21 +5,18 @@ import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
-import org.jboss.logging.Logger
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
 
 
 @ApplicationScoped
 @SuppressWarnings("unused")
-class EventBusConsumer : KafkaHandler {
+class CasesConsumer : KafkaHandler {
 
     @Inject
     lateinit var eventProcessor: EventProcessor
 
-    val log: Logger = Logger.getLogger(this.javaClass)
-
-    override fun getKey() = "event-bus-in"
+    override fun getKey() = "cases-in"
 
     override fun getRunInParallel() = true
 

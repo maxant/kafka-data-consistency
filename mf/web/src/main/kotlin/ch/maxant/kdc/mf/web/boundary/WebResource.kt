@@ -1,21 +1,11 @@
 package ch.maxant.kdc.mf.web.boundary
 
 import ch.maxant.kdc.mf.library.Context
-import ch.maxant.kdc.mf.library.Context.Companion.DEMO_CONTEXT
-import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.subscription.MultiEmitter
-import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecordMetadata
-import org.apache.kafka.common.header.Header
-import org.eclipse.microprofile.metrics.MetricUnits
-import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
-import org.eclipse.microprofile.reactive.messaging.Incoming
-import org.eclipse.microprofile.reactive.messaging.Message
 import org.jboss.logging.Logger
 import org.jboss.resteasy.annotations.SseElementType
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionStage
 import java.util.concurrent.ConcurrentHashMap
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
@@ -68,50 +58,6 @@ class WebResource {
                 }
     }
 
-    @Incoming("cases-in")
-    @PimpedAndWithDltAndAck
-    @Timed(unit = MetricUnits.MILLISECONDS)
-    fun processCases(message: Message<String>) = process(message)
-
-    @Incoming("partners-in")
-    @PimpedAndWithDltAndAck
-    @Timed(unit = MetricUnits.MILLISECONDS)
-    fun processPartners(message: Message<String>) = process(message)
-
-    @Incoming("errors-in")
-    @PimpedAndWithDltAndAck
-    @Timed(unit = MetricUnits.MILLISECONDS)
-    fun processErrors(message: Message<String>) = process(message)
-
-    @Deprecated(message = "use native kafka record")
-    private fun process(message: Message<String>): CompletionStage<*> {
-        var headers = // coz its a string of json that needs its quotes escaping and isnt useful to the web client, as it came from there
-                (message
-                        .getMetadata(IncomingKafkaRecordMetadata::class.java)
-                        .orElse(null)
-                        ?.headers ?: emptyList<Header>())
-                        .toList()
-
-        val requestId = headers
-                .filter { it.key() == Context.REQUEST_ID }
-                .map { String(it.value()) }
-                .firstOrNull()?:context.getRequestIdSafely().toString()
-
-        log.info("handling message for requestId $requestId")
-
-        var headers2 = headers
-                        .filter { it.key() != DEMO_CONTEXT }
-                        .joinToString { """ "${it.key()}": "${String(it.value())}" """ }
-
-        headers2 = if(headers2.isEmpty()) "" else "$headers2,"
-
-        val json = """{ $headers2 "payload": ${message.payload} }"""
-
-        sendToSubscribers(requestId, json)
-
-        return CompletableFuture.completedFuture(Unit)
-    }
-
     @GET
     @Path("/stream/{requestId}")
     @Produces(MediaType.SERVER_SENT_EVENTS)
@@ -125,7 +71,7 @@ class WebResource {
                     subscriptions[requestId] = EmitterState(e, System.currentTimeMillis())
                     e.onTermination {
                         e.complete()
-                        log.info("removing termindated subscription ${requestId}")
+                        log.info("removing termindated subscription $requestId")
                         subscriptions.remove(requestId)
                     }
                 } // TODO if we get memory problems, add a different BackPressureStrategy as a second parameter to the emitter method

@@ -13,16 +13,16 @@ fun doByHandlingValidationExceptions(fn: () -> Response): Response {
         // ResteasyViolationExceptionMapper doesnt handle ValidationException, and we don't want to create
         // some RestEasy*Impl Exception, so lets keep it simple, and do a mapping here like this:
         logger.info("failing with ${e.javaClass.name}: ${e.message} at ${e.stackTrace[0].fileName}:${e.stackTrace[0].lineNumber}")
-        Response.status(400).entity(Output(e.javaClass.name, e.message, e.data)).build()
+        Response.status(Response.Status.BAD_REQUEST).entity(Output(e.javaClass.name, e.message, e.data)).build()
     } catch (e: ValidationException) {
         // ResteasyViolationExceptionMapper doesnt handle ValidationException, and we don't want to create
         // some RestEasy*Impl Exception, so lets keep it simple, and do a mapping here like this:
         logger.info("failing with ${e.javaClass.name}: ${e.message} at ${e.stackTrace[0].fileName}:${e.stackTrace[0].lineNumber}")
-        Response.status(400).entity(Output(e.javaClass.name, e.message)).build()
+        Response.status(Response.Status.BAD_REQUEST).entity(Output(e.javaClass.name, e.message)).build()
     } catch (e: IllegalArgumentException) {
         // comes out of kotlin's require
         logger.info("failing with ${e.javaClass.name}: ${e.message} at ${e.stackTrace[0].fileName}:${e.stackTrace[0].lineNumber}")
-        Response.status(400).entity(Output(e.javaClass.name, e.message)).build()
+        Response.status(Response.Status.BAD_REQUEST).entity(Output(e.javaClass.name, e.message)).build()
     }
 }
 

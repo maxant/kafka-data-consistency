@@ -607,12 +607,12 @@ function sse(requestId, self) {
                 // TODO refresh area that show tasks related to this sales case
             }
         } else if(msg.event == "ERROR") {
-            if(msg.payload.errorClass == "ch.maxant.kdc.mf.partners.control.PartnerHasNoPrimaryAddressValidationException") {
+            if(_.get(msg, 'payload.errorClass')) {
                 alert(msg.payload.errorMessage);
-                // TODO let user add a primary address
             } else {
-                console.error("received error: " + JSON.stringify(msg));
-                alert("an error occurred - see the console");
+                msg = JSON.stringify(msg);
+                console.error("received error: " + msg);
+                alert(msg);
                 ameliorateCurrentAction(self)
             }
         } else {
@@ -632,7 +632,6 @@ function ameliorateCurrentAction(self) {
         // not much can be done => user has a button to go get a new one
         alert("Failed to create an offer. Please try refreshing the page.")
     } else if(self.currentAction.action == "changeParam") {
-        alert("TODO offer user the chance to reload the entire draft with the backend state");
         // {action: "changeParam", paramName, componentId, oldValue, newValue}
         removeWaitingAndResetValue(self.currentAction.componentId, self.currentAction.paramName, self.currentAction.oldValue, self.model.draft.pack)
         self.allowOffer = false

@@ -143,6 +143,9 @@ class ContractResource(
             log.info("auto-approved contract $contractId")
         }
 
+        log.info("publishing AcceptedOffer event")
+        eventBus.publish(AcceptedOffer(contract))
+
         esAdapter.updateOffer(contractId, contract.contractState)
 
         Response.ok(contract).build()

@@ -42,7 +42,7 @@ class Abac {
         if (!partnerRelationshipsAdapter.latestByForeignIdAndRole(contractId, role.toString())
                         .all { it.partnerId == partnerId }) {
             throw NotAuthorizedException("you are not the contract holder of contract $contractId. " +
-                    "Only the contract holder may accept the contract.")
+                    "Only the contract holder may accept the contract.") // ForbiddenException's message isnt exposed by standard quarkus exception mappings :-(
         }
     }
 
@@ -52,7 +52,7 @@ class Abac {
         if (!partnerRelationshipsAdapter.latestByForeignIdAndRole(contractId, role.toString())
                         .all { it.partnerId == partnerId }) {
             throw NotAuthorizedException("you are not the sales rep of contract $contractId. " +
-                    "Only the sales rep may approve the contract.")
+                    "Only the sales rep may approve the contract.") // ForbiddenException's message isnt exposed by standard quarkus exception mappings :-(
         }
     }
 
@@ -88,7 +88,7 @@ class Abac {
         if(!userIsInSameOuAsSalesRep(headOffice)) {
             throw NotAuthorizedException("you are not a) the contract holder, b) in head office or c) " +
                     "in the same organisational unit as the sales rep of contract $contractId, so you are " +
-                    "not authorised to view the contract.")
+                    "not authorised to view the contract.") // ForbiddenException's message isnt exposed by standard quarkus exception mappings :-(
         }
     }
 

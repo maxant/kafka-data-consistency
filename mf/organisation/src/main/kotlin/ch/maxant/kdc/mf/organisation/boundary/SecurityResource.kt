@@ -62,7 +62,7 @@ class SecurityResource {
         }
         if (hash(user.pswd) != password) {
             log.info("wrong password '$password' for user ${user.un}")
-            throw ForbiddenException() // no details, as that would be an attack point
+            throw NotAuthorizedException("Username/password do not match")
         }
         log.info("user is logged in ${user.un}")
         return user

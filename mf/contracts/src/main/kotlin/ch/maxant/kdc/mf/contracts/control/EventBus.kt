@@ -5,7 +5,6 @@ import ch.maxant.kdc.mf.library.MessageBuilder
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.jboss.logging.Logger
-import java.util.concurrent.CompletableFuture
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.event.Observes
 import javax.enterprise.event.TransactionPhase
@@ -52,6 +51,10 @@ class EventBus {
         send(eventBus, offeredDraft.contract.id, offeredDraft, event = "OFFERED_DRAFT")
     }
 
+    fun publish(acceptedOffer: AcceptedOffer) {
+        send(eventBus, acceptedOffer.contract.id, acceptedOffer, event = "ACCEPTED_OFFER")
+    }
+
     fun publish(approvedContract: ApprovedContract) {
         send(eventBus, approvedContract.contract.id, approvedContract, event = "APPROVED_CONTRACT")
     }
@@ -81,7 +84,7 @@ class EventBus {
     private fun send(@Observes(during = TransactionPhase.AFTER_SUCCESS) sts: SomethingToSend) {
         // since this is happening async after the transaction, and we don't return anything,
         // we just pass a new CompletableFuture and don't care what happens with it
-        sts.emitter.send(messageBuilder.build(sts.key, sts.value, CompletableFuture(), sts.command, sts.event))
+        sts.emitter.send(messageBuilder.build(sts.key, sts.value, sts.command, sts.event))
         log.info("published ${sts.command?:sts.event}")
     }
 }

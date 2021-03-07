@@ -201,6 +201,7 @@ Also known as entry points, process components or UIs.
   - UPDATED_DRAFT (contracts-event-bus)
   - OFFERED_DRAFT (contracts-event-bus)
   - APPROVED_CONTRACT (contracts-event-bus)
+  - ADDED_DSC_FOR_DRAFT (contracts-event-bus)
   - UPDATED_PRICES_FOR_DRAFT (contracts-event-bus)
   - RECALCULATED_PRICES_FOR_GROUP_OF_CONTRACTS (contracts-event-bus)
   - PRICES_READ_FOR_GROUP_OF_CONTRACTS (contracts-event-bus)
@@ -211,7 +212,6 @@ Also known as entry points, process components or UIs.
   - SELECTED_FOR_BILLING (billing-internal)
   - BILL_CREATED (billing-events)
   - TODO all the other billing events/commands
-
 ## Links
 
 - http://blog.maxant.co.uk/pebble/2008/01/02/1199309880000.html
@@ -250,23 +250,21 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
 ## TODO
 - add cache stats to grafana
-- use cache for contract view, and add other missing data, and make it fetch it async
-- do cache evict on events from contract and DSC
 - add a condition, if a user based discount has been set! => rule based!
-- sales => why isnt the draft button locked when clicked?
-- add signature to tasks => if manual discount is above a certain amount, then john has to approve it and such tasks are always displayed
-- upgrade libraries
-- all inbound topics in web need to use mf rather than mp, so that eg partner relationships land in right browser, otherwise as soon as we have two pods, it dont work no more
-- arch principals - use a single topic to ensure ordering, that way, we could say update discounts and are sure anything they'd depend on happened first
-  - also always write the draft via the draft service. (we have to update the syncTimestamp; we have to load components for the downstream services)
-- measure what's so slow with ES contract creation/updates
-- after approving, the task isnt made to disappear in the contract UI
-  - we dont subscribe to sse on the contracts page!
-  - same after offering draft!
 - add displaying C to sales and portal
 - add conditions to DscConsumer
 - add ability to remove sugar from recipe, rather than setting its config to 0
 - delete DSC where componentId is no longer in model, otherwise we'd have orphans hanging around
+- sales => why isnt the draft button locked when clicked?
+- add signature to tasks => if manual discount is above a certain amount, then john has to approve it and such tasks are always displayed
+- upgrade libraries
+- arch principals - use a single topic to ensure ordering, that way, we could say update discounts and are sure anything they'd depend on happened first
+  - also always write the draft via the draft service. (we have to update the syncTimestamp; we have to load components for the downstream services)
+- measure what's so slow with ES contract creation/updates
+- measure what's so slow with neapel
+- after approving, the task isnt made to disappear in the contract UI
+  - we dont subscribe to sse on the contracts page!
+  - same after offering draft!
 - check async tracing now works - it does, but cases SQL isnt traced. BUT it is when creating a task. maybe it's related to flush time? UGLY
 - why is REST request traced twice? how come not connected?! => jaxrs contrib ignores existing spans and adds a parent based on headers
 - billing stream with tracing see TODO in streaming application
@@ -441,11 +439,13 @@ Kibana searches:
 Check existing:
 
     curl -X GET "kdc.elasticsearch.maxant.ch/contracts"
+    curl -X GET "kdc.elasticsearch.maxant.ch/contract-cache"
     curl -X GET "kdc.elasticsearch.maxant.ch/partners"
 
 Delete existing:
 
     curl -X DELETE "kdc.elasticsearch.maxant.ch/contracts"
+    curl -X DELETE "kdc.elasticsearch.maxant.ch/contract-cache"
     curl -X DELETE "kdc.elasticsearch.maxant.ch/partners"
 
 Create new:
@@ -474,6 +474,34 @@ Create new:
         }
     }
     '
+
+The following index is a cache backing and doesn't need to be searchable. In fact we want it to be as
+fast as possible. We use `nested` since we don't care about individual property mappings, and `index:no` to
+tell it not to bother mapping fields.
+
+    curl -X DELETE "kdc.elasticsearch.maxant.ch/contract-cache"
+
+    curl -X PUT "kdc.elasticsearch.maxant.ch/contract-cache" -H 'Content-Type: application/json' -d'
+    {
+        "settings" : {
+            "index" : {
+                "number_of_shards" : 10,
+                "number_of_replicas" : 1
+            }
+        },
+        "mappings" : {
+            "properties": {
+                "contract": { "type": "object", "enabled": false },
+                "discountsAndSurcharges": { "type": "object", "enabled": false },
+                "conditions": { "type": "object", "enabled": false }
+            }
+        }
+    }
+    '
+
+Partner mapping uses a custom analyser:
+
+    curl -X DELETE "kdc.elasticsearch.maxant.ch/partners"
 
     curl -X PUT "kdc.elasticsearch.maxant.ch/partners" -H 'Content-Type: application/json' -d'
     {

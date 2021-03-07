@@ -4,92 +4,106 @@
     Fetched in {{ timeTaken }}ms
 </div>
 
-<mf-contract v-if="model.contract.id" :contract="model.contract" allow-accept-offer="true" @accepted="acceptedOffer" source="graphql+cache"></mf-contract>
-<div v-if="model.contract.createdBy">Created by {{model.contract.createdBy}} at {{model.contract.createdAt}}</div>
-<div v-if="model.contract.offeredBy">Offered by {{model.contract.offeredBy}} at {{model.contract.offeredAt}}</div>
-<div v-if="model.contract.acceptedBy">Accepted by {{model.contract.acceptedBy}} at {{model.contract.acceptedAt}}</div>
-<div v-if="model.contract.approvedBy">Approved by {{model.contract.approvedBy}} at {{model.contract.approvedAt}}</div>
-<div v-if="model.contract.state == 'DRAFT'">     |}{! we can use "state" or "contractState" - see graphQl mapping in request below !}{|
-    <p-button id="offerDraftButton" @click="offerDraft()">Offer draft</p-button>
-    <p-button v-if="showResync" @click="resync()">resync</p-button>
+<table>
+    <tr>
+        <td valign="top">
+            <mf-contract v-if="model.contract.id" :contract="model.contract" allow-accept-offer="true" @accepted="acceptedOffer" source="graphql+cache"></mf-contract>
+        </td>
+        <td v-for="partnerRelationship in model.partnerRelationships" valign="top">
+            <mf-partner :partner-id="partnerRelationship.partnerId"
+                        :role="partnerRelationship.role"
+                        clickable="true"
+                        @loaded="partnerLoaded">
+            </mf-partner>
+        </td>
+    </tr>
+    <tr>
+        <td valign="top">
+            <div v-if="model.contract.createdBy">Created by {{model.contract.createdBy}} at {{model.contract.createdAt}}</div>
+            <div v-if="model.contract.offeredBy">Offered by {{model.contract.offeredBy}} at {{model.contract.offeredAt}}</div>
+            <div v-if="model.contract.acceptedBy">Accepted by {{model.contract.acceptedBy}} at {{model.contract.acceptedAt}}</div>
+            <div v-if="model.contract.approvedBy">Approved by {{model.contract.approvedBy}} at {{model.contract.approvedAt}}</div>
+            <div v-if="model.contract.state == 'DRAFT'">     |}{! we can use "state" or "contractState" - see graphQl mapping in request below !}{|
+                <p-button id="offerDraftButton" @click="offerDraft()">Offer draft</p-button>
+                <p-button v-if="showResync" @click="resync()">resync</p-button>
 
-</div>
-<div v-if="model.contract.contractState == 'AWAITING_APPROVAL'">
-    |}{! TODO add a text field where the user can justify this !}{|
-    <p-button id="approveContractButton" @click="approveContract()">Approve contract</p-button>
-</div>
-<hr>
-<div>
-    <h3>Components</h3>
-    <ul>
-        <li v-for="component in model.contract.components">
-            <div>{{component.componentDefinitionId}}</div>
-            <ul>
-                <li v-for="config in component.configs">{{config.name}} {{config.value}} {{config.units == 'NONE'?'':config.units}}</li>
-            </ul>
-        </li>
-    </ul>
-</div>
-<hr>
-<div>
-    <h3>Discounts and Surcharges</h3>
-    <ul v-if="model.discountssurcharges">
-        <span v-if="model.discountssurcharges.failedReason">Currently unavailable: {{model.discountssurcharges.failedReason}}</span>
-        <li v-else v-for="discountsurcharge in model.discountssurcharges.list">
-            {{discountsurcharge.definitionId}}:
-            {{Math.abs(discountsurcharge.value*100)}}%
-            {{discountsurcharge.value < 0 ? "discount" : "surcharge"}}
-            on {{getComponentName(discountsurcharge.componentId)}}
-            added {{discountsurcharge.addedManually ? "manually" : "automatically"}}
-        </li>
-    </ul>
-    <span v-else>None</span>
-</div>
-<hr>
-<div>
-    <h3>Conditions</h3>
-    <ul v-if="model.conditions">
-        <span v-if="model.conditions.failedReason">Currently unavailable: {{model.conditions.failedReason}}</span>
-        <li v-else v-for="condition in model.conditions.list">
-            "{{condition.definitionId}}"
-            on {{getComponentName(condition.componentId)}}
-            added {{condition.addedManually ? "manually" : "automatically"}}
-        </li>
-    </ul>
-    <span v-else>None</span>
-</div>
-<hr>
-<div>
-    <h3>Bills</h3>
-    <table v-if="model.bills.length > 0" border="1" cellpadding="0" cellspacing="0">
-        <tr>
-            <th>Billing Definition</th>
-            <th>Start</th>
-            <th>End</th>
-            <th>Price</th>
-            <th>Created At</th>
-        </tr>
-        <tr v-for="bill in model.bills">
-            <td>{{bill.definitionId}}</td>
-            <td>{{bill.start}}</td>
-            <td>{{bill.end}}</td>
-            <td>{{bill.price}}</td>
-            <td>{{bill.createdAt}}</td>
-        </tr>
-    </table>
-    <span v-else>None</span>
-</div>
-<hr>
-<mf-partner v-for="partnerRelationship in model.partnerRelationships"
-            :partner-id="partnerRelationship.partnerId"
-            :role="partnerRelationship.role"
-            clickable="true"
-            @loaded="partnerLoaded">
-</mf-partner>
+            </div>
+            <div v-if="model.contract.contractState == 'AWAITING_APPROVAL'">
+                |}{! TODO add a text field where the user can justify this !}{|
+                <p-button id="approveContractButton" @click="approveContract()">Approve contract</p-button>
+            </div>
+            <hr>
+            <div>
+                <h3>Discounts and Surcharges</h3>
+                <span v-if="model.discountssurcharges.failedReason">Currently unavailable: {{model.discountssurcharges.failedReason}}</span>
+                <ul v-else-if="model.discountssurcharges && model.discountssurcharges.list && model.discountssurcharges.list.length > 0">
+                    <li v-else v-for="discountsurcharge in model.discountssurcharges.list">
+                        {{discountsurcharge.definitionId}}:
+                        {{Math.abs(discountsurcharge.value*100)}}%
+                        {{discountsurcharge.value < 0 ? "discount" : "surcharge"}}
+                        on {{getComponentName(discountsurcharge.componentId)}}
+                        added {{discountsurcharge.addedManually ? "manually" : "automatically"}}
+                    </li>
+                </ul>
+                <span v-else>None</span>
+            </div>
+            <hr>
+            <div>
+                <h3>Conditions</h3>
+                <span v-if="model.conditions.failedReason">Currently unavailable: {{model.conditions.failedReason}}</span>
+                <ul v-else-if="model.conditions && model.conditions.list && model.conditions.list.length > 0">
+                    <li v-else v-for="condition in model.conditions.list">
+                        "{{condition.definitionId}}"
+                        on {{getComponentName(condition.componentId)}}
+                        added {{condition.addedManually ? "manually" : "automatically"}}
+                    </li>
+                </ul>
+                <span v-else>None</span>
+            </div>
+            <hr>
+            <div>
+                <h3>Bills</h3>
+                <table v-if="model.bills.length > 0" border="1" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                    <tr>
+                        <th>Billing Definition</th>
+                        <th>Start</th>
+                        <th>End</th>
+                        <th>Price</th>
+                        <th>Created At</th>
+                    </tr>
+                    <tr v-for="bill in model.bills">
+                        <td>{{bill.definitionId}}</td>
+                        <td>{{bill.start}}</td>
+                        <td>{{bill.end}}</td>
+                        <td>{{bill.price}}</td>
+                        <td>{{bill.createdAt}}</td>
+                    </tr>
+                </table>
+                <span v-else>None</span>
+            </div>
+            <hr>
+            <div>
+                <p-button @click="evictFromCache()">cache evict</p-button>
+            </div>
+        </td>
+        <td valign="top">
+            <div>
+                <h3>Components</h3>
+                <ul>
+                    <li v-for="component in model.contract.components">
+                        <div>{{component.componentDefinitionId}}</div>
+                        <ul>
+                            <li v-for="config in component.configs">{{toLower(config.name)}} {{toLower(config.value)}} {{config.units == 'NONE'?'':toLower(config.units)}}</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        <td valign="top">
+            <mf-cases :case-reference-ids="model.allContractIds"></mf-cases>
+        </td>
+    </tr>
+</table>
 
-</span>
-<span>
-    <mf-cases :case-reference-ids="model.allContractIds"></mf-cases>
 </span>
 </div>
 </div> |}{! end of app div !}{|
@@ -126,7 +140,9 @@ const App = {
                     cached_aggregate(id: "${this.model.id}") {
                         contract {
                             createdAt createdBy offeredAt offeredBy acceptedAt acceptedBy approvedAt approvedBy id start end contractState state:contractState
-                            components { id parentId productId configs {key, value} componentDefinitionId }
+                            components {
+                                id parentId productId componentDefinitionId configs {name, value, units }
+                            }
                         }
                         discountsAndSurcharges { failedReason list { componentId addedManually definitionId value } }
                         conditions { failedReason list { componentId addedManually definitionId } }
@@ -157,7 +173,7 @@ const App = {
                 self.timeTaken = new Date().getTime() - self.start;
                 if(r.ok) {
                     console.log("got partner-relationships, for requestId " + self.requestId);
-                    self.model.partnerRelationships = r.payload;
+                    self.model.partnerRelationships = _.sortBy(r.payload, 'role');
                 } else {
                     let msg = "Failed to get partner relationships: " + r.payload;
                     console.error(msg);
@@ -196,7 +212,7 @@ const App = {
                     console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
                     self.model.allContractIds = [self.model.contract.id];
                 } else {
-                    let msg = "Failed to get contract: " + r.payload;
+                    let msg = "Failed to approve contract: " + r.payload;
                     console.error(msg);
                     alert(msg);
                 }
@@ -265,6 +281,25 @@ const App = {
         },
         getComponentName(componentId) {
             return _.find(this.model.contract.components, c => c.id == componentId).componentDefinitionId;
+        },
+        evictFromCache() {
+            console.log("evicting from cache...")
+            let self = this;
+            let url = ELASTICSEARCH_BASE_URL + "/contract-cache/_doc/" + this.model.id;
+            fetchIt(url, "DELETE", this).then(r => {
+                if(r.ok) {
+                    console.log("cleared cache");
+                } else {
+                    let msg = "Failed to clear cache: " + r.payload;
+                    console.error(msg);
+                    alert(msg);
+                }
+            }).catch(error => {
+                console.error("received error: " + error);
+            });
+        },
+        toLower(o) {
+            return _.toLower(o);
         }
     },
     components: {

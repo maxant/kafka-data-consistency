@@ -37,7 +37,13 @@ window.fetchIt = function(url, method, self, body, responseIsText) {
                     return r.json().then(payload => ({payload, ok: r.ok, response: r}))
                 }
             } else if(r.status == 401 || r.status == 403) {
-                return r.text().then(payload => ({payload: r.headers.get("www-authenticate"), ok: r.ok, response: r}))
+                return r.text().then(payload => {
+                    if(r.headers && r.headers.get("www-authenticate")) {
+                        return {payload: r.headers.get("www-authenticate"), ok: r.ok, response: r};
+                    } else {
+                        return {payload, ok: r.ok, response: r};
+                    }
+                });
             } else {
                 return r.text().then(payload => ({payload, ok: r.ok, response: r}))
             }

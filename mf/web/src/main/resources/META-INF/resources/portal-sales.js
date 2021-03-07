@@ -205,12 +205,12 @@ function sse(requestId, self) {
                 self.model.salesRep = msg.payload.partnerId;
             }
         } else if(msg.event == "ERROR") {
-            if(msg.payload.errorClass == "ch.maxant.kdc.mf.partners.control.PartnerHasNoPrimaryAddressValidationException") {
+            if(_.get(msg, 'payload.errorClass')) {
                 alert(msg.payload.errorMessage);
-                // TODO let user add a primary address
             } else {
-                console.error("received error: " + JSON.stringify(msg));
-                alert("an error occurred - see the console");
+                msg = JSON.stringify(msg);
+                console.error("received error: " + msg);
+                alert(msg);
                 ameliorateCurrentAction(self)
             }
         }

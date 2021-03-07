@@ -57,7 +57,6 @@ window.mfTask = {
 template =
 // start template
 `
-<hr>
 <h3>Tasks</h3>
 <div v-for="task in tasks">
     <mf-task :task="task"></mf-task>
