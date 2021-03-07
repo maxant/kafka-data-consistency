@@ -4,7 +4,7 @@
     Fetched in {{ timeTaken }}ms
 </div>
 
-<mf-contract v-if="model.contract.id" :contract="model.contract" allow-accept-offer="true" @accepted="acceptedOffer" source="graphql-cache"></mf-contract>
+<mf-contract v-if="model.contract.id" :contract="model.contract" allow-accept-offer="true" @accepted="acceptedOffer" source="graphql+cache"></mf-contract>
 <div v-if="model.contract.createdBy">Created by {{model.contract.createdBy}} at {{model.contract.createdAt}}</div>
 <div v-if="model.contract.offeredBy">Offered by {{model.contract.offeredBy}} at {{model.contract.offeredAt}}</div>
 <div v-if="model.contract.acceptedBy">Accepted by {{model.contract.acceptedBy}} at {{model.contract.acceptedAt}}</div>
@@ -140,7 +140,7 @@ const App = {
                 if(r.ok && !r.payload.errors) {
                     self.model.contract = r.payload.data.cached_aggregate.contract;
                     self.model.allContractIds = [id];
-                    self.model.discountssurcharges = r.payload.data.cached_aggregate.discountsSurcharges;
+                    self.model.discountssurcharges = r.payload.data.cached_aggregate.discountsAndSurcharges;
                     self.model.conditions = r.payload.data.cached_aggregate.conditions;
                     console.log("got aggregate for requestId " + self.requestId);
                 } else {
