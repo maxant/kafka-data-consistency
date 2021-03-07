@@ -4,6 +4,7 @@ import ch.maxant.kdc.mf.contracts.adapter.DiscountsSurchargesAdapter
 import ch.maxant.kdc.mf.contracts.definitions.ConfigurableParameter
 import ch.maxant.kdc.mf.contracts.definitions.Configuration
 import ch.maxant.kdc.mf.contracts.definitions.ProductId
+import ch.maxant.kdc.mf.contracts.definitions.Units
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractState
@@ -11,7 +12,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.smallrye.graphql.api.Context
 import org.eclipse.microprofile.graphql.*
-import org.eclipse.microprofile.graphql.DefaultValue
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Gauge
 import org.eclipse.microprofile.metrics.annotation.Timed
@@ -28,9 +28,7 @@ import java.util.concurrent.atomic.AtomicLong
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
 import javax.persistence.EntityManager
-import javax.ws.rs.*
-import javax.ws.rs.core.MediaType
-import javax.ws.rs.core.Response
+import javax.ws.rs.WebApplicationException
 
 /**
  * <pre>
@@ -52,7 +50,7 @@ query {
     }
 
         discountsAndSurcharges {
-            failed
+            failedReason
             discountsSurcharges {
                 componentId addedManually definitionId value
             }
@@ -124,9 +122,13 @@ class CachedContractQueryResource(
     }
 
     private fun ameliorateAggregate(aggregate: CachedAggregate) {
-        if(aggregate.discountsAndSurcharges.failed) {
+        if(aggregate.discountsAndSurcharges.failedReason != null) {
             log.info("attempting to patch failed discounts/surcharges to cached aggregate ${aggregate.contract.id}")
             aggregate.discountsAndSurcharges = assembleDiscountsAndSurcharges(aggregate.contract.id)
+        }
+        if(aggregate.conditions.failedReason != null) {
+            log.info("attempting to patch failed conditions to cached aggregate ${aggregate.contract.id}")
+            aggregate.conditions = assembleConditions(aggregate.contract.id)
         }
     }
 
@@ -140,7 +142,9 @@ class CachedContractQueryResource(
 
         val discountsSurcharges = assembleDiscountsAndSurcharges(id)
 
-        return CachedAggregate(Contract(contract), components, discountsSurcharges)
+        val conditions = assembleConditions(id)
+
+        return CachedAggregate(Contract(contract, components), discountsSurcharges, conditions)
     }
 
     private fun assembleDiscountsAndSurcharges(id: UUID): DiscountsAndSurcharges =
@@ -148,13 +152,23 @@ class CachedContractQueryResource(
             DiscountsAndSurcharges(discountsSurchargesAdapter.getByContractIdAsDto(id))
         } catch (e: Exception) {
             log.warn("failed to fetch discounts/surcharges", e)
-            DiscountsAndSurcharges(emptyList(), true)
+            DiscountsAndSurcharges(emptyList(), e.message)
+        }
+
+    private fun assembleConditions(id: UUID): Conditions =
+        try {
+            throw RuntimeException("not implemented yet")
+            //Conditions(discountsSurchargesAdapter.getByContractIdAsDto(id))
+        } catch (e: Exception) {
+            log.warn("failed to fetch conditions", e)
+            Conditions(emptyList(), e.message)
         }
 
     @Query("components")
-    fun components(@Source aggregate: CachedAggregate, @Name("definitionIdFilter") definitionIdFilter: String): List<Component> {
-        return aggregate._components
-            .filter { Regex(definitionIdFilter).matches((it).componentDefinitionId) }
+    fun components(@Source contract: Contract, @Name("definitionIdFilter") @DefaultValue(".*") definitionIdFilter: String): List<Component> {
+        val regex = if(definitionIdFilter == ".*") null else Regex(definitionIdFilter)
+        return contract._components
+            .filter { regex?.matches(it.componentDefinitionId) ?: true }
             .map { Component(om, it) }
     }
 
@@ -172,7 +186,7 @@ class CachedContractQueryResource(
         return om.treeToValue(source, CachedAggregate::class.java)
     }
 
-    fun deleteFromCache(id: UUID): String? {
+    private fun deleteFromCache(id: UUID): String? {
         log.info("deleting from ES $id")
         val request = Request("DELETE", "/$INDEX/_doc/${id}")
         return performESRequest(request)
@@ -252,21 +266,20 @@ data class CachedAggregate(
     // => use vars everywhere, we also get the error in other cases, not really sure when/why. doesnt seem to support immutability
     var contract: Contract,
 
-    // this one is ignored by graphql (but not jackson!), as this is used as a temp store after assembling the
-    // data / reading from the cache, so that we can still filter according to the client's input
-    @Ignore
-    var _components: List<ComponentEntity>,
-
-    var discountsAndSurcharges: DiscountsAndSurcharges // var so it can be improved, if it failed
+    var discountsAndSurcharges: DiscountsAndSurcharges, // var so it can be improved, if it failed
+    var conditions: Conditions // var so it can be improved, if it failed
 ) {
     fun isAnythingMissing(): Boolean {
-        if(discountsAndSurcharges.failed) {
+        if(discountsAndSurcharges.failedReason != null) {
             return true
+        }
+        if(conditions.failedReason != null) {
+            return false // TODO once we impl it, use "true" - using false now to avoid having to keep updating the cache
         }
         return false
     }
 
-    constructor(): this(Contract(), emptyList(), DiscountsAndSurcharges(emptyList()))  // required by smallrye graphql
+    constructor(): this(Contract(), DiscountsAndSurcharges(emptyList()), Conditions(emptyList()))  // required by smallrye graphql
 }
 
 data class Contract(
@@ -282,12 +295,17 @@ data class Contract(
     var acceptedAt: LocalDateTime?,
     var acceptedBy: String?,
     var approvedAt: LocalDateTime?,
-    var approvedBy: String?
+    var approvedBy: String?,
+
+    // this one is ignored by graphql (but not jackson!), as this is used as a temp store after assembling the
+    // data / reading from the cache, so that we can still filter according to the client's input
+    @Ignore
+    var _components: List<ComponentEntity>
 ) {
     constructor() : this(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, ContractState.DRAFT, 0L,
-        LocalDateTime.MIN, "", null, null, null, null, null, null) // required by smallrye graphql
+        LocalDateTime.MIN, "", null, null, null, null, null, null, emptyList()) // required by smallrye graphql
 
-    constructor(entity: ContractEntity) : this(
+    constructor(entity: ContractEntity, components: List<ComponentEntity>) : this(
         entity.id,
         entity.start,
         entity.end,
@@ -300,7 +318,8 @@ data class Contract(
         entity.acceptedAt,
         entity.acceptedBy,
         entity.approvedAt,
-        entity.approvedBy
+        entity.approvedBy,
+        components
     )
 }
 
@@ -308,7 +327,7 @@ data class Component(
     var id: UUID,
     var parentId: UUID?,
     var componentDefinitionId: String,
-    var configs: List<ConfigPair>,
+    var configs: List<Config>,
     var productId: ProductId?
 ) {
     constructor() : this(UUID.randomUUID(), null, "", emptyList(), null) // required by smallrye graphql
@@ -317,19 +336,16 @@ data class Component(
         entity.id,
         entity.parentId,
         entity.componentDefinitionId,
-        om.readValue<ArrayList<Configuration<*>>>(entity.configuration).map { ConfigPair(it.name, it.value.toString()) },
+        om.readValue<ArrayList<Configuration<*>>>(entity.configuration).map { Config(it.name, it.value.toString(), it.units) },
         entity.productId
     )
 }
 
-data class ConfigPair(var key: ConfigurableParameter, var value: String) {
-    constructor(): this(ConfigurableParameter.VOLUME, "") // required by smallrye graphql
+data class Config(var key: ConfigurableParameter, var value: String, var units: Units) {
+    constructor(): this(ConfigurableParameter.VOLUME, "", Units.NONE) // required by smallrye graphql
 }
 
-data class DiscountsAndSurcharges(
-    var discountsSurcharges: List<DiscountSurcharge>,
-    var failed: Boolean = false
-) {
+data class DiscountsAndSurcharges(var list: List<DiscountSurcharge>, var failedReason: String? = null) {
     constructor(): this(emptyList()) // required by smallrye-graphql
 }
 
@@ -342,4 +358,18 @@ data class DiscountSurcharge(
     var addedManually: Boolean
 ) {
     constructor(): this(UUID.randomUUID(), UUID.randomUUID(), "", BigDecimal.ZERO, 0L, false) // required by smallrye graphql
+}
+
+data class Conditions(var list: List<Condition>, var failedReason: String? = null) {
+    constructor(): this(emptyList()) // required by smallrye-graphql
+}
+
+data class Condition(
+    var id: UUID,
+    var componentId: UUID,
+    var definitionId: String,
+    var syncTimestamp: Long,
+    var addedManually: Boolean
+) {
+    constructor(): this(UUID.randomUUID(), UUID.randomUUID(), "", 0L, false) // required by smallrye graphql
 }

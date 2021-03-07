@@ -44,7 +44,7 @@ const template =
             </div>
             <div>
                 State: {{fetchedContract.contractState}}
-                <span style="font-size: xxsmall; font-style: italic; float:right;">{{usingES?"elastic":"master"}}</span>
+                <span style="font-size: xxsmall; font-style: italic; float:right;">{{!!source?source:(usingES?"elastic":"master")}}</span>
             </div>
             <div v-if="allowAcceptOffer && fetchedContract.contractState == 'OFFERED'">
                 <p-button id="acceptOfferButton" @click="acceptOffer()">accept offer</p-button>
@@ -61,7 +61,8 @@ window.mfContractTile = {
             'clickable', // if true, then the widget has an icon for clicking on, to open it in the contract view
             'allowAcceptOffer', // if true, then offers can be accepted with the click of a button
             'hideDrafts', // if true, then drafts are not shown
-            'withDetails' // if true, then details are also fetched. none are displayed, but the slot can access them using "theContract"
+            'withDetails', // if true, then details are also fetched. none are displayed, but the slot can access them using "theContract"
+            'source' // the debug text to show to demonstrate what is being used to show the tile
         ],
     template,
     watch: {

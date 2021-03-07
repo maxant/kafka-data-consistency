@@ -4,12 +4,12 @@
     Fetched in {{ timeTaken }}ms
 </div>
 
-<mf-contract v-if="model.contract.id" :contract="model.contract" allow-accept-offer="true" @accepted="acceptedOffer"></mf-contract>
+<mf-contract v-if="model.contract.id" :contract="model.contract" allow-accept-offer="true" @accepted="acceptedOffer" source="graphql-cache"></mf-contract>
 <div v-if="model.contract.createdBy">Created by {{model.contract.createdBy}} at {{model.contract.createdAt}}</div>
 <div v-if="model.contract.offeredBy">Offered by {{model.contract.offeredBy}} at {{model.contract.offeredAt}}</div>
 <div v-if="model.contract.acceptedBy">Accepted by {{model.contract.acceptedBy}} at {{model.contract.acceptedAt}}</div>
 <div v-if="model.contract.approvedBy">Approved by {{model.contract.approvedBy}} at {{model.contract.approvedAt}}</div>
-<div v-if="model.contract.contractState == 'DRAFT'">
+<div v-if="model.contract.state == 'DRAFT'">     |}{! we can use "state" or "contractState" - see graphQl mapping in request below !}{|
     <p-button id="offerDraftButton" @click="offerDraft()">Offer draft</p-button>
     <p-button v-if="showResync" @click="resync()">resync</p-button>
 
@@ -33,8 +33,9 @@
 <hr>
 <div>
     <h3>Discounts and Surcharges</h3>
-    <ul v-if="model.discountssurcharges.length > 0">
-        <li v-for="discountsurcharge in model.discountssurcharges">
+    <ul v-if="model.discountssurcharges">
+        <span v-if="model.discountssurcharges.failedReason">Currently unavailable: {{model.discountssurcharges.failedReason}}</span>
+        <li v-else v-for="discountsurcharge in model.discountssurcharges.list">
             {{discountsurcharge.definitionId}}:
             {{Math.abs(discountsurcharge.value*100)}}%
             {{discountsurcharge.value < 0 ? "discount" : "surcharge"}}
@@ -47,9 +48,10 @@
 <hr>
 <div>
     <h3>Conditions</h3>
-    <ul v-if="model.conditions.length > 0">
-        <li v-for="condition in model.conditions">
-            {{condition.definitionId}}:
+    <ul v-if="model.conditions">
+        <span v-if="model.conditions.failedReason">Currently unavailable: {{model.conditions.failedReason}}</span>
+        <li v-else v-for="condition in model.conditions.list">
+            "{{condition.definitionId}}"
             on {{getComponentName(condition.componentId)}}
             added {{condition.addedManually ? "manually" : "automatically"}}
         </li>
@@ -118,25 +120,31 @@ const App = {
     methods: {
         fetchContract() {
             let self = this;
-            let url = CONTRACTS_BASE_URL + "/contracts/" + this.model.id + "?withDetails=true";
-            let contract$ = fetchIt(url, "GET", this).then(r => {
+
+            let query = `
+                query {
+                    cached_aggregate(id: "${this.model.id}") {
+                        contract {
+                            createdAt createdBy offeredAt offeredBy acceptedAt acceptedBy approvedAt approvedBy id start end contractState state:contractState
+                            components { id parentId productId configs {key, value} componentDefinitionId }
+                        }
+                        discountsAndSurcharges { failedReason list { componentId addedManually definitionId value } }
+                        conditions { failedReason list { componentId addedManually definitionId } }
+                        anythingMissing
+                    }
+                }`;
+            let body = { query };
+            let url = CONTRACTS_BASE_URL + "/graphql";
+            let aggregate$ = fetchIt(url, "POST", this, body).then(r => {
                 self.timeTaken = new Date().getTime() - self.start;
-                if(r.ok) {
-                    self.model.contract = r.payload;
+                if(r.ok && !r.payload.errors) {
+                    self.model.contract = r.payload.data.cached_aggregate.contract;
                     self.model.allContractIds = [id];
-                    if(self.model.tempDiscountssurcharges) {
-                        // we put them on the side until the components are ready, as theyre dependent on the components
-                        self.model.discountssurcharges = self.model.tempDiscountssurcharges;
-                        delete self.model.tempDiscountssurcharges;
-                    }
-                    if(self.model.tempConditions) {
-                        // we put them on the side until the components are ready, as theyre dependent on the components
-                        self.model.conditions = self.model.tempConditions;
-                        delete self.model.tempConditions;
-                    }
-                    console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
+                    self.model.discountssurcharges = r.payload.data.cached_aggregate.discountsSurcharges;
+                    self.model.conditions = r.payload.data.cached_aggregate.conditions;
+                    console.log("got aggregate for requestId " + self.requestId);
                 } else {
-                    let msg = "Failed to get contract: " + r.payload;
+                    let msg = "Failed to get aggregate: " + JSON.stringify(r.payload);
                     console.error(msg);
                     alert(msg);
                 }
@@ -159,46 +167,6 @@ const App = {
                 alert("received error: " + error);
             });
 
-            url = DSC_BASE_URL + "/discountssurcharges/" + this.model.id;
-            let discountssurcharges$ = fetchIt(url, "GET", this).then(r => {
-                self.timeTaken = new Date().getTime() - self.start;
-                if(r.ok) {
-                    console.log("got discountssurcharges, for requestId " + self.requestId);
-                    if(self.model.contract.components) {
-                        self.model.discountssurcharges = r.payload;
-                    } else {
-                        // put them on the side until the components are ready, as theyre dependent on the components
-                        self.model.tempDiscountssurcharges = r.payload;
-                    }
-                } else {
-                    let msg = "Failed to get discountssurcharges: " + r.payload;
-                    console.error(msg);
-                    alert(msg);
-                }
-            }).catch(error => {
-                alert("received error: " + error);
-            });
-
-            url = DSC_BASE_URL + "/conditions/" + this.model.id;
-            let conditions$ = fetchIt(url, "GET", this).then(r => {
-                self.timeTaken = new Date().getTime() - self.start;
-                if(r.ok) {
-                    console.log("got conditions, for requestId " + self.requestId);
-                    if(self.model.contract.components) {
-                        self.model.conditions = r.payload;
-                    } else {
-                        // put them on the side until the components are ready, as theyre dependent on the components
-                        self.model.tempConditions = r.payload;
-                    }
-                } else {
-                    let msg = "Failed to get conditions: " + r.payload;
-                    console.error(msg);
-                    alert(msg);
-                }
-            }).catch(error => {
-                alert("received error: " + error);
-            });
-
             url = BILLING_BASE_URL + "/billing/findByContractId?contractIds=" + this.model.id;
             let bills$ = fetchIt(url, "GET", this).then(r => {
                 self.timeTaken = new Date().getTime() - self.start;
@@ -214,7 +182,7 @@ const App = {
                 alert("received error: " + error);
             });
 
-            return Promise.all([contract$, partnerRelationships$, discountssurcharges$, conditions$, bills$]);
+            return Promise.all([aggregate$, partnerRelationships$, bills$]);
         },
         approveContract() {
             let self = this;

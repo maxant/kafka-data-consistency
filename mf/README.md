@@ -250,12 +250,11 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
 ## TODO
 - add cache stats to grafana
+- use cache for contract view, and add other missing data, and make it fetch it async
+- do cache evict on events from contract and DSC
 - add a condition, if a user based discount has been set! => rule based!
 - sales => why isnt the draft button locked when clicked?
 - add signature to tasks => if manual discount is above a certain amount, then john has to approve it and such tasks are always displayed
-- lazy load contract details from contracts component using redis as a cache, and load contract view from there, to remove load from operations db, as load time is now nearly a second
-  - add demo showing how we deal with partial failure during lazy loading
-  - show that there is no need to know all the DTOs, as we only know the components as strings
 - upgrade libraries
 - all inbound topics in web need to use mf rather than mp, so that eg partner relationships land in right browser, otherwise as soon as we have two pods, it dont work no more
 - arch principals - use a single topic to ensure ordering, that way, we could say update discounts and are sure anything they'd depend on happened first
@@ -264,8 +263,9 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 - after approving, the task isnt made to disappear in the contract UI
   - we dont subscribe to sse on the contracts page!
   - same after offering draft!
-- add displaying C to sales
+- add displaying C to sales and portal
 - add conditions to DscConsumer
+- add ability to remove sugar from recipe, rather than setting its config to 0
 - delete DSC where componentId is no longer in model, otherwise we'd have orphans hanging around
 - check async tracing now works - it does, but cases SQL isnt traced. BUT it is when creating a task. maybe it's related to flush time? UGLY
 - why is REST request traced twice? how come not connected?! => jaxrs contrib ignores existing spans and adds a parent based on headers
@@ -319,14 +319,6 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 - add action to execute when task is completed or started (ie open UI, or do something)
 - create contract pdf?
 - requisition orders
-- replace my cors with quarkus cors? can it do everything i need?
-  - https://quarkus.io/guides/all-config
-  - quarkus.http.cors.origins
-  - quarkus.http.cors.methods
-  - quarkus.http.cors.headers
-  - quarkus.http.cors.exposed-headers
-  - quarkus.http.cors.access-control-max-age
-  - quarkus.http.cors.access-control-allow-credentials
 - components diff for warning user after changing to a different product release
 - additional info - to hang stuff external to the contract onto components
 - error handling - https://github.com/cloudstark/quarkus-zalando-problem-extension
@@ -390,7 +382,11 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     or you can send the entire model around, but that isnt loosely coupled :-(
 - we could store a syncTimestamp for each part of a contract on the contract, rather than on the individual rows, denomralised like we currently do. it might
   even be faster that way. and we wouldnt need to make remote calls to validate when we offer the draft
-- search results are used to create contract tiles, so that we dont need to go bother our operations DBs. partners should be too, but havent done that yet.
+- search results are used to create contract tiles, so that we dont need to go bother our operations DBs. 
+  - partners should be too, but havent done that yet.
+  - contract view is based on a cache - kinda like CQRS - in order to also unload operations db
+  - using graphql in that view, so that other subscribers can query what they want
+
 
 ### the five tenets of global data consistency
 
