@@ -250,6 +250,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
 ## TODO
 - add cache stats to grafana
+  - writeToCache, readFromCache, deleteFromCache CacheEvicter#handle
 - add a condition, if a user based discount has been set! => rule based!
 - add displaying C to sales and portal
 - add conditions to DscConsumer
@@ -271,7 +272,6 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 - spans from browser => debug and see what headers are set when calling downstream. or look for jeager web?
 - cron job for jaeger
 - nginx + http2
-- show prices on contract UI
 - remove old stuff from this git repo so we can link to this repo in presentations
 - make sites a little prettier / responsive
 - grafana parameterisation

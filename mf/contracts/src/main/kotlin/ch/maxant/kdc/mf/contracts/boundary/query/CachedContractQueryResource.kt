@@ -71,12 +71,13 @@ query {
 * http://localhost:8080/graphql-ui
 */
 @GraphQLApi
+@SuppressWarnings("unused")
 class CachedContractQueryResource(
     @Inject var em: EntityManager,
     @Inject var om: ObjectMapper,
     @Inject var context: Context,
-    @Inject var restClient: org.elasticsearch.client.RestClient,
-    @Inject var stats: GraphQlCacheStats
+    @Inject var stats: GraphQlCacheStats,
+    @Inject var cacheEsAdapter: CacheEsAdapter
 ) {
     @Inject
     @RestClient // bizarrely this doesnt work with constructor injection
@@ -93,11 +94,11 @@ class CachedContractQueryResource(
         val start = System.currentTimeMillis()
 
         if(forceReload) {
-            deleteFromCache(id)
+            cacheEsAdapter.deleteFromCache(id)
         }
 
         var cached = try {
-            readFromCache(id)
+            cacheEsAdapter.readFromCache(id)
         } catch(e: Exception) {
             log.warn("failed to read from cache", e)
             null
@@ -106,7 +107,7 @@ class CachedContractQueryResource(
             log.info("cache miss")
             cached = assembleAggregate(id)
             try {
-                writeToCache(cached)
+                cacheEsAdapter.writeToCache(cached)
             } catch(e: Exception) {
                 stats.incrementCacheWriteErrors()
                 log.warn("failed to write to cache", e)
@@ -118,7 +119,7 @@ class CachedContractQueryResource(
             if(cached.isAnythingMissing()) {
                 log.info("hit but ameliorating")
                 ameliorateAggregate(cached)
-                writeToCache(cached)
+                cacheEsAdapter.writeToCache(cached)
             } else log.info("cache hit")
         }
         log.info("done in ${System.currentTimeMillis() - start}ms")
@@ -174,53 +175,6 @@ class CachedContractQueryResource(
         return contract._components
             .filter { regex?.matches(it.componentDefinitionId) ?: true }
             .map { Component(om, it) }
-    }
-
-    @Timed
-    private fun writeToCache(aggregate: CachedAggregate) {
-        log.info("writing aggregate to cache ${aggregate.contract.id}")
-        val request = Request("PUT", "/$INDEX/_doc/${aggregate.contract.id}")
-        request.setJsonEntity(om.writeValueAsString(aggregate))
-        performESRequest(request)
-    }
-
-    @Timed
-    private fun readFromCache(id: UUID): CachedAggregate? {
-        val request = Request("GET", "/$INDEX/_doc/${id}")
-        val response = performESRequest(request) ?: return null
-        val source = om.readTree(response).get("_source")
-        return om.treeToValue(source, CachedAggregate::class.java)
-    }
-
-    private fun deleteFromCache(id: UUID): String? {
-        log.info("deleting from ES $id")
-        val request = Request("DELETE", "/$INDEX/_doc/${id}")
-        return performESRequest(request)
-    }
-
-    private fun performESRequest(request: Request): String? {
-        try {
-            val response = restClient.performRequest(request)
-            val statusCode = response.statusLine.statusCode
-            if(statusCode < 200 || statusCode >= 300) {
-                throw WebApplicationException("failed to ${request.method} contract with ES. ($statusCode) ${response.entity}")
-            }
-            val baos = ByteArrayOutputStream(response.entity.contentLength.toInt())
-            response.entity.writeTo(baos)
-            return String(baos.toByteArray())
-        } catch(e: ConnectException) {
-            throw WebApplicationException("failed to use ES. no connection", e)
-        } catch(e: ResponseException) {
-            if(e.response.statusLine.statusCode == 404) {
-                return null
-            }
-            throw e
-        } catch(e: Exception) {
-            if(e is WebApplicationException){
-                throw e
-            }
-            throw WebApplicationException("failed to use ES", e)
-        }
     }
 }
 
@@ -381,12 +335,68 @@ data class Condition(
 }
 
 @ApplicationScoped
+class CacheEsAdapter(
+    @Inject var om: ObjectMapper,
+    @Inject var context: Context,
+    @Inject var restClient: org.elasticsearch.client.RestClient
+) {
+    private val log = Logger.getLogger(this.javaClass)
+
+    @Timed(unit = MetricUnits.MILLISECONDS)
+    fun writeToCache(aggregate: CachedAggregate) {
+        log.info("writing aggregate to cache ${aggregate.contract.id}")
+        val request = Request("PUT", "/$INDEX/_doc/${aggregate.contract.id}")
+        request.setJsonEntity(om.writeValueAsString(aggregate))
+        performESRequest(request)
+    }
+
+    @Timed(unit = MetricUnits.MILLISECONDS)
+    fun readFromCache(id: UUID): CachedAggregate? {
+        val request = Request("GET", "/$INDEX/_doc/${id}")
+        val response = performESRequest(request) ?: return null
+        val source = om.readTree(response).get("_source")
+        return om.treeToValue(source, CachedAggregate::class.java)
+    }
+
+    @Timed(unit = MetricUnits.MILLISECONDS)
+    fun deleteFromCache(id: UUID): String? {
+        log.info("deleting from ES $id")
+        val request = Request("DELETE", "/$INDEX/_doc/${id}")
+        return performESRequest(request)
+    }
+
+    @Timed(unit = MetricUnits.MILLISECONDS)
+    fun performESRequest(request: Request): String? {
+        try {
+            val response = restClient.performRequest(request)
+            val statusCode = response.statusLine.statusCode
+            if(statusCode < 200 || statusCode >= 300) {
+                throw WebApplicationException("failed to ${request.method} contract with ES. ($statusCode) ${response.entity}")
+            }
+            val baos = ByteArrayOutputStream(response.entity.contentLength.toInt())
+            response.entity.writeTo(baos)
+            return String(baos.toByteArray())
+        } catch(e: ConnectException) {
+            throw WebApplicationException("failed to use ES. no connection", e)
+        } catch(e: ResponseException) {
+            if(e.response.statusLine.statusCode == 404) {
+                return null
+            }
+            throw e
+        } catch(e: Exception) {
+            if(e is WebApplicationException){
+                throw e
+            }
+            throw WebApplicationException("failed to use ES", e)
+        }
+    }
+
+}
+
+@ApplicationScoped
 @SuppressWarnings("unused")
 class CacheEvicter(
-    @Inject var om: ObjectMapper,
-
     @Inject var context: ch.maxant.kdc.mf.library.Context,
-
     @Inject var restClient: org.elasticsearch.client.RestClient
 ) : KafkaHandler {
 
@@ -397,6 +407,7 @@ class CacheEvicter(
     override fun getRunInParallel() = true
 
     @PimpedAndWithDltAndAck
+    @Timed(unit = MetricUnits.MILLISECONDS)
     override fun handle(record: ConsumerRecord<String, String>) {
         when (context.event) {
             "UPDATED_DRAFT",
@@ -407,7 +418,6 @@ class CacheEvicter(
         }
     }
 
-    @Timed
     private fun evict(record: ConsumerRecord<String, String>) {
         log.info("evicting ${record.key()}")
 
