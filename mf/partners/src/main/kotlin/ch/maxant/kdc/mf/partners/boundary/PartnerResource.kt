@@ -13,9 +13,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
-import org.eclipse.microprofile.openapi.annotations.tags.Tags
 import org.jboss.logging.Logger
-import java.net.URI
 import java.time.LocalDate
 import java.util.*
 import javax.inject.Inject
@@ -79,7 +77,7 @@ class PartnerResource(
             ])
     )
     @Transactional
-    @Produces(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.APPLICATION_JSON)
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun create(@Parameter(name = "partner", required = true) partner: PartnerEntity) = doByHandlingValidationExceptions {
 
@@ -93,7 +91,7 @@ class PartnerResource(
         // have any infrastructure to send kafka to ES
         esAdapter.createPartner(partner)
 
-        Response.created(URI("/partners/${partner.id}")).entity(partner.id).build()!!
+        Response.status(Response.Status.CREATED).entity(partner).build()
     }
 }
 
