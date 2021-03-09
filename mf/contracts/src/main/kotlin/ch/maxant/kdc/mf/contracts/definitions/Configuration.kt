@@ -115,32 +115,34 @@ class ConfigurationDeserializer: StdDeserializer<Configuration<*>>(Configuration
                     throw IllegalArgumentException("wrong structure, unexpected token $nt")
                 }
             }
-            return if(simpleName == DateConfiguration::class.java.simpleName) {
-                DateConfiguration(name!!, LocalDate.parse(value))
-            } else if(simpleName == StringConfiguration::class.java.simpleName) {
-                StringConfiguration(name!!, value!!)
-            } else if(simpleName == BigDecimalConfiguration::class.java.simpleName) {
-                BigDecimalConfiguration(name!!, BigDecimal(value), units!!)
-            } else if(simpleName == IntConfiguration::class.java.simpleName) {
-                IntConfiguration(name!!, parseInt(value), units!!)
-            } else if(simpleName == PercentConfiguration::class.java.simpleName) {
-                PercentConfiguration(name!!, BigDecimal(value))
-            } else if(simpleName == MaterialConfiguration::class.java.simpleName) {
-                MaterialConfiguration(name!!, Material.valueOf(value!!))
-            } else {
-                TODO()
-            }
+            return getConfiguration(simpleName!!, name!!, value!!, units!!)
         }
         throw IllegalArgumentException("expected start of object")
     }
+
 }
+
+/** create a new instance based on the given config and given value */
+fun getConfiguration(config: Configuration<*>, value: String) = getConfiguration(config.clazz.simpleName, config.name, value, config.units)
+
+/** create a new instance based on the given values */
+fun getConfiguration(simpleName: String, name: ConfigurableParameter, value: String, units: Units) =
+    when (simpleName) {
+        DateConfiguration::class.java.simpleName -> DateConfiguration(name, LocalDate.parse(value))
+        StringConfiguration::class.java.simpleName -> StringConfiguration(name, value)
+        BigDecimalConfiguration::class.java.simpleName -> BigDecimalConfiguration(name, BigDecimal(value), units)
+        IntConfiguration::class.java.simpleName -> IntConfiguration(name, parseInt(value), units)
+        PercentConfiguration::class.java.simpleName -> PercentConfiguration(name, BigDecimal(value))
+        MaterialConfiguration::class.java.simpleName -> MaterialConfiguration(name, Material.valueOf(value))
+        else -> TODO()
+    }
 
 open class ConfigurationDefinition<T>(val units: Units, val clazz: Class<T>) {
     fun matches(configuration: Configuration<*>) = configuration.units == units && configuration.clazz == clazz
 }
 
 enum class Material {
-    MILK, SUGAR, GLASS, FLOUR, BUTTER, CARDBOARD, WOOD, COFFEE_POWDER
+    MILK, SUGAR, GLASS, FLOUR, BUTTER, CARDBOARD, WOOD, COFFEE_POWDER, VANILLA
 }
 
 enum class Units {

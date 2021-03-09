@@ -6,20 +6,21 @@ import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import java.util.*
-import kotlin.collections.ArrayList
 
 data class Component(
         val id: UUID,
         val parentId: UUID?,
         val componentDefinitionId: String,
         val configs: List<Configuration<*>>,
-        val productId: ProductId?
+        val productId: ProductId?,
+        val cardinalityKey: String? = null
 ) {
     constructor(om: ObjectMapper, entity: ComponentEntity) : this(
             entity.id,
             entity.parentId,
             entity.componentDefinitionId,
             om.readValue<ArrayList<Configuration<*>>>(entity.configuration),
-            entity.productId
+            entity.productId,
+            entity.cardinalityKey
     )
 }

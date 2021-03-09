@@ -15,14 +15,25 @@ import java.util.*
 abstract class ComponentDefinition(
         val configs: List<Configuration<*>>,
         val children: List<ComponentDefinition>,
-        var configPossibilities: List<Configuration<*>> = emptyList() // allows the component to specify possible values deviating from the initial values
+        var configPossibilities: List<Configuration<*>> = emptyList(), // allows the component to specify possible values deviating from the initial values
+
+        // how often can this component be added to it's parent?
+        // this is probably on the wrong side of the relationship and belongs in the parent, but i cant be bothered to
+        // refactor the entire model to add a wrapper around each child to contain this data (this is a poc after all),
+        // and sticking it in eg a
+        // map is too hacky
+        var cardinalityMin: Int = 1,
+        var cardinalityMax: Int = 1
 ) {
     val componentDefinitionId: String = this.javaClass.simpleName
     var componentId: UUID? = null
     var rules: List<String> = emptyList()
 
     init {
-        configs.forEach { ensureConfigValueIsPermitted(it) }
+        configs.forEach {
+            ensureConfigValueIsPermitted(it)
+        }
+        runRules(configs)
     }
 
     /** @return a list containing this element and all its children, recursively */
@@ -103,11 +114,25 @@ class CoffeePowder(quantityGr: Int) : ComponentDefinition(
                 MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.COFFEE_POWDER)
         ), emptyList())
 
-class Sugar(quantityGr: Int) : ComponentDefinition(
+class Sugar(quantityGr: Int, maxCardinality: Int = 1) : ComponentDefinition(
         listOf(
                 IntConfiguration(ConfigurableParameter.WEIGHT, quantityGr, Units.GRAMS),
                 MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.SUGAR)
-        ), emptyList())
+        ), emptyList(), emptyList(), 0, maxCardinality)
+
+/** add one of these and adjust the gram quantity to get more sugar. if you want more
+ * vanilla, add more children, up to 5! */
+class VanillaSugar(quantityGr: Int) : ComponentDefinition(
+        listOf(
+                IntConfiguration(ConfigurableParameter.WEIGHT, quantityGr, Units.GRAMS),
+                MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.SUGAR)
+        ), listOf(VanillaExtract()), emptyList(), 1, 1)
+
+class VanillaExtract() : ComponentDefinition(
+        listOf(
+                IntConfiguration(ConfigurableParameter.VOLUME, 5, Units.MILLILITRES),
+                MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.VANILLA)
+        ), emptyList(), emptyList(), 1, 5)
 
 class Butter(quantityGr: Int) : ComponentDefinition(
         listOf(
@@ -131,18 +156,22 @@ class GlassBottle(volumeMl: Int) : ComponentDefinition(
                 MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.GLASS)
         ), emptyList())
 
-/** @return the definition configured with the given configs, with rules and config possibilities from the actual product */
+/**
+ * @return the definition matching the given componentDefinitionIdTofind,
+ * configured with the given configs,
+ * with rules and config possibilities from the actual product.
+ *
+ * @param possibleComponentDefinitionTrees a list, because you might not have packaging and contents connected!
+ */
 fun getDefinition(
-    pack: Packaging,
-    product: Product,
-    componentDefinitionId: String,
-    configs: ArrayList<Configuration<*>>
+    possibleComponentDefinitionTrees: List<ComponentDefinition>,
+    componentDefinitionIdToFind: String,
+    configs: List<Configuration<*>>
 ): ComponentDefinition {
-    var componentDefinition = findComponentDefinitionRecursively(product, componentDefinitionId)
-    if(componentDefinition == null) {
-        componentDefinition = findComponentDefinitionRecursively(pack, componentDefinitionId)
-    }
-    require(componentDefinition != null)
+    var componentDefinition = possibleComponentDefinitionTrees
+        .map { findComponentDefinitionRecursively(it, componentDefinitionIdToFind) }
+        .find { it != null }
+    require(componentDefinition != null) { "no definition found for $componentDefinitionIdToFind" }
     configs.forEach { config ->
         val c = componentDefinition.configs.find { it.name == config.name }!!
         c.setValueExplicit(config.value)

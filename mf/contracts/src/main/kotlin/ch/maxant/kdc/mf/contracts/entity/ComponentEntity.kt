@@ -38,6 +38,10 @@ class ComponentEntity( // add open, rather than rely on maven plugin, because @Q
     @Enumerated(EnumType.STRING)
     var productId: ProductId? = null
 
+    @Column(name = "CARDINALITY_KEY")
+    @Enumerated(EnumType.STRING)
+    var cardinalityKey: String? = null
+
     object NqSelectByContractId {
         const val name = "selectComponentByContractId"
         const val contractIdParam = "contractId"

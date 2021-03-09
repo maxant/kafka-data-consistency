@@ -14,7 +14,8 @@ class DslTest {
     @Test
     fun dsl() {
 
-        val cookiesMilkshake = Drink(ProductId.COOKIES_MILKSHAKE, 1000) { qty ->
+        val qty = 1000
+        val cookiesMilkshake = Drink(ProductId.COOKIES_MILKSHAKE, qty) {
             listOf(
                     Milk(95 * qty / 100, BigDecimal("1.8")),
                     Cookies(45 * (qty / 1000)),

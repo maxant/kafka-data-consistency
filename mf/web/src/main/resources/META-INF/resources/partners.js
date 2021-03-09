@@ -147,11 +147,11 @@ window.mfPartnerSelect = {
             if (this.validateForm()) {
                 let self = this;
                 let url = PARTNERS_BASE_URL + "/partners"
-                return fetchIt(url, "POST", this, this.newPartner, true).then(r => {
+                return fetchIt(url, "POST", this, this.newPartner).then(r => {
                     if(r.ok) {
                         console.log("created new partner " + r.payload + " for requestId " + this.requestId);
                         // now select the new partner in the dropdown
-                        self.newPartner.partnerId = r.payload;
+                        self.newPartner.partnerId = r.payload.id;
                         self.newPartner.id = self.newPartner.partnerId;
                         self.newPartner.$name = getName(self.newPartner);
                         self.partner = self.newPartner;

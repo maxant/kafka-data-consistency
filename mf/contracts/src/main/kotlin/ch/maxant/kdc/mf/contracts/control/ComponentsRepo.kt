@@ -20,17 +20,14 @@ class ComponentsRepo(
         @Inject
         var om: ObjectMapper
 ){
-    fun saveInitialDraft(contractId: UUID, pack: Packaging) {
-        saveInitialDraft(contractId, null, pack)
-    }
-
-    private fun saveInitialDraft(contractId: UUID, parentId: UUID?, component: ComponentDefinition) {
-        val config = om.writeValueAsString(component.configs)
-        val e = ComponentEntity(UUID.randomUUID(), parentId, contractId, config, component.componentDefinitionId)
-        if(component is Product) e.productId = component.productId
-        component.componentId = e.id
-        em.persist(e)
-        component.children.forEach { saveInitialDraft(contractId, e.id, it) }
+    fun saveInitialDraft(contractId: UUID, components: List<Component>) {
+        for(component in components) {
+            val config = om.writeValueAsString(component.configs)
+            val e = ComponentEntity(component.id, component.parentId, contractId, config, component.componentDefinitionId)
+            e.productId = component.productId
+            e.cardinalityKey = component.cardinalityKey
+            em.persist(e)
+        }
     }
 
     fun updateConfig(contractId: UUID, componentId: UUID, param: ConfigurableParameter, newValue: String): List<Component> {
@@ -53,15 +50,6 @@ class ComponentsRepo(
             else -> TODO("unexpected config defn for $config")
         }
 
-        val productId = components.find { it.productId != null }!!.productId!!
-        val product = Products.find(productId, 1)
-        val pack = Packagings.find(components.map { it.componentDefinitionId })
-        val definition = getDefinition(pack, product, component.componentDefinitionId, configs)
-
-        definition.ensureConfigValueIsPermitted(config)
-        definition.runRules(configs)
-
-        // it's valid, so let's update the entity so that the change is persisted
         component.configuration = om.writeValueAsString(configs)
 
         return components.map { Component(om, it) }

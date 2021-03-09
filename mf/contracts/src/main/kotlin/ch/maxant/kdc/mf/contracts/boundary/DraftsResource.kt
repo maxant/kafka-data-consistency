@@ -3,6 +3,7 @@ package ch.maxant.kdc.mf.contracts.boundary
 import ch.maxant.kdc.mf.contracts.adapter.ESAdapter
 import ch.maxant.kdc.mf.contracts.control.ComponentsRepo
 import ch.maxant.kdc.mf.contracts.control.EventBus
+import ch.maxant.kdc.mf.contracts.control.InstantiationService
 import ch.maxant.kdc.mf.contracts.control.ValidationService
 import ch.maxant.kdc.mf.contracts.definitions.*
 import ch.maxant.kdc.mf.contracts.dto.*
@@ -61,7 +62,10 @@ class DraftsResource(
         var esAdapter: ESAdapter,
 
         @Inject
-        var om: ObjectMapper
+        var om: ObjectMapper,
+
+        @Inject
+        var instantiationService: InstantiationService
 ) {
     val log: Logger = Logger.getLogger(this.javaClass)
 
@@ -95,12 +99,18 @@ class DraftsResource(
         em.persist(contract)
         log.info("added contract ${contract.id} in state ${contract.contractState}")
 
+        // get the product and package definitions
         val product = Products.find(draftRequest.productId, profile.quantityMlOfProduct)
         val pack = Packagings.pack(profile.quantityOfProducts, product)
-        componentsRepo.saveInitialDraft(contract.id, pack)
-        log.info("packaged ${contract.id}")
 
-        val draft = Draft(contract, pack)
+        // apply the defaults from marketing
+        val marketingDefaults = MarketingDefinitions.getDefaults(profile, product.productId)
+        val components = instantiationService.instantiate(pack, marketingDefaults)
+
+        componentsRepo.saveInitialDraft(contract.id, components)
+        log.info("packaged and persisted ${contract.id}")
+
+        val draft = Draft(contract, components) hmm always as tree? pricing wants a tree;
 
         // TODO use transactional outbox. or just use a command via kafka, since once its in there, we have a retry. we need to subscribe to it as we dont
         // have any infrastructure to send kafka to ES
@@ -157,6 +167,12 @@ class DraftsResource(
         contract.syncTimestamp = System.currentTimeMillis()
 
         val allComponents = componentsRepo.updateConfig(contractId, componentId, ConfigurableParameter.valueOf(param), newValue)
+
+        val productId = allComponents.find { it.productId != null }!!.productId!!
+        val product = Products.find(productId, 1)
+        val pack = Packagings.find(allComponents.map { it.componentDefinitionId })
+        val profile: Profile = Profiles.find()
+        instantiationService.validate(listOf(pack, product), MarketingDefinitions.getDefaults(profile, productId), allComponents)
 
         context.throwExceptionInContractsIfRequiredForDemo()
 

@@ -417,7 +417,7 @@ class CacheEvicter(
             "APPROVED_CONTRACT" -> evict(record)
         }
     }
-
+TODO add ability to hang discount onto actual component, if you want that;
     private fun evict(record: ConsumerRecord<String, String>) {
         log.info("evicting ${record.key()}")
 
