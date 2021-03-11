@@ -63,14 +63,14 @@ class InstantiationService {
         val componentDefinition = getDefinition(rootDefinitions, node.component.componentDefinitionId, node.component.configs)
         val configsDefinitionsToUse = mergeConfigs(componentDefinition, marketingDefinition)
 
-        marketing defns also override possible config values;
+// TODO        marketing defns also override possible config values;
 
         node.component.configs.forEach { componentDefinition.ensureConfigValueIsPermitted(it) }
         componentDefinition.runRules(node.component.configs)
         val numOfSiblingsWithSameComponentDefinitionId = node.parent?.children?.filter { it.component.componentDefinitionId == node.component.componentDefinitionId }?.count() ?: 0
         require(componentDefinition.cardinalityMin > numOfSiblingsWithSameComponentDefinitionId ) { "too few kids of type ${node.component.componentDefinitionId} in path ${node.getPath()}" }
         require(componentDefinition.cardinalityMax < numOfSiblingsWithSameComponentDefinitionId ) { "too many kids of type ${node.component.componentDefinitionId} in path ${node.getPath()}" }
-
+/*
         // 1. configs must be in the range of values allowed by the component definition
         componentDefinition.ensureConfigValueIsPermitted(node.component.configs)
 
@@ -78,11 +78,12 @@ class InstantiationService {
         componentDefinition.runRules(node.component.configs)
 
         // 3.
-TODO;
+//TODO;
         configsDefinitionsToUse.forEach { configDefinitionToUse ->
             val actualConfig = node.component.configs.find { it.name == configDefinitionToUse.name }!!
             componentDefinition.ensureConfigValueIsPermitted(actualConfig)
         }
+*/
     }
 
     /** allows us to navigate in both directions */

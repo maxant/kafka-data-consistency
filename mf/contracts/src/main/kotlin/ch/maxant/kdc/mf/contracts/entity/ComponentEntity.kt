@@ -39,7 +39,6 @@ class ComponentEntity( // add open, rather than rely on maven plugin, because @Q
     var productId: ProductId? = null
 
     @Column(name = "CARDINALITY_KEY")
-    @Enumerated(EnumType.STRING)
     var cardinalityKey: String? = null
 
     object NqSelectByContractId {

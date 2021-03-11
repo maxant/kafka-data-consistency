@@ -26,11 +26,14 @@ import java.io.ByteArrayOutputStream
 import java.math.BigDecimal
 import java.net.ConnectException
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.concurrent.atomic.AtomicLong
 import javax.enterprise.context.ApplicationScoped
+import javax.enterprise.context.RequestScoped
 import javax.inject.Inject
 import javax.persistence.EntityManager
+import javax.ws.rs.NotFoundException
 import javax.ws.rs.WebApplicationException
 
 private const val INDEX = "contract-cache"
@@ -77,7 +80,8 @@ class CachedContractQueryResource(
     @Inject var om: ObjectMapper,
     @Inject var context: Context,
     @Inject var stats: GraphQlCacheStats,
-    @Inject var cacheEsAdapter: CacheEsAdapter
+    @Inject var cacheEsAdapter: CacheEsAdapter,
+    @Inject var queryState: QueryState
 ) {
     @Inject
     @RestClient // bizarrely this doesnt work with constructor injection
@@ -88,7 +92,7 @@ class CachedContractQueryResource(
     @Query("cached_aggregate")
     @Description("Get a contract by it's ID, referring to the cache first and lazy loading if required")
     @Timed(unit = MetricUnits.MILLISECONDS)
-    fun findContractById(@Name("id") id: UUID, @Name("forceReload") @DefaultValue("false") forceReload: Boolean): CachedAggregate {
+    fun findContractById(@Name("id") id: UUID, @Name("forceReload") @DefaultValue("false") forceReload: Boolean): CachedAggregate? {
         log.info("getting contract $id with context.arguments ${context.arguments.map { "${it.key}->${it.value}" }}")
 
         val start = System.currentTimeMillis()
@@ -114,6 +118,7 @@ class CachedContractQueryResource(
             }
             stats.incrementCacheMisses()
         } else {
+            cached.cacheHit = true
             stats.incrementCacheHits()
 
             if(cached.isAnythingMissing()) {
@@ -122,7 +127,11 @@ class CachedContractQueryResource(
                 cacheEsAdapter.writeToCache(cached)
             } else log.info("cache hit")
         }
-        log.info("done in ${System.currentTimeMillis() - start}ms")
+        cached.loadedInMs = System.currentTimeMillis() - start
+        log.info("done in ${cached.loadedInMs}ms")
+
+        queryState.aggregate = cached // fill for use in calls by qraphql to subsequent resolvers
+
         return cached
     }
 
@@ -138,7 +147,7 @@ class CachedContractQueryResource(
     }
 
     private fun assembleAggregate(id: UUID): CachedAggregate {
-        val contract = em.find(ContractEntity::class.java, id)
+        val contract = em.find(ContractEntity::class.java, id) ?: throw NotFoundException("No contract with id $id found")
 
         // val components = ComponentEntity.Queries.selectByContractId(em, contract.id)
         val components = em.createQuery("select c from ComponentEntity c where c.contractId = :contractId")
@@ -149,7 +158,7 @@ class CachedContractQueryResource(
 
         val conditions = assembleConditions(id)
 
-        return CachedAggregate(Contract(contract, components), discountsSurcharges, conditions)
+        return CachedAggregate(Contract(contract), discountsSurcharges, conditions, components)
     }
 
     private fun assembleDiscountsAndSurcharges(id: UUID): DiscountsAndSurcharges =
@@ -169,12 +178,53 @@ class CachedContractQueryResource(
             Conditions(emptyList(), e.message)
         }
 
-    @Query("components")
-    fun components(@Source contract: Contract, @Name("definitionIdFilter") @DefaultValue(".*") definitionIdFilter: String): List<Component> {
-        val regex = if(definitionIdFilter == ".*") null else Regex(definitionIdFilter)
-        return contract._components
-            .filter { regex?.matches(it.componentDefinitionId) ?: true }
+    fun components(@Source contract: Contract, // not used coz we use request scoped bean
+                             @Name("definitionIdFilter") @Description("Filters components with definition IDs matching the given regex") @DefaultValue(".*") definitionIdFilter: String,
+                             @Name("configNameFilter") @Description("Filters components with configs matching the given regex") @DefaultValue(".*") configNameFilter: String
+    ) = components(definitionIdFilter, configNameFilter)
+
+    fun components(@Source aggregate: CachedAggregate, // not used coz we use request scoped bean
+                              @Name("definitionIdFilter") @Description("Filters components with definition IDs matching the given regex") @DefaultValue(".*") definitionIdFilter: String,
+                              @Name("configNameFilter") @Description("Filters components with configs matching the given regex") @DefaultValue(".*") configNameFilter: String
+    ) = components(definitionIdFilter, configNameFilter)
+
+    private fun components(definitionIdFilter: String, configNameFilter: String): List<Component> {
+        val definitionIdRegex = if(definitionIdFilter == ".*") null else Regex(definitionIdFilter)
+        val configNameRegex = if(configNameFilter == ".*") null else Regex(configNameFilter)
+        return queryState.aggregate._components
+            .filter { definitionIdRegex?.matches(it.componentDefinitionId) ?: true }
+            .filter { configNameRegex?.matches(it.configuration) ?: true }
             .map { Component(om, it) }
+            .sortedBy { it.componentDefinitionId }
+    }
+
+    @Query("createdAt")
+    fun createdAtFormattedByClient(@Name("pattern") @DefaultValue("yyyy-MM-dd") pattern: String, @Source contract: Contract): String =
+        contract.createdAt.format(DateTimeFormatter.ofPattern(pattern))
+
+    @Query("configs")
+    fun configsSortedBy(@Source component: Component,
+                        @Name("nameFilter") @DefaultValue(".*") nameFilter: String,
+                        @Name("sortedBy") @DefaultValue("NAME") sortedBy: ConfigSortedBy
+    ): List<Config> {
+        val regex = if(nameFilter == ".*") null else Regex(nameFilter)
+
+        return component.configs
+            .filter { regex?.matches(it.name.toString()) ?: true }
+            .sortedBy {
+                when(sortedBy) {
+                    ConfigSortedBy.NAME -> it.name.toString()
+                    ConfigSortedBy.VALUE -> it.value
+                }
+            }
+    }
+
+    fun discountsAndSurcharges(@Source component: Component): List<DiscountSurcharge> {
+        return queryState.aggregate.discountsAndSurcharges.list.filter { it.componentId == component.id }
+    }
+
+    fun conditions(@Source component: Component): List<Condition> {
+        return queryState.aggregate.conditions.list.filter { it.componentId == component.id }
     }
 }
 
@@ -227,8 +277,14 @@ data class CachedAggregate(
     var contract: Contract,
 
     var discountsAndSurcharges: DiscountsAndSurcharges, // var so it can be improved, if it failed
-    var conditions: Conditions // var so it can be improved, if it failed
+    var conditions: Conditions, // var so it can be improved, if it failed
+
+    @Ignore
+    var _components: List<ComponentEntity>
 ) {
+    var cacheHit: Boolean = false
+    var loadedInMs = 0L
+
     fun isAnythingMissing(): Boolean {
         if(discountsAndSurcharges.failedReason != null) {
             return true
@@ -239,7 +295,7 @@ data class CachedAggregate(
         return false
     }
 
-    constructor(): this(Contract(), DiscountsAndSurcharges(emptyList()), Conditions(emptyList()))  // required by smallrye graphql
+    constructor(): this(Contract(), DiscountsAndSurcharges(emptyList()), Conditions(emptyList()), emptyList())  // required by smallrye graphql
 }
 
 data class Contract(
@@ -255,17 +311,12 @@ data class Contract(
     var acceptedAt: LocalDateTime?,
     var acceptedBy: String?,
     var approvedAt: LocalDateTime?,
-    var approvedBy: String?,
-
-    // this one is ignored by graphql (but not jackson!), as this is used as a temp store after assembling the
-    // data / reading from the cache, so that we can still filter according to the client's input
-    @Ignore
-    var _components: List<ComponentEntity>
+    var approvedBy: String?
 ) {
     constructor() : this(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, ContractState.DRAFT, 0L,
-        LocalDateTime.MIN, "", null, null, null, null, null, null, emptyList()) // required by smallrye graphql
+        LocalDateTime.MIN, "", null, null, null, null, null, null) // required by smallrye graphql
 
-    constructor(entity: ContractEntity, components: List<ComponentEntity>) : this(
+    constructor(entity: ContractEntity) : this(
         entity.id,
         entity.start,
         entity.end,
@@ -278,8 +329,7 @@ data class Contract(
         entity.acceptedAt,
         entity.acceptedBy,
         entity.approvedAt,
-        entity.approvedBy,
-        components
+        entity.approvedBy
     )
 }
 
@@ -333,6 +383,8 @@ data class Condition(
 ) {
     constructor(): this(UUID.randomUUID(), UUID.randomUUID(), "", 0L, false) // required by smallrye graphql
 }
+
+enum class ConfigSortedBy { NAME, VALUE }
 
 @ApplicationScoped
 class CacheEsAdapter(
@@ -417,7 +469,7 @@ class CacheEvicter(
             "APPROVED_CONTRACT" -> evict(record)
         }
     }
-TODO add ability to hang discount onto actual component, if you want that;
+
     private fun evict(record: ConsumerRecord<String, String>) {
         log.info("evicting ${record.key()}")
 
@@ -432,3 +484,7 @@ TODO add ability to hang discount onto actual component, if you want that;
     }
 }
 
+@RequestScoped
+class QueryState {
+    lateinit var aggregate: CachedAggregate
+}
