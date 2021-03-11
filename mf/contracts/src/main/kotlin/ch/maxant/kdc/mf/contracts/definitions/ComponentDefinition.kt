@@ -36,13 +36,6 @@ abstract class ComponentDefinition(
         runRules(configs)
     }
 
-    /** @return a list containing this element and all its children, recursively */
-    fun getThisAndAllChildren(list: MutableList<ComponentDefinition> = mutableListOf()): List<ComponentDefinition> {
-        list.add(this)
-        children.forEach { it.getThisAndAllChildren(list) }
-        return list
-    }
-
     fun ensureConfigValueIsPermitted(config: Configuration<*>) {
         val possibleConfigs = configPossibilities.filter { it.name == config.name }
         if(possibleConfigs.isNotEmpty()) {

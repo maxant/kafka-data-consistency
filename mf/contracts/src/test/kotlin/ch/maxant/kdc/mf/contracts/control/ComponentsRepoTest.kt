@@ -4,8 +4,6 @@ import ch.maxant.kdc.mf.contracts.definitions.*
 import ch.maxant.kdc.mf.contracts.dto.Draft
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
-import ch.maxant.kdc.mf.contracts.entity.ContractState
-import ch.maxant.kdc.mf.library.TestUtils
 import ch.maxant.kdc.mf.library.TestUtils.Companion.flushed
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -13,7 +11,6 @@ import io.quarkus.test.junit.QuarkusTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.lang.IllegalArgumentException
 import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.*
@@ -29,6 +26,9 @@ class ComponentsRepoTest {
     lateinit var em: EntityManager
 
     @Inject
+    lateinit var initialisationService: InstantiationService
+
+    @Inject
     lateinit var sut: ComponentsRepo
 
     @Inject
@@ -40,10 +40,11 @@ class ComponentsRepoTest {
         val profile: Profile = Profiles.find()
         val product = Products.find(ProductId.COOKIES_MILKSHAKE, profile.quantityMlOfProduct)
         val pack = Packagings.pack(profile.quantityOfProducts, product)
-        sut.saveInitialDraft(contract.id, pack)
+        val components = initialisationService.instantiate(pack, MarketingDefinitions(emptyList()))
+        sut.saveInitialDraft(contract.id, components)
         em.flush()
         em.clear()
-        Draft(contract, pack)
+        Draft(contract, components)
     }
 
     @Test
@@ -56,18 +57,18 @@ class ComponentsRepoTest {
     @Test
     fun updateConfig_happy() {
         val draft = setup()
-        val milk = draft.pack.getThisAndAllChildren().find { it.componentDefinitionId == Milk::class.java.simpleName } !!
+        val milk = draft.allComponents.find { it.componentDefinitionId == Milk::class.java.simpleName } !!
 
         // when
         val c = flushed(em) {
-            sut.updateConfig(draft.contract.id, milk.componentId!!, ConfigurableParameter.FAT_CONTENT, "0.2")
+            sut.updateConfig(draft.contract.id, milk.id, ConfigurableParameter.FAT_CONTENT, "0.2")
         }
 
         // then - check whats in the result
         val comps = c.filter { it.componentDefinitionId == milk.componentDefinitionId }
         assertEquals(1, comps.size)
         assertEquals(milk.componentDefinitionId, comps[0].componentDefinitionId)
-        assertEquals(milk.componentId, comps[0].id)
+        assertEquals(milk.id, comps[0].id)
         assertEquals(milk.configs.filterNot { it.name == ConfigurableParameter.FAT_CONTENT }, comps[0].configs.filterNot { it.name == ConfigurableParameter.FAT_CONTENT })
         val newMilk = comps[0].configs.first { it.name == ConfigurableParameter.FAT_CONTENT }
         assertEquals(BigDecimal("0.2"), newMilk.value)
@@ -75,7 +76,7 @@ class ComponentsRepoTest {
         assertEquals(Units.PERCENT, newMilk.units)
 
         // then - check whats in the DB
-        val component = em.find(ComponentEntity::class.java, milk.componentId)
+        val component = em.find(ComponentEntity::class.java, milk.id)
         val configs = om.readValue<ArrayList<Configuration<*>>>(component.configuration)
         val config = configs.find { it.name == ConfigurableParameter.FAT_CONTENT } !!
         assertEquals(BigDecimal("0.2"), config.value)
@@ -88,11 +89,11 @@ class ComponentsRepoTest {
     @Test
     fun updateConfig_illegalValue() {
         val draft = setup()
-        val milk = draft.pack.getThisAndAllChildren().find { it.componentDefinitionId == Milk::class.java.simpleName } !!
+        val milk = draft.allComponents.find { it.componentDefinitionId == Milk::class.java.simpleName } !!
 
         // when / then
         assertEquals("Component configuration value 7 is not in the permitted set of values [0.2, 1.8, 3.5, 6.0]",
-                assertThrows<IllegalArgumentException> { sut.updateConfig(draft.contract.id, milk.componentId!!, ConfigurableParameter.FAT_CONTENT, "7") }.message)
+                assertThrows<IllegalArgumentException> { sut.updateConfig(draft.contract.id, milk.id, ConfigurableParameter.FAT_CONTENT, "7") }.message)
     }
 
 }

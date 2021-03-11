@@ -11,8 +11,8 @@ data class DefaultComponent(
     val path: Regex,
     val configs: List<DefaultConfiguration>,
     val configPossibilities: List<DefaultConfiguration>,
-    val cardinalityMin: Int = 1,
-    val cardinalityMax: Int = 1
+    val cardinalityMin: Int? = 1,
+    val cardinalityMax: Int? = 1
 ) {
     constructor(path: String, configs: List<DefaultConfiguration>, configPossibilities: List<DefaultConfiguration>, cardinalityMin: Int, cardinalityMax: Int):
             this(Regex(path), configs, configPossibilities, cardinalityMin, cardinalityMax)

@@ -110,8 +110,7 @@ class DraftsResource(
         componentsRepo.saveInitialDraft(contract.id, components)
         log.info("packaged and persisted ${contract.id}")
 
-        // TODO continue here
-        val draft = Draft(contract, pack)
+        val draft = Draft(contract, components)
 
         // TODO use transactional outbox. or just use a command via kafka, since once its in there, we have a retry. we need to subscribe to it as we dont
         // have any infrastructure to send kafka to ES

@@ -249,6 +249,8 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- add validation to init and to update config
+- what happened to sugar in milkshake?
 - make portal a little prettier / responsive
 - add cache stats to grafana
   - writeToCache, readFromCache, deleteFromCache CacheEvicter#handle

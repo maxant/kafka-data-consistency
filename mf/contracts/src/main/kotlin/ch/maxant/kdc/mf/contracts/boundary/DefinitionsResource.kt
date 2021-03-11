@@ -1,9 +1,6 @@
 package ch.maxant.kdc.mf.contracts.boundary
 
-import ch.maxant.kdc.mf.contracts.definitions.ComponentDefinition
-import ch.maxant.kdc.mf.contracts.definitions.ProductId
-import ch.maxant.kdc.mf.contracts.definitions.Products
-import ch.maxant.kdc.mf.contracts.definitions.UnknownProductException
+import ch.maxant.kdc.mf.contracts.definitions.*
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.openapi.annotations.Operation
@@ -49,11 +46,12 @@ class DefinitionsResource {
     fun getComponents(): Response {
         val componentDefinitions = ProductId.values().map {
             try {
-                it to Products.find(it, 1)
+                it.toString() to Products.find(it, 1) as ComponentDefinition
             } catch (e: UnknownProductException) {
-                it to null // not supported yet
+                it.toString() to null // not supported yet
             }
-        }.toMap()
+        }.toMap().toMutableMap()
+        componentDefinitions[CardboardBox::class.java.simpleName] = Packagings.find(listOf(CardboardBox::class.java.simpleName))
         return Response.ok(componentDefinitions).build()
     }
 

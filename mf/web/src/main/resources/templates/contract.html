@@ -19,6 +19,7 @@
     <div v-if="model.contract.offeredBy">Offered by {{model.contract.offeredBy}} at {{model.contract.offeredAt}}</div>
     <div v-if="model.contract.acceptedBy">Accepted by {{model.contract.acceptedBy}} at {{model.contract.acceptedAt}}</div>
     <div v-if="model.contract.approvedBy">Approved by {{model.contract.approvedBy}} at {{model.contract.approvedAt}}</div>
+    <div v-if="model.cacheHit" style="font-size: small; font-style: italic;">Cache hit: {{ model.cacheHit }}, backend loaded in {{ model.loadedInMs }}ms</div>
     <div v-if="model.contract.state == 'DRAFT'">     |}{! we can use "state" or "contractState" - see graphQl mapping in request below !}{|
         <p-button id="offerDraftButton" @click="offerDraft()">Offer draft</p-button>
         <p-button v-if="showResync" @click="resync()">resync</p-button>
@@ -147,7 +148,7 @@ const App = {
                         }
                         discountsAndSurcharges { failedReason list { componentId addedManually definitionId value } }
                         conditions { failedReason list { componentId addedManually definitionId } }
-                        anythingMissing
+                        anythingMissing cacheHit loadedInMs
                     }
                 }`;
             let body = { query };
@@ -159,6 +160,8 @@ const App = {
                     self.model.allContractIds = [id];
                     self.model.discountssurcharges = r.payload.data.cached_aggregate.discountsAndSurcharges;
                     self.model.conditions = r.payload.data.cached_aggregate.conditions;
+                    self.model.cacheHit = r.payload.data.cached_aggregate.cacheHit;
+                    self.model.loadedInMs = r.payload.data.cached_aggregate.loadedInMs;
                     console.log("got aggregate for requestId " + self.requestId);
                 } else {
                     let msg = "Failed to get aggregate: " + JSON.stringify(r.payload);

@@ -43,7 +43,7 @@
         <p-button @click="newDraft()">get new draft</p-button>
     </div>
 </div>
-<!--
+<!-- table with just divs
 <div style="display:table;">
     <div style="display:table-row;">
         <div style="display:table-cell; vertical-align: middle;">
@@ -568,7 +568,7 @@ function sse(requestId, self) {
         let msg = JSON.parse(event.data);
         if(msg.event == "CREATED_DRAFT") {
             self.model.draft = msg.payload;
-            initialiseDraft(self.model.draft.pack);
+            initialiseDraft(self.model.draft, self.product);
             self.model.draft.contract.productId = self.model.draft.pack.children[0].productId;
             // dont update any waiting or timing state, because this is just the first of many events to come
             self.progressValue = 33;
@@ -660,10 +660,47 @@ function removeWaitingAndResetValue(targetComponentId, paramName, oldValue, comp
     _.forEach(component.children, child => removeWaitingAndResetValue(targetComponentId, paramName, oldValue, child));
 }
 
-function initialiseDraft(component) {
+function initialiseDraft(draft, product) {
+    draft.pack = _.find(draft.allComponents, c => !c.parentId);
+    _buildTree(draft.pack, draft.allComponents);
+    delete draft.allComponents; // this UI uses a tree, not a flat list
+    _initialiseDraft(draft.pack, product);
+}
+
+function _buildTree(parent, components) {
+    parent.componentId = parent.id;
+    delete parent.id; // rename id to componentId for historical reasons, and remove the new "id" field to reduce confusion
+    parent.children = [];
+
+    _.filter(components, c => c.parentId == parent.componentId).forEach(c => {
+        parent.children.push(c);
+        _buildTree(c, components);
+    });
+}
+
+function _initialiseDraft(component, product) {
     component.$configs = {}
+    component.configPossibilities = _findConfigPossibilities(component.componentDefinitionId, window.componentDefinitions[product])
+    if(!component.configPossibilities) {
+        // packaging is keyed by its componentDefinitionId rather than productId
+        component.configPossibilities = _findConfigPossibilities(component.componentDefinitionId, window.componentDefinitions[component.componentDefinitionId])
+    }
     _.forEach(component.configs, c => component.$configs[c.name] = _.clone(c));
-    _.forEach(component.children, child => initialiseDraft(child));
+    _.forEach(component.children, child => _initialiseDraft(child, product));
+}
+
+function _findConfigPossibilities(componentDefinitionId, componentDefinition) {
+    if(componentDefinition) {
+        if(componentDefinition.componentDefinitionId == componentDefinitionId) {
+            return componentDefinition.configPossibilities;
+        }
+        for(let c in componentDefinition.children) {
+            let configPossibilities = _findConfigPossibilities(componentDefinitionId, componentDefinition.children[c]);
+            if(configPossibilities) {
+                return configPossibilities;
+            }
+        }
+    }
 }
 
 function updateDraft(newComponents, component){

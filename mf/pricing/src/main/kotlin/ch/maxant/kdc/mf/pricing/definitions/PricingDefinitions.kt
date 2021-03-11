@@ -97,6 +97,10 @@ private val sugar = fun(component: TreeComponent, kidsPrices: Map<UUID, Price>):
     return roundAddTaxAndMakePrice(net)
 }
 
+private val free = fun(component: TreeComponent, kidsPrices: Map<UUID, Price>): Price {
+    return Price(BigDecimal.ZERO, BigDecimal.ZERO)
+}
+
 private val coffeePowder = fun(component: TreeComponent, kidsPrices: Map<UUID, Price>): Price {
     /*
                   {
@@ -171,6 +175,8 @@ object Prices {
             "Milk" -> milk
             "Butter" -> butter
             "Sugar" -> sugar
+            "VanillaSugar" -> sugar
+            "VanillaExtract" -> free
             "Flour" -> flour
             "GlassBottle" -> glassBottle
             "CoffeePowder" -> coffeePowder

@@ -10,15 +10,15 @@ import javax.enterprise.context.ApplicationScoped
 class InstantiationService {
 
     fun instantiate(pack: Packaging, marketingDefinitions: MarketingDefinitions): List<Component> {
-        val components: MutableList<Component> = mutableListOf()
-        _instantiate(pack, marketingDefinitions, pack.javaClass.simpleName, components, null)
-        validate(listOf(pack), marketingDefinitions, components)
-        return components
+        val componentsOutput: MutableList<Component> = mutableListOf()
+        _instantiate(pack, marketingDefinitions, pack.javaClass.simpleName, componentsOutput, null)
+        validate(listOf(pack), marketingDefinitions, componentsOutput)
+        return componentsOutput
     }
 
     private fun _instantiate(componentDefinition: ComponentDefinition,
                              marketingDefinitions: MarketingDefinitions, path: String,
-                             components: MutableList<Component>, parent: Component?): List<Component> {
+                             componentsOutput: MutableList<Component>, parent: Component?): List<Component> {
 
         val defaults = marketingDefinitions.getComponent(path)
         val configsToUse = mergeConfigs(componentDefinition, defaults)
@@ -32,14 +32,14 @@ class InstantiationService {
                 UUID.randomUUID(),
                 parent?.id, componentDefinition.componentDefinitionId, configsToUse, productId, "$cardinalityKey")
 
-            components.add(component)
+            componentsOutput.add(component)
 
             val cardKey = if(cardinalityMin > 1) "$::cardinalityKey" else ""
             componentDefinition.children.forEach {
-                _instantiate(it, marketingDefinitions, "$path->$componentDefinition$cardKey", components, component)
+                _instantiate(it, marketingDefinitions, "$path->$componentDefinition$cardKey", componentsOutput, component)
             }
         }
-        return components
+        return componentsOutput
     }
 
     private fun mergeConfigs(componentDefinition: ComponentDefinition, defaultComponent: DefaultComponent?) =
@@ -65,12 +65,13 @@ class InstantiationService {
 
 // TODO        marketing defns also override possible config values;
 
+/*
         node.component.configs.forEach { componentDefinition.ensureConfigValueIsPermitted(it) }
         componentDefinition.runRules(node.component.configs)
         val numOfSiblingsWithSameComponentDefinitionId = node.parent?.children?.filter { it.component.componentDefinitionId == node.component.componentDefinitionId }?.count() ?: 0
         require(componentDefinition.cardinalityMin > numOfSiblingsWithSameComponentDefinitionId ) { "too few kids of type ${node.component.componentDefinitionId} in path ${node.getPath()}" }
         require(componentDefinition.cardinalityMax < numOfSiblingsWithSameComponentDefinitionId ) { "too many kids of type ${node.component.componentDefinitionId} in path ${node.getPath()}" }
-/*
+
         // 1. configs must be in the range of values allowed by the component definition
         componentDefinition.ensureConfigValueIsPermitted(node.component.configs)
 
@@ -89,15 +90,14 @@ class InstantiationService {
     /** allows us to navigate in both directions */
     private class Node(val component: Component, val parent: Node? = null) {
         val children: MutableList<Node> = mutableListOf()
-        lateinit var componentDefinition: ComponentDefinition
 
         init {
             parent?.children?.add(this)
         }
 
         fun getPath(): String {
-            val simpleName = this.javaClass.simpleName
-            return if(parent == null) simpleName else "${parent.getPath()}->$simpleName"
+            val name = this.component.componentDefinitionId
+            return if(parent == null) name else "${parent.getPath()}->$name"
         }
 
         /** children last recursion */

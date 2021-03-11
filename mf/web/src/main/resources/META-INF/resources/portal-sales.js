@@ -184,7 +184,7 @@ function sse(requestId, self) {
         let msg = JSON.parse(event.data);
         if(msg.event == "CREATED_DRAFT") {
             self.model.draft = msg.payload;
-            initialiseDraft(self.model.draft.pack);
+            initialiseDraft(self.model.draft);
             // dont update any waiting or timing state, because this is just the first of many events to come
         } else if(msg.event == "ADDED_DSC_FOR_DRAFT") {
             self.model.draft.discountsSurcharges = msg.payload.discountsSurcharges;
@@ -233,10 +233,28 @@ function ameliorateCurrentAction(self) {
     }
 }
 
-function initialiseDraft(component) {
+function initialiseDraft(draft) {
+    draft.pack = _.find(draft.allComponents, c => !c.parentId);
+    _buildTree(draft.pack, draft.allComponents);
+    delete draft.allComponents; // this UI uses a tree, not a flat list
+    _initialiseDraft(draft.pack);
+}
+
+function _buildTree(parent, components) {
+    parent.componentId = parent.id;
+    delete parent.id; // rename id to componentId for historical reasons, and remove the new "id" field to reduce confusion
+    parent.children = [];
+
+    _.filter(components, c => c.parentId == parent.componentId).forEach(c => {
+        parent.children.push(c);
+        _buildTree(c, components);
+    });
+}
+
+function _initialiseDraft(component) {
     component.$configs = {}
     _.forEach(component.configs, c => component.$configs[c.name] = _.clone(c));
-    _.forEach(component.children, child => initialiseDraft(child));
+    _.forEach(component.children, child => _initialiseDraft(child));
 }
 
 

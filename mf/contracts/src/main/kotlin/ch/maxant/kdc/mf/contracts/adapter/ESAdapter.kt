@@ -69,16 +69,9 @@ class ESAdapter {
     @Timed(unit = MetricUnits.MILLISECONDS)
     @Traced
     fun createOffer(draft: Draft, partnerId: UUID?) {
-        val esContract = EsContract(draft, partnerId, flatten(draft.pack))
+        val esContract = EsContract(draft, partnerId, draft.allComponents.map { ESComponent(it) })
         val r = EsRequest(EsRequestType.CREATE, "PUT", "/contracts/_doc/${draft.contract.id}", om.writeValueAsString(esContract))
         esOut.send(om.writeValueAsString(r))
-    }
-
-    private fun flatten(defn: ComponentDefinition, result: MutableList<ESComponent> = mutableListOf()): MutableList<ESComponent> {
-        val productId = if(defn is Product) defn.productId.toString() else null
-        result.add(ESComponent(defn, productId))
-        defn.children.forEach { flatten(it, result) }
-        return result
     }
 
     @Timed(unit = MetricUnits.MILLISECONDS)
@@ -148,7 +141,6 @@ class ESAdapter {
     }
 
     data class ESComponent(val componentDefinitionId: String, val configs: List<ESConfiguration>, val productId: String?) {
-        constructor(defn: ComponentDefinition, productId: String?): this(defn.componentDefinitionId, defn.configs.map { ESConfiguration(it) }, productId)
         constructor(comp: Component): this(comp.componentDefinitionId, comp.configs.map { ESConfiguration(it) }, comp.productId?.toString())
 
         fun toMetainfo(): List<String> = configs.map { "$componentDefinitionId ${it.name} ${it.value}" }

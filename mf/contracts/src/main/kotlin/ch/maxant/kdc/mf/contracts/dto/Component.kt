@@ -8,12 +8,12 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import java.util.*
 
 data class Component(
-        val id: UUID,
-        val parentId: UUID?,
-        val componentDefinitionId: String,
-        val configs: List<Configuration<*>>,
-        val productId: ProductId?,
-        val cardinalityKey: String? = null
+    val id: UUID,
+    val parentId: UUID?,
+    val componentDefinitionId: String,
+    val configs: List<Configuration<*>>,
+    val productId: ProductId?,
+    val cardinalityKey: String? = null
 ) {
     constructor(om: ObjectMapper, entity: ComponentEntity) : this(
             entity.id,
