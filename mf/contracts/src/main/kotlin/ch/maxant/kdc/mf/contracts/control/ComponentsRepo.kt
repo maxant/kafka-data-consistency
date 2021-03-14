@@ -36,19 +36,12 @@ class ComponentsRepo(
         val component = components.find { it.id == componentId }
         require(component != null) { "component with id $componentId doens't appear to belong to contract $contractId" }
         val configs = om.readValue<ArrayList<Configuration<*>>>(component.configuration)
-        val config = configs.find { it.name == param }
+        var config = configs.find { it.name == param }
         require(config != null) { "config with name $param doens't appear to belong to component $componentId" }
 
-        when {
-            BigDecimalConfigurationDefinition.matches(config) -> (config as BigDecimalConfiguration).value = BigDecimal(newValue)
-            DateConfigurationDefinition.matches(config) -> (config as DateConfiguration).value = LocalDate.parse(newValue)
-            IntConfigurationDefinition.matches(config) -> (config as IntConfiguration).value = Integer.parseInt(newValue)
-            MaterialConfigurationDefinition.matches(config) -> (config as MaterialConfiguration).value = Material.valueOf(newValue)
-            PercentConfigurationDefinition.matches(config) -> (config as PercentConfiguration).value = BigDecimal(newValue)
-            PercentRangeConfigurationDefinition.matches(config) -> (config as PercentRangeConfiguration).value = BigDecimal(newValue)
-            StringConfigurationDefinition.matches(config) -> (config as StringConfiguration).value = newValue
-            else -> TODO("unexpected config defn for $config")
-        }
+        configs.remove(config)
+        config = getConfiguration(config, newValue)
+        configs.add(config)
 
         component.configuration = om.writeValueAsString(configs)
 

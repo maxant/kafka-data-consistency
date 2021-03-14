@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.contracts.entity
 
+import ch.maxant.kdc.mf.contracts.definitions.ProfileId
 import ch.maxant.kdc.mf.contracts.dto.Component
 import org.eclipse.microprofile.graphql.Ignore
 import org.hibernate.annotations.Type
@@ -9,7 +10,7 @@ import javax.persistence.*
 
 @Entity
 @Table(name = "T_CONTRACTS")
-open class ContractEntity( // add open, rather than rely on maven plugin, because @QuarkusTest running in IntelliJ seems to think its final
+class ContractEntity( // add open, rather than rely on maven plugin, because @QuarkusTest running in IntelliJ seems to think its final
 
         @Id
         @Column(name = "ID")
@@ -51,14 +52,18 @@ open class ContractEntity( // add open, rather than rely on maven plugin, becaus
         open var approvedAt: LocalDateTime?,
 
         @Column(name = "APPROVED_BY")
-        open var approvedBy: String?
+        open var approvedBy: String?,
+
+        @Column(name = "PROFILE_ID", nullable = false)
+        @Enumerated(EnumType.STRING)
+        open var profileId: ProfileId // the one on which this contract is based
 ) {
     /** for hibernate */
-    constructor() : this(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, ContractState.DRAFT, 0, LocalDateTime.now(), "", null, null, null, null, null, null)
+    constructor() : this(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, ContractState.DRAFT, 0, LocalDateTime.now(), "", null, null, null, null, null, null, ProfileId.STANDARD)
 
     /** for initially creating a draft */
-    constructor(id: UUID, start: LocalDateTime, end: LocalDateTime, createdBy: String) :
-            this(id, start, end, ContractState.DRAFT, System.currentTimeMillis(), LocalDateTime.now(), createdBy, null, null, null, null, null, null)
+    constructor(id: UUID, start: LocalDateTime, end: LocalDateTime, createdBy: String, profileId: ProfileId) :
+            this(id, start, end, ContractState.DRAFT, System.currentTimeMillis(), LocalDateTime.now(), createdBy, null, null, null, null, null, null, profileId)
 
     @Transient
     @Ignore

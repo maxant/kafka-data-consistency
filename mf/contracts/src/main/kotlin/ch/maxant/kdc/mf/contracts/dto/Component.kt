@@ -23,4 +23,6 @@ data class Component(
             entity.productId,
             entity.cardinalityKey
     )
+
+    var path: String? = null
 }

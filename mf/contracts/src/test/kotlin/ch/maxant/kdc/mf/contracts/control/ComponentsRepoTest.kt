@@ -29,18 +29,23 @@ class ComponentsRepoTest {
     lateinit var initialisationService: InstantiationService
 
     @Inject
+    lateinit var definitionService: DefinitionService
+
+    @Inject
     lateinit var sut: ComponentsRepo
 
     @Inject
     lateinit var om: ObjectMapper
 
     fun setup(): Draft = flushed(em) {
-        val contract = ContractEntity(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, "fred")
+        val contract = ContractEntity(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, "fred", ProfileId.STANDARD)
         em.persist(contract)
         val profile: Profile = Profiles.find()
         val product = Products.find(ProductId.COOKIES_MILKSHAKE, profile.quantityMlOfProduct)
         val pack = Packagings.pack(profile.quantityOfProducts, product)
-        val components = initialisationService.instantiate(pack, MarketingDefinitions(emptyList()))
+        val marketingDefaults = MarketingDefinitions.getDefaults(profile, product.productId)
+        val mergedDefinitions = definitionService.getMergedDefinitions(pack, marketingDefaults)
+        val components = initialisationService.instantiate(mergedDefinitions)
         sut.saveInitialDraft(contract.id, components)
         em.flush()
         em.clear()

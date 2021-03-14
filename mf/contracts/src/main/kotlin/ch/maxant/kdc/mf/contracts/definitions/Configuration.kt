@@ -1,6 +1,5 @@
 package ch.maxant.kdc.mf.contracts.definitions
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
@@ -10,7 +9,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
-import java.lang.IllegalArgumentException
 import java.lang.Integer.parseInt
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -22,7 +20,7 @@ import java.time.LocalDate
 @JsonDeserialize(using = ConfigurationDeserializer::class)
 abstract class Configuration<T> (
         val name: ConfigurableParameter,
-        var value: T,
+        val value: T,
         var units: Units,
         val clazz: Class<T>
 ) {
@@ -68,11 +66,6 @@ abstract class Configuration<T> (
     override fun toString(): String {
         return "Configuration(name=$name, value=$value, units=$units, clazz=$clazz)"
     }
-
-    fun setValueExplicit(value: Any?) {
-        this.value = value as T
-    }
-
 }
 
 class ConfigurationSerializer: StdSerializer<Configuration<*>>(Configuration::class.java) {
@@ -123,7 +116,7 @@ class ConfigurationDeserializer: StdDeserializer<Configuration<*>>(Configuration
 }
 
 /** create a new instance based on the given config and given value */
-fun getConfiguration(config: Configuration<*>, value: String) = getConfiguration(config.clazz.simpleName, config.name, value, config.units)
+fun getConfiguration(config: Configuration<*>, value: String) = getConfiguration(config.javaClass.simpleName, config.name, value, config.units)
 
 /** create a new instance based on the given values */
 fun getConfiguration(simpleName: String, name: ConfigurableParameter, value: String, units: Units) =

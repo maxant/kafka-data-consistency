@@ -249,6 +249,11 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- current
+  - change config on milk
+  - caffe latte
+  - ui model is split into an input model and a model used to display
+  - we have user actions which are applied to a model, so we can switch between offers
 - add validation to init and to update config
 - what happened to sugar in milkshake?
 - make portal a little prettier / responsive

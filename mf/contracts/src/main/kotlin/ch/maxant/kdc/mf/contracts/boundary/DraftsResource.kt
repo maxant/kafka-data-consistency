@@ -1,10 +1,7 @@
 package ch.maxant.kdc.mf.contracts.boundary
 
 import ch.maxant.kdc.mf.contracts.adapter.ESAdapter
-import ch.maxant.kdc.mf.contracts.control.ComponentsRepo
-import ch.maxant.kdc.mf.contracts.control.EventBus
-import ch.maxant.kdc.mf.contracts.control.InstantiationService
-import ch.maxant.kdc.mf.contracts.control.ValidationService
+import ch.maxant.kdc.mf.contracts.control.*
 import ch.maxant.kdc.mf.contracts.definitions.*
 import ch.maxant.kdc.mf.contracts.dto.*
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
@@ -65,6 +62,9 @@ class DraftsResource(
         var om: ObjectMapper,
 
         @Inject
+        var definitionService: DefinitionService,
+
+        @Inject
         var instantiationService: InstantiationService
 ) {
     val log: Logger = Logger.getLogger(this.javaClass)
@@ -95,7 +95,7 @@ class DraftsResource(
         val contractDefinition = ContractDefinition.find(draftRequest.productId, start)
         val end = start.plusDays(contractDefinition.defaultDurationDays)
 
-        val contract = ContractEntity(draftRequest.contractId, start, end, context.user)
+        val contract = ContractEntity(draftRequest.contractId, start, end, context.user, profile.id)
         em.persist(contract)
         log.info("added contract ${contract.id} in state ${contract.contractState}")
 
@@ -103,18 +103,21 @@ class DraftsResource(
         val product = Products.find(draftRequest.productId, profile.quantityMlOfProduct)
         val pack = Packagings.pack(profile.quantityOfProducts, product)
 
-        // apply the defaults from marketing
+        // get the defaults from marketing
         val marketingDefaults = MarketingDefinitions.getDefaults(profile, product.productId)
-        val components = instantiationService.instantiate(pack, marketingDefaults)
+
+        val mergedDefinitions = definitionService.getMergedDefinitions(pack, marketingDefaults)
+
+        val components = instantiationService.instantiate(mergedDefinitions)
+
+        instantiationService.validate(mergedDefinitions, components)
 
         componentsRepo.saveInitialDraft(contract.id, components)
         log.info("packaged and persisted ${contract.id}")
 
         val draft = Draft(contract, components)
 
-        // TODO use transactional outbox. or just use a command via kafka, since once its in there, we have a retry. we need to subscribe to it as we dont
-        // have any infrastructure to send kafka to ES
-        esAdapter.createOffer(draft, draftRequest.partnerId)
+        esAdapter.createDraft(draft, draftRequest.partnerId)
 
         // it's ok to publish this model, because it's no different than getting pricing to
         // go fetch all this data, or us giving it to them. the dependency exists and is tightly
@@ -167,16 +170,23 @@ class DraftsResource(
         contract.syncTimestamp = System.currentTimeMillis()
 
         val allComponents = componentsRepo.updateConfig(contractId, componentId, ConfigurableParameter.valueOf(param), newValue)
+        allComponents.forEach { it.path = instantiationService.getPath(it, allComponents) }
 
         val productId = allComponents.find { it.productId != null }!!.productId!!
         val product = Products.find(productId, 1)
+        val marketingDefaults = MarketingDefinitions.getDefaults(Profiles.get(contract.profileId), product.productId)
         val pack = Packagings.find(allComponents.map { it.componentDefinitionId })
-        val profile: Profile = Profiles.find()
-        instantiationService.validate(listOf(pack, product), MarketingDefinitions.getDefaults(profile, productId), allComponents)
+        val mergedComponentDefinition = definitionService.getMergedDefinitions(pack, marketingDefaults)
+
+        // at this stage, the mergedComponentDefinition, which is the root of a tree of definitions, contains
+        // configs with initial or default values. they are unimportant here, because we are validating against
+        // the components, ie the instances
+
+        instantiationService.validate(mergedComponentDefinition, allComponents)
 
         context.throwExceptionInContractsIfRequiredForDemo()
 
-        esAdapter.updateOffer(contractId, allComponents)
+        esAdapter.updateComponents(contractId, allComponents)
 
         // instead of publishing the initial model based on definitions, which contain extra
         // info like possible inputs, we publish a simpler model here
@@ -210,13 +220,15 @@ class DraftsResource(
         require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
         contract.syncTimestamp = System.currentTimeMillis()
 
-        val allComponents = ComponentEntity.Queries.selectByContractId(em, contractId)
+        val allComponentEntities = ComponentEntity.Queries.selectByContractId(em, contractId)
+        val allComponents = allComponentEntities.map { Component(om, it) }
+        allComponents.forEach { it.path = instantiationService.getPath(it, allComponents) }
 
         context.throwExceptionInContractsIfRequiredForDemo()
 
         // instead of publishing the initial model based on definitions, which contain extra
         // info like possible inputs, we publish a simpler model here
-        eventBus.publish(SetDiscountCommand(contract, allComponents.map { Component(om, it) }, componentId, BigDecimal(value).abs().negate()))
+        eventBus.publish(SetDiscountCommand(contract, allComponents, componentId, BigDecimal(value).abs().negate()))
 
         Response.ok()
                 .entity(contract)
@@ -258,7 +270,7 @@ class DraftsResource(
         log.info("publishing OfferedDraft event")
         eventBus.publish(OfferedDraft(contract))
 
-        esAdapter.updateOffer(contractId, contract.contractState)
+        esAdapter.updateState(contractId, contract.contractState)
 
         Response.created(URI.create("/${contract.id}"))
                 .entity(contract)
@@ -284,9 +296,11 @@ class DraftsResource(
         val contract = em.find(ContractEntity::class.java, contractId)
         require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
 
-        val allComponents = ComponentEntity.Queries.selectByContractId(em, contractId)
+        val allComponentEntities = ComponentEntity.Queries.selectByContractId(em, contractId)
+        val allComponents = allComponentEntities.map { Component(om, it) }
+        allComponents.forEach { it.path = instantiationService.getPath(it, allComponents) }
 
-        eventBus.publish(UpdatedDraft(contract, allComponents.map { Component(om, it) }))
+        eventBus.publish(UpdatedDraft(contract, allComponents))
 
         Response.accepted()
             .entity(contract)

@@ -15,7 +15,7 @@ data class DefaultComponent(
     val cardinalityMax: Int? = 1
 ) {
     constructor(path: String, configs: List<DefaultConfiguration>, configPossibilities: List<DefaultConfiguration>, cardinalityMin: Int, cardinalityMax: Int):
-            this(Regex(path), configs, configPossibilities, cardinalityMin, cardinalityMax)
+            this(Regex("^$path\$"), configs, configPossibilities, cardinalityMin, cardinalityMax)
 }
 
 /**
@@ -31,17 +31,9 @@ class MarketingDefinitions(private val defaultComponents: List<DefaultComponent>
         private fun coffeLatteSkinnyDefaults(profile: Profile) =
             if(profile.interestedInStrongFlavours) {
                 listOf(
-                    DefaultComponent("Drink->VanillaSugar->VanillaExtract\\d+", emptyList(), emptyList(), 2, 6)
+                    DefaultComponent("Drink->VanillaSugar->VanillaExtract\\d{0,3}", emptyList(), emptyList(), 2, 6)
                 )
             } else emptyList()
-
-        private fun getProductIdFromTree(componentDefinition: ComponentDefinition): ProductId? {
-            if(componentDefinition is Product) return componentDefinition.productId
-            for(child in componentDefinition.children) {
-                return getProductIdFromTree(child)
-            }
-            return null
-        }
 
         fun getDefaults(profile: Profile, productId: ProductId) = MarketingDefinitions(when(productId) {
             ProductId.COFFEE_LATTE_SKINNY -> coffeLatteSkinnyDefaults(profile)

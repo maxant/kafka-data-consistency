@@ -1,10 +1,7 @@
 package ch.maxant.kdc.mf.contracts.boundary.query
 
 import ch.maxant.kdc.mf.contracts.adapter.DiscountsSurchargesAdapter
-import ch.maxant.kdc.mf.contracts.definitions.ConfigurableParameter
-import ch.maxant.kdc.mf.contracts.definitions.Configuration
-import ch.maxant.kdc.mf.contracts.definitions.ProductId
-import ch.maxant.kdc.mf.contracts.definitions.Units
+import ch.maxant.kdc.mf.contracts.definitions.*
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractState
@@ -311,10 +308,11 @@ data class Contract(
     var acceptedAt: LocalDateTime?,
     var acceptedBy: String?,
     var approvedAt: LocalDateTime?,
-    var approvedBy: String?
+    var approvedBy: String?,
+    var profileId: ProfileId
 ) {
     constructor() : this(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, ContractState.DRAFT, 0L,
-        LocalDateTime.MIN, "", null, null, null, null, null, null) // required by smallrye graphql
+        LocalDateTime.MIN, "", null, null, null, null, null, null, ProfileId.STANDARD) // required by smallrye graphql
 
     constructor(entity: ContractEntity) : this(
         entity.id,
@@ -329,7 +327,8 @@ data class Contract(
         entity.acceptedAt,
         entity.acceptedBy,
         entity.approvedAt,
-        entity.approvedBy
+        entity.approvedBy,
+        entity.profileId
     )
 }
 

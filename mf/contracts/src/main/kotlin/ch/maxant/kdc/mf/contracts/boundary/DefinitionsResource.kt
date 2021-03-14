@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.contracts.boundary
 
+import ch.maxant.kdc.mf.contracts.control.DefinitionService
 import ch.maxant.kdc.mf.contracts.definitions.*
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
@@ -9,10 +10,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
-import javax.ws.rs.Consumes
-import javax.ws.rs.GET
-import javax.ws.rs.Path
-import javax.ws.rs.Produces
+import javax.inject.Inject
+import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
@@ -21,7 +20,9 @@ import javax.ws.rs.core.Response
 @Tag(name = "definintions")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-class DefinitionsResource {
+class DefinitionsResource(
+    @Inject val definitionService: DefinitionService
+) {
 
     @Operation(summary = "Get Products")
     @APIResponses(
@@ -36,23 +37,20 @@ class DefinitionsResource {
 
     @Operation(summary = "Get Components")
     @APIResponses(
-            APIResponse(description = "gets a list of component definitions", responseCode = "200", content = [
+            APIResponse(description = "gets component definitions", responseCode = "200", content = [
                 Content(mediaType = MediaType.APPLICATION_JSON, schema = Schema(implementation = ProductId::class))
             ])
     )
     @GET
-    @Path("/components")
+    @Path("/components/{productId}")
     @Timed(unit = MetricUnits.MILLISECONDS)
-    fun getComponents(): Response {
-        val componentDefinitions = ProductId.values().map {
-            try {
-                it.toString() to Products.find(it, 1) as ComponentDefinition
-            } catch (e: UnknownProductException) {
-                it.toString() to null // not supported yet
-            }
-        }.toMap().toMutableMap()
-        componentDefinitions[CardboardBox::class.java.simpleName] = Packagings.find(listOf(CardboardBox::class.java.simpleName))
-        return Response.ok(componentDefinitions).build()
+    fun getComponents(@PathParam("productId") productId: ProductId): Response {
+        val profile: Profile = Profiles.find()
+        val product = Products.find(productId, profile.quantityMlOfProduct)
+        val pack = Packagings.pack(profile.quantityOfProducts, product)
+        val marketingDefaults = MarketingDefinitions.getDefaults(profile, product.productId)
+        val mergedDefinitions = definitionService.getMergedDefinitions(pack, marketingDefaults)
+        return Response.ok(mergedDefinitions).build()
     }
 
 }

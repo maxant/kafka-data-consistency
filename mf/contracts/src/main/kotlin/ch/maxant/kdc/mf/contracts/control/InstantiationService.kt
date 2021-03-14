@@ -4,122 +4,115 @@ import ch.maxant.kdc.mf.contracts.definitions.*
 import ch.maxant.kdc.mf.contracts.dto.Component
 import java.util.*
 import javax.enterprise.context.ApplicationScoped
+import javax.inject.Inject
 
 @ApplicationScoped
 @SuppressWarnings("unused")
-class InstantiationService {
+class InstantiationService(
+    @Inject val definitionService: DefinitionService
+) {
 
-    fun instantiate(pack: Packaging, marketingDefinitions: MarketingDefinitions): List<Component> {
+    fun instantiate(mergedComponentDefinition: MergedComponentDefinition): List<Component> {
         val componentsOutput: MutableList<Component> = mutableListOf()
-        _instantiate(pack, marketingDefinitions, pack.javaClass.simpleName, componentsOutput, null)
-        validate(listOf(pack), marketingDefinitions, componentsOutput)
+        _instantiate(mergedComponentDefinition, componentsOutput)
         return componentsOutput
     }
 
-    private fun _instantiate(componentDefinition: ComponentDefinition,
-                             marketingDefinitions: MarketingDefinitions, path: String,
-                             componentsOutput: MutableList<Component>, parent: Component?): List<Component> {
-
-        val defaults = marketingDefinitions.getComponent(path)
-        val configsToUse = mergeConfigs(componentDefinition, defaults)
-
-        val productId = if(componentDefinition is Product) componentDefinition.productId else null
-        val cardinalityMin = defaults?.cardinalityMin ?: componentDefinition.cardinalityMin
+    private fun _instantiate(mergedComponentDefinition: MergedComponentDefinition,
+                             componentsOutput: MutableList<Component>, parent: Component? = null, path: String? = null): List<Component> {
 
         // instantiate the definition the minimum amount of times required
-        1.rangeTo(cardinalityMin).forEach { cardinalityKey ->
+        1.rangeTo(mergedComponentDefinition.cardinalityMin).forEach { cardinalityKey ->
+            val cardKey = if(mergedComponentDefinition.cardinalityMin > 1) "$cardinalityKey" else ""
+            var newPath = "${mergedComponentDefinition.componentDefinitionId}$cardKey"
+            if(path != null) newPath = "$path->$newPath"
             val component = Component(
                 UUID.randomUUID(),
-                parent?.id, componentDefinition.componentDefinitionId, configsToUse, productId, "$cardinalityKey")
+                parent?.id,
+                mergedComponentDefinition.componentDefinitionId,
+                mergedComponentDefinition.configs,
+                mergedComponentDefinition.productId,
+                "$cardKey")
+            component.path = newPath
 
             componentsOutput.add(component)
 
-            val cardKey = if(cardinalityMin > 1) "$::cardinalityKey" else ""
-            componentDefinition.children.forEach {
-                _instantiate(it, marketingDefinitions, "$path->$componentDefinition$cardKey", componentsOutput, component)
+            mergedComponentDefinition.children.forEach {
+                _instantiate(it, componentsOutput, component, newPath)
             }
         }
         return componentsOutput
     }
 
-    private fun mergeConfigs(componentDefinition: ComponentDefinition, defaultComponent: DefaultComponent?) =
-        componentDefinition.configs.map { config ->
-            val defaultConfig =
-                defaultComponent?.configs?.find { defConfig -> defConfig.name == config.name } ?: null
-            if (defaultConfig != null) {
-                getConfiguration(config, defaultConfig.value)
-            } else {
-                config
+    /** builds an internal tree of allComponents and then validates each node in the tree against
+     * the matching node from the merged definition, based on paths. the configs in the
+     * merged component definitions are irrelevant, because we use the actual configs from allComponents */
+    fun validate(mergedComponentDefinition: MergedComponentDefinition, allComponents: List<Component>) {
+
+        // create a temporary tree of the flat components, so we can retrieve and compare subtrees
+        val rootInstance = TreeComponent(allComponents.find { it.parentId == null }!!, allComponents)
+
+        // now apply values out of components onto mergedComponentDefinition
+        rootInstance.accept {
+            val definitionSubtree = mergedComponentDefinition.find(it.getPath())!!
+            validate(definitionSubtree, it)
+        }
+    }
+
+    private fun validate(mergedComponentDefinition: MergedComponentDefinition, treeComponent: TreeComponent) {
+        treeComponent.component.configs.forEach {
+            try {
+                mergedComponentDefinition.ensureConfigValueIsPermitted(it)
+            } catch (e: IllegalArgumentException) {
+                throw IllegalArgumentException("${e.message} at path ${treeComponent.getPath()}")
             }
         }
 
-    fun validate(rootDefinitions: List<ComponentDefinition>, marketingDefinitions: MarketingDefinitions, components: List<Component>) {
-        val instanceRoot = Node.buildTree(components)
-        instanceRoot.accept { _validate(it, rootDefinitions, marketingDefinitions) }
-    }
-
-    private fun _validate(node: Node, rootDefinitions: List<ComponentDefinition>, marketingDefinitions: MarketingDefinitions) {
-        val marketingDefinition = marketingDefinitions.getComponent(node.getPath())
-        val componentDefinition = getDefinition(rootDefinitions, node.component.componentDefinitionId, node.component.configs)
-        val configsDefinitionsToUse = mergeConfigs(componentDefinition, marketingDefinition)
-
-// TODO        marketing defns also override possible config values;
-
-/*
-        node.component.configs.forEach { componentDefinition.ensureConfigValueIsPermitted(it) }
-        componentDefinition.runRules(node.component.configs)
-        val numOfSiblingsWithSameComponentDefinitionId = node.parent?.children?.filter { it.component.componentDefinitionId == node.component.componentDefinitionId }?.count() ?: 0
-        require(componentDefinition.cardinalityMin > numOfSiblingsWithSameComponentDefinitionId ) { "too few kids of type ${node.component.componentDefinitionId} in path ${node.getPath()}" }
-        require(componentDefinition.cardinalityMax < numOfSiblingsWithSameComponentDefinitionId ) { "too many kids of type ${node.component.componentDefinitionId} in path ${node.getPath()}" }
-
-        // 1. configs must be in the range of values allowed by the component definition
-        componentDefinition.ensureConfigValueIsPermitted(node.component.configs)
-
-        // 2. rules must evaluate to true
-        componentDefinition.runRules(node.component.configs)
-
-        // 3.
-//TODO;
-        configsDefinitionsToUse.forEach { configDefinitionToUse ->
-            val actualConfig = node.component.configs.find { it.name == configDefinitionToUse.name }!!
-            componentDefinition.ensureConfigValueIsPermitted(actualConfig)
+        try {
+            mergedComponentDefinition.runRules(treeComponent.component.configs, treeComponent.component)
+        } catch (e: IllegalArgumentException) {
+            throw IllegalArgumentException("${e.message} at path ${treeComponent.getPath()}")
         }
-*/
+
+        if(treeComponent.parent != null) {
+            val numOfSiblings = treeComponent.parent.children
+                .filter { it.getPath().matches(Regex(mergedComponentDefinition.getPath())) }
+                .count()
+            require(numOfSiblings >= mergedComponentDefinition.cardinalityMin) { "too few  kids of type ${treeComponent.component.componentDefinitionId} in path ${treeComponent.parent.getPath()}" }
+            require(numOfSiblings <= mergedComponentDefinition.cardinalityMax) { "too many kids of type ${treeComponent.component.componentDefinitionId} in path ${treeComponent.parent.getPath()}" }
+        }
     }
 
-    /** allows us to navigate in both directions */
-    private class Node(val component: Component, val parent: Node? = null) {
-        val children: MutableList<Node> = mutableListOf()
+    fun getPath(component: Component, allComponents: List<Component>): String {
+        val root = TreeComponent(allComponents.find { it.parentId == null }!!, allComponents)
+        var path: String? = null
+        root.accept { if(it.component == component) path = it.getPath() }
+        return path!!
+    }
+
+    private class TreeComponent(val component: Component, allComponents: List<Component>, val parent: TreeComponent? = null) {
+
+        val children = mutableListOf<TreeComponent>()
 
         init {
             parent?.children?.add(this)
+
+            allComponents.filter { it.parentId == component.id }.forEach {
+                TreeComponent(it, allComponents, this)
+            }
         }
 
         fun getPath(): String {
-            val name = this.component.componentDefinitionId
-            return if(parent == null) name else "${parent.getPath()}->$name"
+            val name = component.componentDefinitionId
+            val cardKey = component.cardinalityKey ?: ""
+            return if(parent == null) name else "${parent.getPath()}->$name$cardKey"
         }
 
-        /** children last recursion */
-        fun accept(f: (node: Node) -> Unit) {
+        /** children last recursion aka pre order traversal
+         * https://towardsdatascience.com/4-types-of-tree-traversal-algorithms-d56328450846 */
+        fun accept(f: (treeComponent: TreeComponent) -> Unit) {
             f(this)
             children.forEach { it.accept(f) }
-        }
-
-        companion object {
-            fun buildTree(components: List<Component>): Node {
-                val root = Node(components.find { it.parentId == null }!!)
-                _buildTree(root, components)
-                return root;
-            }
-
-            private fun _buildTree(parent: Node, components: List<Component>) {
-                val children = components.filter { it.parentId == parent.component.id }
-                children.forEach {
-                    val newParent = Node(it, parent)
-                    _buildTree(newParent, components)
-                }
-            }
         }
     }
 

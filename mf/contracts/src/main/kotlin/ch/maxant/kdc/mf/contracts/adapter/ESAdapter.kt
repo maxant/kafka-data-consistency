@@ -68,7 +68,7 @@ class ESAdapter {
 
     @Timed(unit = MetricUnits.MILLISECONDS)
     @Traced
-    fun createOffer(draft: Draft, partnerId: UUID?) {
+    fun createDraft(draft: Draft, partnerId: UUID?) {
         val esContract = EsContract(draft, partnerId, draft.allComponents.map { ESComponent(it) })
         val r = EsRequest(EsRequestType.CREATE, "PUT", "/contracts/_doc/${draft.contract.id}", om.writeValueAsString(esContract))
         esOut.send(om.writeValueAsString(r))
@@ -76,7 +76,7 @@ class ESAdapter {
 
     @Timed(unit = MetricUnits.MILLISECONDS)
     @Traced
-    fun updateOffer(contractId: UUID, allComponents: List<Component>) {
+    fun updateComponents(contractId: UUID, allComponents: List<Component>) {
         /*
             {
               "script" : {
@@ -107,7 +107,7 @@ class ESAdapter {
 
     @Timed(unit = MetricUnits.MILLISECONDS)
     @Traced
-    fun updateOffer(contractId: UUID, newState: ContractState) {
+    fun updateState(contractId: UUID, newState: ContractState) {
         val params = om.createObjectNode()
         params.put("state", newState.toString())
 

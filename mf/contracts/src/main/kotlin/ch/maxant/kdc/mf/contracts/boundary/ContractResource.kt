@@ -146,7 +146,7 @@ class ContractResource(
         log.info("publishing AcceptedOffer event")
         eventBus.publish(AcceptedOffer(contract))
 
-        esAdapter.updateOffer(contractId, contract.contractState)
+        esAdapter.updateState(contractId, contract.contractState)
 
         Response.ok(contract).build()
     }
@@ -202,7 +202,7 @@ class ContractResource(
         approveContract(contract, context.user, productId)
         log.info("approved contract $contractId")
 
-        esAdapter.updateOffer(contractId, contract.contractState)
+        esAdapter.updateState(contractId, contract.contractState)
 
         Response.ok(contract).build()
     }

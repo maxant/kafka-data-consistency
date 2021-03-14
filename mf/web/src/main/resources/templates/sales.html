@@ -19,7 +19,7 @@
 </div>
 <div class="p-grid">
     <div class="p-col-12 p-sm-12 p-md-6 p-lg-3 p-xl-3">
-        <p-dropdown :options="products" v-model="product"></p-dropdown>
+        <p-dropdown :options="products" v-model="product" @change="productSelected"></p-dropdown>
         <span style="font-size: 0.8em; font-style: italic;">
             choose "coffee latte" above to see how a
             product specific ui-widget is used
@@ -168,14 +168,11 @@ var coffeeLatteSkinnySpecificUiComponent = {
         }
     },
     methods: {
-        getRules(componentDefinitionId) {
-            let defns = window.componentDefinitions["COFFEE_LATTE_SKINNY"];
-            return _.find(defns.children, e => e.componentDefinitionId == componentDefinitionId).rules;
-        },
         changeParam(percent, doFrontendValidation) {
+            let component = this.node.children[0];
             if(doFrontendValidation) {
                 try {
-                    this.getRules("Milk").forEach(r => {
+                    _findComponentDefinition(component.path, window.componentDefinitions).rules.forEach(r => {
                         var FAT_CONTENT = percent;
                         if(!eval(r)) throw new Error("FAILED: " + r);
                     });
@@ -185,7 +182,6 @@ var coffeeLatteSkinnySpecificUiComponent = {
                 }
             }
 
-            let component = this.node.children[0];
             let paramName = "FAT_CONTENT";
             component.$configs[paramName].value = percent
             this.$parent.changeParam(component, paramName);
@@ -319,6 +315,7 @@ const App = {
                 console.log("got products: " + r.payload);
                 self.products = r.payload;
                 self.product = self.products[0]; // milkshake is default
+                self.productSelected();
             } else {
                 let msg = "Failed to get products: " + r.payload;
                 console.error(msg);
@@ -328,23 +325,30 @@ const App = {
             console.error("received error: " + error);
         });
 
-        url = CONTRACTS_BASE_URL + "/definitions/components"
-        let componentDefinitions$ = fetchIt(url, "GET", self).then(r => {
-            if(r.ok) {
-                console.log("got component definitions: " + r.payload);
-                window.componentDefinitions = r.payload;
-            } else {
-                let msg = "Failed to get component definitions: " + r.payload;
-                console.error(msg);
-                alert(msg);
-            }
-        }).catch(error => {
-            console.error("received error: " + error);
-        });
-
-        return Promise.all([products$, componentDefinitions$]);
+        return Promise.all([products$]);
     },
     methods: {
+        productSelected() {
+            delete window.componentDefinitions;
+            let url = CONTRACTS_BASE_URL + "/definitions/components/" + this.product;
+            fetchIt(url, "GET", self).then(r => {
+                if(r.ok) {
+                    console.log("got component definitions: " + r.payload);
+                    window.componentDefinitions = r.payload;
+                    function setRegExpPath(componentDefinition) {
+                        componentDefinition.$pathRegExp = RegExp("^" + componentDefinition.path + "$");
+                        componentDefinition.children.forEach(c => setRegExpPath(c));
+                    }
+                    setRegExpPath(window.componentDefinitions);
+                } else {
+                    let msg = "Failed to get component definitions: " + r.payload;
+                    console.error(msg);
+                    alert(msg);
+                }
+            }).catch(error => {
+                console.error("received error: " + error);
+            });
+        },
         partnerSelected(partner) {
             this.partner = partner;
             this.partnerId = partner.id;
@@ -678,26 +682,23 @@ function _buildTree(parent, components) {
     });
 }
 
-function _initialiseDraft(component, product) {
-    component.$configs = {}
-    component.configPossibilities = _findConfigPossibilities(component.componentDefinitionId, window.componentDefinitions[product])
-    if(!component.configPossibilities) {
-        // packaging is keyed by its componentDefinitionId rather than productId
-        component.configPossibilities = _findConfigPossibilities(component.componentDefinitionId, window.componentDefinitions[component.componentDefinitionId])
-    }
+function _initialiseDraft(component, product, parent) {
+    component.$configs = {};
+    component.$parent = parent;
+    component.configPossibilities = _findComponentDefinition(component.path, window.componentDefinitions).configPossibilities;
     _.forEach(component.configs, c => component.$configs[c.name] = _.clone(c));
     _.forEach(component.children, child => _initialiseDraft(child, product));
 }
 
-function _findConfigPossibilities(componentDefinitionId, componentDefinition) {
+function _findComponentDefinition(path, componentDefinition) {
     if(componentDefinition) {
-        if(componentDefinition.componentDefinitionId == componentDefinitionId) {
-            return componentDefinition.configPossibilities;
+        if(componentDefinition.$pathRegExp.test(path)) {
+            return componentDefinition;
         }
         for(let c in componentDefinition.children) {
-            let configPossibilities = _findConfigPossibilities(componentDefinitionId, componentDefinition.children[c]);
-            if(configPossibilities) {
-                return configPossibilities;
+            let compDefn = _findComponentDefinition(path, componentDefinition.children[c]);
+            if(compDefn) {
+                return compDefn;
             }
         }
     }
