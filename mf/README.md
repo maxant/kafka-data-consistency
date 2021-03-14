@@ -250,6 +250,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
 ## TODO
 - current
+  - remember to use definitions to add ghosts so that we can increase cardinality, if the default is zero.
   - retest 10% manual discount on latte
   - add buttons to change cardinality on vanilla extract and sugar on milkshake
   - add condition if too much vanilla and show it on the screen

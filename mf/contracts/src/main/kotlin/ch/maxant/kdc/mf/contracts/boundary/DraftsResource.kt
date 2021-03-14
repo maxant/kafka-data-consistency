@@ -152,7 +152,7 @@ class DraftsResource(
             ])
     )
     @PUT
-    @Path("/{contractId}/{componentId}/{param}/{newValue}")
+    @Path("/{contractId}/{componentId}/update-config/{param}/{newValue}")
     @Transactional
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun updateConfig(
@@ -169,9 +169,12 @@ class DraftsResource(
         require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
         contract.syncTimestamp = System.currentTimeMillis()
 
-        val allComponents = componentsRepo.updateConfig(contractId, componentId, ConfigurableParameter.valueOf(param), newValue)
-        allComponents.forEach { it.path = instantiationService.getPath(it, allComponents) }
+        val allComponents = instantiationService.reinstantiate(
+            componentsRepo.updateConfig(contractId, componentId, ConfigurableParameter.valueOf(param), newValue)
+        )
 
+        // recreate definitions. the config values will be all wrong, but that doesn't matter, because the validation
+        // below is based on the instances configs and not this definition's configs
         val productId = allComponents.find { it.productId != null }!!.productId!!
         val product = Products.find(productId, 1)
         val marketingDefaults = MarketingDefinitions.getDefaults(Profiles.get(contract.profileId), product.productId)
@@ -187,6 +190,66 @@ class DraftsResource(
         context.throwExceptionInContractsIfRequiredForDemo()
 
         esAdapter.updateComponents(contractId, allComponents)
+
+        // instead of publishing the initial model based on definitions, which contain extra
+        // info like possible inputs, we publish a simpler model here
+        eventBus.publish(UpdatedDraft(contract, allComponents))
+
+        Response.ok()
+                .entity(contract)
+                .build()
+    }
+
+    @Operation(summary = "increase cardinality", description = "descr")
+    @APIResponses(
+            APIResponse(description = "let's the user add the given path to the given component", responseCode = "200", content = [
+                Content(mediaType = MediaType.APPLICATION_JSON, schema = Schema(implementation = ContractEntity::class))
+            ])
+    )
+    @PUT
+    @Path("/{contractId}/{parentComponentId}/increase-cardinality/{pathToAdd}")
+    @Transactional
+    @Timed(unit = MetricUnits.MILLISECONDS)
+    fun increaseCardinality(
+        @PathParam("contractId") @Parameter(name = "contractId", required = true) contractId: UUID,
+        @PathParam("parentComponentId") @Parameter(name = "parentComponentId", required = true) parentComponentId: UUID,
+        @PathParam("pathToAdd") @Parameter(name = "pathToAdd", required = true) pathToAdd: String
+    ): Response = doByHandlingValidationExceptions {
+
+        log.info("increasing cardinality on draft $contractId, adding path $pathToAdd to component $parentComponentId")
+
+        // check draft status
+        val contract = em.find(ContractEntity::class.java, contractId)
+        require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
+        contract.syncTimestamp = System.currentTimeMillis()
+
+        val allComponents = instantiationService.reinstantiate(
+            ComponentEntity.Queries.selectByContractId(em, contractId)
+        ).toMutableList()
+
+        // recreate definitions. the config values will be all wrong, but that doesn't matter, because the validation
+        // below is based on the instances configs and not this definition's configs
+        val productId = allComponents.find { it.productId != null }!!.productId!!
+        val product = Products.find(productId, 1)
+        val marketingDefaults = MarketingDefinitions.getDefaults(Profiles.get(contract.profileId), product.productId)
+        val pack = Packagings.find(allComponents.map { it.componentDefinitionId }, product)
+        val mergedComponentDefinition = definitionService.getMergedDefinitions(pack, marketingDefaults)
+
+        val definitionSubtreeToAdd = mergedComponentDefinition.find(pathToAdd)
+        require(definitionSubtreeToAdd != null) { "No subtree found at $pathToAdd" }
+        val additionalComponents = instantiationService.instantiate(definitionSubtreeToAdd, parentComponentId)
+        componentsRepo.addComponents(additionalComponents)
+        allComponents.addAll(additionalComponents)
+
+        // at this stage, the mergedComponentDefinition, which is the root of a tree of definitions, contains
+        // configs with initial or default values. they are unimportant here, because we are validating against
+        // the components, ie the instances
+
+        instantiationService.validate(mergedComponentDefinition, allComponents)
+
+        context.throwExceptionInContractsIfRequiredForDemo()
+
+        esAdapter.resetComponents(contractId, allComponents)
 
         // instead of publishing the initial model based on definitions, which contain extra
         // info like possible inputs, we publish a simpler model here
@@ -220,9 +283,7 @@ class DraftsResource(
         require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
         contract.syncTimestamp = System.currentTimeMillis()
 
-        val allComponentEntities = ComponentEntity.Queries.selectByContractId(em, contractId)
-        val allComponents = allComponentEntities.map { Component(om, it) }
-        allComponents.forEach { it.path = instantiationService.getPath(it, allComponents) }
+        val allComponents = instantiationService.reinstantiate(ComponentEntity.Queries.selectByContractId(em, contractId))
 
         context.throwExceptionInContractsIfRequiredForDemo()
 
@@ -296,9 +357,7 @@ class DraftsResource(
         val contract = em.find(ContractEntity::class.java, contractId)
         require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
 
-        val allComponentEntities = ComponentEntity.Queries.selectByContractId(em, contractId)
-        val allComponents = allComponentEntities.map { Component(om, it) }
-        allComponents.forEach { it.path = instantiationService.getPath(it, allComponents) }
+        val allComponents = instantiationService.reinstantiate(ComponentEntity.Queries.selectByContractId(em, contractId))
 
         eventBus.publish(UpdatedDraft(contract, allComponents))
 

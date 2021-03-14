@@ -5,7 +5,8 @@
 </div>
 
 <div class="p-grid">
-    <mf-contract v-if="model.contract.id" :contract="model.contract" allow-accept-offer="true" @accepted="acceptedOffer" source="graphql+cache"></mf-contract>
+    <mf-contract v-if="model.contract.id" :contract="model.contract" allow-accept-offer="true" @accepted="acceptedOffer"
+                 source="graphql+cache"></mf-contract>
     <mf-partner v-for="partnerRelationship in model.partnerRelationships"
                 :partner-id="partnerRelationship.partnerId"
                 :role="partnerRelationship.role"
@@ -18,10 +19,15 @@
     <div v-if="model.contract.profileId">Based on profile '{{model.contract.profileId.toLowerCase()}}'</div>
     <div v-if="model.contract.createdBy">Created by {{model.contract.createdBy}} at {{model.contract.createdAt}}</div>
     <div v-if="model.contract.offeredBy">Offered by {{model.contract.offeredBy}} at {{model.contract.offeredAt}}</div>
-    <div v-if="model.contract.acceptedBy">Accepted by {{model.contract.acceptedBy}} at {{model.contract.acceptedAt}}</div>
-    <div v-if="model.contract.approvedBy">Approved by {{model.contract.approvedBy}} at {{model.contract.approvedAt}}</div>
-    <div v-if="model.cacheHit" style="font-size: small; font-style: italic;">Cache hit: {{ model.cacheHit }}, backend loaded in {{ model.loadedInMs }}ms</div>
-    <div v-if="model.contract.state == 'DRAFT'">     |}{! we can use "state" or "contractState" - see graphQl mapping in request below !}{|
+    <div v-if="model.contract.acceptedBy">Accepted by {{model.contract.acceptedBy}} at {{model.contract.acceptedAt}}
+    </div>
+    <div v-if="model.contract.approvedBy">Approved by {{model.contract.approvedBy}} at {{model.contract.approvedAt}}
+    </div>
+    <div v-if="model.cacheHit" style="font-size: small; font-style: italic;">Cache hit: {{ model.cacheHit }}, backend
+        loaded in {{ model.loadedInMs }}ms
+    </div>
+    <div v-if="model.contract.state == 'DRAFT'"> |}{! we can use "state" or "contractState" - see graphQl mapping in
+        request below !}{|
         <p-button id="offerDraftButton" @click="offerDraft()">Offer draft</p-button>
         <p-button v-if="showResync" @click="resync()">resync</p-button>
 
@@ -33,22 +39,13 @@
 </div>
 <hr>
 <div class="p-grid">
-    <div class="p-col-12 p-sm-12 p-md-6 p-lg-4 p-xl-4">
+    <div class="p-col-12 p-sm-12 p-md-6 p-lg-6 p-xl-6">
         <div>
             <h3>Components</h3>
-            <ul>
-                <li v-for="component in model.contract.components">
-                    <div>{{component.componentDefinitionId}} ({{parseFloat(component.$price).toFixed(2)}} CHF)</div>
-                    <ul>
-                        <li v-for="config in component.configs">
-                            {{toLower(config.name)}} {{toLower(config.value)}} {{config.units == 'NONE'?'':toLower(config.units)}}
-                        </li>
-                    </ul>
-                </li>
-            </ul>
+            <mf-contract-components v-if="model.componentsRoot.length > 0" :roots="model.componentsRoot"></mf-contract-components>
         </div>
     </div>
-    <div class="p-col-12 p-sm-12 p-md-6 p-lg-4 p-xl-4">
+    <div class="p-col-12 p-sm-12 p-md-6 p-lg-6 p-xl-6">
         <div>
             <h3>Discounts and Surcharges</h3>
             <span v-if="model.discountssurcharges.failedReason">Currently unavailable: {{model.discountssurcharges.failedReason}}</span>
@@ -79,7 +76,8 @@
         <hr>
         <div>
             <h3>Bills</h3>
-            <table v-if="model.bills.length > 0" border="1" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+            <table v-if="model.bills.length > 0" border="1" cellpadding="0" cellspacing="0"
+                   style="border-collapse: collapse;">
                 <tr>
                     <th>Billing Definition</th>
                     <th>Start</th>
@@ -115,10 +113,47 @@ var urlParams = new URLSearchParams(window.location.search);
 var id = urlParams.get('id');
 console.log("using id from url: " + id);
 
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ui-component for displaying components with configs and prices as a tree
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+template =
+`
+<p-treetable :value="roots" :expandedKeys="roots[0].expandedKeys">
+    <p-column field="name" header="Name" :expander="true"></p-column>
+    <p-column field="price" header="Price"></p-column>
+    <p-column header="Configurations">
+        <template #body="slotProps">
+            <ul>
+                <li v-for="config in slotProps.node.configs">
+                    {{toLower(config.name)}}: {{toLower(config.value)}} {{(config.units == 'NONE' ? '' : toLower(config.units))}}
+                </li>
+            </ul>
+        </template>
+    </p-column>
+</p-treetable>
+`; // end template
+
+var contractComponents = {
+    props: ['roots'],
+    template,
+    methods: {
+        toLower(s) {
+            return _.toLower(s);
+        }
+    },
+    components: {
+        'p-treetable': treetable,
+        'p-column': column
+    }
+}
+
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// application
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const App = {
     data() {
         return {
-            model: { id, contract: {}, partnerRelationships: [], discountssurcharges: [], conditions: [], bills: [] },
+            model: { id, contract: {}, componentsRoot: [], partnerRelationships: [], discountssurcharges: [], conditions: [], bills: [] },
             showResync: false,
             start: 0,
             timeTaken: 0,
@@ -149,6 +184,7 @@ const App = {
                                 id parentId productId componentDefinitionId configs {name, value, units }
                             }
                         }
+                        prices { failedReason list { componentId price } }
                         discountsAndSurcharges { failedReason list { componentId addedManually definitionId value } }
                         conditions { failedReason list { componentId addedManually definitionId } }
                         anythingMissing cacheHit loadedInMs
@@ -161,18 +197,28 @@ const App = {
                 if(r.ok && !r.payload.errors) {
                     self.model.contract = r.payload.data.cached_aggregate.contract;
                     self.model.allContractIds = [id];
+                    self.model.prices = r.payload.data.cached_aggregate.prices;
                     self.model.discountssurcharges = r.payload.data.cached_aggregate.discountsAndSurcharges;
                     self.model.conditions = r.payload.data.cached_aggregate.conditions;
                     self.model.cacheHit = r.payload.data.cached_aggregate.cacheHit;
                     self.model.loadedInMs = r.payload.data.cached_aggregate.loadedInMs;
                     console.log("got aggregate for requestId " + self.requestId);
+
+                    self.model.prices.list.forEach(p => {
+                        self.model.contract.components.forEach(c => {
+                            if(c.id == p.componentId) {
+                                c.$price = p.price;
+                            }
+                        });
+                    });
+
+                    self.model.componentsRoot = [setupComponentsTree(self.model.contract.components)];
+
                 } else {
                     let msg = "Failed to get aggregate: " + JSON.stringify(r.payload);
                     console.error(msg);
                     alert(msg);
                 }
-            }).then(r => {
-                return self.getPrices();
             }).catch(error => {
                 alert("received error: " + error);
             });
@@ -200,32 +246,6 @@ const App = {
                     self.model.bills = r.payload;
                 } else {
                     let msg = "Failed to get bills: " + r.payload;
-                    console.error(msg);
-                    alert(msg);
-                }
-            }).catch(error => {
-                alert("received error: " + error);
-            });
-
-            return Promise.all([aggregate$, partnerRelationships$, bills$]);
-        },
-        getPrices() {
-            let self = this;
-            let url = PRICING_BASE_URL + "/pricing/prices/" + self.model.id + "?dateTime=" + self.model.contract.end;
-            return fetchIt(url, "GET", this).then(r => {
-                self.timeTaken = new Date().getTime() - self.start;
-                if(r.ok) {
-                    console.log("got prices, for requestId " + self.requestId);
-                    self.model.prices = r.payload;
-                    self.model.prices.forEach(p => {
-                        self.model.contract.components.forEach(c => {
-                            if(c.id == p.componentId) {
-                                c.$price = p.price;
-                            }
-                        });
-                    });
-                } else {
-                    let msg = "Failed to get prices: " + r.payload;
                     console.error(msg);
                     alert(msg);
                 }
@@ -342,12 +362,34 @@ const App = {
         'mf-partner': mfPartnerTile,
         'mf-contract': mfContractTile,
         'mf-users': mfUsers,
-        'mf-cases': mfCases
+        'mf-cases': mfCases,
+        'mf-contract-components': contractComponents
     }
 }
 const app = Vue.createApp(App)
 app.use(primevue);
 app.mount("#app")
+
+function setupComponentsTree(components, component, parentKey, root) {
+    if(!component) {
+        component = _.find(components, c => !c.parentId);
+        root = component;
+        root.expandedKeys = {};
+    }
+    parentKey = (!!parentKey) ? parentKey : "";
+    component.key = parentKey + "::" + component.componentDefinitionId;
+    component.data = {
+        name: component.componentDefinitionId,
+        price: parseFloat(component.$price).toFixed(2) + " CHF"
+    };
+    root.expandedKeys[component.key] = true; // expand by default
+    component.children = [];
+    _.forEach(_.filter(components, c => c.parentId == component.id), child => {
+        component.children.push(child);
+        setupComponentsTree(components, child, component.key, root);
+    });
+    return component;
+}
 
 </script>
 

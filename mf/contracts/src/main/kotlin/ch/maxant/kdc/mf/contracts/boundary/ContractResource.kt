@@ -6,6 +6,7 @@ import ch.maxant.kdc.mf.contracts.adapter.PartnerRelationshipsAdapter
 import ch.maxant.kdc.mf.contracts.adapter.PricingAdapter
 import ch.maxant.kdc.mf.contracts.control.Abac
 import ch.maxant.kdc.mf.contracts.control.EventBus
+import ch.maxant.kdc.mf.contracts.control.InstantiationService
 import ch.maxant.kdc.mf.contracts.definitions.ProductId
 import ch.maxant.kdc.mf.contracts.dto.*
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
@@ -71,6 +72,9 @@ class ContractResource(
     lateinit var draftsResource: DraftsResource
 
     @Inject
+    lateinit var instantiationService: InstantiationService
+
+    @Inject
     lateinit var om: ObjectMapper
 
     private val log = Logger.getLogger(this.javaClass)
@@ -87,10 +91,9 @@ class ContractResource(
         abac.ensureUserIsContractHolderOrUsersOuOwnsContractOrUserInHeadOffice(contractId)
 
         if(withDetails) {
-            contract.components = ComponentEntity
+            contract.components = instantiationService.reinstantiate(ComponentEntity
                     .Queries
-                    .selectByContractId(em, contractId)
-                    .map { Component(om, it) }
+                    .selectByContractId(em, contractId))
         }
 
         return Response.ok(contract).build()

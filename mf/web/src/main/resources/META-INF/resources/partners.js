@@ -230,7 +230,7 @@ template =
     </div>
     <div v-else>
         <div>
-            <i v-if="isContractHolder()" class="pi pi-user-plus"></i>
+            <i v-if="isContractHolder()" class="fas fa-crown"></i>
             <i v-else class="pi pi-user"></i>
             Partner: {{partnerId}}
         </div>

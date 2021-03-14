@@ -1,6 +1,9 @@
 package ch.maxant.kdc.mf.contracts.boundary.query
 
+import ch.maxant.kdc.mf.contracts.adapter.DiscountSurcharge
 import ch.maxant.kdc.mf.contracts.adapter.DiscountsSurchargesAdapter
+import ch.maxant.kdc.mf.contracts.adapter.PriceEntity
+import ch.maxant.kdc.mf.contracts.adapter.PricingAdapter
 import ch.maxant.kdc.mf.contracts.definitions.*
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
@@ -20,7 +23,6 @@ import org.elasticsearch.client.Request
 import org.elasticsearch.client.ResponseException
 import org.jboss.logging.Logger
 import java.io.ByteArrayOutputStream
-import java.math.BigDecimal
 import java.net.ConnectException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -84,12 +86,16 @@ class CachedContractQueryResource(
     @RestClient // bizarrely this doesnt work with constructor injection
     lateinit var discountsSurchargesAdapter: DiscountsSurchargesAdapter
 
+    @Inject
+    @RestClient // bizarrely this doesnt work with constructor injection
+    lateinit var pricingAdapter: PricingAdapter
+
     private val log = Logger.getLogger(this.javaClass)
 
     @Query("cached_aggregate")
     @Description("Get a contract by it's ID, referring to the cache first and lazy loading if required")
     @Timed(unit = MetricUnits.MILLISECONDS)
-    fun findContractById(@Name("id") id: UUID, @Name("forceReload") @DefaultValue("false") forceReload: Boolean): CachedAggregate? {
+    fun findContractById(@Name("id") id: UUID, @Name("forceReload") @DefaultValue("false") forceReload: Boolean): CachedAggregate {
         log.info("getting contract $id with context.arguments ${context.arguments.map { "${it.key}->${it.value}" }}")
 
         val start = System.currentTimeMillis()
@@ -151,12 +157,22 @@ class CachedContractQueryResource(
             .setParameter("contractId", contract.id)
             .resultList as List<ComponentEntity> // avoid named query, and cast because of this: https://quarkusio.zulipchat.com/#narrow/stream/187030-users/topic/Hibernate.2FGraphQL.20SRGQL012000.3A.20Data.20Fetching.20Error
 
+        val prices = assemblePrices(id, contract.end)
+
         val discountsSurcharges = assembleDiscountsAndSurcharges(id)
 
         val conditions = assembleConditions(id)
 
-        return CachedAggregate(Contract(contract), discountsSurcharges, conditions, components)
+        return CachedAggregate(Contract(contract), prices, discountsSurcharges, conditions, components)
     }
+
+    private fun assemblePrices(contractId: UUID, endDateTime: LocalDateTime): Prices =
+        try {
+            Prices(pricingAdapter.priceByContractId(contractId, endDateTime.format(DateTimeFormatter.ISO_DATE_TIME)))
+        } catch (e: Exception) {
+            log.warn("failed to fetch prices", e)
+            Prices(emptyList(), e.message)
+        }
 
     private fun assembleDiscountsAndSurcharges(id: UUID): DiscountsAndSurcharges =
         try {
@@ -216,6 +232,10 @@ class CachedContractQueryResource(
             }
     }
 
+    fun prices(@Source component: Component): PriceEntity? {
+        return queryState.aggregate.prices.list.find { it.componentId == component.id }
+    }
+
     fun discountsAndSurcharges(@Source component: Component): List<DiscountSurcharge> {
         return queryState.aggregate.discountsAndSurcharges.list.filter { it.componentId == component.id }
     }
@@ -273,8 +293,10 @@ data class CachedAggregate(
     // => use vars everywhere, we also get the error in other cases, not really sure when/why. doesnt seem to support immutability
     var contract: Contract,
 
-    var discountsAndSurcharges: DiscountsAndSurcharges, // var so it can be improved, if it failed
-    var conditions: Conditions, // var so it can be improved, if it failed
+    // vars so they can be improved, if they failed
+    var prices: Prices,
+    var discountsAndSurcharges: DiscountsAndSurcharges,
+    var conditions: Conditions,
 
     @Ignore
     var _components: List<ComponentEntity>
@@ -292,7 +314,7 @@ data class CachedAggregate(
         return false
     }
 
-    constructor(): this(Contract(), DiscountsAndSurcharges(emptyList()), Conditions(emptyList()), emptyList())  // required by smallrye graphql
+    constructor(): this(Contract(), Prices(emptyList()), DiscountsAndSurcharges(emptyList()), Conditions(emptyList()), emptyList())  // required by smallrye graphql
 }
 
 data class Contract(
@@ -354,19 +376,12 @@ data class Config(var name: ConfigurableParameter, var value: String, var units:
     constructor(): this(ConfigurableParameter.VOLUME, "", Units.NONE) // required by smallrye graphql
 }
 
-data class DiscountsAndSurcharges(var list: List<DiscountSurcharge>, var failedReason: String? = null) {
+data class Prices(var list: List<PriceEntity>, var failedReason: String? = null) {
     constructor(): this(emptyList()) // required by smallrye-graphql
 }
 
-data class DiscountSurcharge(
-    var id: UUID,
-    var componentId: UUID,
-    var definitionId: String,
-    var value: BigDecimal,
-    var syncTimestamp: Long,
-    var addedManually: Boolean
-) {
-    constructor(): this(UUID.randomUUID(), UUID.randomUUID(), "", BigDecimal.ZERO, 0L, false) // required by smallrye graphql
+data class DiscountsAndSurcharges(var list: List<DiscountSurcharge>, var failedReason: String? = null) {
+    constructor(): this(emptyList()) // required by smallrye-graphql
 }
 
 data class Conditions(var list: List<Condition>, var failedReason: String? = null) {

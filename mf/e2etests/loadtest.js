@@ -135,7 +135,7 @@ function createPartnerAndContract(){
         var fatContents = ['0.2', '1.8', '3.5'];
         var newFatContent = fatContents[getRandomInt(0, 3)];
         var go = new Date().getTime();
-        fetch("http://contracts:8080/drafts/" + contractId + "/" + componentId + "/FAT_CONTENT/" + newFatContent, {
+        fetch("http://contracts:8080/drafts/" + contractId + "/" + componentId + "/update-config/FAT_CONTENT/" + newFatContent, {
           "headers": {
             "content-type": "application/json",
             "demo-context": "{\"forceError\":\"none\"}",

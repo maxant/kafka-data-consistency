@@ -52,7 +52,7 @@ object Products {
         listOf(
                 skinnyMilk,
                 CoffeePowder(10 * (quantityMl / 1000)),
-                VanillaSugar(5), // user can add multiple vanillas as kids to increase the strength of the flavour
+                VanillaSugar(), // user can add multiple vanillas as kids to increase the strength of the flavour
                 GlassBottle(quantityMl)
         )
     }

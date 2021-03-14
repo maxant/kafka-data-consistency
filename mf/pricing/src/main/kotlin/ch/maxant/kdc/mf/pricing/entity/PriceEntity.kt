@@ -21,7 +21,7 @@ import javax.persistence.*
         NamedQuery(name = PriceEntity.NqSelectByContractIdsOrderedByStartAsc.name,
                 query = PriceEntity.NqSelectByContractIdsOrderedByStartAsc.query)
 )
-open class PriceEntity( // add open, rather than rely on maven plugin, because @QuarkusTest running in IntelliJ seems to think its final
+class PriceEntity( // add open, rather than rely on maven plugin, because @QuarkusTest running in IntelliJ seems to think its final
 
     @Id
     @Column(name = "ID")

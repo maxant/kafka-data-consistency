@@ -1,10 +1,10 @@
 package ch.maxant.kdc.mf.contracts.adapter
 
-import ch.maxant.kdc.mf.contracts.boundary.query.DiscountSurcharge
 import com.fasterxml.jackson.databind.node.ArrayNode
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient
+import java.math.BigDecimal
 import java.util.*
 import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
@@ -36,3 +36,11 @@ interface DiscountsSurchargesAdapter {
     fun getByContractIdAsDto(@PathParam("contractId") contractId: UUID): List<DiscountSurcharge>
 }
 
+data class DiscountSurcharge(
+    var id: UUID,
+    var componentId: UUID,
+    var definitionId: String,
+    var value: BigDecimal,
+    var syncTimestamp: Long,
+    var addedManually: Boolean
+)

@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.contracts.boundary.query
 
+import ch.maxant.kdc.mf.contracts.adapter.DiscountSurcharge
 import ch.maxant.kdc.mf.contracts.adapter.DiscountsSurchargesAdapter
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity

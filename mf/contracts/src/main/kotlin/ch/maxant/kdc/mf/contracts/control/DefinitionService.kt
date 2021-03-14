@@ -35,7 +35,8 @@ class MergedComponentDefinition(componentDefinition: ComponentDefinition,
         parent?.children?.add(this)
         defaultComponent = marketingDefinitions.getComponent(getDefinitionPath())
         cardinalityMin = defaultComponent?.cardinalityMin ?: componentDefinition.cardinalityMin
-        cardinalityMax = defaultComponent?.cardinalityMin ?: componentDefinition.cardinalityMin
+        cardinalityMax = defaultComponent?.cardinalityMax ?: componentDefinition.cardinalityMax
+        cardinalityDefault = defaultComponent?.cardinalityDefault ?: componentDefinition.cardinalityDefault
         productId = if(componentDefinition is Product) componentDefinition.productId else null
 
         // setup initial config values based on marketing defaults if present
@@ -75,7 +76,7 @@ class MergedComponentDefinition(componentDefinition: ComponentDefinition,
     /** the raw path directly up to the parent ignoring cardinality */
     private fun getDefinitionPath(): String {
         val name = this.componentDefinitionId
-        return if(parent == null) "$name" else "${parent.getDefinitionPath()}->$name"
+        return if(parent == null) name else "${parent.getDefinitionPath()}->$name"
     }
 
     /** @return the node matching the given path, starting here and working downwards through children */

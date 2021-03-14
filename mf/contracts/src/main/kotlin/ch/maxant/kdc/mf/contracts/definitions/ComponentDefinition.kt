@@ -8,12 +8,13 @@ abstract class AbstractComponentDefinition(
         var configPossibilities: List<Configuration<*>> = emptyList(), // allows the component to specify possible values deviating from the initial values
 
         // how often can this component be added to it's parent?
-        // this is probably on the wrong side of the relationship and belongs in the parent, but i cant be bothered to
-        // refactor the entire model to add a wrapper around each child to contain this data (this is a poc after all),
-        // and sticking it in eg a
-        // map is too hacky
+        // this is on the wrong side of the relationship and belongs in the parent, so that a parent can define
+        // e.g. how much sugar is in a recipe, but i cant be bothered to refactor the entire model to add a wrapper
+        // around each child to contain this data (this is a poc after all).
+        // cardinalityDefault is the value used during instantiation.
         var cardinalityMin: Int = 1,
-        var cardinalityMax: Int = 1
+        var cardinalityMax: Int = 1,
+        var cardinalityDefault: Int = 1
 ) {
     var rules: List<String> = emptyList()
 
@@ -47,15 +48,10 @@ abstract class ComponentDefinition(
         configs: List<Configuration<*>>,
         val children: List<ComponentDefinition>,
         configPossibilities: List<Configuration<*>> = emptyList(), // allows the component to specify possible values deviating from the initial values
-
-        // how often can this component be added to it's parent?
-        // this is probably on the wrong side of the relationship and belongs in the parent, but i cant be bothered to
-        // refactor the entire model to add a wrapper around each child to contain this data (this is a poc after all),
-        // and sticking it in eg a
-        // map is too hacky
         cardinalityMin: Int = 1,
-        cardinalityMax: Int = 1
-): AbstractComponentDefinition(configs, configPossibilities, cardinalityMin, cardinalityMax) {
+        cardinalityMax: Int = 1,
+        cardinalityDefault: Int = 1
+): AbstractComponentDefinition(configs, configPossibilities, cardinalityMin, cardinalityMax, cardinalityDefault) {
     val componentDefinitionId: String = this.javaClass.simpleName
 }
 
@@ -85,25 +81,31 @@ class CoffeePowder(quantityGr: Int) : ComponentDefinition(
                 MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.COFFEE_POWDER)
         ), emptyList())
 
-class Sugar(quantityGr: Int, maxCardinality: Int = 1) : ComponentDefinition(
+class Sugar(cardinalityMin: Int, cardinalityMax: Int, cardinalityDefault: Int, quantityGr: Int) : ComponentDefinition(
         listOf(
                 IntConfiguration(ConfigurableParameter.WEIGHT, quantityGr, Units.GRAMS),
                 MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.SUGAR)
-        ), emptyList(), emptyList(), 0, maxCardinality)
+        ), emptyList(), emptyList(), cardinalityMin, cardinalityMax, cardinalityDefault)
 
-/** add one of these and adjust the gram quantity to get more sugar. if you want more
- * vanilla, add more children, up to 5! */
-class VanillaSugar(quantityGr: Int) : ComponentDefinition(
+/** there is just one of these in the parent. if you want more sugar, adjust the weight.
+ * if you want more flavour, change the cardinality of the kids */
+class VanillaSugar : ComponentDefinition(
         listOf(
-                IntConfiguration(ConfigurableParameter.WEIGHT, quantityGr, Units.GRAMS),
+                IntConfiguration(ConfigurableParameter.WEIGHT, 5, Units.GRAMS),
                 MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.SUGAR)
-        ), listOf(VanillaExtract()), emptyList(), 1, 1)
+        ), listOf(VanillaExtract()),
+        listOf(
+            IntConfiguration(ConfigurableParameter.WEIGHT, 0, Units.GRAMS),
+            IntConfiguration(ConfigurableParameter.WEIGHT, 5, Units.GRAMS),
+            IntConfiguration(ConfigurableParameter.WEIGHT, 10, Units.GRAMS),
+            IntConfiguration(ConfigurableParameter.WEIGHT, 15, Units.GRAMS)
+        ))
 
 class VanillaExtract : ComponentDefinition(
         listOf(
                 IntConfiguration(ConfigurableParameter.VOLUME, 5, Units.MILLILITRES),
                 MaterialConfiguration(ConfigurableParameter.MATERIAL, Material.VANILLA)
-        ), emptyList(), emptyList(), 1, 5)
+        ), emptyList(), emptyList(), cardinalityMax = 5)
 
 class Butter(quantityGr: Int) : ComponentDefinition(
         listOf(
@@ -116,7 +118,7 @@ class Cookies(quantityGr: Int) : ComponentDefinition(
                 IntConfiguration(ConfigurableParameter.WEIGHT, quantityGr, Units.GRAMS)
         ), listOf(
             Butter(quantityGr / 3),
-            Sugar(quantityGr / 3),
+            Sugar(0, 3, 1, quantityGr / 3),
             Flour(quantityGr / 3)
         )
 )

@@ -70,7 +70,7 @@
         <li>
             <div>Product: {{ model.draft.pack.children[0].productId }} {{ model.draft.pack.$price.total }} CHF ({{ model.draft.pack.$price.tax }} CHF VAT)
                 <div>
-                    <i class="pi pi-folder"></i> {{ model.draft.pack.componentDefinitionId }}
+                    <i class="fas fa-box"></i> {{ model.draft.pack.componentDefinitionId }}
                     with quantity
                     {{ findConfig(model.draft.pack.configs, 'QUANTITY').value }}
                 </div>
@@ -91,16 +91,17 @@
                         <!-- GENERIC UI:                                  -->
                         <!-- -------------------------------------------- -->
                         <div>
-                            <i class="pi pi-file"></i> {{ child.componentDefinitionId }}: {{ child.$price.total }} CHF
+                            <i class="fas fa-glass-whiskey"></i> {{ child.componentDefinitionId }}: {{ child.$price.total }} CHF
                         </div>
                         <mf-contract-discounts-surcharges :component="child"></mf-contract-discounts-surcharges>
                         <ul v-if="get(child, 'children.length') > 0">
                             <li v-for="child2 in child.children">
-                                <i class="pi pi-book"></i> {{ child2.componentDefinitionId }}: {{ child2.$price.total }} CHF
+                                <i class="fas fa-wrench"></i> {{ child2.componentDefinitionId }}: {{ child2.$price.total }} CHF
                                 <mf-contract-modifiable-config :component="child2"></mf-contract-modifiable-config>
                                 <ul v-if="get(child2, 'children.length') > 0">
                                     <li v-for="child3 in child2.children">
-                                        <i class="pi pi-comment"></i> {{ child3.componentDefinitionId }}: {{ child3.$price.total }} CHF
+                                        <i class="fas fa-puzzle-piece"></i> {{ child3.componentDefinitionId }}: {{ child3.$price.total }} CHF
+                                        <mf-contract-modifiable-cardinality :component="child3"></mf-contract-modifiable-cardinality>
                                     </li>
                                 </ul>
                             </li>
@@ -172,7 +173,7 @@ var coffeeLatteSkinnySpecificUiComponent = {
             let component = this.node.children[0];
             if(doFrontendValidation) {
                 try {
-                    _findComponentDefinition(component.path, window.componentDefinitions).rules.forEach(r => {
+                    _findComponentDefinition(component.path).rules.forEach(r => {
                         var FAT_CONTENT = percent;
                         if(!eval(r)) throw new Error("FAILED: " + r);
                     });
@@ -206,7 +207,7 @@ template =
 `
 <div v-if="component.configPossibilities && component.configPossibilities.length > 0">
     <div v-for="paramName in getDistinctParamNames(component.configPossibilities)">
-        <i class="pi pi-wallet"></i>
+        <i class="fas fa-cog"></i>
         {{paramName}}:
         <p-dropdown :id="getId(paramName, 'config-param')"
                    :options="getParamOptions(paramName, component)"
@@ -246,16 +247,59 @@ var modifiableConfigComponent = {
 }
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ui-component for modifying cardinality
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+template =
+`
+<span v-if="cardinalityMax > 1">
+    <p-button :disabled="cardinalityCurrent >= cardinalityMax"
+              icon="pi pi-plus"
+              class="p-button-rounded" @click="add()"
+              style="width: 16px; padding: 3px; height: 16px; font-size: x-small;"
+    ></p-button>
+    <p-button :disabled="cardinalityCurrent <= cardinalityMin"
+              icon="pi pi-minus"
+              class="p-button-rounded"
+              @click="remove()"
+              style="width: 16px; padding: 3px; height: 16px; font-size: x-small;"
+    ></p-button>
+    Number of {{component.componentDefinitionId}} in parent is {{cardinalityCurrent}} with min {{cardinalityMin}} and max {{cardinalityMax}}
+</span>
+`; // end template
+
+var modifiableCardinalityComponent = {
+    props: ['component'],
+    computed: {
+        cardinalityMin() {
+            return _findComponentDefinition(this.component.path).cardinalityMin;
+        },
+        cardinalityMax() {
+            return _findComponentDefinition(this.component.path).cardinalityMax;
+        },
+        cardinalityCurrent() {
+            // use the generic path of the definition, which is a regular expression, to find matching siblings
+            return _.filter(this.component.$parent.children, c => RegExp(_findComponentDefinition(this.component.path).path).test(c.path)).length;
+        }
+    },
+    template,
+    methods: {
+    },
+    components: {
+        'p-button': button
+    }
+}
+
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ui-component for displaying discounts and surcharges
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template =
 `
 <div v-for="dsc in component.$discountsSurcharges">
     <div v-if="dsc.value > 0">
-        <i class="pi pi-plus-circle"></i> Surcharge "{{ dsc.definitionId }}" {{ dsc.value*100 }}%
+        <i class="fas fa-tag"></i> Surcharge "{{ dsc.definitionId }}" {{ dsc.value*100 }}%
     </div>
     <div v-if="dsc.value < 0">
-        <i class="pi pi-minus-circle"></i> Discount "{{ dsc.definitionId }}" {{ dsc.value*-100 }}%
+        <i class="fas fa-tag"></i> Discount "{{ dsc.definitionId }}" {{ dsc.value*-100 }}%
     </div>
 </div>
 `; // end template
@@ -329,7 +373,6 @@ const App = {
     },
     methods: {
         productSelected() {
-            delete window.componentDefinitions;
             let url = CONTRACTS_BASE_URL + "/definitions/components/" + this.product;
             fetchIt(url, "GET", self).then(r => {
                 if(r.ok) {
@@ -425,7 +468,7 @@ const App = {
                 console.log("change param " + paramName + " on component " + component.componentId + " to " + newValue)
                 this.currentAction = {action: "changeParam", paramName, componentId: component.componentId, oldValue, newValue}
                 let self = this;
-                let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/" + component.componentId + "/" + paramName + "/" + newValue;
+                let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/" + component.componentId + "/update-config/" + paramName + "/" + newValue;
                 fetchIt(url, "PUT", this).then(r => {
                     if(r.ok) console.log("updated contract with id " + r.payload.id + ", for requestId " + self.requestId);
                     else {
@@ -530,6 +573,7 @@ const App = {
         'mf-users': mfUsers,
         'mf-contract-products-coffee-latte-skinny': coffeeLatteSkinnySpecificUiComponent,
         'mf-contract-modifiable-config': modifiableConfigComponent,
+        'mf-contract-modifiable-cardinality': modifiableCardinalityComponent,
         'mf-contract-discounts-surcharges': discountsSurchargesComponent
     }
 }
@@ -572,7 +616,7 @@ function sse(requestId, self) {
         let msg = JSON.parse(event.data);
         if(msg.event == "CREATED_DRAFT") {
             self.model.draft = msg.payload;
-            initialiseDraft(self.model.draft, self.product);
+            initialiseDraft(self.model.draft);
             self.model.draft.contract.productId = self.model.draft.pack.children[0].productId;
             // dont update any waiting or timing state, because this is just the first of many events to come
             self.progressValue = 33;
@@ -664,11 +708,11 @@ function removeWaitingAndResetValue(targetComponentId, paramName, oldValue, comp
     _.forEach(component.children, child => removeWaitingAndResetValue(targetComponentId, paramName, oldValue, child));
 }
 
-function initialiseDraft(draft, product) {
+function initialiseDraft(draft) {
     draft.pack = _.find(draft.allComponents, c => !c.parentId);
     _buildTree(draft.pack, draft.allComponents);
     delete draft.allComponents; // this UI uses a tree, not a flat list
-    _initialiseDraft(draft.pack, product);
+    _initialiseDraft(draft.pack);
 }
 
 function _buildTree(parent, components) {
@@ -682,24 +726,25 @@ function _buildTree(parent, components) {
     });
 }
 
-function _initialiseDraft(component, product, parent) {
+function _initialiseDraft(component, parent) {
     component.$configs = {};
     component.$parent = parent;
-    component.configPossibilities = _findComponentDefinition(component.path, window.componentDefinitions).configPossibilities;
+    component.configPossibilities = _findComponentDefinition(component.path).configPossibilities;
     _.forEach(component.configs, c => component.$configs[c.name] = _.clone(c));
-    _.forEach(component.children, child => _initialiseDraft(child, product));
+    _.forEach(component.children, child => _initialiseDraft(child, component));
 }
 
 function _findComponentDefinition(path, componentDefinition) {
-    if(componentDefinition) {
-        if(componentDefinition.$pathRegExp.test(path)) {
-            return componentDefinition;
-        }
-        for(let c in componentDefinition.children) {
-            let compDefn = _findComponentDefinition(path, componentDefinition.children[c]);
-            if(compDefn) {
-                return compDefn;
-            }
+    if(!componentDefinition && window.componentDefinitions) {
+        componentDefinition = window.componentDefinitions;
+    }
+    if(componentDefinition.$pathRegExp.test(path)) {
+        return componentDefinition;
+    }
+    for(let c in componentDefinition.children) {
+        let compDefn = _findComponentDefinition(path, componentDefinition.children[c]);
+        if(compDefn) {
+            return compDefn;
         }
     }
 }

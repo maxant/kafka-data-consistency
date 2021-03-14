@@ -82,7 +82,7 @@ window.mfContractTile = {
         }
     },
     computed: {
-        productId: function() {
+        productId() {
             if(!!this.fetchedContract.productId) {
                 return this.fetchedContract.productId;
             } else if(!!this.fetchedContract.components){

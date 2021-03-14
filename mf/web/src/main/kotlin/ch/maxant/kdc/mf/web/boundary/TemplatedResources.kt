@@ -88,7 +88,7 @@ class ContractTemplate {
     fun get(): TemplateInstance =
             contract.instance()
             .addStandardLibraries()
-            .addPvWidgets(listOf("calendar", "dropdown", "autocomplete", "inputtext", "button"))
+            .addPvWidgets(listOf("calendar", "dropdown", "autocomplete", "inputtext", "button", "treetable", "column"))
             .addMfWidgets(listOf(Component.Cases, Component.Contracts, Component.Partners))
             .addMfComponents()
 }

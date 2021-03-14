@@ -8,6 +8,7 @@ import java.time.LocalDateTime
 import java.util.*
 import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
+import javax.ws.rs.core.Response
 
 @Path("/pricing")
 @RegisterRestClient
@@ -27,7 +28,14 @@ interface PricingAdapter {
                    @QueryParam("dateTime") dateTime: LocalDateTime
     ): Price
 
-
+    @GET
+    @Path("/prices/{contractId}")
+    @Timed(unit = MetricUnits.MILLISECONDS)
+    fun priceByContractId(@PathParam("contractId") contractId: UUID,
+                          @QueryParam("dateTime") dateTimeString: String
+    ): List<PriceEntity>
 }
 
 data class Price(val total: BigDecimal, val tax: BigDecimal)
+
+data class PriceEntity(val price: BigDecimal, val tax: BigDecimal, val componentId: UUID, val pricingId: String)

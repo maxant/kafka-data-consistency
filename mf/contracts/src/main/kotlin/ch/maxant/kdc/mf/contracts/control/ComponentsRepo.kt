@@ -23,14 +23,14 @@ class ComponentsRepo(
     fun saveInitialDraft(contractId: UUID, components: List<Component>) {
         for(component in components) {
             val config = om.writeValueAsString(component.configs)
-            val e = ComponentEntity(component.id, component.parentId, contractId, config, component.componentDefinitionId)
+            val e = ComponentEntity(component.id, component.parentId, contractId, config, component.componentDefinitionId, component.cardinalityKey)
             e.productId = component.productId
             e.cardinalityKey = component.cardinalityKey
             em.persist(e)
         }
     }
 
-    fun updateConfig(contractId: UUID, componentId: UUID, param: ConfigurableParameter, newValue: String): List<Component> {
+    fun updateConfig(contractId: UUID, componentId: UUID, param: ConfigurableParameter, newValue: String): List<ComponentEntity> {
         val components = ComponentEntity.Queries.selectByContractId(em, contractId)
 
         val component = components.find { it.id == componentId }
@@ -45,7 +45,7 @@ class ComponentsRepo(
 
         component.configuration = om.writeValueAsString(configs)
 
-        return components.map { Component(om, it) }
+        return components
     }
 
 }
