@@ -60,8 +60,8 @@ object Packagings {
         }
     }
 
-    fun find(componentDefinitionIds: List<String>): Packaging {
-        val cardboardBox = CardboardBox(CardboardBox.CardboardBoxSize.TEN, 10, object: Product(ProductId.TEST_PRODUCT, emptyList(), emptyList()){})
+    fun find(componentDefinitionIds: List<String>, product: Product): Packaging {
+        val cardboardBox = CardboardBox(CardboardBox.CardboardBoxSize.TEN, 10, product)
         if(componentDefinitionIds.contains(Pallet::class.java.simpleName)) {
             return Pallet(Pallet.PalletSize.ONE_HUNDRED, 100, cardboardBox)
         } else if(componentDefinitionIds.contains(CardboardBox::class.java.simpleName)) {

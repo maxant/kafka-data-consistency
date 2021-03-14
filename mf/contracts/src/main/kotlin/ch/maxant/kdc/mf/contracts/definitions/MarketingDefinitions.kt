@@ -12,10 +12,11 @@ data class DefaultComponent(
     val configs: List<DefaultConfiguration>,
     val configPossibilities: List<DefaultConfiguration>,
     val cardinalityMin: Int? = 1,
-    val cardinalityMax: Int? = 1
+    val cardinalityMax: Int? = 1,
+    val rules: List<String>
 ) {
-    constructor(path: String, configs: List<DefaultConfiguration>, configPossibilities: List<DefaultConfiguration>, cardinalityMin: Int, cardinalityMax: Int):
-            this(Regex("^$path\$"), configs, configPossibilities, cardinalityMin, cardinalityMax)
+    constructor(path: String, configs: List<DefaultConfiguration>, configPossibilities: List<DefaultConfiguration>, cardinalityMin: Int, cardinalityMax: Int, rules: List<String>):
+            this(Regex("^$path\$"), configs, configPossibilities, cardinalityMin, cardinalityMax, rules)
 }
 
 /**
@@ -31,7 +32,8 @@ class MarketingDefinitions(private val defaultComponents: List<DefaultComponent>
         private fun coffeLatteSkinnyDefaults(profile: Profile) =
             if(profile.interestedInStrongFlavours) {
                 listOf(
-                    DefaultComponent("Drink->VanillaSugar->VanillaExtract\\d{0,3}", emptyList(), emptyList(), 2, 6)
+                    // regexp doesnt reflect cardinality, because it's used to find defaults to apply to definitions
+                    DefaultComponent(".*->Drink->VanillaSugar->VanillaExtract", emptyList(), emptyList(), 2, 6, emptyList())
                 )
             } else emptyList()
 

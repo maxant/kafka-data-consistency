@@ -217,7 +217,10 @@ function getName(p) {
 template =
 // start template
 `
-<div class="tile p-col-12 p-sm-12 p-md-6 p-lg-3 p-xl-3">
+<div class="tile p-col-12 p-sm-12 p-md-6 p-lg-3 p-xl-3"
+     @click="navigateToPartner()"
+     :class="{ clickable: clickable }"
+>
     <div v-if="error">
         Error loading partner<br>
         {{error}}
@@ -227,7 +230,6 @@ template =
     </div>
     <div v-else>
         <div>
-            <i class="pi pi-eye" v-if="clickable" @click="navigateToPartner()" style="float:right;"></i>
             <i v-if="isContractHolder()" class="pi pi-user-plus"></i>
             <i v-else class="pi pi-user"></i>
             Partner: {{partnerId}}
@@ -303,7 +305,9 @@ window.mfPartnerTile = {
             (this.roles && this.roles.indexOf('CONTRACT_HOLDER') >= 0);
     },
     navigateToPartner() {
-        window.location.href = '/partner?id=' + this.partnerId;
+        if(this.clickable) {
+            window.location.href = '/partner?id=' + this.partnerId;
+        }
     }
   }
 }

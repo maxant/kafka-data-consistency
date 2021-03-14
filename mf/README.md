@@ -250,8 +250,10 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
 ## TODO
 - current
-  - change config on milk
-  - caffe latte
+  - retest 10% manual discount on latte
+  - add buttons to change cardinality on vanilla extract and sugar on milkshake
+  - add condition if too much vanilla and show it on the screen
+  - update contract view if bills or cases change -> need to react to changes on other keys than just requestId
   - ui model is split into an input model and a model used to display
   - we have user actions which are applied to a model, so we can switch between offers
 - add validation to init and to update config

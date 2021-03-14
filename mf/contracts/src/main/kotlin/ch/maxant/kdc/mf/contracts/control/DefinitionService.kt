@@ -33,15 +33,14 @@ class MergedComponentDefinition(componentDefinition: ComponentDefinition,
 
     init {
         parent?.children?.add(this)
-        defaultComponent = marketingDefinitions.getComponent(getPath())
+        defaultComponent = marketingDefinitions.getComponent(getDefinitionPath())
         cardinalityMin = defaultComponent?.cardinalityMin ?: componentDefinition.cardinalityMin
         cardinalityMax = defaultComponent?.cardinalityMin ?: componentDefinition.cardinalityMin
         productId = if(componentDefinition is Product) componentDefinition.productId else null
 
         // setup initial config values based on marketing defaults if present
         this.configs = this.configs.map { config ->
-            val defaultConfig =
-                defaultComponent?.configs?.find { defConfig -> defConfig.name == config.name } ?: null
+            val defaultConfig = defaultComponent?.configs?.find { defConfig -> defConfig.name == config.name }
             if (defaultConfig != null) {
                 getConfiguration(config, defaultConfig.value)
             } else {
@@ -57,15 +56,26 @@ class MergedComponentDefinition(componentDefinition: ComponentDefinition,
                 getConfiguration(config, defaultConfig.value)
             } ?: componentDefinition.configPossibilities
 
+
+        this.rules = defaultComponent?.rules?:emptyList()
+        if(this.rules.isEmpty()) this.rules = componentDefinition.rules
+
         // build rest of tree
         componentDefinition.children.forEach {
             MergedComponentDefinition(it, marketingDefinitions, this)
         }
     }
 
+    /** the path, with regexp because of cardinality of children */
     fun getPath(): String {
         val name = this.componentDefinitionId
         return if(parent == null) "$name$DIGITS" else "${parent.getPath()}->$name$DIGITS" // works with no cardinality key; "" to "999"
+    }
+
+    /** the raw path directly up to the parent ignoring cardinality */
+    private fun getDefinitionPath(): String {
+        val name = this.componentDefinitionId
+        return if(parent == null) "$name" else "${parent.getDefinitionPath()}->$name"
     }
 
     /** @return the node matching the given path, starting here and working downwards through children */
@@ -94,11 +104,9 @@ class MergedComponentDefinitionSerializer: StdSerializer<MergedComponentDefiniti
         gen.writeObjectField("cardinalityMin", value.cardinalityMin)
         gen.writeObjectField("cardinalityMax", value.cardinalityMax)
         gen.writeObjectField("path", value.getPath())
-        if(value.rules != null) {
-            gen.writeArrayFieldStart("rules")
-            value.rules.forEach { gen.writeString(it) }
-            gen.writeEndArray()
-        }
+        gen.writeArrayFieldStart("rules")
+        value.rules.forEach { gen.writeString(it) }
+        gen.writeEndArray()
         if(value.productId != null) {
             gen.writeStringField("productId", value.productId.toString())
         }

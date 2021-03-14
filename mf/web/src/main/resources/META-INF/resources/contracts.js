@@ -8,17 +8,17 @@ const template =
 `
 <div class="tile p-col-12 p-sm-12 p-md-6 p-lg-3 p-xl-3"
      v-if="fetchedContract && (fetchedContract.contractState != 'DRAFT' || !hideDrafts)"
+     @click="navigateToContract()"
+     :class="{ clickable: clickable }"
 >
     <div>
         <div v-if="fetchedContract">
             <i class="pi pi-file"></i>
             Contract: {{fetchedContract.id}}
-            <i v-if="clickable" id="viewContractIcon" class="pi pi-eye" @click="navigateToContract()" style="float: right;"></i>
         </div>
         <div v-else-if="contractId">
             <i class="pi pi-file"></i>
             Contract: {{contractId}}
-            <i v-if="clickable" id="viewContractIcon" class="pi pi-eye" @click="navigateToContract()" style="float: right;"></i>
         </div>
         <div v-else>
         </div>
@@ -149,7 +149,9 @@ window.mfContractTile = {
             });
         },
         navigateToContract() {
-            window.location.href = '/contract?id=' + this.fetchedContract.id;
+            if(this.clickable) {
+                window.location.href = '/contract?id=' + this.fetchedContract.id;
+            }
         },
         acceptOffer() {
             let self = this;

@@ -175,7 +175,7 @@ class DraftsResource(
         val productId = allComponents.find { it.productId != null }!!.productId!!
         val product = Products.find(productId, 1)
         val marketingDefaults = MarketingDefinitions.getDefaults(Profiles.get(contract.profileId), product.productId)
-        val pack = Packagings.find(allComponents.map { it.componentDefinitionId })
+        val pack = Packagings.find(allComponents.map { it.componentDefinitionId }, product)
         val mergedComponentDefinition = definitionService.getMergedDefinitions(pack, marketingDefaults)
 
         // at this stage, the mergedComponentDefinition, which is the root of a tree of definitions, contains

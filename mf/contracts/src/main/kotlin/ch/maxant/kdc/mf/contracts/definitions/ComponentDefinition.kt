@@ -34,7 +34,7 @@ abstract class AbstractComponentDefinition(
         } // else anything goes
     }
 
-    fun runRules(configs: List<Configuration<*>>, component: Any?) {
+    fun runRules(configs: List<Configuration<*>>, component: Any? = this) {
         val contextMap = configs.map { it.name.toString() to it.value }.toMap().toMutableMap()
         contextMap["component"] = component // allows rule to access kids for example
         rules.forEach {

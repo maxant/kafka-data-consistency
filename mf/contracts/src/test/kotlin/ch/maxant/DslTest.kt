@@ -84,6 +84,13 @@ class DslTest {
             }.message!!
         assertTrue(message!!.startsWith("Rule evaluated to false: FAT_CONTENT <= 0.25 with context {VOLUME=1, FAT_CONTENT=1.8, MATERIAL=MILK, component=ch.maxant.kdc.mf.contracts.definitions.Milk"), message)
     }
+
+    @Test
+    fun anonymousObject() {
+        val p = object: Product(ProductId.TEST_PRODUCT, emptyList(), emptyList()){}
+        assertTrue(p is Product)
+    }
+
 }
 
 private val expectedJsonOfPackaging = """
