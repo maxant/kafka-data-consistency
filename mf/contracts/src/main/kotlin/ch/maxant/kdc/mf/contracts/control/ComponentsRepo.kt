@@ -21,13 +21,7 @@ class ComponentsRepo(
         var om: ObjectMapper
 ){
     fun saveInitialDraft(contractId: UUID, components: List<Component>) {
-        for(component in components) {
-            val config = om.writeValueAsString(component.configs)
-            val e = ComponentEntity(component.id, component.parentId, contractId, config, component.componentDefinitionId, component.cardinalityKey)
-            e.productId = component.productId
-            e.cardinalityKey = component.cardinalityKey
-            em.persist(e)
-        }
+        addComponents(contractId, components)
     }
 
     fun updateConfig(contractId: UUID, componentId: UUID, param: ConfigurableParameter, newValue: String): List<ComponentEntity> {
@@ -46,6 +40,16 @@ class ComponentsRepo(
         component.configuration = om.writeValueAsString(configs)
 
         return components
+    }
+
+    fun addComponents(contractId: UUID, components: List<Component>) {
+        for(component in components) {
+            val config = om.writeValueAsString(component.configs)
+            val e = ComponentEntity(component.id, component.parentId, contractId, config, component.componentDefinitionId, component.cardinalityKey)
+            e.productId = component.productId
+            e.cardinalityKey = component.cardinalityKey
+            em.persist(e)
+        }
     }
 
 }

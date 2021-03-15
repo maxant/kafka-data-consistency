@@ -252,12 +252,12 @@ var modifiableConfigComponent = {
 template =
 `
 <span v-if="cardinalityMax > 1">
-    <p-button :disabled="cardinalityCurrent >= cardinalityMax"
+    <p-button :disabled="disabled || cardinalityCurrent >= cardinalityMax"
               icon="pi pi-plus"
               class="p-button-rounded" @click="add()"
               style="width: 16px; padding: 3px; height: 16px; font-size: x-small;"
     ></p-button>
-    <p-button :disabled="cardinalityCurrent <= cardinalityMin"
+    <p-button :disabled="disabled || cardinalityCurrent <= cardinalityMin"
               icon="pi pi-minus"
               class="p-button-rounded"
               @click="remove()"
@@ -269,6 +269,11 @@ template =
 
 var modifiableCardinalityComponent = {
     props: ['component'],
+    data() {
+        return {
+            disabled: false
+        }
+    },
     computed: {
         cardinalityMin() {
             return _findComponentDefinition(this.component.path).cardinalityMin;
@@ -278,11 +283,23 @@ var modifiableCardinalityComponent = {
         },
         cardinalityCurrent() {
             // use the generic path of the definition, which is a regular expression, to find matching siblings
-            return _.filter(this.component.$parent.children, c => RegExp(_findComponentDefinition(this.component.path).path).test(c.path)).length;
+            //return _.filter(this.component.$parent.children, c => RegExp(_findComponentDefinition(this.component.path).path).test(c.path)).length;
+            // the following works too, since all siblings have the same initial part of the path, and will have the same componentDefinitionId too:
+            return _.filter(this.component.$parent.children, c => c.componentDefinitionId == this.component.componentDefinitionId).length;
         }
     },
     template,
     methods: {
+        add() {
+            this.disable = true;
+            this.$parent.increaseCardinality(this.component.$parent.componentId, _findComponentDefinition(this.component.path).path)
+            .then(r => this.disabled = false);
+        },
+        remove() {
+            this.disable = true;
+            this.$parent.decreaseCardinality(this.component.componentId)
+            .then(r => this.disabled = false);
+        }
     },
     components: {
         'p-button': button
@@ -482,6 +499,48 @@ const App = {
                     ameliorateCurrentAction(self)
                 });
             }
+        },
+        increaseCardinality(parentComponentId, definitionPathToAdd) {
+            this.progressValue = 1;
+            this.progressText = "increasing cardinality";
+            this.allowOffer = false;
+            console.log("change cardinality on parent " + parentComponentId + " by adding path " + definitionPathToAdd)
+            this.currentAction = {action: "increaseCardinality", parentComponentId, definitionPathToAdd};
+            let self = this;
+            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/" + parentComponentId + "/increase-cardinality";
+            return fetchIt(url, "PUT", this, definitionPathToAdd).then(r => {
+                if(r.ok) console.log("increased cardinality on contract with id " + r.payload.id + ", for requestId " + self.requestId);
+                else {
+                    let msg = "Failed: " + r.payload;
+                    console.error(msg);
+                    alert(msg);
+                    ameliorateCurrentAction(self)
+                }
+            }).catch(error => {
+                console.error("received error: " + error);
+                ameliorateCurrentAction(self)
+            });
+        },
+        decreaseCardinality(componentId) {
+            this.progressValue = 1;
+            this.progressText = "decreasing cardinality";
+            this.allowOffer = false;
+            console.log("change cardinality by removing component " + componentId)
+            this.currentAction = {action: "decreaseCardinality", componentId};
+            let self = this;
+            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/" + componentId;
+            return fetchIt(url, "DELETE", this).then(r => {
+                if(r.ok) console.log("decreased cardinality on contract with id " + r.payload.id + ", for requestId " + self.requestId);
+                else {
+                    let msg = "Failed: " + r.payload;
+                    console.error(msg);
+                    alert(msg);
+                    ameliorateCurrentAction(self)
+                }
+            }).catch(error => {
+                console.error("received error: " + error);
+                ameliorateCurrentAction(self)
+            });
         },
         offerDraft() {
             this.allowOffer = false;
@@ -690,6 +749,12 @@ function ameliorateCurrentAction(self) {
         self.allowOffer = false
     } else if(self.currentAction.action == "setDiscount") {
         self.allowOffer = true // so user can retry if they want to. it mustve been enabled in order to get here.
+    } else if(self.currentAction.action == "increaseCardinality") {
+        // {action: "increaseCardinality", parentComponentId, definitionPathToAdd}
+        self.allowOffer = true // so user can retry if they want to. it mustve been enabled in order to get here.
+    } else if(self.currentAction.action == "decreaseCardinality") {
+        // {action: "decreaseCardinality", componentId};
+        self.allowOffer = true // so user can retry if they want to. it mustve been enabled in order to get here.
     } else if(self.currentAction.action == "offerDraft") {
         self.allowOffer = true // so user can retry if they want to. it mustve been enabled in order to get here.
     } else if(self.currentAction.action == "resyncing") {
@@ -716,8 +781,7 @@ function initialiseDraft(draft) {
 }
 
 function _buildTree(parent, components) {
-    parent.componentId = parent.id;
-    delete parent.id; // rename id to componentId for historical reasons, and remove the new "id" field to reduce confusion
+    parent.componentId = parent.id; // rename id to componentId for historical reasons, and remove the new "id" field to reduce confusion
     parent.children = [];
 
     _.filter(components, c => c.parentId == parent.componentId).forEach(c => {
@@ -749,19 +813,30 @@ function _findComponentDefinition(path, componentDefinition) {
     }
 }
 
-function updateDraft(newComponents, component){
-    let newComponent = _(newComponents).find(c => c.id === component.componentId)
-    if(newComponent) {
+/** component is from our UI model */
+function updateDraft(allComponentsFromServer, component){
+    let matchingComponentFromServer = _(allComponentsFromServer).find(c => c.id === component.componentId)
+    if(matchingComponentFromServer) {
         let areWaiting = _(component.$configs).filter(c => c.waiting).map("name").value()
-        component.configs = newComponent.configs; // adopt new configs
+        component.configs = matchingComponentFromServer.configs; // adopt new configs
         _.forEach(component.configs, c => component.$configs[c.name] = _.clone(c)); // also clears waiting (disabled)
         _.forEach(areWaiting, name => component.$configs[name].waiting = true); // reset so that they remain waiting, until prices are calculated
         component.$price = {} // reset them as we dont know what they are right now! in the case of an error, they stay empty indicating that there was a problem!
     } else {
-        console.error("no component with ID " + component.componentId + " found in response")
+        // remove it from our model
+        component.$parent.children.splice(_.indexOf(component.$parent.children, component), 1);
     }
 
-    _.forEach(component.children, child => updateDraft(newComponents, child));
+    let childrenFromServer = _.filter(allComponentsFromServer, c => c.parentId == component.componentId);
+    let childIds = _.map(component.children, 'componentId');
+    let newChildrenFromServer = _.filter(childrenFromServer, childFromServer => _.indexOf(childIds, childFromServer.id) < 0);
+    _.forEach(newChildrenFromServer, newChild => {
+        _buildTree(newChild, allComponentsFromServer);
+        _initialiseDraft(newChild, component);
+        component.children.push(newChild);
+    });
+
+    component.children.forEach(c => updateDraft(allComponentsFromServer, c));
 }
 
 </script>

@@ -34,7 +34,7 @@ class MarketingDefinitions(private val defaultComponents: List<DefaultComponent>
         private fun coffeLatteSkinnyDefaults(profile: Profile) =
             if(profile.interestedInStrongFlavours) {
                 listOf(
-                    // regexp doesnt reflect cardinality, because it's used to find defaults to apply to definitions
+                    // regexp doesnt reflect cardinality, because it's used to find defaults to apply to definitions, whose paths don't contain cardinality
                     DefaultComponent(".*->Drink->VanillaSugar->VanillaExtract", emptyList(), emptyList(), 0, 6, 2, emptyList())
                 )
             } else emptyList()

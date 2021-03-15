@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import javax.enterprise.context.ApplicationScoped
 
-private const val DIGITS = "\\d{0,3}"
+private const val DIGITS = "\\d*"
 
 @ApplicationScoped
 @SuppressWarnings("unused")

@@ -25,7 +25,7 @@ class InstantiationService(
     private fun instantiate(mergedComponentDefinition: MergedComponentDefinition,
                              componentsOutput: MutableList<Component>, parentId: UUID? = null, path: String? = null): List<Component> {
 
-        // instantiate the definition the minimum amount of times required
+        // instantiate the definition the required number of times
         1.rangeTo(mergedComponentDefinition.cardinalityDefault).forEach { cardinalityKey ->
             var newPath = "${mergedComponentDefinition.componentDefinitionId}$cardinalityKey"
             if(path != null) newPath = "$path->$newPath"
@@ -43,6 +43,39 @@ class InstantiationService(
 
             mergedComponentDefinition.children.forEach {
                 instantiate(it, componentsOutput, component.id, newPath)
+            }
+        }
+        return componentsOutput
+    }
+
+    /** instantiate the given mergedComponentDefinition into the instance tree defined by allComponents, with the parent
+     * having the supplied ID. returns a list of the new component and all its children. this algorithm calculates the
+     * correct cardinality key. */
+    fun instantiateSubtree(allComponents: List<Component>, mergedComponentDefinition: MergedComponentDefinition, parentId: UUID): List<Component> {
+
+        val componentsOutput = mutableListOf<Component>()
+        val rootInstance = TreeComponent(allComponents.map { ComponentObjectWrapper(it) })
+        rootInstance.accept { parent ->
+            if(parent.component.id == parentId) {
+                val cardinalityKey = parent.children
+                                       .filter { it.component.componentDefinitionId == mergedComponentDefinition.componentDefinitionId }
+                                       .count() + 1
+                val newPath = "${parent.getPath()}->${mergedComponentDefinition.componentDefinitionId}$cardinalityKey"
+                val component = Component(
+                    UUID.randomUUID(),
+                    parentId,
+                    mergedComponentDefinition.componentDefinitionId,
+                    mergedComponentDefinition.configs,
+                    mergedComponentDefinition.productId,
+                    "$cardinalityKey",
+                    newPath
+                )
+
+                componentsOutput.add(component)
+
+                mergedComponentDefinition.children.forEach {
+                    instantiate(it, componentsOutput, component.id, newPath)
+                }
             }
         }
         return componentsOutput

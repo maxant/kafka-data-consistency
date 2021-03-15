@@ -10,7 +10,6 @@ import ch.maxant.kdc.mf.contracts.entity.ContractState
 import ch.maxant.kdc.mf.library.Context
 import ch.maxant.kdc.mf.library.Secure
 import ch.maxant.kdc.mf.library.doByHandlingValidationExceptions
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.openapi.annotations.Operation
@@ -57,9 +56,6 @@ class DraftsResource(
 
         @Inject
         var esAdapter: ESAdapter,
-
-        @Inject
-        var om: ObjectMapper,
 
         @Inject
         var definitionService: DefinitionService,
@@ -207,14 +203,17 @@ class DraftsResource(
             ])
     )
     @PUT
-    @Path("/{contractId}/{parentComponentId}/increase-cardinality/{pathToAdd}")
+    @Path("/{contractId}/{parentComponentId}/increase-cardinality")
     @Transactional
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun increaseCardinality(
         @PathParam("contractId") @Parameter(name = "contractId", required = true) contractId: UUID,
         @PathParam("parentComponentId") @Parameter(name = "parentComponentId", required = true) parentComponentId: UUID,
-        @PathParam("pathToAdd") @Parameter(name = "pathToAdd", required = true) pathToAdd: String
+        pathToAddString: String
     ): Response = doByHandlingValidationExceptions {
+
+        // json body puts the string in quotes, so lets remove them
+        val pathToAdd = pathToAddString.substring(1, pathToAddString.length - 1).replace("\\\\d*", "")
 
         log.info("increasing cardinality on draft $contractId, adding path $pathToAdd to component $parentComponentId")
 
@@ -237,8 +236,8 @@ class DraftsResource(
 
         val definitionSubtreeToAdd = mergedComponentDefinition.find(pathToAdd)
         require(definitionSubtreeToAdd != null) { "No subtree found at $pathToAdd" }
-        val additionalComponents = instantiationService.instantiate(definitionSubtreeToAdd, parentComponentId)
-        componentsRepo.addComponents(additionalComponents)
+        val additionalComponents = instantiationService.instantiateSubtree(allComponents, definitionSubtreeToAdd, parentComponentId)
+        componentsRepo.addComponents(contractId, additionalComponents)
         allComponents.addAll(additionalComponents)
 
         // at this stage, the mergedComponentDefinition, which is the root of a tree of definitions, contains
@@ -249,7 +248,64 @@ class DraftsResource(
 
         context.throwExceptionInContractsIfRequiredForDemo()
 
-        esAdapter.resetComponents(contractId, allComponents)
+        esAdapter.updateComponents(contractId, allComponents)
+
+        // instead of publishing the initial model based on definitions, which contain extra
+        // info like possible inputs, we publish a simpler model here
+        eventBus.publish(UpdatedDraft(contract, allComponents))
+
+        Response.ok()
+                .entity(contract)
+                .build()
+    }
+
+    @Operation(summary = "decrease cardinality", description = "descr")
+    @APIResponses(
+            APIResponse(description = "let's the user remove the given component", responseCode = "200", content = [
+                Content(mediaType = MediaType.APPLICATION_JSON, schema = Schema(implementation = ContractEntity::class))
+            ])
+    )
+    @DELETE
+    @Path("/{contractId}/{componentId}")
+    @Transactional
+    @Timed(unit = MetricUnits.MILLISECONDS)
+    fun decreaseCardinality(
+        @PathParam("contractId") @Parameter(name = "contractId", required = true) contractId: UUID,
+        @PathParam("componentId") @Parameter(name = "componentId", required = true) componentId: UUID
+    ): Response = doByHandlingValidationExceptions {
+
+        log.info("decreasing cardinality on draft $contractId, removing component $componentId")
+
+        // check draft status
+        val contract = em.find(ContractEntity::class.java, contractId)
+        require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
+        contract.syncTimestamp = System.currentTimeMillis()
+
+        val allComponents = instantiationService.reinstantiate(
+            ComponentEntity.Queries.selectByContractId(em, contractId)
+        ).toMutableList()
+
+        val toRemove = em.find(ComponentEntity::class.java, componentId)
+        em.remove(toRemove)
+        require(allComponents.removeIf { it.id == componentId }) { "unable to locate component to remove, from reinstantiated list $componentId" }
+
+        // recreate definitions. the config values will be all wrong, but that doesn't matter, because the validation
+        // below is based on the instances configs and not this definition's configs
+        val productId = allComponents.find { it.productId != null }!!.productId!!
+        val product = Products.find(productId, 1)
+        val marketingDefaults = MarketingDefinitions.getDefaults(Profiles.get(contract.profileId), product.productId)
+        val pack = Packagings.find(allComponents.map { it.componentDefinitionId }, product)
+        val mergedComponentDefinition = definitionService.getMergedDefinitions(pack, marketingDefaults)
+
+        // at this stage, the mergedComponentDefinition, which is the root of a tree of definitions, contains
+        // configs with initial or default values. they are unimportant here, because we are validating against
+        // the components, ie the instances
+
+        instantiationService.validate(mergedComponentDefinition, allComponents)
+
+        context.throwExceptionInContractsIfRequiredForDemo()
+
+        esAdapter.updateComponents(contractId, allComponents)
 
         // instead of publishing the initial model based on definitions, which contain extra
         // info like possible inputs, we publish a simpler model here
