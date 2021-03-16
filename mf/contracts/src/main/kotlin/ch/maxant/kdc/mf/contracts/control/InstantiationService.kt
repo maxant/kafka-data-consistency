@@ -50,16 +50,18 @@ class InstantiationService(
 
     /** instantiate the given mergedComponentDefinition into the instance tree defined by allComponents, with the parent
      * having the supplied ID. returns a list of the new component and all its children. this algorithm calculates the
-     * correct cardinality key. */
+     * correct cardinality key, based on all existing ones plus one, so if you remove and re-add subtrees you can end
+     * up with higher numbers than the max cardinality! */
     fun instantiateSubtree(allComponents: List<Component>, mergedComponentDefinition: MergedComponentDefinition, parentId: UUID): List<Component> {
 
         val componentsOutput = mutableListOf<Component>()
         val rootInstance = TreeComponent(allComponents.map { ComponentObjectWrapper(it) })
         rootInstance.accept { parent ->
             if(parent.component.id == parentId) {
-                val cardinalityKey = parent.children
+                val cardinalityKey = (parent.children
                                        .filter { it.component.componentDefinitionId == mergedComponentDefinition.componentDefinitionId }
-                                       .count() + 1
+                                       .map { it.component.cardinalityKey.toInt() }
+                                       .max() ?: 0) + 1
                 val newPath = "${parent.getPath()}->${mergedComponentDefinition.componentDefinitionId}$cardinalityKey"
                 val component = Component(
                     UUID.randomUUID(),
@@ -83,7 +85,8 @@ class InstantiationService(
 
     /** builds an internal tree of allComponents and then validates each node in the tree against
      * the matching node from the merged definition, based on paths. the configs in the
-     * merged component definitions are irrelevant, because we use the actual configs from allComponents */
+     * merged component definitions are irrelevant (with initial/default values), because we use the actual
+     * configs from allComponents. */
     fun validate(mergedComponentDefinition: MergedComponentDefinition, allComponents: List<Component>) {
 
         // create a temporary tree of the flat components, so we can retrieve and compare subtrees

@@ -32,7 +32,6 @@ import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
-
 @Path("/drafts")
 @Tag(name = "drafts")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -160,28 +159,15 @@ class DraftsResource(
 
         log.info("updating draft $contractId, setting value $newValue on parameter $param on component $componentId")
 
-        // check draft status
-        val contract = em.find(ContractEntity::class.java, contractId)
-        require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
-        contract.syncTimestamp = System.currentTimeMillis()
+        val contract = getContractRequireDraftStateAndSetSyncTimestamp(contractId)
 
         val allComponents = instantiationService.reinstantiate(
             componentsRepo.updateConfig(contractId, componentId, ConfigurableParameter.valueOf(param), newValue)
         )
 
-        // recreate definitions. the config values will be all wrong, but that doesn't matter, because the validation
-        // below is based on the instances configs and not this definition's configs
-        val productId = allComponents.find { it.productId != null }!!.productId!!
-        val product = Products.find(productId, 1)
-        val marketingDefaults = MarketingDefinitions.getDefaults(Profiles.get(contract.profileId), product.productId)
-        val pack = Packagings.find(allComponents.map { it.componentDefinitionId }, product)
-        val mergedComponentDefinition = definitionService.getMergedDefinitions(pack, marketingDefaults)
+        val mergedDefinitions = getMergedDefinitionTree(allComponents, contract.profileId)
 
-        // at this stage, the mergedComponentDefinition, which is the root of a tree of definitions, contains
-        // configs with initial or default values. they are unimportant here, because we are validating against
-        // the components, ie the instances
-
-        instantiationService.validate(mergedComponentDefinition, allComponents)
+        instantiationService.validate(mergedDefinitions, allComponents)
 
         context.throwExceptionInContractsIfRequiredForDemo()
 
@@ -217,34 +203,23 @@ class DraftsResource(
 
         log.info("increasing cardinality on draft $contractId, adding path $pathToAdd to component $parentComponentId")
 
-        // check draft status
-        val contract = em.find(ContractEntity::class.java, contractId)
-        require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
-        contract.syncTimestamp = System.currentTimeMillis()
+        val contract = getContractRequireDraftStateAndSetSyncTimestamp(contractId)
 
         val allComponents = instantiationService.reinstantiate(
             ComponentEntity.Queries.selectByContractId(em, contractId)
         ).toMutableList()
 
-        // recreate definitions. the config values will be all wrong, but that doesn't matter, because the validation
-        // below is based on the instances configs and not this definition's configs
-        val productId = allComponents.find { it.productId != null }!!.productId!!
-        val product = Products.find(productId, 1)
-        val marketingDefaults = MarketingDefinitions.getDefaults(Profiles.get(contract.profileId), product.productId)
-        val pack = Packagings.find(allComponents.map { it.componentDefinitionId }, product)
-        val mergedComponentDefinition = definitionService.getMergedDefinitions(pack, marketingDefaults)
+        val mergedDefinitions = getMergedDefinitionTree(allComponents, contract.profileId)
 
-        val definitionSubtreeToAdd = mergedComponentDefinition.find(pathToAdd)
+        val definitionSubtreeToAdd = mergedDefinitions.find(pathToAdd)
         require(definitionSubtreeToAdd != null) { "No subtree found at $pathToAdd" }
+
         val additionalComponents = instantiationService.instantiateSubtree(allComponents, definitionSubtreeToAdd, parentComponentId)
-        componentsRepo.addComponents(contractId, additionalComponents)
         allComponents.addAll(additionalComponents)
 
-        // at this stage, the mergedComponentDefinition, which is the root of a tree of definitions, contains
-        // configs with initial or default values. they are unimportant here, because we are validating against
-        // the components, ie the instances
+        componentsRepo.addComponents(contractId, additionalComponents)
 
-        instantiationService.validate(mergedComponentDefinition, allComponents)
+        instantiationService.validate(mergedDefinitions, allComponents)
 
         context.throwExceptionInContractsIfRequiredForDemo()
 
@@ -276,10 +251,7 @@ class DraftsResource(
 
         log.info("decreasing cardinality on draft $contractId, removing component $componentId")
 
-        // check draft status
-        val contract = em.find(ContractEntity::class.java, contractId)
-        require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
-        contract.syncTimestamp = System.currentTimeMillis()
+        val contract = getContractRequireDraftStateAndSetSyncTimestamp(contractId)
 
         val allComponents = instantiationService.reinstantiate(
             ComponentEntity.Queries.selectByContractId(em, contractId)
@@ -289,19 +261,9 @@ class DraftsResource(
         em.remove(toRemove)
         require(allComponents.removeIf { it.id == componentId }) { "unable to locate component to remove, from reinstantiated list $componentId" }
 
-        // recreate definitions. the config values will be all wrong, but that doesn't matter, because the validation
-        // below is based on the instances configs and not this definition's configs
-        val productId = allComponents.find { it.productId != null }!!.productId!!
-        val product = Products.find(productId, 1)
-        val marketingDefaults = MarketingDefinitions.getDefaults(Profiles.get(contract.profileId), product.productId)
-        val pack = Packagings.find(allComponents.map { it.componentDefinitionId }, product)
-        val mergedComponentDefinition = definitionService.getMergedDefinitions(pack, marketingDefaults)
+        val mergedDefinitions = getMergedDefinitionTree(allComponents, contract.profileId)
 
-        // at this stage, the mergedComponentDefinition, which is the root of a tree of definitions, contains
-        // configs with initial or default values. they are unimportant here, because we are validating against
-        // the components, ie the instances
-
-        instantiationService.validate(mergedComponentDefinition, allComponents)
+        instantiationService.validate(mergedDefinitions, allComponents)
 
         context.throwExceptionInContractsIfRequiredForDemo()
 
@@ -334,10 +296,7 @@ class DraftsResource(
 
         log.info("setting discount on $contractId with value $value on component $componentId")
 
-        // check draft status
-        val contract = em.find(ContractEntity::class.java, contractId)
-        require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
-        contract.syncTimestamp = System.currentTimeMillis()
+        val contract = getContractRequireDraftStateAndSetSyncTimestamp(contractId)
 
         val allComponents = instantiationService.reinstantiate(ComponentEntity.Queries.selectByContractId(em, contractId))
 
@@ -420,6 +379,35 @@ class DraftsResource(
         Response.accepted()
             .entity(contract)
             .build()
+    }
+
+    private fun getContractRequireDraftStateAndSetSyncTimestamp(contractId: UUID): ContractEntity {
+        // check draft status
+        val contract = em.find(ContractEntity::class.java, contractId)
+        require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
+        contract.syncTimestamp = System.currentTimeMillis()
+        return contract
+    }
+
+    /** @return a tree of merged definitions for the given components */
+    private fun getMergedDefinitionTree(
+        allComponents: List<Component>,
+        profileId: ProfileId
+    ): MergedComponentDefinition {
+        // recreate definitions. the config values will be all wrong, but that doesn't matter, because the validation
+        // below is based on the instances configs and not this definition's configs.
+        // IMPORTANT - we need to set the quantity to be the same as the actual product instance, so that any new
+        // components are initially configured correctly, since the recipe is based on the initial quantity
+        val productId = allComponents.find { it.productId != null }!!.productId!!
+        val quantityMl = allComponents
+            .find { it.productId != null }!! // the master quantity is configured on the product, which contains the productId
+            .configs
+            .find { it.name == ConfigurableParameter.VOLUME }!!
+            .value as Int
+        val product = Products.find(productId, quantityMl)
+        val marketingDefaults = MarketingDefinitions.getDefaults(Profiles.get(profileId), product.productId)
+        val pack = Packagings.find(allComponents.map { it.componentDefinitionId }, product)
+        return definitionService.getMergedDefinitions(pack, marketingDefaults)
     }
 }
 

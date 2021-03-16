@@ -23,7 +23,7 @@
     </div>
     <div v-if="model.contract.approvedBy">Approved by {{model.contract.approvedBy}} at {{model.contract.approvedAt}}
     </div>
-    <div v-if="model.cacheHit" style="font-size: small; font-style: italic;">Cache hit: {{ model.cacheHit }}, backend
+    <div style="font-size: small; font-style: italic;">Cache hit: {{ model.cacheHit }}, backend
         loaded in {{ model.loadedInMs }}ms
     </div>
     <div v-if="model.contract.state == 'DRAFT'"> |}{! we can use "state" or "contractState" - see graphQl mapping in
@@ -153,7 +153,8 @@ var contractComponents = {
 const App = {
     data() {
         return {
-            model: { id, contract: {}, componentsRoot: [], partnerRelationships: [], discountssurcharges: [], conditions: [], bills: [] },
+            model: { id, contract: {}, componentsRoot: [], partnerRelationships: [], discountssurcharges: [],
+                     conditions: [], bills: [], cacheHit: false, loadedInMs: 0 },
             showResync: false,
             start: 0,
             timeTaken: 0,

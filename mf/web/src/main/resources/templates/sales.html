@@ -56,8 +56,8 @@
 <div style="font-size: small;">
     Drafted in {{ timeTaken }}ms
 </div>
-<div v-if="progressText">
-    <p-progressbar :value="progressValue">
+<div style="height: 30px;">
+    <p-progressbar v-if="progressText" :value="progressValue">
         {{ progressText }}
     </p-progressbar>
 </div>
@@ -70,7 +70,7 @@
         <li>
             <div>Product: {{ model.draft.pack.children[0].productId }} {{ model.draft.pack.$price.total }} CHF ({{ model.draft.pack.$price.tax }} CHF VAT)
                 <div>
-                    <i class="fas fa-box"></i> {{ model.draft.pack.componentDefinitionId }}
+                    <i class="fas fa-box" v-tooltip="model.draft.pack.path"></i> {{ model.draft.pack.componentDefinitionId }}
                     with quantity
                     {{ findConfig(model.draft.pack.configs, 'QUANTITY').value }}
                 </div>
@@ -78,12 +78,12 @@
             <mf-contract-discounts-surcharges :component="model.draft.pack"></mf-contract-discounts-surcharges>
             <mf-contract-modifiable-config v-if="model.draft && model.draft.pack" :component="model.draft.pack"></mf-contract-modifiable-config>
             <ul>
-                <li v-for="child in model.draft.pack.children">
-                    <div v-if="child.productId == 'COFFEE_LATTE_SKINNY'">
+                <li v-for="child1 in model.draft.pack.children" :class="{nonSelectedComponent: child1.$isVirtual}">
+                    <div v-if="child1.productId == 'COFFEE_LATTE_SKINNY'">
                         <!-- -------------------------------------------- -->
                         <!-- PRODUCT SPECIFIC UI:                         -->
                         <!-- -------------------------------------------- -->
-                        <mf-contract-products-coffee-latte-skinny :node="child"></mf-contract-products-coffee-latte-skinny>
+                        <mf-contract-products-coffee-latte-skinny :node="child1"></mf-contract-products-coffee-latte-skinny>
                     </div>
                     <div v-else style="border: 1px solid #0000ff; width: 400px;">
                         <div style="font-size: 0.8em; font-style: italic; text-align: right;">generic template</div>
@@ -91,16 +91,16 @@
                         <!-- GENERIC UI:                                  -->
                         <!-- -------------------------------------------- -->
                         <div>
-                            <i class="fas fa-glass-whiskey"></i> {{ child.componentDefinitionId }}: {{ child.$price.total }} CHF
+                            <i class="fas fa-glass-whiskey" v-tooltip="child1.path"></i> {{ child1.componentDefinitionId }}: {{ child1.$price.total }} CHF
                         </div>
-                        <mf-contract-discounts-surcharges :component="child"></mf-contract-discounts-surcharges>
-                        <ul v-if="get(child, 'children.length') > 0">
-                            <li v-for="child2 in child.children">
-                                <i class="fas fa-wrench"></i> {{ child2.componentDefinitionId }}: {{ child2.$price.total }} CHF
+                        <mf-contract-discounts-surcharges :component="child1"></mf-contract-discounts-surcharges>
+                        <ul v-if="get(child1, 'children.length') > 0">
+                            <li v-for="child2 in child1.children" :class="{nonSelectedComponent: child2.$isVirtual}">
+                                <i class="fas fa-wrench" v-tooltip="child2.path"></i> {{ child2.componentDefinitionId }}: {{ child2.$price.total }} CHF
                                 <mf-contract-modifiable-config :component="child2"></mf-contract-modifiable-config>
                                 <ul v-if="get(child2, 'children.length') > 0">
-                                    <li v-for="child3 in child2.children">
-                                        <i class="fas fa-puzzle-piece"></i> {{ child3.componentDefinitionId }}: {{ child3.$price.total }} CHF
+                                    <li v-for="child3 in child2.children" :class="{nonSelectedComponent: child3.$isVirtual}">
+                                        <i class="fas fa-puzzle-piece" v-tooltip="child3.path"></i>{{ child3.componentDefinitionId }}: {{ child3.$price.total }} CHF
                                         <mf-contract-modifiable-cardinality :component="child3"></mf-contract-modifiable-cardinality>
                                     </li>
                                 </ul>
@@ -257,13 +257,12 @@ template =
               class="p-button-rounded" @click="add()"
               style="width: 16px; padding: 3px; height: 16px; font-size: x-small;"
     ></p-button>
-    <p-button :disabled="disabled || cardinalityCurrent <= cardinalityMin"
+    <p-button v-if="!component.$isVirtual" :disabled="disabled || cardinalityCurrent < cardinalityMin"
               icon="pi pi-minus"
               class="p-button-rounded"
               @click="remove()"
               style="width: 16px; padding: 3px; height: 16px; font-size: x-small;"
     ></p-button>
-    Number of {{component.componentDefinitionId}} in parent is {{cardinalityCurrent}} with min {{cardinalityMin}} and max {{cardinalityMax}}
 </span>
 `; // end template
 
@@ -682,6 +681,7 @@ function sse(requestId, self) {
             self.progressText = "checking discounts, surcharges and conditions";
         } else if(msg.event == "UPDATED_DRAFT") {
             updateDraft(msg.payload.allComponents, self.model.draft.pack);
+            addVirtualComponents(msg.payload.allComponents, self.model.draft.pack);
             // dont update any waiting or timing state, because this is just the first of many events to come
             self.progressValue = 33;
             self.progressText = "checking discounts, surcharges and conditions";
@@ -793,9 +793,22 @@ function _buildTree(parent, components) {
 function _initialiseDraft(component, parent) {
     component.$configs = {};
     component.$parent = parent;
-    component.configPossibilities = _findComponentDefinition(component.path).configPossibilities;
+    let definition = _findComponentDefinition(component.path);
+    component.configPossibilities = definition.configPossibilities;
     _.forEach(component.configs, c => component.$configs[c.name] = _.clone(c));
     _.forEach(component.children, child => _initialiseDraft(child, component));
+
+    sortChildrenAccordingToDefinitions(component, definition);
+}
+
+function sortChildrenAccordingToDefinitions(component, definition) {
+    let index = definition.children.map(c => c.componentDefinitionId);
+    component.children = _.sortBy(component.children, [
+        function(c) {
+            return _.indexOf(index, c.componentDefinitionId)
+        }, function(c) {
+            return c.cardinalityKey
+        }]);
 }
 
 function _findComponentDefinition(path, componentDefinition) {
@@ -815,6 +828,7 @@ function _findComponentDefinition(path, componentDefinition) {
 
 /** component is from our UI model */
 function updateDraft(allComponentsFromServer, component){
+    let definition = _findComponentDefinition(component.path);
     let matchingComponentFromServer = _(allComponentsFromServer).find(c => c.id === component.componentId)
     if(matchingComponentFromServer) {
         let areWaiting = _(component.$configs).filter(c => c.waiting).map("name").value()
@@ -827,16 +841,54 @@ function updateDraft(allComponentsFromServer, component){
         component.$parent.children.splice(_.indexOf(component.$parent.children, component), 1);
     }
 
+    // deal with new children from server that need to be integrated into this model
     let childrenFromServer = _.filter(allComponentsFromServer, c => c.parentId == component.componentId);
     let childIds = _.map(component.children, 'componentId');
     let newChildrenFromServer = _.filter(childrenFromServer, childFromServer => _.indexOf(childIds, childFromServer.id) < 0);
     _.forEach(newChildrenFromServer, newChild => {
         _buildTree(newChild, allComponentsFromServer);
         _initialiseDraft(newChild, component);
+
         component.children.push(newChild);
     });
 
     component.children.forEach(c => updateDraft(allComponentsFromServer, c));
+}
+
+/**
+ * component is from our UI model. this is done seperately from updateDraft, since removal is done one layer
+ * lower than we'd add virtual children, and at the stage that we want to add a child, the one that needs to be
+ * deleted because it no longer exists on the server is still present.
+ */
+function addVirtualComponents(allComponentsFromServer, component){
+    let definition = _findComponentDefinition(component.path);
+
+    // remove all virtual children and then re-add them as required
+    _.remove(component.children, c => c.$isVirtual);
+
+    // do we need any virtual children, because there are kids with cardinality 0?
+    let instanceComponentDefinitionIds = _.map(component.children, c => c.componentDefinitionId);
+    let missingDefinitions = _.filter(definition.children, child => !_.includes(instanceComponentDefinitionIds, child.componentDefinitionId));
+    _.forEach(missingDefinitions, missingDefinition => {
+        let newChild = {
+            $isVirtual: true,
+            cardinalityKey: "1",
+            componentDefinitionId: missingDefinition.componentDefinitionId,
+            configs: [],
+            parentId: component.componentId,
+            path: missingDefinition.path.replaceAll("\\d\*", ""),
+            $configs: {},
+            $parent: component,
+            children: [],
+            configPossibilities: missingDefinition.configPossibilities,
+            $price: {}
+        };
+        component.children.push(newChild);
+    });
+
+    sortChildrenAccordingToDefinitions(component, definition);
+
+    component.children.forEach(c => addVirtualComponents(allComponentsFromServer, c));
 }
 
 </script>

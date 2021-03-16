@@ -250,23 +250,19 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
 ## TODO
 - current
-  - sugar in cookies has zero grams of sugar?
-  - remember to use definitions to add ghosts so that we can increase cardinality, if the default is zero.
   - retest 10% manual discount on latte
-  - add buttons to change cardinality on vanilla extract and sugar on milkshake
+  - add buttons to change cardinality on vanilla extract in latte
   - add condition if too much vanilla and show it on the screen
-  - update contract view if bills or cases change -> need to react to changes on other keys than just requestId
   - ui model is split into an input model and a model used to display
   - we have user actions which are applied to a model, so we can switch between offers
-- add validation to init and to update config
-- what happened to sugar in milkshake?
+    - group them: everything that is applied to components, then apply discounts/surcharges/conditions in ONE event, and that will do the final pricing ONCE
+  - update contract view if bills or cases change -> need to react to changes on other keys than just requestId
 - make portal a little prettier / responsive
 - add cache stats to grafana
   - writeToCache, readFromCache, deleteFromCache CacheEvicter#handle
 - add a condition, if a user based discount has been set! => rule based!
 - add displaying C to sales and portal
 - add conditions to DscConsumer
-- add ability to remove sugar from recipe, rather than setting its config to 0
 - delete DSC where componentId is no longer in model, otherwise we'd have orphans hanging around
 - sales => why isnt the draft button locked when clicked?
 - add signature to tasks => if manual discount is above a certain amount, then john has to approve it and such tasks are always displayed
