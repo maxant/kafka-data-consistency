@@ -476,7 +476,7 @@ class CacheEvicter(
     @Timed(unit = MetricUnits.MILLISECONDS)
     override fun handle(record: ConsumerRecord<String, String>) {
         when (context.event) {
-            "UPDATED_DRAFT",
+            "DRAFT",
             "ADDED_DSC_FOR_DRAFT",
             "OFFERED_DRAFT",
             "ACCEPTED_OFFER",

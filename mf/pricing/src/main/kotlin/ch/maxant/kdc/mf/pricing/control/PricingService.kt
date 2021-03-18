@@ -46,6 +46,7 @@ class PricingService(
     fun priceDraft(draft: JsonNode): PricingResult {
         // TODO add extension method to make this fetchable via a path => ur use JsonPath?
         // TODO replace with DTO
+        val persist = draft.get("persist").asBoolean()
         val contract = draft.get("contract")
         val contractId = UUID.fromString(contract.get("id").asText())
         val syncTimestamp = contract.get("syncTimestamp").asLong()
@@ -54,7 +55,7 @@ class PricingService(
         val pack = draft.get("pack").toString()
         val discountsSurcharges = om.readValue<List<DiscountSurcharge>>(draft.get("discountsSurcharges").toString())
         val root = om.readValue(pack, TreeComponent::class.java)
-        return priceDraft(contractId, syncTimestamp, start, end, root, discountsSurcharges)
+        return priceDraft(contractId, syncTimestamp, start, end, root, discountsSurcharges, persist)
     }
 
     @Transactional
@@ -134,13 +135,15 @@ class PricingService(
 
     @Traced
     private fun priceDraft(contractId: UUID, syncTimestamp: Long, start: LocalDateTime, end: LocalDateTime,
-                           root: TreeComponent, discountsSurcharges: List<DiscountSurcharge>): PricingResult {
+                           root: TreeComponent, discountsSurcharges: List<DiscountSurcharge>, persist: Boolean): PricingResult {
         log.info("starting to price individual components for contract $contractId...")
 
         context.throwExceptionInPricingIfRequiredForDemo()
 
-        val deletedCount = deleteByContractId(em, contractId) // start from scratch
-        log.info("deleted $deletedCount existing price rows for contract $contractId")
+        if(persist) {
+            val deletedCount = deleteByContractId(em, contractId) // start from scratch
+            log.info("deleted $deletedCount existing price rows for contract $contractId")
+        }
 
         val discountsSurchargesByComponentId = discountsSurcharges.groupBy { it.componentId }
         val prices = HashMap<UUID, Price>()
@@ -155,22 +158,24 @@ class PricingService(
                 val ruleName = rule.javaClass.name.substring(rule.javaClass.name.indexOf("$")+1)
                 log.info("priced component ${component.componentDefinitionId}: $price using rule $ruleName")
 
-                val discountsSurcharges = discountsSurchargesByComponentId[componentId] ?: emptyList()
-                if(discountsSurcharges.isNotEmpty()) {
-                    log.info("applying discounts/surcharges ${discountsSurcharges.map { it.definitionId }} to component " +
-                            "${component.componentDefinitionId} with values: ${discountsSurcharges.map { it.value }}")
+                val discountsSurchargesForComponent = discountsSurchargesByComponentId[componentId] ?: emptyList()
+                if(discountsSurchargesForComponent.isNotEmpty()) {
+                    log.info("applying discounts/surcharges ${discountsSurchargesForComponent.map { it.definitionId }} to component " +
+                            "${component.componentDefinitionId} with values: ${discountsSurchargesForComponent.map { it.value }}")
 
-                    val multiplicand = discountsSurcharges.map { it.value }.reduce { acc, it -> acc.add(it) }.add(BigDecimal.ONE)
+                    val multiplicand = discountsSurchargesForComponent.map { it.value }.reduce { acc, it -> acc.add(it) }.add(BigDecimal.ONE)
                     price = roundAddTaxAndMakePrice(price.total.subtract(price.tax).multiply(multiplicand))
                     log.info("new price is $price")
                 }
 
                 prices[componentId] = price
 
-                val pe = PriceEntity(UUID.randomUUID(), contractId, start, end,
-                        componentId, ruleName, price.total, price.tax, syncTimestamp)
+                if(persist) {
+                    val pe = PriceEntity(UUID.randomUUID(), contractId, start, end,
+                            componentId, ruleName, price.total, price.tax, syncTimestamp)
 
-                em.persist(pe)
+                    em.persist(pe)
+                }
             }
         })
 

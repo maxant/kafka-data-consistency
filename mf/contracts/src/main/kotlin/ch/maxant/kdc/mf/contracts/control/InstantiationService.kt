@@ -52,8 +52,8 @@ class InstantiationService(
      * having the supplied ID. returns a list of the new component and all its children. this algorithm calculates the
      * correct cardinality key, based on all existing ones plus one, so if you remove and re-add subtrees you can end
      * up with higher numbers than the max cardinality! */
-    fun instantiateSubtree(allComponents: List<Component>, mergedComponentDefinition: MergedComponentDefinition, parentId: UUID): List<Component> {
-
+    fun instantiateSubtree(allComponents: List<Component>, mergedComponentDefinition: MergedComponentDefinition, pathToAdd: String): List<Component> {
+        val parentId: UUID = getComponentIdForPath(allComponents, pathToAdd.substring(0, pathToAdd.lastIndexOf("->")))
         val componentsOutput = mutableListOf<Component>()
         val rootInstance = TreeComponent(allComponents.map { ComponentObjectWrapper(it) })
         rootInstance.accept { parent ->
@@ -137,6 +137,16 @@ class InstantiationService(
                     it.getPath()
                 )
             }
+    }
+
+    fun getComponentIdForPath(components: List<Component>, path: String): UUID {
+        var id: UUID? = null
+        TreeComponent(components.map { ComponentObjectWrapper(it) }).accept {
+            if(it.getPath() == path) {
+                id = it.component.id
+            }
+        }
+        return id ?: throw IllegalArgumentException("no component found for path $path")
     }
 
     private interface ComponentWrapper<T> {

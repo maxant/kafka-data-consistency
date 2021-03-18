@@ -1,6 +1,8 @@
 package ch.maxant.kdc.mf.contracts.control
 
+import ch.maxant.kdc.mf.contracts.boundary.DraftStateForNonPersistence
 import ch.maxant.kdc.mf.contracts.definitions.*
+import ch.maxant.kdc.mf.contracts.dto.Component
 import ch.maxant.kdc.mf.contracts.dto.Draft
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
@@ -37,7 +39,11 @@ class ComponentsRepoTest {
     @Inject
     lateinit var om: ObjectMapper
 
+    @Inject
+    lateinit var draftStateForNonPersistence: DraftStateForNonPersistence
+
     fun setup(): Draft = flushed(em) {
+        draftStateForNonPersistence.persist = true
         val contract = ContractEntity(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, "fred", ProfileId.STANDARD)
         em.persist(contract)
         val profile: Profile = Profiles.find()
@@ -49,7 +55,7 @@ class ComponentsRepoTest {
         sut.saveInitialDraft(contract.id, components)
         em.flush()
         em.clear()
-        Draft(contract, components)
+        Draft(contract, components, true)
     }
 
     @Test
@@ -63,14 +69,15 @@ class ComponentsRepoTest {
     fun updateConfig_happy() {
         val draft = setup()
         val milk = draft.allComponents.find { it.componentDefinitionId == Milk::class.java.simpleName } !!
+        val components = ComponentEntity.Queries.selectByContractId(em, draft.contract.id)
 
         // when
-        val c = flushed(em) {
-            sut.updateConfig(draft.contract.id, milk.id, ConfigurableParameter.FAT_CONTENT, "0.2")
+        flushed(em) {
+            sut.updateConfig(components, milk.id, ConfigurableParameter.FAT_CONTENT, "0.2")
         }
 
         // then - check whats in the result
-        val comps = c.filter { it.componentDefinitionId == milk.componentDefinitionId }
+        val comps = components.filter { it.componentDefinitionId == milk.componentDefinitionId }.map { toComponent(it) }
         assertEquals(1, comps.size)
         assertEquals(milk.componentDefinitionId, comps[0].componentDefinitionId)
         assertEquals(milk.id, comps[0].id)
@@ -88,17 +95,24 @@ class ComponentsRepoTest {
         assertEquals(BigDecimal::class.java, config.clazz)
         assertEquals(ConfigurableParameter.FAT_CONTENT, config.name)
         assertEquals(Units.PERCENT, config.units)
-        assertEquals(8, c.size)
+        assertEquals(8, components.size)
     }
+
+    private fun toComponent(it: ComponentEntity) = Component (
+        it.id, it.parentId, it.componentDefinitionId,
+        om.readValue<ArrayList<Configuration<*>>>(it.configuration),
+        it.productId, it.cardinalityKey, "unknownAtPresent"
+    )
 
     @Test
     fun updateConfig_illegalValue() {
         val draft = setup()
         val milk = draft.allComponents.find { it.componentDefinitionId == Milk::class.java.simpleName } !!
+        val components = ComponentEntity.Queries.selectByContractId(em, draft.contract.id)
 
         // when / then
         assertEquals("Component configuration value 7 is not in the permitted set of values [0.2, 1.8, 3.5, 6.0]",
-                assertThrows<IllegalArgumentException> { sut.updateConfig(draft.contract.id, milk.id, ConfigurableParameter.FAT_CONTENT, "7") }.message)
+                assertThrows<IllegalArgumentException> { sut.updateConfig(components, milk.id, ConfigurableParameter.FAT_CONTENT, "7") }.message)
     }
 
 }

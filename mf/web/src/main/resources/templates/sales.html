@@ -5,6 +5,8 @@
         <template #option="slotProps">{{slotProps.option.label}}</template>
         <template #value="slotProps">{{slotProps.value.label}}</template>
     </p-dropdown>
+    <br>
+    Persist: <p-checkbox id="persist" v-model="persist" :binary="true" @change="changePersist()" />
 </div>
 
 <div v-if="partnerId">
@@ -191,7 +193,7 @@ var coffeeLatteSkinnySpecificUiComponent = {
             return _.find(this.node.children[0].configs, e => e.name == 'FAT_CONTENT').value == percent;
         },
         setDiscount() {
-            this.$parent.setDiscount(this.discount / 100.0, this.node.componentId);
+            this.$parent.setDiscount(this.discount / 100.0, this.node.path);
         }
     },
     components: {
@@ -291,12 +293,12 @@ var modifiableCardinalityComponent = {
     methods: {
         add() {
             this.disable = true;
-            this.$parent.increaseCardinality(this.component.$parent.componentId, _findComponentDefinition(this.component.path).path)
+            this.$parent.increaseCardinality(this.component.path)
             .then(r => this.disabled = false);
         },
         remove() {
             this.disable = true;
-            this.$parent.decreaseCardinality(this.component.componentId)
+            this.$parent.decreaseCardinality(this.component.path)
             .then(r => this.disabled = false);
         }
     },
@@ -346,12 +348,14 @@ const App = {
             partnerId,
             partner: null,
             model: {"draft": {}, "startDate": new Date(), salesRep: null},
+            contractActions: [],
             start: 0,
             timeTaken: 0,
             source: null,
             currentAction: null,
             forcibleErrors,
             forceError: forcibleErrors[0],
+            persist: true,
             allowOffer: false,
             progressValue: 0,
             progressText: null,
@@ -388,6 +392,11 @@ const App = {
         return Promise.all([products$]);
     },
     methods: {
+        changePersist() {
+            this.model.draft = {};
+            this.contractActions = [];
+            window.requestId = uuidv4();
+        },
         productSelected() {
             let url = CONTRACTS_BASE_URL + "/definitions/components/" + this.product;
             fetchIt(url, "GET", self).then(r => {
@@ -436,6 +445,7 @@ const App = {
                 return;
             }
 
+            this.creatingDraft = true; // used to differentiate between new and update
             this.progressValue = 1;
             this.progressText = "fetching draft";
             this.allowOffer = false;
@@ -451,11 +461,17 @@ const App = {
 
             let self = this;
             self.requestId = window.requestId;
-            let url = CONTRACTS_BASE_URL + "/drafts"
+            let url = CONTRACTS_BASE_URL + "/drafts";
+
+            if(!this.persist) {
+                this.contractActions = [];
+                this.contractActions.push({draftRequest: body, userActions: [] } );
+                url = CONTRACTS_BASE_URL + "/drafts2";
+                body = this.contractActions;
+            }
             fetchIt(url, "POST", this, body).then(r => {
-                if(r.ok) {
-                    console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
-                } else {
+                if(r.ok) console.log("got contract " + JSON.stringify(r.payload) + ", for requestId " + self.requestId);
+                else {
                     let msg = "Failed: " + r.payload;
                     console.error(msg);
                     alert(msg);
@@ -484,9 +500,19 @@ const App = {
                 console.log("change param " + paramName + " on component " + component.componentId + " to " + newValue)
                 this.currentAction = {action: "changeParam", paramName, componentId: component.componentId, oldValue, newValue}
                 let self = this;
-                let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/" + component.componentId + "/update-config/" + paramName + "/" + newValue;
-                fetchIt(url, "PUT", this).then(r => {
-                    if(r.ok) console.log("updated contract with id " + r.payload.id + ", for requestId " + self.requestId);
+                let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/update-config/" + paramName + "/" + newValue;
+                let verb = "PUT";
+                let body = component.path;
+
+                if(!this.persist) {
+                    this.contractActions[0].userActions.push({action: "UPDATE_CONFIG", params: {param: paramName, newValue: newValue, path: component.path}});
+                    url = CONTRACTS_BASE_URL + "/drafts2";
+                    body = this.contractActions;
+                    verb = "POST"
+                }
+
+                fetchIt(url, verb, this, body).then(r => {
+                    if(r.ok) console.log("updated contract " + JSON.stringify(r.payload) + ", for requestId " + self.requestId);
                     else {
                         let msg = "Failed: " + r.payload;
                         console.error(msg);
@@ -499,16 +525,26 @@ const App = {
                 });
             }
         },
-        increaseCardinality(parentComponentId, definitionPathToAdd) {
+        increaseCardinality(pathToAdd) {
             this.progressValue = 1;
             this.progressText = "increasing cardinality";
             this.allowOffer = false;
-            console.log("change cardinality on parent " + parentComponentId + " by adding path " + definitionPathToAdd)
-            this.currentAction = {action: "increaseCardinality", parentComponentId, definitionPathToAdd};
+            console.log("change cardinality by adding path " + pathToAdd)
+            this.currentAction = {action: "increaseCardinality", parentComponentId, pathToAdd};
             let self = this;
-            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/" + parentComponentId + "/increase-cardinality";
-            return fetchIt(url, "PUT", this, definitionPathToAdd).then(r => {
-                if(r.ok) console.log("increased cardinality on contract with id " + r.payload.id + ", for requestId " + self.requestId);
+            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/increase-cardinality";
+            let verb = "PUT";
+            let body = pathToAdd;
+
+            if(!this.persist) {
+                this.contractActions[0].userActions.push({action: "INCREASE_CARDINALITY", params: {pathToAdd}});
+                url = CONTRACTS_BASE_URL + "/drafts2";
+                body = this.contractActions;
+                verb = "POST"
+            }
+
+            return fetchIt(url, verb, this, body).then(r => {
+                if(r.ok) console.log("increased cardinality on contract " + JSON.stringify(r.payload) + ", for requestId " + self.requestId);
                 else {
                     let msg = "Failed: " + r.payload;
                     console.error(msg);
@@ -520,16 +556,57 @@ const App = {
                 ameliorateCurrentAction(self)
             });
         },
-        decreaseCardinality(componentId) {
+        decreaseCardinality(pathToRemove) {
             this.progressValue = 1;
             this.progressText = "decreasing cardinality";
             this.allowOffer = false;
-            console.log("change cardinality by removing component " + componentId)
-            this.currentAction = {action: "decreaseCardinality", componentId};
+            console.log("change cardinality by removing path " + pathToRemove)
+            this.currentAction = {action: "decreaseCardinality", pathToRemove};
             let self = this;
-            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/" + componentId;
-            return fetchIt(url, "DELETE", this).then(r => {
-                if(r.ok) console.log("decreased cardinality on contract with id " + r.payload.id + ", for requestId " + self.requestId);
+            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id;
+            let verb = "DELETE";
+            let body = pathToRemove;
+
+            if(!this.persist) {
+                this.contractActions[0].userActions.push({action: "DECREASE_CARDINALITY", params: {pathToRemove}});
+                url = CONTRACTS_BASE_URL + "/drafts2";
+                body = this.contractActions;
+                verb = "POST"
+            }
+
+            return fetchIt(url, verb, this, body).then(r => {
+                if(r.ok) console.log("decreased cardinality on contract " + JSON.stringify(r.payload) + ", for requestId " + self.requestId);
+                else {
+                    let msg = "Failed: " + r.payload;
+                    console.error(msg);
+                    alert(msg);
+                    ameliorateCurrentAction(self)
+                }
+            }).catch(error => {
+                console.error("received error: " + error);
+                ameliorateCurrentAction(self)
+            });
+        },
+        setDiscount(discount, path) {
+            this.progressValue = 1;
+            this.progressText = "updating draft";
+            this.allowOffer = false;
+            console.log("setting discount of " + discount + " on component " + path + "...")
+            this.currentAction = {action: "setDiscount"}
+            let self = this;
+            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/set-discount/" + discount;
+            let verb = "PUT";
+            let body = path;
+
+            if(!this.persist) {
+                this.contractActions[0].userActions.push({action: "SET_DISCOUNT", params: {path, value: discount}});
+                url = CONTRACTS_BASE_URL + "/drafts2";
+                body = this.contractActions;
+                verb = "POST"
+            }
+
+            return fetchIt(url, verb, this, body).then(r => {
+                if(r.ok) console.log("set discount");
                 else {
                     let msg = "Failed: " + r.payload;
                     console.error(msg);
@@ -577,27 +654,6 @@ const App = {
             this.partner = null;
             this.model.draft = {};
         },
-        setDiscount(discount, componentId) {
-            this.progressValue = 1;
-            this.progressText = "updating draft";
-            this.allowOffer = false;
-            console.log("setting discount of " + discount + " on component " + componentId + "...")
-            this.currentAction = {action: "setDiscount"}
-            let self = this;
-            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/" + componentId + "/set-discount/" + discount;
-            fetchIt(url, "PUT", this).then(r => {
-                if(r.ok) console.log("set discount");
-                else {
-                    let msg = "Failed: " + r.payload;
-                    console.error(msg);
-                    alert(msg);
-                    ameliorateCurrentAction(self)
-                }
-            }).catch(error => {
-                console.error("received error: " + error);
-                ameliorateCurrentAction(self)
-            });
-        },
         resync() {
             this.progressValue = 1;
             this.progressText = "resyncing draft";
@@ -625,6 +681,7 @@ const App = {
         'p-dropdown': dropdown,
         'p-button': button,
         'p-progressbar': progressbar,
+        'p-checkbox': checkbox,
         'mf-partner-select': mfPartnerSelect,
         'mf-partner': mfPartnerTile,
         'mf-contract': mfContractTile,
@@ -672,14 +729,15 @@ function sse(requestId, self) {
     self.source.onmessage = function (event) {
         console.log(event);
         let msg = JSON.parse(event.data);
-        if(msg.event == "CREATED_DRAFT") {
+        if(msg.event == "DRAFT" && self.creatingDraft) {
+            self.creatingDraft = false;
             self.model.draft = msg.payload;
             initialiseDraft(self.model.draft);
             self.model.draft.contract.productId = self.model.draft.pack.children[0].productId;
             // dont update any waiting or timing state, because this is just the first of many events to come
             self.progressValue = 33;
             self.progressText = "checking discounts, surcharges and conditions";
-        } else if(msg.event == "UPDATED_DRAFT") {
+        } else if(msg.event == "DRAFT" && !self.creatingDraft) {
             updateDraft(msg.payload.allComponents, self.model.draft.pack);
             addVirtualComponents(msg.payload.allComponents, self.model.draft.pack);
             // dont update any waiting or timing state, because this is just the first of many events to come
@@ -876,7 +934,7 @@ function addVirtualComponents(allComponentsFromServer, component){
             componentDefinitionId: missingDefinition.componentDefinitionId,
             configs: [],
             parentId: component.componentId,
-            path: missingDefinition.path.replaceAll("\\d\*", ""),
+            path: component.path + "->" + missingDefinition.componentDefinitionId + "1",
             $configs: {},
             $parent: component,
             children: [],

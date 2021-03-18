@@ -182,7 +182,7 @@ function sse(requestId, self) {
     self.source.onmessage = function (event) {
         console.log(event);
         let msg = JSON.parse(event.data);
-        if(msg.event == "CREATED_DRAFT") {
+        if(msg.event == "DRAFT") {
             self.model.draft = msg.payload;
             initialiseDraft(self.model.draft);
             // dont update any waiting or timing state, because this is just the first of many events to come

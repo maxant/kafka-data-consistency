@@ -50,7 +50,7 @@ class DscConsumer(
     override fun handle(record: ConsumerRecord<String, String>) {
         var unhandled = false
         when (context.event) {
-            "CREATED_DRAFT", "UPDATED_DRAFT" -> handleDraft(record)
+            "DRAFT" -> handleDraft(record)
             "SET_DISCOUNT" -> handleSetDiscount(record)
             else -> unhandled = true
         }

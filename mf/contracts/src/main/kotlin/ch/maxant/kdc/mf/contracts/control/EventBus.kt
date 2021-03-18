@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.contracts.control
 
+import ch.maxant.kdc.mf.contracts.boundary.DraftStateForNonPersistence
 import ch.maxant.kdc.mf.contracts.dto.*
 import ch.maxant.kdc.mf.library.MessageBuilder
 import org.eclipse.microprofile.reactive.messaging.Channel
@@ -33,18 +34,25 @@ class EventBus {
     @Inject
     private lateinit var somethingToSendEvent: javax.enterprise.event.Event<SomethingToSend>
 
+    @Inject
+    private lateinit var draftStateForNonPersistence: DraftStateForNonPersistence
+
     val log: Logger = Logger.getLogger(this.javaClass)
 
     fun publish(draft: Draft) {
-        send(eventBus, draft.contract.id, draft, event = "CREATED_DRAFT")
-    }
-
-    fun publish(updatedDraft: UpdatedDraft) {
-        send(eventBus, updatedDraft.contract.id, updatedDraft, event = "UPDATED_DRAFT")
+        if(draftStateForNonPersistence.persist) {
+            send(eventBus, draft.contract.id, draft, event = "DRAFT")
+        } else {
+            draftStateForNonPersistence.addMessage(draft)
+        }
     }
 
     fun publish(setDiscountCommand: SetDiscountCommand) {
-        send(eventBus, setDiscountCommand.contract.id, setDiscountCommand, event = "SET_DISCOUNT")
+        if(draftStateForNonPersistence.persist) {
+            send(eventBus, setDiscountCommand.contract.id, setDiscountCommand, event = "SET_DISCOUNT")
+        } else {
+            draftStateForNonPersistence.addMessage(setDiscountCommand)
+        }
     }
 
     fun publish(offeredDraft: OfferedDraft) {
@@ -60,7 +68,11 @@ class EventBus {
     }
 
     fun publish(createCaseCommand: CreateCaseCommand) {
-        send(cases, createCaseCommand.referenceId, createCaseCommand, command = "CREATE_CASE")
+        if(draftStateForNonPersistence.persist) {
+            send(cases, createCaseCommand.referenceId, createCaseCommand, command = "CREATE_CASE")
+        } else {
+            draftStateForNonPersistence.addMessage(createCaseCommand)
+        }
     }
 
     fun publish(createTaskCommand: CreateTaskCommand) {

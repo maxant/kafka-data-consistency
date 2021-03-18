@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.contracts.control
 
+import ch.maxant.kdc.mf.contracts.boundary.DraftStateForNonPersistence
 import ch.maxant.kdc.mf.contracts.definitions.*
 import ch.maxant.kdc.mf.contracts.dto.Component
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
@@ -18,17 +19,19 @@ class ComponentsRepo(
         var em: EntityManager,
 
         @Inject
-        var om: ObjectMapper
+        var om: ObjectMapper,
+
+        @Inject
+        var draftStateForNonPersistence: DraftStateForNonPersistence
 ){
     fun saveInitialDraft(contractId: UUID, components: List<Component>) {
         addComponents(contractId, components)
     }
 
-    fun updateConfig(contractId: UUID, componentId: UUID, param: ConfigurableParameter, newValue: String): List<ComponentEntity> {
-        val components = ComponentEntity.Queries.selectByContractId(em, contractId)
-
+    /** hides implementation details about how configurations are persisted */
+    fun updateConfig(components: List<ComponentEntity>, componentId: UUID, param: ConfigurableParameter, newValue: String) {
         val component = components.find { it.id == componentId }
-        require(component != null) { "component with id $componentId doens't appear to belong to contract $contractId" }
+        require(component != null) { "component with id $componentId not present. contract is: ${components.map { it.contractId }}" }
         val configs = om.readValue<ArrayList<Configuration<*>>>(component.configuration)
         var config = configs.find { it.name == param }
         require(config != null) { "config with name $param doens't appear to belong to component $componentId" }
@@ -38,8 +41,6 @@ class ComponentsRepo(
         configs.add(config)
 
         component.configuration = om.writeValueAsString(configs)
-
-        return components
     }
 
     fun addComponents(contractId: UUID, components: List<Component>) {
@@ -48,7 +49,8 @@ class ComponentsRepo(
             val e = ComponentEntity(component.id, component.parentId, contractId, config, component.componentDefinitionId, component.cardinalityKey)
             e.productId = component.productId
             e.cardinalityKey = component.cardinalityKey
-            em.persist(e)
+            if(draftStateForNonPersistence.persist) em.persist(e)
+            else draftStateForNonPersistence.addComponent(e)
         }
     }
 

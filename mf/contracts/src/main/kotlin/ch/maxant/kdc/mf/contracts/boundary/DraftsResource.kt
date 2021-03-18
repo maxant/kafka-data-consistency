@@ -60,7 +60,10 @@ class DraftsResource(
         var definitionService: DefinitionService,
 
         @Inject
-        var instantiationService: InstantiationService
+        var instantiationService: InstantiationService,
+
+        @Inject
+        var draftStateForNonPersistence: DraftStateForNonPersistence
 ) {
     val log: Logger = Logger.getLogger(this.javaClass)
 
@@ -91,7 +94,8 @@ class DraftsResource(
         val end = start.plusDays(contractDefinition.defaultDurationDays)
 
         val contract = ContractEntity(draftRequest.contractId, start, end, context.user, profile.id)
-        em.persist(contract)
+        if(draftStateForNonPersistence.persist) em.persist(contract)
+        else draftStateForNonPersistence.initialise(contract)
         log.info("added contract ${contract.id} in state ${contract.contractState}")
 
         // get the product and package definitions
@@ -108,9 +112,9 @@ class DraftsResource(
         instantiationService.validate(mergedDefinitions, components)
 
         componentsRepo.saveInitialDraft(contract.id, components)
-        log.info("packaged and persisted ${contract.id}")
+        log.info("packaged ${contract.id}")
 
-        val draft = Draft(contract, components)
+        val draft = Draft(contract, components, draftStateForNonPersistence.persist)
 
         esAdapter.createDraft(draft, draftRequest.partnerId)
 
@@ -147,23 +151,29 @@ class DraftsResource(
             ])
     )
     @PUT
-    @Path("/{contractId}/{componentId}/update-config/{param}/{newValue}")
+    @Path("/{contractId}/update-config/{param}/{newValue}")
     @Transactional
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun updateConfig(
             @PathParam("contractId") @Parameter(name = "contractId", required = true) contractId: UUID,
-            @PathParam("componentId") @Parameter(name = "componentId", required = true) componentId: UUID,
             @PathParam("param") @Parameter(name = "param", required = true) param: String,
-            @PathParam("newValue") @Parameter(name = "newValue", required = true) newValue: String
+            @PathParam("newValue") @Parameter(name = "newValue", required = true) newValue: String,
+            pathString: String
     ): Response = doByHandlingValidationExceptions {
+        val path = pathString.replace("\"", "") // json body puts the string in quotes, so lets remove them
 
-        log.info("updating draft $contractId, setting value $newValue on parameter $param on component $componentId")
+        log.info("updating draft $contractId, setting value $newValue on parameter $param on component $path")
 
         val contract = getContractRequireDraftStateAndSetSyncTimestamp(contractId)
 
-        val allComponents = instantiationService.reinstantiate(
-            componentsRepo.updateConfig(contractId, componentId, ConfigurableParameter.valueOf(param), newValue)
-        )
+        val componentEntities =
+            if(draftStateForNonPersistence.persist) ComponentEntity.Queries.selectByContractId(em, contractId)
+            else draftStateForNonPersistence.components
+        val allComponents = instantiationService.reinstantiate(componentEntities)
+
+        val componentId = instantiationService.getComponentIdForPath(allComponents, path)
+
+        componentsRepo.updateConfig(componentEntities, componentId, ConfigurableParameter.valueOf(param), newValue)
 
         val mergedDefinitions = getMergedDefinitionTree(allComponents, contract.profileId)
 
@@ -175,7 +185,7 @@ class DraftsResource(
 
         // instead of publishing the initial model based on definitions, which contain extra
         // info like possible inputs, we publish a simpler model here
-        eventBus.publish(UpdatedDraft(contract, allComponents))
+        eventBus.publish(Draft(contract, allComponents, draftStateForNonPersistence.persist))
 
         Response.ok()
                 .entity(contract)
@@ -189,24 +199,22 @@ class DraftsResource(
             ])
     )
     @PUT
-    @Path("/{contractId}/{parentComponentId}/increase-cardinality")
+    @Path("/{contractId}/increase-cardinality")
     @Transactional
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun increaseCardinality(
         @PathParam("contractId") @Parameter(name = "contractId", required = true) contractId: UUID,
-        @PathParam("parentComponentId") @Parameter(name = "parentComponentId", required = true) parentComponentId: UUID,
         pathToAddString: String
     ): Response = doByHandlingValidationExceptions {
+        val pathToAdd = pathToAddString.replace("\"", "") // json body puts the string in quotes, so lets remove them
 
-        // json body puts the string in quotes, so lets remove them
-        val pathToAdd = pathToAddString.substring(1, pathToAddString.length - 1).replace("\\\\d*", "")
-
-        log.info("increasing cardinality on draft $contractId, adding path $pathToAdd to component $parentComponentId")
+        log.info("increasing cardinality on draft $contractId, adding path $pathToAdd")
 
         val contract = getContractRequireDraftStateAndSetSyncTimestamp(contractId)
 
         val allComponents = instantiationService.reinstantiate(
-            ComponentEntity.Queries.selectByContractId(em, contractId)
+            if(draftStateForNonPersistence.persist) ComponentEntity.Queries.selectByContractId(em, contractId)
+            else draftStateForNonPersistence.components
         ).toMutableList()
 
         val mergedDefinitions = getMergedDefinitionTree(allComponents, contract.profileId)
@@ -214,7 +222,7 @@ class DraftsResource(
         val definitionSubtreeToAdd = mergedDefinitions.find(pathToAdd)
         require(definitionSubtreeToAdd != null) { "No subtree found at $pathToAdd" }
 
-        val additionalComponents = instantiationService.instantiateSubtree(allComponents, definitionSubtreeToAdd, parentComponentId)
+        val additionalComponents = instantiationService.instantiateSubtree(allComponents, definitionSubtreeToAdd, pathToAdd)
         allComponents.addAll(additionalComponents)
 
         componentsRepo.addComponents(contractId, additionalComponents)
@@ -227,7 +235,7 @@ class DraftsResource(
 
         // instead of publishing the initial model based on definitions, which contain extra
         // info like possible inputs, we publish a simpler model here
-        eventBus.publish(UpdatedDraft(contract, allComponents))
+        eventBus.publish(Draft(contract, allComponents, draftStateForNonPersistence.persist))
 
         Response.ok()
                 .entity(contract)
@@ -241,25 +249,35 @@ class DraftsResource(
             ])
     )
     @DELETE
-    @Path("/{contractId}/{componentId}")
+    @Path("/{contractId}")
     @Transactional
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun decreaseCardinality(
         @PathParam("contractId") @Parameter(name = "contractId", required = true) contractId: UUID,
-        @PathParam("componentId") @Parameter(name = "componentId", required = true) componentId: UUID
+        pathToRemoveString: String
     ): Response = doByHandlingValidationExceptions {
+        val pathToRemove = pathToRemoveString.replace("\"", "") // json body puts the string in quotes, so lets remove them
 
-        log.info("decreasing cardinality on draft $contractId, removing component $componentId")
+        log.info("decreasing cardinality on draft $contractId, removing $pathToRemove")
 
         val contract = getContractRequireDraftStateAndSetSyncTimestamp(contractId)
 
         val allComponents = instantiationService.reinstantiate(
-            ComponentEntity.Queries.selectByContractId(em, contractId)
+            if(draftStateForNonPersistence.persist) ComponentEntity.Queries.selectByContractId(em, contractId)
+            else draftStateForNonPersistence.components
         ).toMutableList()
 
-        val toRemove = em.find(ComponentEntity::class.java, componentId)
-        em.remove(toRemove)
-        require(allComponents.removeIf { it.id == componentId }) { "unable to locate component to remove, from reinstantiated list $componentId" }
+        val componentId = instantiationService.getComponentIdForPath(allComponents, pathToRemove)
+
+        val toRemove:List<Component> = getAllComponentsFromHereDownwards(allComponents, componentId)
+
+        toRemove.forEach { _ ->
+            if(draftStateForNonPersistence.persist) {
+                val entityToRemove = em.find(ComponentEntity::class.java, componentId)
+                em.remove(entityToRemove)
+            }
+            require(allComponents.removeIf { it.id == componentId }) { "unable to locate component to remove, from reinstantiated list $componentId" }
+        }
 
         val mergedDefinitions = getMergedDefinitionTree(allComponents, contract.profileId)
 
@@ -271,11 +289,21 @@ class DraftsResource(
 
         // instead of publishing the initial model based on definitions, which contain extra
         // info like possible inputs, we publish a simpler model here
-        eventBus.publish(UpdatedDraft(contract, allComponents))
+        eventBus.publish(Draft(contract, allComponents, draftStateForNonPersistence.persist))
 
         Response.ok()
                 .entity(contract)
                 .build()
+    }
+
+    private fun getAllComponentsFromHereDownwards(components: List<Component>, componentId: UUID): List<Component> {
+        val list = mutableListOf<Component>()
+        list.addAll(components.filter { it.id == componentId })
+        val childrenThereof = components.filter { componentId == it.parentId }
+        if(childrenThereof.isNotEmpty()) {
+            list.addAll(childrenThereof.flatMap { getAllComponentsFromHereDownwards(components, it.id) })
+        }
+        return list
     }
 
     @Operation(summary = "Add discount")
@@ -285,20 +313,25 @@ class DraftsResource(
             ])
     )
     @PUT
-    @Path("/{contractId}/{componentId}/set-discount/{value}/")
+    @Path("/{contractId}/set-discount/{value}/")
     @Transactional
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun setDiscount(
             @PathParam("contractId") @Parameter(name = "contractId", required = true) contractId: UUID,
-            @PathParam("componentId") @Parameter(name = "componentId", required = true) componentId: UUID,
-            @PathParam("value") @Parameter(name = "value", required = true) value: String
+            @PathParam("value") @Parameter(name = "value", required = true) value: String,
+            pathString: String
     ): Response = doByHandlingValidationExceptions {
+        val path = pathString.replace("\"", "") // json body puts the string in quotes, so lets remove them
 
-        log.info("setting discount on $contractId with value $value on component $componentId")
+        log.info("setting discount on $contractId with value $value on component $path")
 
         val contract = getContractRequireDraftStateAndSetSyncTimestamp(contractId)
 
-        val allComponents = instantiationService.reinstantiate(ComponentEntity.Queries.selectByContractId(em, contractId))
+        val allComponents = instantiationService.reinstantiate(
+            if(draftStateForNonPersistence.persist) ComponentEntity.Queries.selectByContractId(em, contractId)
+            else draftStateForNonPersistence.components
+        )
+        val componentId = instantiationService.getComponentIdForPath(allComponents, path)
 
         context.throwExceptionInContractsIfRequiredForDemo()
 
@@ -374,7 +407,7 @@ class DraftsResource(
 
         val allComponents = instantiationService.reinstantiate(ComponentEntity.Queries.selectByContractId(em, contractId))
 
-        eventBus.publish(UpdatedDraft(contract, allComponents))
+        eventBus.publish(Draft(contract, allComponents, true))
 
         Response.accepted()
             .entity(contract)
@@ -383,10 +416,16 @@ class DraftsResource(
 
     private fun getContractRequireDraftStateAndSetSyncTimestamp(contractId: UUID): ContractEntity {
         // check draft status
-        val contract = em.find(ContractEntity::class.java, contractId)
-        require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
-        contract.syncTimestamp = System.currentTimeMillis()
-        return contract
+        return if(draftStateForNonPersistence.persist) {
+            val contract = em.find(ContractEntity::class.java, contractId)
+            require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
+            contract.syncTimestamp = System.currentTimeMillis()
+            contract
+        } else {
+            val contract = draftStateForNonPersistence.contract
+            contract.syncTimestamp = System.currentTimeMillis()
+            contract
+        }
     }
 
     /** @return a tree of merged definitions for the given components */

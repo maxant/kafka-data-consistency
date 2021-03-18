@@ -197,8 +197,7 @@ Also known as entry points, process components or UIs.
   - COMPLETE_TASKS (cases-commands)
   - CREATE_PARTNER_RELATIONSHIP (partners-commands)
 - Events (all have the header "event")
-  - CREATED_DRAFT (contracts-event-bus)
-  - UPDATED_DRAFT (contracts-event-bus)
+  - DRAFT (contracts-event-bus)
   - OFFERED_DRAFT (contracts-event-bus)
   - APPROVED_CONTRACT (contracts-event-bus)
   - ADDED_DSC_FOR_DRAFT (contracts-event-bus)
@@ -250,6 +249,9 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 
 ## TODO
 - current
+  - persist user actions to a new table, so others can view the draft
+  - add drafts2/persist which then replays everything with PERSIST turned on, so we can offer a draft
+  - something not quite right with persist=true and setting configs
   - retest 10% manual discount on latte
   - add buttons to change cardinality on vanilla extract in latte
   - add condition if too much vanilla and show it on the screen

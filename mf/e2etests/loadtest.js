@@ -32,8 +32,7 @@ function createPartnerAndContract(){
     var token;
     var partnerId;
     var contractId;
-    var createdDraft = 0;
-    var updatedDraft = 0;
+    var createdUpdatedDraft = 0;
     var updatedPrices = 0;
     var relationshipCreated = 0;
     var changedCase = 0;
@@ -58,28 +57,24 @@ function createPartnerAndContract(){
             numErrors++;
             return;
         }
-        if(msg.event == "CREATED_DRAFT") {
-            createdDraft++;
-            console.log("event: created draft " + createdDraft + " - " + getMsSinceStart() + "msFromStart");
+        if(msg.event == "DRAFT") {
+            createdUpdatedDraft++;
+            console.log("event: created/updated draft " + createdUpdatedDraft + " - " + getMsSinceStart() + "msFromStart");
             componentIdWithFatContent = getComponentIdWithFatContent(msg);
 
             // see note below - prices can indeed arrive before, because we handle messages in web in parallel!
-            if(createdDraft >= 1 && updatedPrices >= 1 && !modifiedFatContent) {
+            if(createdUpdatedDraft == 1 && updatedPrices >= 1 && !modifiedFatContent) {
                 modifyFatContent(componentIdWithFatContent);
             }
-            if(createdDraft >= 2) numWarns++; // this happens just once
-        } else if(msg.event == "UPDATED_DRAFT") {
-            updatedDraft++; // have to wait for updated prices before offering, otherwise we get a validation error because the contract isnt in sync
-            console.log("event: updated draft " + updatedDraft + " - " + getMsSinceStart() + "msFromStart");
-            if(updatedDraft >= 2) numWarns++; // this happens once
+            if(createdUpdatedDraft >= 3) numWarns++;
         } else if(msg.event == "UPDATED_PRICES_FOR_DRAFT") {
             updatedPrices++;
             console.log("event: updated prices " + updatedPrices + " - " + getMsSinceStart() + "msFromStart");
 
             // hmmm the following is necessary, because the web now handles these in parallel
-            if(createdDraft >= 1 && updatedPrices >= 1 && !modifiedFatContent) {
+            if(createdUpdatedDraft == 1 && updatedPrices >= 1 && !modifiedFatContent) {
                 modifyFatContent(componentIdWithFatContent);
-            } else if(updatedDraft >= 1 && updatedPrices >= 2 && relationshipCreated >= 2 && !offeredDraft) {
+            } else if(createdUpdatedDraft >= 2 && updatedPrices >= 2 && relationshipCreated >= 2 && !offeredDraft) {
                 offerDraft();
             }
             if(updatedPrices >= 3) numWarns++; // created, updated
@@ -91,7 +86,7 @@ function createPartnerAndContract(){
         } else if(msg.event == "CHANGED_PARTNER_RELATIONSHIP") {
             relationshipCreated++;
             console.log("event: changed partner relationship " + relationshipCreated + " - " + getMsSinceStart() + "msFromStart");
-            if(updatedDraft >= 1 && updatedPrices >= 2 && relationshipCreated >= 2 && !offeredDraft) {
+            if(createdUpdatedDraft >= 2 && updatedPrices >= 2 && relationshipCreated >= 2 && !offeredDraft) {
                 offerDraft();
             }
             if(relationshipCreated >= 3) numWarns++; // sales rep, contract holder
