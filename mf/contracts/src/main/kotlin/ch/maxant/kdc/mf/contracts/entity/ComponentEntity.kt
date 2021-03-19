@@ -31,7 +31,7 @@ class ComponentEntity( // add open, rather than rely on maven plugin, because @Q
     @Column(name = "COMPONENTDEFINITION_ID", nullable = false, updatable = false)
     var componentDefinitionId: String,
 
-    @Column(name = "CARDINALITY_KEY", nullable = false, updatable = false)
+    @Column(name = "CARDINALITY_KEY", nullable = false) // updatable in order to keep them in order when deleting components
     var cardinalityKey: String
 ) {
     constructor() : this(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "{}", "Milkshake", "1")

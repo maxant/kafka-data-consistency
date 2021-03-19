@@ -16,6 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import org.jboss.logging.Logger
 import javax.enterprise.context.RequestScoped
 import javax.inject.Inject
+import javax.transaction.Transactional
 import javax.ws.rs.Consumes
 import javax.ws.rs.POST
 import javax.ws.rs.Path
@@ -47,30 +48,45 @@ class Drafts2Resource(
     )
     @POST
     @Timed(unit = MetricUnits.MILLISECONDS)
+    @Transactional
     fun actions(
         contractActions: List<ContractActions>
     ): Response = doByHandlingValidationExceptions {
-        draftStateForNonPersistence.persist = false
-        val contracts = mutableListOf<ContractEntity>()
+        draftStateForNonPersistence.replaying = true
+        val contracts = mutableListOf<ContractWithWarnings>()
         for(contractAction in contractActions) {
-            draftsResource.create(contractAction.draftRequest)
+            val warnings = mutableListOf<String?>()
+            draftStateForNonPersistence.persist = contractAction.persist || contractAction.createOffer
+            var contract = draftsResource._create(contractAction.draftRequest)
             for(userAction in contractAction.userActions) {
-                when(userAction.action) {
-                    Action.UPDATE_CONFIG -> draftsResource.updateConfig(draftStateForNonPersistence.contract.id,
-                                                                        userAction.params["param"]!!,
-                                                                        userAction.params["newValue"]!!,
-                                                                        userAction.params["path"]!!)
-                    Action.INCREASE_CARDINALITY -> draftsResource.increaseCardinality(draftStateForNonPersistence.contract.id,
-                                                                        userAction.params["pathToAdd"]!!)
-                    Action.DECREASE_CARDINALITY -> draftsResource.decreaseCardinality(draftStateForNonPersistence.contract.id,
-                                                                        userAction.params["pathToRemove"]!!)
-                    Action.SET_DISCOUNT -> draftsResource.setDiscount(draftStateForNonPersistence.contract.id,
-                                                                        userAction.params["value"]!!,
-                                                                        userAction.params["path"]!!)
+                val path = userAction.params["path"] ?: userAction.params["pathToAdd"] ?: userAction.params["pathToRemove"]
+                try {
+                    when(userAction.action) {
+                        Action.UPDATE_CONFIG -> draftsResource._updateConfig(contract.id,
+                                                                            userAction.params["param"]!!,
+                                                                            userAction.params["newValue"]!!,
+                                                                            userAction.params["path"]!!)
+                        Action.INCREASE_CARDINALITY -> draftsResource._increaseCardinality(contract.id,
+                                                                            userAction.params["pathToAdd"]!!)
+                        Action.DECREASE_CARDINALITY -> draftsResource._decreaseCardinality(contract.id,
+                                                                            userAction.params["pathToRemove"]!!)
+                        Action.SET_DISCOUNT -> draftsResource._setDiscount(contract.id,
+                                                                            userAction.params["value"]!!,
+                                                                            userAction.params["path"]!!)
+                    }
+                } catch(e: Exception) {
+                    warnings.add("Failed to execute ${userAction.action} on path $path. ${e.message}")
                 }
             }
-            contracts.add(draftStateForNonPersistence.contract)
             consolidateAndSendEvents(draftStateForNonPersistence.messages)
+            if(contractAction.createOffer) {
+                // NASTY, really we should wait for a pricing event before doing this, especially because it
+                // might want to throw validation errors. we have to do this, because we validate that all microservices
+                // have the same syncTimestamp
+                Thread.sleep(1000)
+                contract = draftsResource._offerDraft(contract.id)
+            }
+            contracts.add(ContractWithWarnings(contract, warnings))
             draftStateForNonPersistence.reset()
         }
 
@@ -94,7 +110,7 @@ class Drafts2Resource(
         // state as the last draft. if we just send the last message, we need to potentially send multiple manual
         // discounts/surcharges/conditions to DSC. we could... but i was lazy and just added that to the draft message.
 
-        draftStateForNonPersistence.persist = true // so that the event is actually sent!
+        draftStateForNonPersistence.replaying = false // so that the event is actually sent!
         eventBus.publish(Draft(lastDraft.contract, lastDraft.allComponents, false,
             setDiscountCommands.map { ManualDiscountSurcharge(it.componentId, it.value) }))
     }
@@ -102,7 +118,9 @@ class Drafts2Resource(
 
 data class ContractActions(
     val draftRequest: DraftRequest,
-    val userActions: List<UserAction>
+    val userActions: List<UserAction>,
+    val persist: Boolean = false,
+    val createOffer: Boolean = false
 )
 data class UserAction(
     val action: Action,
@@ -116,9 +134,15 @@ enum class Action {
     SET_DISCOUNT
 }
 
+data class ContractWithWarnings(
+    val contract: ContractEntity,
+    val warnings: List<String?>
+)
+
 @RequestScoped
 class DraftStateForNonPersistence {
 
+    var replaying = false
     var persist = true
     var initialised = false
     lateinit var contract: ContractEntity

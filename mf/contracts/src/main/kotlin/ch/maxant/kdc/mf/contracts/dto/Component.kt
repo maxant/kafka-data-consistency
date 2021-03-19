@@ -10,6 +10,6 @@ data class Component(
     val componentDefinitionId: String,
     val configs: List<Configuration<*>>,
     val productId: ProductId?,
-    val cardinalityKey: String,
-    val path: String? = null
+    var cardinalityKey: String,
+    var path: String? = null
 )

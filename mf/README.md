@@ -248,6 +248,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- make contracts send command to pricing, rather than sending it from dsc, so contracts is the orchestrator
 - current
   - persist user actions to a new table, so others can view the draft
   - add drafts2/persist which then replays everything with PERSIST turned on, so we can offer a draft

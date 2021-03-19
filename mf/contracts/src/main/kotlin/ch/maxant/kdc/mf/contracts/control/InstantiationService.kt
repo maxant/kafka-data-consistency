@@ -50,8 +50,7 @@ class InstantiationService(
 
     /** instantiate the given mergedComponentDefinition into the instance tree defined by allComponents, with the parent
      * having the supplied ID. returns a list of the new component and all its children. this algorithm calculates the
-     * correct cardinality key, based on all existing ones plus one, so if you remove and re-add subtrees you can end
-     * up with higher numbers than the max cardinality! */
+     * correct cardinality key, based on all existing ones plus one */
     fun instantiateSubtree(allComponents: List<Component>, mergedComponentDefinition: MergedComponentDefinition, pathToAdd: String): List<Component> {
         val parentId: UUID = getComponentIdForPath(allComponents, pathToAdd.substring(0, pathToAdd.lastIndexOf("->")))
         val componentsOutput = mutableListOf<Component>()
@@ -81,6 +80,37 @@ class InstantiationService(
             }
         }
         return componentsOutput
+    }
+
+    /** fix cardinality keys and paths of all siblings of the same time. required after removing a compnent.
+     * typically the sibling is not in the tree anymore! */
+    fun resetCardinalityKeysAndPaths(allComponents: List<Component>, sibling: Component): MutableList<Component> {
+        val componentsOutput = mutableListOf<TreeComponent>()
+        val siblings = mutableListOf<TreeComponent>()
+        val rootInstance = TreeComponent(allComponents.map { ComponentObjectWrapper(it) })
+        rootInstance.accept { component ->
+            componentsOutput.add(component)
+            if(component.component.parentId == sibling.parentId
+                && component.component.componentDefinitionId == sibling.componentDefinitionId) {
+
+                siblings.add(component)
+            }
+        }
+
+        siblings
+            .sortedBy { it.component.cardinalityKey }
+            .withIndex()
+            .forEach {
+                val newCardinalityKey = it.index.plus(1).toString()
+                it.value.component.cardinalityKey = newCardinalityKey
+            }
+
+        // reset path too
+        return componentsOutput.map {
+            val dto = it.component.original() as Component
+            dto.path = it.getPath()
+            dto
+        }.toMutableList()
     }
 
     /** builds an internal tree of allComponents and then validates each node in the tree against
@@ -140,13 +170,18 @@ class InstantiationService(
     }
 
     fun getComponentIdForPath(components: List<Component>, path: String): UUID {
-        var id: UUID? = null
+        return getComponentForPath(components, path).id
+    }
+
+    fun getComponentForPath(components: List<Component>, path: String): Component {
+        var component: TreeComponent? = null
         TreeComponent(components.map { ComponentObjectWrapper(it) }).accept {
             if(it.getPath() == path) {
-                id = it.component.id
+                component = it
             }
         }
-        return id ?: throw IllegalArgumentException("no component found for path $path")
+        val wrapper = component?.component ?: throw IllegalArgumentException("no component found for path $path")
+        return wrapper.original() as Component
     }
 
     private interface ComponentWrapper<T> {
@@ -155,7 +190,9 @@ class InstantiationService(
         val componentDefinitionId: String
         val configs: List<Configuration<*>>
         val productId: ProductId?
-        val cardinalityKey: String
+        var cardinalityKey: String
+
+        fun original(): T
     }
 
     private class ComponentEntityWrapper(private val e: ComponentEntity, private val om: ObjectMapper) : ComponentWrapper<ComponentEntity> {
@@ -169,8 +206,10 @@ class InstantiationService(
             get() = om.readValue<ArrayList<Configuration<*>>>(e.configuration)
         override val productId: ProductId?
             get() = e.productId
-        override val cardinalityKey: String
+        override var cardinalityKey: String
             get() = e.cardinalityKey
+            set(value) { e.cardinalityKey = value }
+        override fun original() = e
     }
 
     private class ComponentObjectWrapper(private val c: Component) : ComponentWrapper<Component> {
@@ -184,8 +223,10 @@ class InstantiationService(
             get() = c.configs
         override val productId: ProductId?
             get() = c.productId
-        override val cardinalityKey: String
+        override var cardinalityKey: String
             get() = c.cardinalityKey
+            set(value) { c.cardinalityKey = value }
+        override fun original() = c
     }
 
     private class TreeComponent(allComponents: List<ComponentWrapper<*>>,

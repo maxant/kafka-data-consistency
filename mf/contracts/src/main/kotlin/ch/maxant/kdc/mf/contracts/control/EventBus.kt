@@ -40,7 +40,7 @@ class EventBus {
     val log: Logger = Logger.getLogger(this.javaClass)
 
     fun publish(draft: Draft) {
-        if(draftStateForNonPersistence.persist) {
+        if(!draftStateForNonPersistence.replaying) {
             send(eventBus, draft.contract.id, draft, event = "DRAFT")
         } else {
             draftStateForNonPersistence.addMessage(draft)
@@ -48,7 +48,7 @@ class EventBus {
     }
 
     fun publish(setDiscountCommand: SetDiscountCommand) {
-        if(draftStateForNonPersistence.persist) {
+        if(!draftStateForNonPersistence.replaying) {
             send(eventBus, setDiscountCommand.contract.id, setDiscountCommand, event = "SET_DISCOUNT")
         } else {
             draftStateForNonPersistence.addMessage(setDiscountCommand)
@@ -68,7 +68,7 @@ class EventBus {
     }
 
     fun publish(createCaseCommand: CreateCaseCommand) {
-        if(draftStateForNonPersistence.persist) {
+        if(!draftStateForNonPersistence.replaying) {
             send(cases, createCaseCommand.referenceId, createCaseCommand, command = "CREATE_CASE")
         } else {
             draftStateForNonPersistence.addMessage(createCaseCommand)

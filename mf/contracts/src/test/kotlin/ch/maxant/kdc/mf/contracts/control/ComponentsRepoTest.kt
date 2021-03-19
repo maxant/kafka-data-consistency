@@ -72,12 +72,12 @@ class ComponentsRepoTest {
         val components = ComponentEntity.Queries.selectByContractId(em, draft.contract.id)
 
         // when
-        flushed(em) {
+        val cs = flushed(em) {
             sut.updateConfig(components, milk.id, ConfigurableParameter.FAT_CONTENT, "0.2")
         }
 
         // then - check whats in the result
-        val comps = components.filter { it.componentDefinitionId == milk.componentDefinitionId }.map { toComponent(it) }
+        val comps = cs.filter { it.componentDefinitionId == milk.componentDefinitionId }
         assertEquals(1, comps.size)
         assertEquals(milk.componentDefinitionId, comps[0].componentDefinitionId)
         assertEquals(milk.id, comps[0].id)
@@ -95,14 +95,8 @@ class ComponentsRepoTest {
         assertEquals(BigDecimal::class.java, config.clazz)
         assertEquals(ConfigurableParameter.FAT_CONTENT, config.name)
         assertEquals(Units.PERCENT, config.units)
-        assertEquals(8, components.size)
+        assertEquals(8, cs.size)
     }
-
-    private fun toComponent(it: ComponentEntity) = Component (
-        it.id, it.parentId, it.componentDefinitionId,
-        om.readValue<ArrayList<Configuration<*>>>(it.configuration),
-        it.productId, it.cardinalityKey, "unknownAtPresent"
-    )
 
     @Test
     fun updateConfig_illegalValue() {

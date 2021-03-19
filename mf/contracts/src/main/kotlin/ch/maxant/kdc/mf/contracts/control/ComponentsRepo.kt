@@ -22,6 +22,9 @@ class ComponentsRepo(
         var om: ObjectMapper,
 
         @Inject
+        var instantiationService: InstantiationService,
+
+        @Inject
         var draftStateForNonPersistence: DraftStateForNonPersistence
 ){
     fun saveInitialDraft(contractId: UUID, components: List<Component>) {
@@ -29,7 +32,7 @@ class ComponentsRepo(
     }
 
     /** hides implementation details about how configurations are persisted */
-    fun updateConfig(components: List<ComponentEntity>, componentId: UUID, param: ConfigurableParameter, newValue: String) {
+    fun updateConfig(components: List<ComponentEntity>, componentId: UUID, param: ConfigurableParameter, newValue: String): List<Component> {
         val component = components.find { it.id == componentId }
         require(component != null) { "component with id $componentId not present. contract is: ${components.map { it.contractId }}" }
         val configs = om.readValue<ArrayList<Configuration<*>>>(component.configuration)
@@ -41,6 +44,8 @@ class ComponentsRepo(
         configs.add(config)
 
         component.configuration = om.writeValueAsString(configs)
+
+        return instantiationService.reinstantiate(components)
     }
 
     fun addComponents(contractId: UUID, components: List<Component>) {
