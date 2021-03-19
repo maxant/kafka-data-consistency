@@ -1,9 +1,7 @@
 package ch.maxant.kdc.mf.dsc.control
 
-import ch.maxant.kdc.mf.dsc.control.DiscountSurchargeService
 import ch.maxant.kdc.mf.dsc.dto.Configuration
 import ch.maxant.kdc.mf.dsc.dto.FlatComponent
-import ch.maxant.kdc.mf.library.Context
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nhaarman.mockito_kotlin.mock
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -20,7 +18,7 @@ class DiscountSurchargeServiceTest {
     fun setup() {
         val em = mock<EntityManager> {  }
         val om = mock<ObjectMapper> {  }
-        sut = DiscountSurchargeService(em, om, Context())
+        sut = DiscountSurchargeService(em, om, DraftStateForNonPersistence())
     }
 
     @Test
