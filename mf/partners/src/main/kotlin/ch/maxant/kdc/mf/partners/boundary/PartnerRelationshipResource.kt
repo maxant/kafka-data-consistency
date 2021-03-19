@@ -21,6 +21,7 @@ import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
 import javax.persistence.EntityManager
+import javax.transaction.TransactionManager
 import javax.validation.ValidationException
 import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
@@ -32,8 +33,8 @@ import kotlin.collections.HashMap
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 class PartnerRelationshipResource(
-    @Inject
-    var em: EntityManager
+    @Inject val em: EntityManager,
+    @Inject val tm: TransactionManager
 ) {
     private val log = Logger.getLogger(this.javaClass)
 
@@ -125,7 +126,7 @@ class PartnerRelationshipResource(
             @PathParam("foreignId") foreignId: String,
             @Parameter(name = "rolesThatCanBeMissing", description = "optional list of roles that are not important for the current validation")
             @QueryParam("rolesThatCanBeMissing") rolesThatCanBeMissing: List<Role>
-    ): Response = doByHandlingValidationExceptions {
+    ): Response = doByHandlingValidationExceptions(tm) {
         log.info("validating relationships for foreignId $foreignId")
 
         val allRelationships = PartnerRelationshipEntity.Queries.selectByForeignId(em, foreignId)

@@ -8,5 +8,6 @@ data class SetDiscountCommand(
     val contract: ContractEntity,
     val allComponents: List<Component>,
     val componentId: UUID,
-    val value: BigDecimal
+    val value: BigDecimal,
+    val persist: Boolean
 )

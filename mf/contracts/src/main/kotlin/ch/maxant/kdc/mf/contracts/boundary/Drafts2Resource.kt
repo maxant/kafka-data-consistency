@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.contracts.boundary
 
+import ch.maxant.kdc.mf.contracts.control.DraftsService
 import ch.maxant.kdc.mf.contracts.control.EventBus
 import ch.maxant.kdc.mf.contracts.dto.*
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
@@ -16,7 +17,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import org.jboss.logging.Logger
 import javax.enterprise.context.RequestScoped
 import javax.inject.Inject
-import javax.transaction.Transactional
+import javax.transaction.TransactionManager
 import javax.ws.rs.Consumes
 import javax.ws.rs.POST
 import javax.ws.rs.Path
@@ -29,14 +30,10 @@ import javax.ws.rs.core.Response
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 class Drafts2Resource(
-        @Inject
-        val draftsResource: DraftsResource,
-
-        @Inject
-        val draftStateForNonPersistence: DraftStateForNonPersistence,
-
-        @Inject
-        val eventBus: EventBus
+    @Inject val draftsService: DraftsService,
+    @Inject val draftStateForNonPersistence: DraftStateForNonPersistence,
+    @Inject val eventBus: EventBus,
+    @Inject val tm: TransactionManager
 ) {
     val log: Logger = Logger.getLogger(this.javaClass)
 
@@ -48,29 +45,28 @@ class Drafts2Resource(
     )
     @POST
     @Timed(unit = MetricUnits.MILLISECONDS)
-    @Transactional
     fun actions(
         contractActions: List<ContractActions>
-    ): Response = doByHandlingValidationExceptions {
+    ): Response = doByHandlingValidationExceptions(tm) {
         draftStateForNonPersistence.replaying = true
         val contracts = mutableListOf<ContractWithWarnings>()
         for(contractAction in contractActions) {
             val warnings = mutableListOf<String?>()
             draftStateForNonPersistence.persist = contractAction.persist || contractAction.createOffer
-            var contract = draftsResource._create(contractAction.draftRequest)
+            var contract = draftsService.create(contractAction.draftRequest)
             for(userAction in contractAction.userActions) {
                 val path = userAction.params["path"] ?: userAction.params["pathToAdd"] ?: userAction.params["pathToRemove"]
                 try {
                     when(userAction.action) {
-                        Action.UPDATE_CONFIG -> draftsResource._updateConfig(contract.id,
+                        Action.UPDATE_CONFIG -> draftsService.updateConfig(contract.id,
                                                                             userAction.params["param"]!!,
                                                                             userAction.params["newValue"]!!,
                                                                             userAction.params["path"]!!)
-                        Action.INCREASE_CARDINALITY -> draftsResource._increaseCardinality(contract.id,
+                        Action.INCREASE_CARDINALITY -> draftsService.increaseCardinality(contract.id,
                                                                             userAction.params["pathToAdd"]!!)
-                        Action.DECREASE_CARDINALITY -> draftsResource._decreaseCardinality(contract.id,
+                        Action.DECREASE_CARDINALITY -> draftsService.decreaseCardinality(contract.id,
                                                                             userAction.params["pathToRemove"]!!)
-                        Action.SET_DISCOUNT -> draftsResource._setDiscount(contract.id,
+                        Action.SET_DISCOUNT -> draftsService.setDiscount(contract.id,
                                                                             userAction.params["value"]!!,
                                                                             userAction.params["path"]!!)
                     }
@@ -84,7 +80,7 @@ class Drafts2Resource(
                 // might want to throw validation errors. we have to do this, because we validate that all microservices
                 // have the same syncTimestamp
                 Thread.sleep(1000)
-                contract = draftsResource._offerDraft(contract.id)
+                contract = draftsService.offerDraft(contract.id)
             }
             contracts.add(ContractWithWarnings(contract, warnings))
             draftStateForNonPersistence.reset()
@@ -111,7 +107,7 @@ class Drafts2Resource(
         // discounts/surcharges/conditions to DSC. we could... but i was lazy and just added that to the draft message.
 
         draftStateForNonPersistence.replaying = false // so that the event is actually sent!
-        eventBus.publish(Draft(lastDraft.contract, lastDraft.allComponents, false,
+        eventBus.publish(Draft(lastDraft.contract, lastDraft.allComponents, draftStateForNonPersistence.persist,
             setDiscountCommands.map { ManualDiscountSurcharge(it.componentId, it.value) }))
     }
 }

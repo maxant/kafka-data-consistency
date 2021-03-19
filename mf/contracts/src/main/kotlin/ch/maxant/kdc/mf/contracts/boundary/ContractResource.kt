@@ -28,6 +28,7 @@ import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
 import javax.persistence.EntityManager
+import javax.transaction.TransactionManager
 import javax.transaction.Transactional
 import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
@@ -38,8 +39,8 @@ import javax.ws.rs.core.Response
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 class ContractResource(
-    @Inject
-    var em: EntityManager
+    @Inject val em: EntityManager,
+    @Inject val tm: TransactionManager
 ) {
     @Inject
     lateinit var context: Context
@@ -105,7 +106,7 @@ class ContractResource(
     @Secure
     @Transactional
     @Timed(unit = MetricUnits.MILLISECONDS)
-    fun offerDraftAndAcceptOffer(@PathParam("contractId") contractId: UUID) = doByHandlingValidationExceptions {
+    fun offerDraftAndAcceptOffer(@PathParam("contractId") contractId: UUID) = doByHandlingValidationExceptions(tm) {
         abac.ensureUserIsContractHolder(contractId)
         draftsResource.offerDraft(contractId)
         this.acceptOffer(contractId)
@@ -116,7 +117,7 @@ class ContractResource(
     @Secure
     @Transactional
     @Timed(unit = MetricUnits.MILLISECONDS)
-    fun acceptOffer(@PathParam("contractId") contractId: UUID) = doByHandlingValidationExceptions {
+    fun acceptOffer(@PathParam("contractId") contractId: UUID) = doByHandlingValidationExceptions(tm) {
 
         abac.ensureUserIsContractHolder(contractId)
 
@@ -183,7 +184,7 @@ class ContractResource(
     @Secure
     @Transactional
     @Timed(unit = MetricUnits.MILLISECONDS)
-    fun approve(@PathParam("contractId") contractId: UUID) = doByHandlingValidationExceptions {
+    fun approve(@PathParam("contractId") contractId: UUID) = doByHandlingValidationExceptions(tm) {
 
         abac.ensureUserIsSalesRep(contractId)
 

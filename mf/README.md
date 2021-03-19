@@ -248,19 +248,12 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- add redis as persistence mechanism until offer, which rebuilds based on replay
 - make contracts send command to pricing, rather than sending it from dsc, so contracts is the orchestrator
-- current
-  - persist user actions to a new table, so others can view the draft
-  - add drafts2/persist which then replays everything with PERSIST turned on, so we can offer a draft
-  - something not quite right with persist=true and setting configs
-  - retest 10% manual discount on latte
-  - add buttons to change cardinality on vanilla extract in latte
-  - add condition if too much vanilla and show it on the screen
-  - ui model is split into an input model and a model used to display
-  - we have user actions which are applied to a model, so we can switch between offers
-    - group them: everything that is applied to components, then apply discounts/surcharges/conditions in ONE event, and that will do the final pricing ONCE
-  - update contract view if bills or cases change -> need to react to changes on other keys than just requestId
+- add condition if too much vanilla and show it on the screen
+- update contract view if bills or cases change -> need to react to changes on other keys than just requestId
 - make portal a little prettier / responsive
+- persist user actions to a new table, so others can view the draft?
 - add cache stats to grafana
   - writeToCache, readFromCache, deleteFromCache CacheEvicter#handle
 - add a condition, if a user based discount has been set! => rule based!
@@ -342,6 +335,8 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 ## Blog
 
 - sends a useful model around on the event bus, so that we have guaranteed order
+- causal consistency is best according to j.boner and the reactive book, and we get that using a kafka parition (which guarantees order) 
+  and allowing multiple event types
 - ui only uses event source for updating - we only update relevant part of ui
 - MVC but with microservices
 - error handling - timeouts? anything else?

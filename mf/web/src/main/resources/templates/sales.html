@@ -11,7 +11,7 @@
 
 <div v-if="partnerId">
     <mf-partner :partner-id="partnerId" @loaded="partnerLoaded" clickable="true">
-        <i style="width: 100%; text-align: right;" id="chooseDifferentPartner" class="pi pi-times" @click="chooseNewPartner()"></i>
+        <i style="width: 100%; text-align: right;" id="chooseDifferentPartner" class="pi pi-times" @click="chooseNewPartner"></i>
     </mf-partner>
 </div>
 <div v-else>
@@ -42,7 +42,7 @@
         ></p-calendar>
     </div>
     <div class="p-col-12 p-sm-12 p-md-6 p-lg-3 p-xl-3">
-        <p-button @click="newDraft()">get new draft</p-button>
+        <p-button :disabled="creatingDraft" @click="newDraft()">get new draft</p-button>
     </div>
 </div>
 <!-- table with just divs
@@ -109,14 +109,17 @@
             <mf-contract-modifiable-config v-if="model.draft && model.draft.pack" :component="model.draft.pack"></mf-contract-modifiable-config>
             <ul>
                 <li v-for="child1 in model.draft.pack.children" :class="{nonSelectedComponent: child1.$isVirtual}">
-                    <div v-if="child1.productId == 'COFFEE_LATTE_SKINNY'">
+                    <div v-if="child1.productId == 'COFFEE_LATTE_SKINNY' && useSpecificUi">
                         <!-- -------------------------------------------- -->
                         <!-- PRODUCT SPECIFIC UI:                         -->
                         <!-- -------------------------------------------- -->
                         <mf-contract-products-coffee-latte-skinny :node="child1"></mf-contract-products-coffee-latte-skinny>
                     </div>
                     <div v-else style="border: 1px solid #0000ff; width: 400px;">
-                        <div style="font-size: 0.8em; font-style: italic; text-align: right;">generic template</div>
+                        <div style="font-size: 0.8em; font-style: italic; text-align: right;">
+                            generic template
+                            <p-checkbox v-if="child1.productId == 'COFFEE_LATTE_SKINNY'" v-model="useSpecificUi" :binary="true" v-tooltip="'toggle to specific ui'" />
+                        </div>
                         <!-- -------------------------------------------- -->
                         <!-- GENERIC UI:                                  -->
                         <!-- -------------------------------------------- -->
@@ -163,9 +166,13 @@
 var template =
 `
 <div style="border: 1px solid #0000ff; width: 400px;">
-    <div style="font-size: 0.8em; font-style: italic; text-align: right;">product specific template</div>
+    <div style="font-size: 0.8em; font-style: italic; text-align: right;">
+        product specific template
+        <p-checkbox v-model="$parent.useSpecificUi" :binary="true" v-tooltip="'toggle to generic ui'" />
+    </div>
     <div>
-        Discount <p-inputnumber v-model="discount" suffix="%" :step="5" :min="0" :max="10" :disabled="isDisabledInput" @input="setDiscount()" />
+                    <!-- :disabled="isDisabledInput"  -->
+        Discount <p-inputnumber v-model="discount" suffix="%" :step="5" :min="0" :max="10" @input="setDiscount()" />
         <span v-if="node && node.$discountsSurcharges && node.$discountsSurcharges.length >= 1" style="font-size: 0.8em; font-style: italic;">
             (backend value: {{ node.$discountsSurcharges[0].value }})
         </span>
@@ -228,6 +235,7 @@ var coffeeLatteSkinnySpecificUiComponent = {
     },
     components: {
         'p-button': button,
+        'p-checkbox': checkbox,
         'p-inputnumber': inputnumber
     }
 }
@@ -378,6 +386,7 @@ const App = {
             partnerId,
             partner: null,
             model: {"draft": {}, "startDate": new Date(), salesRep: null},
+            useSpecificUi: true,
             contractActions: [],
             start: 0,
             timeTaken: 0,
@@ -508,8 +517,8 @@ const App = {
                         if(!this.persist || applyActions) {
                             r.payload.forEach(contractWithWarnings => {
                                 contractWithWarnings.warnings.forEach(warning => {
-                                    // TODO this.$toast.add({severity:'warn', summary: 'Warning', detail: warning, life: 5000});
                                     alert(warning);
+                                    self.$toast.add({severity:'warn', summary: 'Warning', detail: warning, life: 5000});
                                 });
                             });
                         }
@@ -708,10 +717,11 @@ const App = {
         partnerLoaded(partner) {
             this.partner = partner;
         },
-        chooseNewPartner() {
+        chooseNewPartner(event) {
             this.partnerId = null;
             this.partner = null;
             this.model.draft = {};
+            event.cancelBubble = true;
         },
         resync() {
             this.progressValue = 1;
@@ -849,8 +859,8 @@ function sse(requestId, self) {
                     msg = JSON.stringify(msg);
                     console.error("received error: " + msg);
                     alert(msg);
-                    ameliorateCurrentAction(self)
                 }
+                ameliorateCurrentAction(self)
             } else {
                 console.error("received unexpected event: " + event.data);
             }
@@ -872,14 +882,18 @@ function ameliorateCurrentAction(self) {
         // {action: "changeParam", paramName, path, oldValue, newValue}
         removeWaitingAndResetValue(self.currentAction.path, self.currentAction.paramName, self.currentAction.oldValue, self.model.draft.pack)
         self.allowOffer = false
+        self.contractActions[0].userActions.pop();
     } else if(self.currentAction.action == "setDiscount", path) {
         self.allowOffer = true // so user can retry if they want to. it mustve been enabled in order to get here.
+        self.contractActions[0].userActions.pop();
     } else if(self.currentAction.action == "increaseCardinality") {
         // {action: "increaseCardinality", pathToAdd}
         self.allowOffer = true // so user can retry if they want to. it mustve been enabled in order to get here.
+        self.contractActions[0].userActions.pop();
     } else if(self.currentAction.action == "decreaseCardinality") {
         // {action: "decreaseCardinality", pathToRemove};
         self.allowOffer = true // so user can retry if they want to. it mustve been enabled in order to get here.
+        self.contractActions[0].userActions.pop();
     } else if(self.currentAction.action == "offerDraft") {
         self.allowOffer = true // so user can retry if they want to. it mustve been enabled in order to get here.
     } else if(self.currentAction.action == "resyncing") {
@@ -888,6 +902,7 @@ function ameliorateCurrentAction(self) {
         console.error("unexpected current action: " + self.currentaction.action)
     }
     self.progressText = null;
+    self.progressValue = 100;
 }
 
 function removeWaitingAndResetValue(targetComponentPath, paramName, oldValue, component) {

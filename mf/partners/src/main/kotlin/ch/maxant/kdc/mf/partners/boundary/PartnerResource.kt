@@ -18,6 +18,7 @@ import java.time.LocalDate
 import java.util.*
 import javax.inject.Inject
 import javax.persistence.EntityManager
+import javax.transaction.TransactionManager
 import javax.transaction.Transactional
 import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
@@ -28,11 +29,9 @@ import javax.ws.rs.core.Response
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 class PartnerResource(
-    @Inject
-    var em: EntityManager,
-
-        @Inject
-        var esAdapter: ESAdapter
+    @Inject val em: EntityManager,
+    @Inject val esAdapter: ESAdapter,
+    @Inject val tm: TransactionManager
 ) {
     val log: Logger = Logger.getLogger(this.javaClass)
 
@@ -79,7 +78,7 @@ class PartnerResource(
     @Transactional
     @Produces(MediaType.APPLICATION_JSON)
     @Timed(unit = MetricUnits.MILLISECONDS)
-    fun create(@Parameter(name = "partner", required = true) partner: PartnerEntity) = doByHandlingValidationExceptions {
+    fun create(@Parameter(name = "partner", required = true) partner: PartnerEntity) = doByHandlingValidationExceptions(tm) {
 
         log.info("creating new partner with id ${partner.id}")
 

@@ -63,7 +63,7 @@ class DiscountSurchargeService(
                 val root = toTree(list)
                 if(draft.has("manualDiscountsSurcharges")) {
                     val manualDiscounts = om.readValue<ArrayList<ManualDiscountSurcharge>>(draft.get("manualDiscountsSurcharges").toString())
-                    manualDiscounts.forEach {handleSetDiscount(contractId, syncTimestamp, it.componentId, it.value, persist) }
+                    manualDiscounts.forEach { handleSetDiscount(contractId, syncTimestamp, it.componentId, it.value, persist) }
                 }
                 val discountsSurcharges = handleDraft(contractId, syncTimestamp, root, persist)
                 val pack = om.valueToTree<ObjectNode>(root)
@@ -165,10 +165,10 @@ class DiscountSurchargeService(
         log.info("setting discount $value on component $componentId on contract $contractId...")
 
         val discountsAndSurcharges = if(persist) {
-                findByContractId(em, contractId).toMutableList()
+                findByContractId(em, contractId)
             } else {
                 draftStateForNonPersistence.entities
-            }
+            }.toMutableList()
 
         val manuallyAddedOnComponent = discountsAndSurcharges
                                                     .filter { it.componentId == componentId }
