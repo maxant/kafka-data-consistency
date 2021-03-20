@@ -55,7 +55,7 @@ class ComponentsRepoTest {
         sut.saveInitialDraft(contract.id, components)
         em.flush()
         em.clear()
-        Draft(contract, components, true)
+        Draft(contract, components, PersistenceTypes.DB)
     }
 
     @Test
