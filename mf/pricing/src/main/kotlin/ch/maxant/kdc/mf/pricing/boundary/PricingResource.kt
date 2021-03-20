@@ -5,7 +5,6 @@ import ch.maxant.kdc.mf.pricing.entity.PriceEntity
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
-import java.lang.IllegalStateException
 import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
@@ -19,8 +18,7 @@ import javax.ws.rs.core.Response
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 class PricingResource(
-    @Inject
-    public var em: EntityManager
+    @Inject val em: EntityManager
 ) {
 
     @GET

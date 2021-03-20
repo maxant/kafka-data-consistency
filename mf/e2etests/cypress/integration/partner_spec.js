@@ -62,10 +62,10 @@ describe('Create Partner and Contract', () => {
         let toSelect = contents[getRandomInt(0, contents.length)]
         cy.contains(toSelect).click()
 
-        cy.intercept('PUT', '**/drafts/*/offer').as('createOffer')
+        cy.intercept('PUT', '**/drafts/*/offer').as('offerDraft')
         cy.intercept('GET', '**/contracts/*').as('getContract') // after redirecting to partner page
         cy.get("#offerDraft").click()
-        cy.wait('@createOffer').its('response.statusCode').should('be.oneOf', [201])
+        cy.wait('@offerDraft').its('response.statusCode').should('be.oneOf', [201])
         cy.wait('@getContract').its('response.statusCode').should('be.oneOf', [200])
 
         cy.get("#viewContractIcon").click() // on the partner page, to go to the contract page

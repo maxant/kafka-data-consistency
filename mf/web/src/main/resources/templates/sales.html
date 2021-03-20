@@ -6,7 +6,7 @@
         <template #value="slotProps">{{slotProps.value.label}}</template>
     </p-dropdown>
     &nbsp;&nbsp;&nbsp;
-    Persist: <p-checkbox id="persist" v-model="persist" :binary="true" @change="changePersist()" style="vertical-align: middle;" />
+    Persist: <p-dropdown id="persist" :options="['DB','IN_MEMORY','REDIS']" v-model="persist" @change="changePersist" style="vertical-align: middle;"></p-dropdown>
 </div>
 
 <div v-if="partnerId">
@@ -20,14 +20,20 @@
     </mf-partner-select>
 </div>
 <div class="p-grid">
-    <div class="p-col-12 p-sm-12 p-md-6 p-lg-3 p-xl-3">
-        <p-dropdown :options="products" v-model="product" @change="productSelected"></p-dropdown>
-        <span style="font-size: 0.8em; font-style: italic;">
-            choose "coffee latte" above to see how a
-            product specific ui-widget is used
-            rather than a generic one, and how
-            rules are executed in the UI
-        </span>
+    <div class="p-col-12 p-sm-12 p-md-6 p-lg-6 p-xl-6">
+        <table>
+            <tr>
+                <td valign="top">
+                    <p-dropdown :options="products" v-model="product" @change="productSelected"></p-dropdown>
+                </td>
+                <td valign="top" style="font-size: 0.8em; font-style: italic; min-width: 100px;">
+                    choose "coffee latte" above to see how a
+                    product specific ui-widget is used
+                    rather than a generic one, and how
+                    rules are executed in the UI
+                </td>
+            </tr>
+        </table>
     </div>
     <div class="p-col-12 p-sm-12 p-md-6 p-lg-3 p-xl-3">
         <p-calendar id="startDate"
@@ -394,7 +400,7 @@ const App = {
             currentAction: null,
             forcibleErrors,
             forceError: forcibleErrors[0],
-            persist: true,
+            persist: "DB",
             allowOffer: false,
             progressValue: 0,
             progressText: null,
@@ -499,22 +505,22 @@ const App = {
             // subscribe before sending request to server, to ensure we receive ALL of the events, and any errors
             sse(window.requestId, this).then(() => {
                 self.requestId = window.requestId;
-                let url = CONTRACTS_BASE_URL + "/drafts";
+                let url = CONTRACTS_BASE_URL + "/drafts?persist=" + self.persist;
 
                 if(applyActions) {
-                    this.contractActions[0].draftRequest = body;
-                    this.contractActions[0].persist = this.persist;
+                    self.contractActions[0].draftRequest = body;
+                    self.contractActions[0].persist = self.persist;
                 } else {
-                    this.contractActions = [ {draftRequest: body, userActions: [] } ];
+                    self.contractActions = [ {draftRequest: body, persist: self.persist, userActions: [] } ];
                 }
-                if(!this.persist || applyActions) {
+                if(self.persist == "IN_MEMORY" || applyActions) {
                     url = CONTRACTS_BASE_URL + "/drafts2";
-                    body = this.contractActions;
+                    body = self.contractActions;
                 }
                 fetchIt(url, "POST", this, body).then(r => {
                     if(r.ok) {
                         console.log("got contract " + JSON.stringify(r.payload) + ", for requestId " + self.requestId);
-                        if(!this.persist || applyActions) {
+                        if(url.indexOf("/drafts2") > 0) {
                             r.payload.forEach(contractWithWarnings => {
                                 contractWithWarnings.warnings.forEach(warning => {
                                     alert(warning);
@@ -558,12 +564,12 @@ const App = {
                 console.log("change param " + paramName + " on component " + component.path + " to " + newValue)
                 this.currentAction = {action: "changeParam", paramName, path: component.path, oldValue, newValue}
                 let self = this;
-                let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/update-config/" + paramName + "/" + newValue;
+                let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/update-config/" + paramName + "/" + newValue + "?persist=" + this.persist;
                 let verb = "PUT";
                 let body = component.path;
 
                 this.contractActions[0].userActions.push({action: "UPDATE_CONFIG", params: {param: paramName, newValue: newValue, path: component.path}});
-                if(!this.persist) {
+                if(this.persist == "IN_MEMORY") {
                     url = CONTRACTS_BASE_URL + "/drafts2";
                     body = this.contractActions;
                     verb = "POST"
@@ -590,12 +596,12 @@ const App = {
             console.log("change cardinality by adding path " + pathToAdd)
             this.currentAction = {action: "increaseCardinality", pathToAdd};
             let self = this;
-            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/increase-cardinality";
+            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/increase-cardinality" + "?persist=" + this.persist;
             let verb = "PUT";
             let body = pathToAdd;
 
             this.contractActions[0].userActions.push({action: "INCREASE_CARDINALITY", params: {pathToAdd}});
-            if(!this.persist) {
+            if(this.persist == "IN_MEMORY") {
                 url = CONTRACTS_BASE_URL + "/drafts2";
                 body = this.contractActions;
                 verb = "POST"
@@ -621,12 +627,12 @@ const App = {
             console.log("change cardinality by removing path " + pathToRemove)
             this.currentAction = {action: "decreaseCardinality", pathToRemove};
             let self = this;
-            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id;
+            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "?persist=" + this.persist;
             let verb = "DELETE";
             let body = pathToRemove;
 
             this.contractActions[0].userActions.push({action: "DECREASE_CARDINALITY", params: {pathToRemove}});
-            if(!this.persist) {
+            if(this.persist == "IN_MEMORY") {
                 url = CONTRACTS_BASE_URL + "/drafts2";
                 body = this.contractActions;
                 verb = "POST"
@@ -652,12 +658,12 @@ const App = {
             console.log("setting discount of " + discount + " on component " + path + "...")
             this.currentAction = {action: "setDiscount", path}
             let self = this;
-            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/set-discount/" + discount;
+            let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/set-discount/" + discount + "?persist=" + this.persist;
             let verb = "PUT";
             let body = path;
 
             this.contractActions[0].userActions.push({action: "SET_DISCOUNT", params: {path, value: discount}});
-            if(!this.persist) {
+            if(this.persist == "IN_MEMORY") {
                 url = CONTRACTS_BASE_URL + "/drafts2";
                 body = this.contractActions;
                 verb = "POST"
@@ -684,11 +690,13 @@ const App = {
             let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.draft.contract.id + "/offer";
             let body = null;
             let verb = "PUT";
-
             this.contractActions[0].offerDraft = true;
-            if(!this.persist) {
+
+            // if persistence if redis or in-memory (ie not db), then we MUST replay it all with persistence type DB so that it ends up in mysql
+            if(this.persist != "DB") {
                 url = CONTRACTS_BASE_URL + "/drafts2";
-                body = this.contractActions;
+                body = JSON.parse(JSON.stringify(this.contractActions)); // deep clone before changing persist type to DB
+                body[0].persist = "DB"; // offers MUST end up in the DB
                 verb = "POST";
             }
 
@@ -816,6 +824,7 @@ function sse(requestId, self) {
             } else if(msg.event == "DRAFT" && !self.creatingDraft) {
                 self.progressValue = 33;
                 self.progressText = "checking discounts, surcharges and conditions";
+                removeVirtualComponents(self.model.draft.pack);
                 updateDraft(msg.payload.allComponents, self.model.draft.pack);
                 addVirtualComponents(msg.payload.allComponents, self.model.draft.pack);
                 // dont update any waiting or timing state, because this is just the first of many events to come
@@ -883,7 +892,7 @@ function ameliorateCurrentAction(self) {
         removeWaitingAndResetValue(self.currentAction.path, self.currentAction.paramName, self.currentAction.oldValue, self.model.draft.pack)
         self.allowOffer = false
         self.contractActions[0].userActions.pop();
-    } else if(self.currentAction.action == "setDiscount", path) {
+    } else if(self.currentAction.action == "setDiscount") {
         self.allowOffer = true // so user can retry if they want to. it mustve been enabled in order to get here.
         self.contractActions[0].userActions.pop();
     } else if(self.currentAction.action == "increaseCardinality") {
@@ -1012,9 +1021,6 @@ function updateDraft(allComponentsFromServer, component){
 function addVirtualComponents(allComponentsFromServer, component){
     let definition = _findComponentDefinition(component.path);
 
-    // remove all virtual children and then re-add them as required
-    _.remove(component.children, c => c.$isVirtual);
-
     // do we need any virtual children, because there are kids with cardinality 0?
     let instanceComponentDefinitionIds = _.map(component.children, c => c.componentDefinitionId);
     let missingDefinitions = _.filter(definition.children, child => !_.includes(instanceComponentDefinitionIds, child.componentDefinitionId));
@@ -1038,6 +1044,11 @@ function addVirtualComponents(allComponentsFromServer, component){
     sortChildrenAccordingToDefinitions(component, definition);
 
     component.children.forEach(c => addVirtualComponents(allComponentsFromServer, c));
+}
+
+function removeVirtualComponents(component){
+    _.remove(component.children, c => c.$isVirtual);
+    component.children.forEach(c => removeVirtualComponents(c));
 }
 
 </script>

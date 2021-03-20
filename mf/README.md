@@ -248,7 +248,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
-- add redis as persistence mechanism until offer, which rebuilds based on replay
+- refactor aweful persistence spread out in contracts
 - make contracts send command to pricing, rather than sending it from dsc, so contracts is the orchestrator
 - add condition if too much vanilla and show it on the screen
 - update contract view if bills or cases change -> need to react to changes on other keys than just requestId
@@ -603,6 +603,16 @@ Partner mapping uses a custom analyser:
 
     export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.9.11-0.el7_9.x86_64
     mvn --version
+
+Redis:
+
+    docker run -it --network kafka-data-consistency_default --rm redis:6.2.1-alpine redis-cli -h maxant.ch -p 30580
+    AUTH default supersecretpsswr
+    config get *
+    dbsize
+    info
+    set mykey hello
+    get mykey
 
 Update Jaeger Dependencies:
 

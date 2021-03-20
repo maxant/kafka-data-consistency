@@ -11,11 +11,13 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.quarkus.redis.client.RedisClient
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.opentracing.Traced
 import org.jboss.logging.Logger
 import java.math.BigDecimal
+import java.nio.charset.StandardCharsets
 import java.util.*
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.context.RequestScoped
@@ -33,7 +35,10 @@ class DiscountSurchargeService(
         var om: ObjectMapper,
 
         @Inject
-        val draftStateForNonPersistence: DraftStateForNonPersistence
+        val draftStateForNonPersistence: DraftStateForNonPersistence,
+
+        @Inject
+        val redis: RedisClient
 ) {
     private val log = Logger.getLogger(this.javaClass)
 
@@ -41,22 +46,11 @@ class DiscountSurchargeService(
     @Timed(unit = MetricUnits.MILLISECONDS)
     @Traced
     fun handleDraft(draft: JsonNode): JsonNode {
-        val persist = draft.get("persist").asBoolean()
+        val persist = PersistenceTypes.valueOf(draft.get("persist").asText())
         val contract = draft.get("contract")
         val contractId = UUID.fromString(contract.get("id").asText())
         val syncTimestamp = contract.get("syncTimestamp").asLong()
         return when {
-            draft.has("pack") -> {
-                TODO("delete the following code")
-                /*
-                val pack = draft.get("pack").toString()
-                val root = om.readValue(pack, TreeComponent::class.java)
-                val discountsSurcharges = handleDraft(contractId, syncTimestamp, root, persist)
-                (draft as ObjectNode).set<ObjectNode>("discountsSurcharges", om.valueToTree<JsonNode>(discountsSurcharges))
-                                    .put("persist", persist)
-                draft
-                 */
-            }
             draft.has("allComponents") -> {
                 val allComponents = draft.get("allComponents").toString()
                 val list = om.readValue<ArrayList<FlatComponent>>(allComponents)
@@ -72,7 +66,7 @@ class DiscountSurchargeService(
                     .set<ObjectNode>("pack", pack)
                     .set<ObjectNode>("discountsSurcharges", om.valueToTree<JsonNode>(discountsSurcharges))
                     .set<ObjectNode>("contract", contract)
-                    .put("persist", persist)
+                    .put("persist", persist.toString())
                 draftAsTree
             }
             else -> {
@@ -109,30 +103,45 @@ class DiscountSurchargeService(
     }
 
     @Traced
-    private fun handleDraft(contractId: UUID, syncTimestamp: Long, root: TreeComponent, persist: Boolean): Collection<DiscountSurchargeEntity> {
+    private fun handleDraft(contractId: UUID, syncTimestamp: Long, root: TreeComponent, persist: PersistenceTypes): Collection<DiscountSurchargeEntity> {
         log.info("calculating discounts and surcharges for contract $contractId...")
 
-        val result = if(persist) {
-            val deletedCount = DiscountSurchargeEntity.Queries.deleteByContractIdAndNotAddedManually(em, contractId) // start from scratch
-            log.info("deleted $deletedCount existing discount/surcharge rows for contract $contractId that were not added manually")
+        val result = when(persist) {
+            PersistenceTypes.DB -> {
+                val deletedCount = DiscountSurchargeEntity.Queries.deleteByContractIdAndNotAddedManually(em, contractId) // start from scratch
+                log.info("deleted $deletedCount existing discount/surcharge rows for contract $contractId that were not added manually")
 
-            val entities = findByContractId(em, contractId)
-            entities.forEach{ it.syncTimestamp = syncTimestamp} // update these guys otherwise not everything is synced
-            entities
-        } else {
-            draftStateForNonPersistence.entities.removeIf{ !it.addedManually }
-            draftStateForNonPersistence.entities
+                val entities = findByContractId(em, contractId)
+                entities.forEach{ it.syncTimestamp = syncTimestamp} // update these guys otherwise not everything is synced
+                entities
+            }
+            PersistenceTypes.IN_MEMORY -> {
+                draftStateForNonPersistence.entities.removeIf{ !it.addedManually }
+                draftStateForNonPersistence.entities
+            }
+            PersistenceTypes.REDIS -> {
+                val doc = redis.get("$contractId-dsc")
+                if(doc != null) {
+                    om.readValue<List<DiscountSurchargeEntity>>(doc.toString())
+                        .filter { it.addedManually }
+                } else emptyList()
+            }
         }.toMutableList()
 
         val discountsSurcharges = DiscountsSurchargesDefinitions.determineDiscountsSurcharges(root)
         discountsSurcharges.forEach {
             it.contractId = contractId
             it.syncTimestamp = syncTimestamp
-            if(persist) em.persist(it)
-            else draftStateForNonPersistence.entities.add(it)
             result.add(it)
         }
-
+        when(persist) {
+            PersistenceTypes.DB -> discountsSurcharges.forEach { em.persist(it) }
+            PersistenceTypes.IN_MEMORY -> draftStateForNonPersistence.entities.addAll(discountsSurcharges)
+            PersistenceTypes.REDIS -> {
+                redis.set(listOf("$contractId-dsc", om.writeValueAsString(result)))
+                redis.set(listOf("$contractId-dsc-sync", syncTimestamp.toString()))
+            }
+        }
         return result
     }
 
@@ -140,7 +149,7 @@ class DiscountSurchargeService(
     @Timed(unit = MetricUnits.MILLISECONDS)
     @Traced
     fun handleSetDiscount(cmd: JsonNode): JsonNode {
-        val persist = cmd.get("persist").asBoolean()
+        val persist = PersistenceTypes.valueOf(cmd.get("persist").asText())
         val contract = cmd.get("contract")
         val contractId = UUID.fromString(contract.get("id").asText())
         val componentId = UUID.fromString(cmd.get("componentId").asText())
@@ -156,19 +165,19 @@ class DiscountSurchargeService(
             .set<ObjectNode>("pack", pack)
             .set<ObjectNode>("discountsSurcharges", om.valueToTree<JsonNode>(discountsSurcharges))
             .set<ObjectNode>("contract", contract)
-            .put("persist", persist)
+            .put("persist", persist.toString())
         return draftAsTree
     }
 
     @Traced
-    private fun handleSetDiscount(contractId: UUID, syncTimestamp: Long, componentId: UUID, value: BigDecimal, persist: Boolean): List<DiscountSurchargeEntity> {
+    private fun handleSetDiscount(contractId: UUID, syncTimestamp: Long, componentId: UUID, value: BigDecimal, persist: PersistenceTypes): List<DiscountSurchargeEntity> {
         log.info("setting discount $value on component $componentId on contract $contractId...")
 
-        val discountsAndSurcharges = if(persist) {
-                findByContractId(em, contractId)
-            } else {
-                draftStateForNonPersistence.entities
-            }.toMutableList()
+        val discountsAndSurcharges = when(persist) {
+            PersistenceTypes.DB -> findByContractId(em, contractId)
+            PersistenceTypes.IN_MEMORY -> draftStateForNonPersistence.entities
+            PersistenceTypes.REDIS -> TODO()
+        }.toMutableList()
 
         val manuallyAddedOnComponent = discountsAndSurcharges
                                                     .filter { it.componentId == componentId }
@@ -180,8 +189,11 @@ class DiscountSurchargeService(
 
         if(manuallyAddedOnComponent.isEmpty()) {
             val e = DiscountSurchargeEntity(UUID.randomUUID(), contractId, componentId, "MANUAL", value, syncTimestamp, true)
-            if(persist) em.persist(e)
-            else draftStateForNonPersistence.entities.add(e)
+            when(persist) {
+                PersistenceTypes.DB -> em.persist(e)
+                PersistenceTypes.IN_MEMORY -> draftStateForNonPersistence.entities.add(e)
+                PersistenceTypes.REDIS -> TODO()
+            }
             discountsAndSurcharges.add(e)
         } else {
             manuallyAddedOnComponent[0].value = value
@@ -197,4 +209,8 @@ class DiscountSurchargeService(
 @RequestScoped
 class DraftStateForNonPersistence {
     var entities = mutableListOf<DiscountSurchargeEntity>()
+}
+
+enum class PersistenceTypes {
+    IN_MEMORY, REDIS, DB
 }

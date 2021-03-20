@@ -12,6 +12,7 @@ import ch.maxant.kdc.mf.pricing.entity.PriceEntity.Queries.deleteByContractId
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import io.quarkus.redis.client.RedisClient
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.opentracing.Traced
@@ -29,14 +30,10 @@ import kotlin.collections.HashMap
 @ApplicationScoped
 @SuppressWarnings("unused")
 class PricingService(
-        @Inject
-        var em: EntityManager,
-
-        @Inject
-        var om: ObjectMapper,
-
-        @Inject
-        var context: Context
+        @Inject val em: EntityManager,
+        @Inject val om: ObjectMapper,
+        @Inject val context: Context,
+        @Inject val redis: RedisClient
 ) {
     private val log = Logger.getLogger(this.javaClass)
 
@@ -46,7 +43,7 @@ class PricingService(
     fun priceDraft(draft: JsonNode): PricingResult {
         // TODO add extension method to make this fetchable via a path => ur use JsonPath?
         // TODO replace with DTO
-        val persist = draft.get("persist").asBoolean()
+        val persist = PersistenceTypes.valueOf(draft.get("persist").asText())
         val contract = draft.get("contract")
         val contractId = UUID.fromString(contract.get("id").asText())
         val syncTimestamp = contract.get("syncTimestamp").asLong()
@@ -135,14 +132,18 @@ class PricingService(
 
     @Traced
     private fun priceDraft(contractId: UUID, syncTimestamp: Long, start: LocalDateTime, end: LocalDateTime,
-                           root: TreeComponent, discountsSurcharges: List<DiscountSurcharge>, persist: Boolean): PricingResult {
+                           root: TreeComponent, discountsSurcharges: List<DiscountSurcharge>, persist: PersistenceTypes): PricingResult {
         log.info("starting to price individual components for contract $contractId...")
 
         context.throwExceptionInPricingIfRequiredForDemo()
 
-        if(persist) {
-            val deletedCount = deleteByContractId(em, contractId) // start from scratch
-            log.info("deleted $deletedCount existing price rows for contract $contractId")
+        when(persist) {
+            PersistenceTypes.DB -> {
+                val deletedCount = deleteByContractId(em, contractId) // start from scratch
+                log.info("deleted $deletedCount existing price rows for contract $contractId")
+            }
+            PersistenceTypes.IN_MEMORY -> Unit
+            PersistenceTypes.REDIS -> Unit // no deletion, as we would just replace the entire document
         }
 
         val discountsSurchargesByComponentId = discountsSurcharges.groupBy { it.componentId }
@@ -170,11 +171,14 @@ class PricingService(
 
                 prices[componentId] = price
 
-                if(persist) {
-                    val pe = PriceEntity(UUID.randomUUID(), contractId, start, end,
-                            componentId, ruleName, price.total, price.tax, syncTimestamp)
-
-                    em.persist(pe)
+                when(persist) {
+                    PersistenceTypes.DB -> {
+                        val pe = PriceEntity(UUID.randomUUID(), contractId, start, end,
+                                componentId, ruleName, price.total, price.tax, syncTimestamp)
+                        em.persist(pe)
+                    }
+                    PersistenceTypes.IN_MEMORY -> Unit
+                    PersistenceTypes.REDIS -> redis.set(listOf("$contractId-pricing", syncTimestamp).map {it.toString()})
                 }
             }
         })
@@ -233,3 +237,8 @@ data class PricingCommandResult(val contractId: UUID,
                                 val priceByComponentId: Map<UUID, ComponentPriceWithValidity> = emptyMap())
 
 data class ComponentPriceWithValidity(val componentId: UUID, val price: Price, val from: LocalDate, val to: LocalDate)
+
+
+enum class PersistenceTypes {
+    IN_MEMORY, REDIS, DB
+}

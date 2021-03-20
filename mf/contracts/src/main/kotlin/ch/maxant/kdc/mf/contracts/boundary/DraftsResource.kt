@@ -31,7 +31,8 @@ import javax.ws.rs.core.Response
 @Produces(MediaType.APPLICATION_JSON)
 class DraftsResource(
         @Inject val draftsService: DraftsService,
-        @Inject val tm: TransactionManager
+        @Inject val tm: TransactionManager,
+        @Inject val draftStateForNonPersistence: DraftStateForNonPersistence
 ) {
     val log: Logger = Logger.getLogger(this.javaClass)
 
@@ -45,9 +46,10 @@ class DraftsResource(
     @Secure
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun create(
-            @Parameter(name = "draftRequest", required = true)
-            @Valid
-            draftRequest: DraftRequest): Response = doByHandlingValidationExceptions(tm) {
+            @Parameter(name = "draftRequest", required = true) @Valid draftRequest: DraftRequest,
+            @QueryParam("persist") @Parameter(name = "persist") persist: PersistenceTypes = PersistenceTypes.DB
+    ): Response = doByHandlingValidationExceptions(tm) {
+        draftStateForNonPersistence.persist = persist
 
         val contract = draftsService.create(draftRequest)
 
@@ -70,8 +72,10 @@ class DraftsResource(
             @PathParam("contractId") @Parameter(name = "contractId", required = true) contractId: UUID,
             @PathParam("param") @Parameter(name = "param", required = true) param: String,
             @PathParam("newValue") @Parameter(name = "newValue", required = true) newValue: String,
+            @QueryParam("persist") @Parameter(name = "persist", required = false) persist: PersistenceTypes = PersistenceTypes.DB,
             pathString: String
     ): Response = doByHandlingValidationExceptions(tm) {
+        draftStateForNonPersistence.persist = persist
         Response.ok()
                 .entity(draftsService.updateConfig(contractId, param, newValue, pathString))
                 .build()
@@ -88,8 +92,10 @@ class DraftsResource(
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun increaseCardinality(
         @PathParam("contractId") @Parameter(name = "contractId", required = true) contractId: UUID,
+        @QueryParam("persist") @Parameter(name = "persist", required = false) persist: PersistenceTypes = PersistenceTypes.DB,
         pathToAddString: String
     ): Response = doByHandlingValidationExceptions(tm) {
+        draftStateForNonPersistence.persist = persist
         Response.ok()
                 .entity(draftsService.increaseCardinality(contractId, pathToAddString))
                 .build()
@@ -106,8 +112,10 @@ class DraftsResource(
     @Timed(unit = MetricUnits.MILLISECONDS)
     fun decreaseCardinality(
         @PathParam("contractId") @Parameter(name = "contractId", required = true) contractId: UUID,
+        @QueryParam("persist") @Parameter(name = "persist", required = false) persist: PersistenceTypes = PersistenceTypes.DB,
         pathToRemoveString: String
     ): Response = doByHandlingValidationExceptions(tm) {
+        draftStateForNonPersistence.persist = persist
         Response.ok()
                 .entity(draftsService.decreaseCardinality(contractId, pathToRemoveString))
                 .build()
@@ -125,8 +133,10 @@ class DraftsResource(
     fun setDiscount(
             @PathParam("contractId") @Parameter(name = "contractId", required = true) contractId: UUID,
             @PathParam("value") @Parameter(name = "value", required = true) value: String,
+            @QueryParam("persist") @Parameter(name = "persist", required = false) persist: PersistenceTypes = PersistenceTypes.DB,
             pathString: String
     ): Response = doByHandlingValidationExceptions(tm) {
+        draftStateForNonPersistence.persist = persist
         Response.ok()
                 .entity(draftsService.setDiscount(contractId, value, pathString))
                 .build()

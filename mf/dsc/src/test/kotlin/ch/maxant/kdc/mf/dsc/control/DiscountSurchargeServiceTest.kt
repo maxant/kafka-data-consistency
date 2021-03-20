@@ -4,6 +4,7 @@ import ch.maxant.kdc.mf.dsc.dto.Configuration
 import ch.maxant.kdc.mf.dsc.dto.FlatComponent
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nhaarman.mockito_kotlin.mock
+import io.quarkus.redis.client.RedisClient
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -18,7 +19,7 @@ class DiscountSurchargeServiceTest {
     fun setup() {
         val em = mock<EntityManager> {  }
         val om = mock<ObjectMapper> {  }
-        sut = DiscountSurchargeService(em, om, DraftStateForNonPersistence())
+        sut = DiscountSurchargeService(em, om, DraftStateForNonPersistence(), mock{} )
     }
 
     @Test

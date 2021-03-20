@@ -13,6 +13,10 @@
     <packaging>jar</packaging>
     <dependencies>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-redis-client</artifactId>
+        </dependency>
+        <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>library</artifactId>
             <version>${project.version}</version>

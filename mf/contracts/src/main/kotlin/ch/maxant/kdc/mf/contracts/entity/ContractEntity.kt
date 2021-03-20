@@ -2,6 +2,7 @@ package ch.maxant.kdc.mf.contracts.entity
 
 import ch.maxant.kdc.mf.contracts.definitions.ProfileId
 import ch.maxant.kdc.mf.contracts.dto.Component
+import com.fasterxml.jackson.annotation.JsonIgnore
 import org.eclipse.microprofile.graphql.Ignore
 import org.hibernate.annotations.Type
 import java.time.LocalDateTime
@@ -67,5 +68,6 @@ class ContractEntity( // add open, rather than rely on maven plugin, because @Qu
 
     @Transient
     @Ignore
+    @JsonIgnore
     var components: List<Component>? = null
 }

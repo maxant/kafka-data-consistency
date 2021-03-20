@@ -22,6 +22,5 @@ object Profiles {
 
     fun get(profileId: ProfileId) = when(profileId) {
         ProfileId.STANDARD -> standard
-        else -> TODO()
     }
 }

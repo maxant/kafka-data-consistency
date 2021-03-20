@@ -1,8 +1,8 @@
 package ch.maxant.kdc.mf.contracts.control
 
 import ch.maxant.kdc.mf.contracts.boundary.DraftStateForNonPersistence
+import ch.maxant.kdc.mf.contracts.boundary.PersistenceTypes
 import ch.maxant.kdc.mf.contracts.definitions.*
-import ch.maxant.kdc.mf.contracts.dto.Component
 import ch.maxant.kdc.mf.contracts.dto.Draft
 import ch.maxant.kdc.mf.contracts.entity.ComponentEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractEntity
@@ -43,7 +43,7 @@ class ComponentsRepoTest {
     lateinit var draftStateForNonPersistence: DraftStateForNonPersistence
 
     fun setup(): Draft = flushed(em) {
-        draftStateForNonPersistence.persist = true
+        draftStateForNonPersistence.persist = PersistenceTypes.DB
         val contract = ContractEntity(UUID.randomUUID(), LocalDateTime.MIN, LocalDateTime.MAX, "fred", ProfileId.STANDARD)
         em.persist(contract)
         val profile: Profile = Profiles.find()

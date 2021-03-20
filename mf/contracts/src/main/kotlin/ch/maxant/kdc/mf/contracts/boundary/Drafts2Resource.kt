@@ -52,7 +52,7 @@ class Drafts2Resource(
         val contracts = mutableListOf<ContractWithWarnings>()
         for(contractAction in contractActions) {
             val warnings = mutableListOf<String?>()
-            draftStateForNonPersistence.persist = contractAction.persist || contractAction.createOffer
+            draftStateForNonPersistence.persist = contractAction.persist
             var contract = draftsService.create(contractAction.draftRequest)
             for(userAction in contractAction.userActions) {
                 val path = userAction.params["path"] ?: userAction.params["pathToAdd"] ?: userAction.params["pathToRemove"]
@@ -75,7 +75,7 @@ class Drafts2Resource(
                 }
             }
             consolidateAndSendEvents(draftStateForNonPersistence.messages)
-            if(contractAction.createOffer) {
+            if(contractAction.offerDraft) {
                 // NASTY, really we should wait for a pricing event before doing this, especially because it
                 // might want to throw validation errors. we have to do this, because we validate that all microservices
                 // have the same syncTimestamp
@@ -115,8 +115,8 @@ class Drafts2Resource(
 data class ContractActions(
     val draftRequest: DraftRequest,
     val userActions: List<UserAction>,
-    val persist: Boolean = false,
-    val createOffer: Boolean = false
+    val persist: PersistenceTypes = PersistenceTypes.IN_MEMORY,
+    val offerDraft: Boolean = false
 )
 data class UserAction(
     val action: Action,
@@ -139,7 +139,7 @@ data class ContractWithWarnings(
 class DraftStateForNonPersistence {
 
     var replaying = false
-    var persist = true
+    var persist = PersistenceTypes.DB
     var initialised = false
     lateinit var contract: ContractEntity
     var components = mutableListOf<ComponentEntity>()
@@ -149,7 +149,6 @@ class DraftStateForNonPersistence {
         this.contract = contract
         this.components.clear()
         this.messages.clear()
-        this.persist = false
         this.initialised = true
     }
 
@@ -162,9 +161,13 @@ class DraftStateForNonPersistence {
     }
 
     fun reset() {
-        this.persist = true
+        this.persist = PersistenceTypes.DB
         this.initialised = false
         this.components.clear()
         this.messages.clear()
     }
+}
+
+enum class PersistenceTypes {
+    IN_MEMORY, REDIS, DB
 }
