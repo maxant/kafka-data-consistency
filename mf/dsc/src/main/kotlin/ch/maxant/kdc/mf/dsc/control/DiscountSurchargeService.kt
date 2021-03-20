@@ -54,11 +54,13 @@ class DiscountSurchargeService(
                 val allComponents = draft.get("allComponents").toString()
                 val list = om.readValue<ArrayList<FlatComponent>>(allComponents)
                 val root = toTree(list)
+                var discountsSurcharges = handleDraft(contractId, syncTimestamp, root, persist)
                 if(draft.has("manualDiscountsSurcharges")) {
                     val manualDiscounts = om.readValue<ArrayList<ManualDiscountSurcharge>>(draft.get("manualDiscountsSurcharges").toString())
-                    manualDiscounts.forEach { handleSetDiscount(contractId, syncTimestamp, it.componentId, it.value, persist) }
+                    for(manualDiscount in manualDiscounts) {
+                        discountsSurcharges = handleSetDiscount(contractId, syncTimestamp, manualDiscount.componentId, manualDiscount.value, persist)
+                    }
                 }
-                val discountsSurcharges = handleDraft(contractId, syncTimestamp, root, persist)
                 val pack = om.valueToTree<ObjectNode>(root)
                 val draftAsTree = om.createObjectNode()
                 draftAsTree
