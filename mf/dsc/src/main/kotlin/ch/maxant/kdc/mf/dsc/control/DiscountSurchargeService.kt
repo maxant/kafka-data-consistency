@@ -17,7 +17,6 @@ import org.eclipse.microprofile.metrics.annotation.Timed
 import org.eclipse.microprofile.opentracing.Traced
 import org.jboss.logging.Logger
 import java.math.BigDecimal
-import java.nio.charset.StandardCharsets
 import java.util.*
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.context.RequestScoped
@@ -176,7 +175,7 @@ class DiscountSurchargeService(
         val discountsAndSurcharges = when(persist) {
             PersistenceTypes.DB -> findByContractId(em, contractId)
             PersistenceTypes.IN_MEMORY -> draftStateForNonPersistence.entities
-            PersistenceTypes.REDIS -> TODO()
+            PersistenceTypes.REDIS -> om.readValue(redis.get("$contractId-dsc").toString())
         }.toMutableList()
 
         val manuallyAddedOnComponent = discountsAndSurcharges
@@ -192,7 +191,7 @@ class DiscountSurchargeService(
             when(persist) {
                 PersistenceTypes.DB -> em.persist(e)
                 PersistenceTypes.IN_MEMORY -> draftStateForNonPersistence.entities.add(e)
-                PersistenceTypes.REDIS -> TODO()
+                PersistenceTypes.REDIS -> Unit
             }
             discountsAndSurcharges.add(e)
         } else {
@@ -201,6 +200,11 @@ class DiscountSurchargeService(
 
         // update all existing to be in sync with contract
         discountsAndSurcharges.forEach { it.syncTimestamp = syncTimestamp }
+
+        if(persist == PersistenceTypes.REDIS) {
+            redis.set(listOf("$contractId-dsc", om.writeValueAsString(discountsAndSurcharges)))
+            redis.set(listOf("$contractId-dsc-sync", syncTimestamp.toString()))
+        }
 
         return discountsAndSurcharges
     }
