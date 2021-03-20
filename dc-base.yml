@@ -306,7 +306,7 @@ services:
     container_name: kdc-redis
     ports:
       - "30580:6379"
-    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru --bind 127.0.0.1 172.18.0.0/24 88.61.17.202 --requirepass supersecretpsswrd
+    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru --bind 127.0.0.1 172.18.0.0 88.61.17.202 --requirepass supersecretpsswrd
     # or to use a config file: -v /myredis/conf:/usr/local/etc/redis redis redis-server /usr/local/etc/redis/redis.conf
     ulimits:
       memlock: -1
