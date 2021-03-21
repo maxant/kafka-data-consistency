@@ -10,7 +10,7 @@ var template =
     Drafted in {{ timeTaken }}ms
 </div>
 <div v-if="get(model, 'draft.contract')">
-    <p-button @click="newDraft()">create a new draft</p-button>
+    <p-button @click="createDraft()">create a new draft</p-button>
 </div>
 <div v-if="get(model, 'draft.contract')">
     <mf-contract :contract="model.draft.contract"></mf-contract>
@@ -74,10 +74,10 @@ window.mfPortalSales = {
     methods: {
         initialise() {
             if(!this.model.draft.contract) {
-                this.newDraft();
+                this.createDraft();
             } // else the user needs to hit the button (after optionally changing the user)
         },
-        newDraft() {
+        createDraft() {
             console.log("getting new draft for user " + this.user.id);
             this.allowOffer = false;
             let body = {
@@ -85,7 +85,7 @@ window.mfPortalSales = {
                 "start": new Date(new Date().getTime() + 24*3600000).toISOString().substr(0,10),
                 "partnerId": this.user.id
             }
-            this.currentAction = {action: "newDraft"}
+            this.currentAction = {action: "createDraft"}
             this.draftCreatedFor = JSON.parse(JSON.stringify(this.user))
 
             // subscribe before sending request to server, to ensure we receive ALL of the events, and any errors
@@ -223,7 +223,7 @@ function sse(requestId, self) {
 }
 
 function ameliorateCurrentAction(self) {
-    if(self.currentAction.action == "newDraft") {
+    if(self.currentAction.action == "createDraft") {
         // not much can be done => user has a button to go get a new one
         alert("Failed to create an offer. Please try refreshing the page.")
     } else if(self.currentAction.action == "offerDraftAndAcceptOffer") {

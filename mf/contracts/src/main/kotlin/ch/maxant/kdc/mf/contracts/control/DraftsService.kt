@@ -1,5 +1,6 @@
 package ch.maxant.kdc.mf.contracts.control
 
+import ch.maxant.kdc.mf.contracts.adapter.DiscountsSurchargesAdapter
 import ch.maxant.kdc.mf.contracts.adapter.ESAdapter
 import ch.maxant.kdc.mf.contracts.boundary.DraftStateForNonPersistence
 import ch.maxant.kdc.mf.contracts.boundary.PersistenceTypes
@@ -10,8 +11,7 @@ import ch.maxant.kdc.mf.contracts.entity.ContractEntity
 import ch.maxant.kdc.mf.contracts.entity.ContractState
 import ch.maxant.kdc.mf.library.Context
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
-import io.quarkus.redis.client.RedisClient
+import org.eclipse.microprofile.rest.client.inject.RestClient
 import org.jboss.logging.Logger
 import java.math.BigDecimal
 import java.time.LocalDateTime
@@ -31,15 +31,15 @@ class DraftsService(
         @Inject val validationService: ValidationService,
         @Inject val context: Context,
         @Inject val esAdapter: ESAdapter,
-        @Inject val  definitionService: DefinitionService,
+        @Inject val definitionService: DefinitionService,
         @Inject val instantiationService: InstantiationService,
         @Inject val draftStateForNonPersistence: DraftStateForNonPersistence,
-        @Inject val redis: RedisClient,
+        @Inject val redisRepo: RedisRepo,
         @Inject val om: ObjectMapper
 ) {
     val log: Logger = Logger.getLogger(this.javaClass)
 
-    fun create(draftRequest: DraftRequest): ContractEntity = withRedisRollback(redis, draftRequest.contractId) {
+    fun createDraft(draftRequest: DraftRequest): ContractEntity = redisRepo.withRedisRollback(draftRequest.contractId) {
         log.info("creating draft $draftRequest")
 
         context.throwExceptionInContractsIfRequiredForDemo()
@@ -55,7 +55,7 @@ class DraftsService(
         when(draftStateForNonPersistence.persist) {
             PersistenceTypes.DB -> em.persist(contract)
             PersistenceTypes.IN_MEMORY -> draftStateForNonPersistence.initialise(contract)
-            PersistenceTypes.REDIS -> redis.set(listOf("${contract.id}-contract", om.writeValueAsString(contract)))
+            PersistenceTypes.REDIS -> redisRepo.setContract(contract)
         }
         log.info("added contract ${contract.id} in state ${contract.contractState}")
 
@@ -102,12 +102,7 @@ class DraftsService(
         contract
     }
 
-    fun updateConfig(
-            contractId: UUID,
-            param: String,
-            newValue: String,
-            pathString: String
-    ) = withRedisRollback(redis, contractId) {
+    fun updateConfig(contractId: UUID, param: String, newValue: String, pathString: String) = redisRepo.withRedisRollback(contractId) {
         val path = pathString.replace("\"", "") // json body puts the string in quotes, so lets remove them
 
         log.info("updating draft $contractId, setting value $newValue on parameter $param on component $path")
@@ -118,9 +113,7 @@ class DraftsService(
             when(draftStateForNonPersistence.persist) {
                 PersistenceTypes.DB -> ComponentEntity.Queries.selectByContractId(em, contractId)
                 PersistenceTypes.IN_MEMORY -> draftStateForNonPersistence.components
-                PersistenceTypes.REDIS -> {
-                    om.readValue(redis.get("$contractId-components").toString())
-                }
+                PersistenceTypes.REDIS -> redisRepo.getComponents(contractId)
             }
         var allComponents = instantiationService.reinstantiate(componentEntities)
 
@@ -143,10 +136,7 @@ class DraftsService(
         contract
     }
 
-    fun increaseCardinality(
-        contractId: UUID,
-        pathToAddString: String
-    ) = withRedisRollback(redis, contractId) {
+    fun increaseCardinality(contractId: UUID, pathToAddString: String) = redisRepo.withRedisRollback(contractId) {
         val pathToAdd = pathToAddString.replace("\"", "") // json body puts the string in quotes, so lets remove them
 
         log.info("increasing cardinality on draft $contractId, adding path $pathToAdd")
@@ -157,7 +147,7 @@ class DraftsService(
             when(draftStateForNonPersistence.persist) {
                 PersistenceTypes.DB -> ComponentEntity.Queries.selectByContractId(em, contractId)
                 PersistenceTypes.IN_MEMORY -> draftStateForNonPersistence.components
-                PersistenceTypes.REDIS -> om.readValue(redis.get("$contractId-components").toString())
+                PersistenceTypes.REDIS -> redisRepo.getComponents(contractId)
             }
         ).toMutableList()
 
@@ -185,10 +175,7 @@ class DraftsService(
         contract
     }
 
-    fun decreaseCardinality(
-        contractId: UUID,
-        pathToRemoveString: String
-    ) = withRedisRollback(redis, contractId) {
+    fun decreaseCardinality(contractId: UUID, pathToRemoveString: String) = redisRepo.withRedisRollback(contractId) {
         val pathToRemove = pathToRemoveString.replace("\"", "") // json body puts the string in quotes, so lets remove them
 
         log.info("decreasing cardinality on draft $contractId, removing $pathToRemove")
@@ -199,7 +186,7 @@ class DraftsService(
             when(draftStateForNonPersistence.persist) {
                 PersistenceTypes.DB -> ComponentEntity.Queries.selectByContractId(em, contractId)
                 PersistenceTypes.IN_MEMORY -> draftStateForNonPersistence.components
-                PersistenceTypes.REDIS -> om.readValue(redis.get("$contractId-components").toString())
+                PersistenceTypes.REDIS -> redisRepo.getComponents(contractId)
             }
         ).toMutableList()
 
@@ -221,9 +208,9 @@ class DraftsService(
             require(allComponents.removeIf { c -> c.id == it.id }) { "unable to locate component to remove, from reinstantiated list $it.id" }
         }
         if(draftStateForNonPersistence.persist == PersistenceTypes.REDIS) {
-            val entities = om.readValue<List<ComponentEntity>>(redis.get("$contractId-components").toString()).toMutableList()
+            val entities = redisRepo.getComponents(contractId).toMutableList()
             entities.removeIf { toRemove.map { c -> c.id } .contains(it.id) }
-            redis.set(listOf("$contractId-components", om.writeValueAsString(entities)))
+            redisRepo.setComponents(entities)
         }
 
         val mergedDefinitions = getMergedDefinitionTree(allComponents, contract.profileId)
@@ -251,11 +238,7 @@ class DraftsService(
         return list
     }
 
-    fun setDiscount(
-            contractId: UUID,
-            value: String,
-            pathString: String
-    ) = withRedisRollback(redis, contractId) {
+    fun setDiscount(contractId: UUID, value: String, pathString: String) = redisRepo.withRedisRollback(contractId) {
         val path = pathString.replace("\"", "") // json body puts the string in quotes, so lets remove them
 
         log.info("setting discount on $contractId with value $value on component $path")
@@ -268,7 +251,7 @@ class DraftsService(
             when(draftStateForNonPersistence.persist) {
                 PersistenceTypes.DB -> ComponentEntity.Queries.selectByContractId(em, contractId)
                 PersistenceTypes.IN_MEMORY -> draftStateForNonPersistence.components
-                PersistenceTypes.REDIS -> om.readValue(redis.get("$contractId-components").toString())
+                PersistenceTypes.REDIS -> redisRepo.getComponents(contractId)
             }
         )
         val componentId = instantiationService.getComponentIdForPath(allComponents, path)
@@ -282,9 +265,29 @@ class DraftsService(
         contract
     }
 
-    fun offerDraft(
-            contractId: UUID
-    ): ContractEntity {
+    /** converts a redis persisted contract, components, dscs and pricings into DB persisted entities */
+    fun persistDraftFromRedisToDb(contractId: UUID) {
+        log.info("moving contract from redis to db $contractId")
+
+        val contract = redisRepo.getContract(contractId)
+        require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
+        val components = redisRepo.getComponents(contractId)
+
+        em.persist(contract)
+        components.forEach { em.persist(it) }
+
+        eventBus.publish(Draft(contract, instantiationService.reinstantiate(components), PersistenceTypes.DB,
+            // strictly speaking, this is kinda illegal, as we are accessing the data that belongs to another
+            // microservice directly, and exposing ourselves ot the risk that if they change their model, our code
+            // will break! well... its just a poc. would probably be better to send a command telling DSC to change
+            // persistence from redis to mysql
+            redisRepo.getDscs(contractId)
+                    .filter { it.addedManually }
+                    .map { ManualDiscountSurcharge(it.componentId, it.value) }
+        ))
+    }
+
+    fun offerDraft(contractId: UUID): ContractEntity {
         log.info("offering draft $contractId")
 
         // check draft status
@@ -319,20 +322,17 @@ class DraftsService(
         return contract
     }
 
-    fun resyncDscAndPricing(
-        contractId: UUID
-    ): ContractEntity {
+    fun resyncDscAndPricing(contractId: UUID): ContractEntity {
         log.info("resyncing draft $contractId")
 
         var persistenceType = PersistenceTypes.DB
-        val rr = redis.get("$contractId-contract")
-        val contract = if(rr != null) {
-            val c = om.readValue<ContractEntity>(rr.toString())
+        var contract = redisRepo.getContractIfExists(contractId)
+        if(contract != null) {
             persistenceType = PersistenceTypes.REDIS
-            c
         } else {
-            em.find(ContractEntity::class.java, contractId) ?: throw UnsupportedOperationException("persistence type IN_MEMORY not supported")
+            contract = em.find(ContractEntity::class.java, contractId)
         }
+        if(contract == null) throw UnsupportedOperationException("contract not found. nb persistence type IN_MEMORY is not supported")
 
         // check draft status
         require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
@@ -341,7 +341,7 @@ class DraftsService(
             when(persistenceType) {
                 PersistenceTypes.DB -> ComponentEntity.Queries.selectByContractId(em, contractId)
                 PersistenceTypes.IN_MEMORY -> throw UnsupportedOperationException()
-                PersistenceTypes.REDIS -> om.readValue(redis.get("$contractId-components").toString())
+                PersistenceTypes.REDIS -> redisRepo.getComponents(contractId)
             }
         )
         eventBus.publish(Draft(contract, allComponents, persistenceType))
@@ -350,23 +350,14 @@ class DraftsService(
     }
 
     private fun getContractRequireDraftStateAndSetSyncTimestamp(contractId: UUID): ContractEntity {
-        // check draft status
-        return when(draftStateForNonPersistence.persist) {
-            PersistenceTypes.DB -> {
-                val contract = em.find(ContractEntity::class.java, contractId)
-                require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
-                contract.syncTimestamp = System.currentTimeMillis()
-                contract
-            }
-            PersistenceTypes.IN_MEMORY -> {
-                val contract = draftStateForNonPersistence.contract
-                contract.syncTimestamp = System.currentTimeMillis()
-                contract
-            }
-            PersistenceTypes.REDIS -> {
-                om.readValue(redis.get("$contractId-contract").toString())
-            }
+        val contract = when(draftStateForNonPersistence.persist) {
+            PersistenceTypes.DB -> em.find(ContractEntity::class.java, contractId)
+            PersistenceTypes.IN_MEMORY -> draftStateForNonPersistence.contract
+            PersistenceTypes.REDIS -> redisRepo.getContract(contractId)
         }
+        require(contract.contractState == ContractState.DRAFT) { "contract is in wrong state: ${contract.contractState} - must be DRAFT" }
+        contract.syncTimestamp = System.currentTimeMillis()
+        return contract
     }
 
     /** @return a tree of merged definitions for the given components */
@@ -391,15 +382,3 @@ class DraftsService(
     }
 }
 
-private fun withRedisRollback(redis: RedisClient, contractId: UUID, fn: () -> ContractEntity): ContractEntity {
-    val contract = redis.get("$contractId-contract")
-    val components = redis.get("$contractId-components")
-    return try {
-        fn()
-    } catch (e: Exception) {
-        Logger.getLogger("RedisRollback").warn("rolling back redis for contract $contractId", e)
-        if(contract != null) redis.set(listOf("$contractId-contract", contract.toString()))
-        if(components != null) redis.set(listOf("$contractId-components", components.toString()))
-        throw e
-    }
-}

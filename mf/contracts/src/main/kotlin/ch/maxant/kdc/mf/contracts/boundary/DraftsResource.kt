@@ -51,7 +51,7 @@ class DraftsResource(
     ): Response = doByHandlingValidationExceptions(tm) {
         draftStateForNonPersistence.persist = persist
 
-        val contract = draftsService.create(draftRequest)
+        val contract = draftsService.createDraft(draftRequest)
 
         Response.created(URI.create("/${contract.id}"))
                 .entity(contract)

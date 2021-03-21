@@ -248,14 +248,14 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- measure performance of redis access
 - refactor aweful persistence spread out in contracts
 - make contracts send command to pricing, rather than sending it from dsc, so contracts is the orchestrator
 - add condition if too much vanilla and show it on the screen
 - update contract view if bills or cases change -> need to react to changes on other keys than just requestId
 - make portal a little prettier / responsive
 - persist user actions to a new table, so others can view the draft?
-- add cache stats to grafana
-  - writeToCache, readFromCache, deleteFromCache CacheEvicter#handle
+- add redis times to grafana
 - add a condition, if a user based discount has been set! => rule based!
 - add displaying C to sales and portal
 - add conditions to DscConsumer

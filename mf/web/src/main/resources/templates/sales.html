@@ -48,7 +48,7 @@
         ></p-calendar>
     </div>
     <div class="p-col-12 p-sm-12 p-md-6 p-lg-3 p-xl-3">
-        <p-button :disabled="creatingDraft" @click="newDraft()">get new draft</p-button>
+        <p-button :disabled="creatingDraft" @click="createDraft()">get new draft</p-button>
     </div>
 </div>
 <!-- table with just divs
@@ -82,18 +82,21 @@
                 <th>Path</th>
                 <th>Parameters</th>
             </tr>
-            <tr v-for="userAction in contractActions[0].userActions">
+            <tr v-for="(userAction, i) in contractActions[0].userActions">
                 <td valign="top">{{ userAction.action }}</td>
-                <td valign="top">{{ userAction.params.path }}{{ userAction.params.pathToAdd }}{{ userAction.params.pathToRemove }}</td>
+                <td valign="top">{{ userAction.path }}</td>
                 <td valign="top">
                     <div v-for="param in keys(userAction.params)">
-                        <span v-if="param.indexOf('path') < 0">{{ param }}: {{ userAction.params[param] }}</span>
+                        <span>{{ param }}: {{ userAction.params[param] }}</span>
+                    </div>
+                    <div>
+                        <i style="width: 100%; text-align: right;" class="pi pi-times" @click="contractActions[0].userActions.splice(i,1)"></i>
                     </div>
                 </td>
             </tr>
         </table>
         <div v-for="productId in products">
-            <p-button @click="product = productId; productSelected().then(() => newDraft(true, productId))">apply to new {{productId}}</p-button>
+            <p-button @click="product = productId; productSelected().then(() => createDraft(true, productId))">apply to new {{productId}}</p-button>
         </div>
     </p-fieldset>
 </div>
@@ -153,7 +156,7 @@
 </div>
 <div>
     <p-button id="offerDraft" :disabled="!allowOffer" @click="offerDraft()">offer draft</p-button>
-    (test if locked: <p-button class="p-button-secondary" @click="offerDraft()">offer draft</p-button>)
+    (test if locked: <p-button class="p-button-secondary" @click="offerDraft()" v-tooltip="'used to test what happens when contract/dsc/prices are not in sync'">offer draft</p-button>)
     <p-button class="p-button-secondary" @click="resync()" icon="pi-cloud-download" v-tooltip="'click this if the draft is broken'" style="min-width: 100px;">resync</p-button>
 </div>
 
@@ -483,7 +486,7 @@ const App = {
             }
             return true;
         },
-        newDraft(applyActions, productIdToUse) {
+        createDraft(applyActions, productIdToUse) {
             window.requestId = uuidv4();
             if(!this.validate()) {
                 return;
@@ -499,7 +502,7 @@ const App = {
                 "partnerId": this.partner.id,
                 "contractId": uuidv4()
             }
-            this.currentAction = {action: "newDraft"}
+            this.currentAction = {action: "createDraft"}
             let self = this;
 
             // subscribe before sending request to server, to ensure we receive ALL of the events, and any errors
@@ -568,7 +571,7 @@ const App = {
                 let verb = "PUT";
                 let body = component.path;
 
-                this.contractActions[0].userActions.push({action: "UPDATE_CONFIG", params: {param: paramName, newValue: newValue, path: component.path}});
+                this.contractActions[0].userActions.push({action: "UPDATE_CONFIG", path: component.path, params: {param: paramName, newValue: newValue}});
                 if(this.persist == "IN_MEMORY") {
                     url = CONTRACTS_BASE_URL + "/drafts2";
                     body = this.contractActions;
@@ -600,7 +603,7 @@ const App = {
             let verb = "PUT";
             let body = pathToAdd;
 
-            this.contractActions[0].userActions.push({action: "INCREASE_CARDINALITY", params: {pathToAdd}});
+            this.contractActions[0].userActions.push({action: "INCREASE_CARDINALITY", path: pathToAdd});
             if(this.persist == "IN_MEMORY") {
                 url = CONTRACTS_BASE_URL + "/drafts2";
                 body = this.contractActions;
@@ -631,7 +634,7 @@ const App = {
             let verb = "DELETE";
             let body = pathToRemove;
 
-            this.contractActions[0].userActions.push({action: "DECREASE_CARDINALITY", params: {pathToRemove}});
+            this.contractActions[0].userActions.push({action: "DECREASE_CARDINALITY", path: pathToRemove});
             if(this.persist == "IN_MEMORY") {
                 url = CONTRACTS_BASE_URL + "/drafts2";
                 body = this.contractActions;
@@ -662,7 +665,7 @@ const App = {
             let verb = "PUT";
             let body = path;
 
-            this.contractActions[0].userActions.push({action: "SET_DISCOUNT", params: {path, value: discount}});
+            this.contractActions[0].userActions.push({action: "SET_DISCOUNT", path, params: {value: discount}});
             if(this.persist == "IN_MEMORY") {
                 url = CONTRACTS_BASE_URL + "/drafts2";
                 body = this.contractActions;
@@ -884,9 +887,8 @@ function sse(requestId, self) {
 }
 
 function ameliorateCurrentAction(self) {
-    if(self.currentAction.action == "newDraft") {
-        // not much can be done => user has a button to go get a new one
-        alert("Failed to create an offer. Please try refreshing the page.")
+    if(self.currentAction.action == "createDraft") {
+        self.creatingDraft = false;
     } else if(self.currentAction.action == "changeParam") {
         // {action: "changeParam", paramName, path, oldValue, newValue}
         removeWaitingAndResetValue(self.currentAction.path, self.currentAction.paramName, self.currentAction.oldValue, self.model.draft.pack)
