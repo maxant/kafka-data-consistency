@@ -49,46 +49,46 @@ scrape_configs:
       - targets: ['kdc-kafka-2:7071']
 
   - job_name: 'kdc-mf-contracts'
+    metrics_path: '/q/metrics'
     static_configs:
       - targets: ['kdc-mf-contracts:8080']
-      - metrics_path: '/q/metrics'
 
   - job_name: 'kdc-mf-pricing'
+    metrics_path: '/q/metrics'
     static_configs:
       - targets: ['kdc-mf-pricing:8081']
-      - metrics_path: '/q/metrics'
 
   - job_name: 'kdc-mf-web'
+    metrics_path: '/q/metrics'
     static_configs:
       - targets: ['kdc-mf-web:8082']
-      - metrics_path: '/q/metrics'
 
   - job_name: 'kdc-mf-partners'
+    metrics_path: '/q/metrics'
     static_configs:
       - targets: ['kdc-mf-partners:8083']
-      - metrics_path: '/q/metrics'
 
   - job_name: 'kdc-mf-cases'
+    metrics_path: '/q/metrics'
     static_configs:
       - targets: ['kdc-mf-cases:8084']
-      - metrics_path: '/q/metrics'
 
   - job_name: 'kdc-mf-waitingroom'
+    metrics_path: '/q/metrics'
     static_configs:
       - targets: ['kdc-mf-waitingroom:8085']
-      - metrics_path: '/q/metrics'
 
   - job_name: 'kdc-mf-organisation'
+    metrics_path: '/q/metrics'
     static_configs:
       - targets: ['kdc-mf-organisation:8086']
-      - metrics_path: '/q/metrics'
 
   - job_name: 'kdc-mf-billing'
+    metrics_path: '/q/metrics'
     static_configs:
       - targets: ['kdc-mf-billing:8087']
-      - metrics_path: '/q/metrics'
 
   - job_name: 'kdc-mf-dsc'
+    metrics_path: '/q/metrics'
     static_configs:
       - targets: ['kdc-mf-dsc:8088']
-      - metrics_path: '/q/metrics'
