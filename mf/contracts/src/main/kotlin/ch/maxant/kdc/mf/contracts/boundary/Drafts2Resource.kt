@@ -67,7 +67,7 @@ class Drafts2Resource(
                 for(userAction in userActions) {
                     if(userAction.path.matches(Regex("CardboardBox\\d+->Drink\\d+->Cookies1->Sugar\\d+")) && contractAction.draftRequest.productId == ProductId.COFFEE_LATTE_SKINNY) {
                         userAction.path = userAction.path.replace("Cookies1->Sugar1", "VanillaSugar1->VanillaExtract1")
-                        val msg = "Using more 'Vannilla Extract' in lieu of 'Sugar in Cookies' because we are configuring a latte"
+                        val msg = "Using 'Vannilla Extract' in lieu of 'Sugar in Cookies' because we are configuring a latte"
                         if(!warnings.contains(msg)) warnings.add(msg)
                     }
                     try {
