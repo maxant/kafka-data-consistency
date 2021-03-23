@@ -53,7 +53,7 @@ AND c.STARTTIME <= ?
 AND c.ENDTIME >= ? 
 AND c.STATE = 'RUNNING' 
 AND p.PRODUCT_ID is not null 
-AND c.starttime > '2021-02-01'
+AND c.starttime > '2021-03-01'
 """
 //AND c.ID = 'ffa9c87d-f39c-4518-baaa-c663166720f2'
 
