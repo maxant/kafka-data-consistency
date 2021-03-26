@@ -248,25 +248,23 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
-- measure performance of redis access
 - refactor aweful persistence spread out in contracts
 - make contracts send command to pricing, rather than sending it from dsc, so contracts is the orchestrator
 - add condition if too much vanilla and show it on the screen
 - update contract view if bills or cases change -> need to react to changes on other keys than just requestId
 - make portal a little prettier / responsive
 - persist user actions to a new table, so others can view the draft?
-- add redis times to grafana
 - add a condition, if a user based discount has been set! => rule based!
 - add displaying C to sales and portal
 - add conditions to DscConsumer
 - delete DSC where componentId is no longer in model, otherwise we'd have orphans hanging around
-- sales => why isnt the draft button locked when clicked?
 - add signature to tasks => if manual discount is above a certain amount, then john has to approve it and such tasks are always displayed
 - upgrade libraries
 - arch principals - use a single topic to ensure ordering, that way, we could say update discounts and are sure anything they'd depend on happened first
   - also always write the draft via the draft service. (we have to update the syncTimestamp; we have to load components for the downstream services)
 - measure what's so slow with ES contract creation/updates
 - measure what's so slow with neapel
+  - seems to be the DB! => in-memory and redis are super quick
 - after approving, the task isnt made to disappear in the contract UI
   - we dont subscribe to sse on the contracts page!
   - same after offering draft!
@@ -276,7 +274,6 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
 - spans from browser => debug and see what headers are set when calling downstream. or look for jeager web?
 - cron job for jaeger
 - nginx + http2
-- remove old stuff from this git repo so we can link to this repo in presentations
 - grafana parameterisation
 - add kafka metrics from applications (prod/consumers/streams) to grafana
 - billing: send event back to sales UI so that the customer can pay directly for the first billed period

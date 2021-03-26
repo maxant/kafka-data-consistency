@@ -1,0 +1,57 @@
+SET 'auto.offset.reset'='earliest';
+
+-- -----------------------------------------
+-- create the materialised view in order to do pull queries
+CREATE TABLE MV_CONTRACTS AS
+    SELECT
+        latest_by_offset(CONTRACT_ID) AS CONTRACT_ID,
+        latest_by_offset(NETWORK_ID) AS NETWORK_ID,
+        latest_by_offset(BEGIN) AS BEGIN,
+        latest_by_offset(END) AS END,
+        latest_by_offset(CONTRACT_NUMBER) AS CONTRACT_NUMBER,
+        latest_by_offset(SYSTEM) AS SYSTEM
+    FROM CONTRACTS
+    GROUP BY CONTRACT_NUMBER
+EMIT CHANGES;
+
+-- -----------------------------------------
+-- https://docs.confluent.io/current/connect/kafka-connect-elasticsearch/configuration_options.html
+CREATE STREAM S_CONTRACTS_AVRO
+WITH (KAFKA_TOPIC='S_CONTRACTS_AVRO',VALUE_FORMAT='AVRO') AS
+SELECT
+     CONTRACT_ID,
+     NETWORK_ID,
+     BEGIN,
+     END,
+     CONTRACT_NUMBER,
+     SYSTEM
+FROM CONTRACTS;
+
+-- -----------------------------------------
+CREATE SINK CONNECTOR CONTRACTS_ELASTIC WITH (
+  'connector.class' = 'io.confluent.connect.elasticsearch.ElasticsearchSinkConnector',
+  'key.converter'   = 'org.apache.kafka.connect.storage.StringConverter',
+  'topics'          = 'S_CONTRACTS_AVRO',
+  'key.ignore'      = 'false',
+  'schema.ignore'   = 'true',
+  'type.name'       = 'contracts',
+  'connection.url'  = 'http://kdc.elasticsearch.maxant.ch',
+  'write.method'    = 'upsert'
+);
+
+-- -----------------------------------------
+-- https://docs.confluent.io/current/connect/kafka-connect-jdbc/sink-connector/index.html
+
+CREATE SINK CONNECTOR CONTRACTS_MYSQL WITH (
+    'connector.class'          = 'io.confluent.connect.jdbc.JdbcSinkConnector',
+    'connection.url'           = 'jdbc:mysql://maxant.ch:30300/contracts',
+    'connection.user'          = 'root',
+    'connection.password'      = 'secret',
+    'topics'                   = 'S_CONTRACTS_AVRO',
+    'key.converter'            = 'org.apache.kafka.connect.storage.StringConverter',
+    'auto.create'              = 'true',
+    'pk.mode'                  = 'record_value',
+    'pk.fields'                = 'CONTRACT_ID',
+    'insert.mode'              = 'upsert'
+);
+
