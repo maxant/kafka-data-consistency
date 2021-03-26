@@ -18,7 +18,7 @@ done using a requisition order.
 Depending upon the product, there are certain specialities, like our index based products which 
 become cheaper / more expensive year on year, depending upon raw product costs.
 
-## Technologie Concept & Architecture
+## Technology Concept & Architecture
 
 In this project we shall investigate an architecture which is based on something akin to MVC, but
 not just for the UI, rather for the entire landscape.
