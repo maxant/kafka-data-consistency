@@ -595,10 +595,32 @@ Partner mapping uses a custom analyser:
 
 ## Running tips
 
+    cd web
+    export MAVEN_OPTS="-Xmx400m"
+    mvn quarkus:dev -Ddebug=5005
+
+    cd ../contracts
     export MAVEN_OPTS="-Xmx400m"
     mvn quarkus:dev -Ddebug=5006
 
+    cd ../pricing
+    export MAVEN_OPTS="-Xmx400m"
+    mvn quarkus:dev -Ddebug=5007
+
+    cd ../partners
+    export MAVEN_OPTS="-Xmx400m"
+    mvn quarkus:dev -Ddebug=5008
+
+    cd ../billing
+    export MAVEN_OPTS="-Xmx400m"
+    mvn quarkus:dev -Ddebug=5010
+
+    cd ../dsc
+    export MAVEN_OPTS="-Xmx400m"
+    mvn quarkus:dev -Ddebug=5011
+
     export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.9.11-0.el7_9.x86_64
+    export JAVA_HOME=/etc/alternatives/java-11-sdk
     mvn --version
 
 Redis:
