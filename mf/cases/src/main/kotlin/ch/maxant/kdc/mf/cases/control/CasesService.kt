@@ -20,17 +20,16 @@ import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.jboss.logging.Logger
 import java.util.*
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionStage
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.event.Observes
 import javax.enterprise.event.TransactionPhase
 import javax.inject.Inject
 import javax.persistence.EntityManager
-import kotlin.collections.HashMap
+import javax.transaction.Transactional
 
 @ApplicationScoped
 @SuppressWarnings("unused")
+@Transactional
 class CasesService(
         @Inject
         var em: EntityManager,
@@ -53,20 +52,20 @@ class CasesService(
     @AsyncContextAware
     @Timed(unit = MetricUnits.MILLISECONDS)
     @Traced
-    fun createCase(caseCommand: CreateCaseCommand): CompletionStage<*> {
+    fun createCase(caseCommand: CreateCaseCommand) {
         log.info("creating a case: $caseCommand")
 
         val case = CaseEntity(UUID.randomUUID(), caseCommand.referenceId, caseCommand.caseType)
 
         em.persist(case)
 
-        return sendCaseChangedEvent(case, emptyList())
+        sendCaseChangedEvent(case, emptyList())
     }
 
     @AsyncContextAware
     @Timed(unit = MetricUnits.MILLISECONDS)
     @Traced
-    fun createTask(taskCommand: CreateTaskCommand): CompletionStage<*> {
+    fun createTask(taskCommand: CreateTaskCommand) {
         log.info("creating a task: $taskCommand")
 
         val case = CaseEntity.Queries.selectByReferenceId(em, taskCommand.referenceId)
@@ -80,13 +79,13 @@ class CasesService(
         val tasks = TaskEntity.Queries.selectByCaseId(em, case.id)
         tasks.add(task)
 
-        return sendCaseChangedEvent(case, tasks)
+        sendCaseChangedEvent(case, tasks)
     }
 
     @AsyncContextAware
     @Timed(unit = MetricUnits.MILLISECONDS)
     @Traced
-    fun updateTask(taskCommand: UpdateTaskCommand): CompletionStage<*> {
+    fun updateTask(taskCommand: UpdateTaskCommand) {
         log.info("updating a task: $taskCommand")
 
         val task = TaskEntity.Queries.selectByTaskId(em, taskCommand.taskId)
@@ -99,13 +98,13 @@ class CasesService(
 
         val tasks = TaskEntity.Queries.selectByCaseId(em, case.id)
 
-        return sendCaseChangedEvent(case, tasks)
+        sendCaseChangedEvent(case, tasks)
     }
 
     @AsyncContextAware
     @Timed(unit = MetricUnits.MILLISECONDS)
     @Traced
-    fun completeTasks(tasksCommand: CompleteTasksCommand): CompletionStage<*> {
+    fun completeTasks(tasksCommand: CompleteTasksCommand) {
         log.info("completing tasks: $tasksCommand")
 
         val case = CaseEntity.Queries.selectByReferenceId(em, tasksCommand.referenceId)
@@ -113,12 +112,11 @@ class CasesService(
         val allTasks = TaskEntity.Queries.selectByCaseId(em, case.id)
         allTasks.filter { tasksCommand.action == it.action }.forEach { it.state = State.DONE }
 
-        return sendCaseChangedEvent(case, allTasks)
+        sendCaseChangedEvent(case, allTasks)
     }
 
-    private fun sendCaseChangedEvent(case: CaseEntity, tasks: List<TaskEntity>): CompletionStage<*> {
+    private fun sendCaseChangedEvent(case: CaseEntity, tasks: List<TaskEntity>) {
         caseChangedEvent.fire(CaseChangedEvent(case, tasks))
-        return CompletableFuture.completedFuture(case)
     }
 
     // TODO use transactional outbox

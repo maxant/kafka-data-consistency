@@ -4,47 +4,44 @@ import ch.maxant.kdc.mf.cases.control.CasesService
 import ch.maxant.kdc.mf.cases.entity.CaseType
 import ch.maxant.kdc.mf.cases.entity.State
 import ch.maxant.kdc.mf.library.Context
+import ch.maxant.kdc.mf.library.KafkaHandler
 import ch.maxant.kdc.mf.library.PimpedAndWithDltAndAck
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.eclipse.microprofile.metrics.MetricUnits
 import org.eclipse.microprofile.metrics.annotation.Timed
-import org.eclipse.microprofile.reactive.messaging.Incoming
-import org.eclipse.microprofile.reactive.messaging.Message
 import java.util.*
-import java.util.concurrent.CompletionStage
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
 import javax.transaction.Transactional
 
+
 @ApplicationScoped
 @SuppressWarnings("unused")
 class CasesConsumer(
-        @Inject
-        var om: ObjectMapper,
+        @Inject val om: ObjectMapper,
+        @Inject val context: Context,
+        @Inject val casesService: CasesService
+) : KafkaHandler {
 
-        @Inject
-        var context: Context,
+    override fun getKey() = "cases-in"
 
-        @Inject
-        var casesService: CasesService
-) {
-    @Incoming("cases-in")
-    @Transactional
+    override fun getRunInParallel() = false
+
     @PimpedAndWithDltAndAck
-    @SuppressWarnings("unused")
     @Timed(unit = MetricUnits.MILLISECONDS)
-    fun process(msg: Message<String>): CompletionStage<*> {
+    override fun handle(record: ConsumerRecord<String, String>) {
         val command = Command.valueOf(context.command!!)
-        return when {
+        when {
             Command.CREATE_CASE == command ->
-                casesService.createCase(om.readValue(msg.payload, CreateCaseCommand::class.java))
+                casesService.createCase(om.readValue(record.value(), CreateCaseCommand::class.java))
             Command.CREATE_TASK == command ->
-                casesService.createTask(om.readValue(msg.payload, CreateTaskCommand::class.java))
+                casesService.createTask(om.readValue(record.value(), CreateTaskCommand::class.java))
             Command.UPDATE_TASK == command ->
-                casesService.updateTask(om.readValue(msg.payload, UpdateTaskCommand::class.java))
+                casesService.updateTask(om.readValue(record.value(), UpdateTaskCommand::class.java))
             Command.COMPLETE_TASKS == command ->
-                casesService.completeTasks(om.readValue(msg.payload, CompleteTasksCommand::class.java))
-            else -> throw RuntimeException("unexpected command $command: $msg")
+                casesService.completeTasks(om.readValue(record.value(), CompleteTasksCommand::class.java))
+            else -> throw RuntimeException("unexpected command $command: ${record.value()}")
         }
     }
 }
