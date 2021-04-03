@@ -5,8 +5,7 @@
 </div>
 
 <div class="p-grid">
-    <mf-contract v-if="model.contract.id" :contract="model.contract" allow-accept-offer="true" @accepted="acceptedOffer"
-                 source="graphql+cache"></mf-contract>
+    <mf-contract v-if="model.contract.id" :contract="model.contract" allow-accept-offer="true" source="graphql+cache"></mf-contract>
     <mf-partner v-for="partnerRelationship in model.partnerRelationships"
                 :partner-id="partnerRelationship.partnerId"
                 :role="partnerRelationship.role"
@@ -173,7 +172,32 @@ const App = {
     methods: {
         fetchContract() {
             let self = this;
-
+            sse(self.requestId, self, msg => {
+                if(msg.event == "ACCEPTED_OFFER" || msg.event == "OFFERED_DRAFT" || msg.event == "APPROVED_CONTRACT") {
+                    // dont lose the components (details), as they are not returned in these calls
+                    msg.payload.contract.components = self.model.contract.components;
+                    self.model.contract = msg.payload.contract;
+                } else if(msg.event == "CHANGED_CASE") {
+                    console.log("case changed");
+                    self.checkTasks();
+                } else if(msg.event == "ERROR") {
+                    alert(JSON.stringify(msg));
+                } else {
+                    console.log("event: " + JSON.stringify(msg));
+                }
+            }, self.model.id).then(() => {
+                self.reloadAll();
+            });
+        },
+        checkTasks() {
+            let self = this;
+            self.model.allContractIds = [];
+            setTimeout(() => {
+                self.model.allContractIds = [self.model.contract.id];
+            }, 1);
+        },
+        reloadAll() {
+            let self = this;
             let query = `
                 query {
                     cached_aggregate(id: "${this.model.id}") {
@@ -197,7 +221,6 @@ const App = {
                 self.timeTaken = new Date().getTime() - self.start;
                 if(r.ok && !r.payload.errors) {
                     self.model.contract = r.payload.data.cached_aggregate.contract;
-                    self.model.allContractIds = [id];
                     self.model.prices = r.payload.data.cached_aggregate.prices;
                     self.model.discountssurcharges = r.payload.data.cached_aggregate.discountsAndSurcharges;
                     self.model.conditions = r.payload.data.cached_aggregate.conditions;
@@ -214,7 +237,7 @@ const App = {
                     });
 
                     self.model.componentsRoot = [setupComponentsTree(self.model.contract.components)];
-
+                    self.checkTasks();
                 } else {
                     let msg = "Failed to get aggregate: " + JSON.stringify(r.payload);
                     console.error(msg);
@@ -256,38 +279,12 @@ const App = {
 
             return Promise.all([aggregate$, partnerRelationships$, bills$]);
         },
-        approveContract() {
-            let self = this;
-            let url = CONTRACTS_BASE_URL + "/contracts/approve/" + this.model.id;
-            let contract$ = fetchIt(url, "PUT", this).then(r => {
-                self.timeTaken = new Date().getTime() - self.start;
-                if(r.ok) {
-                    // dont lose the components (details), as they are not returned in this call
-                    r.payload.components = self.model.contract.components;
-                    self.model.contract = r.payload;
-                    console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
-                    self.model.allContractIds = [self.model.contract.id];
-                } else {
-                    let msg = "Failed to approve contract: " + r.payload;
-                    console.error(msg);
-                    alert(msg);
-                }
-            }).catch(error => {
-                alert("received error: " + error);
-            });
-        },
-        partnerLoaded() {
-            this.timeTaken = new Date().getTime() - this.start;
-        },
         offerDraft() {
             console.log("offering contract...")
             let self = this;
             let url = CONTRACTS_BASE_URL + "/drafts/" + this.model.id + "/offer";
             fetchIt(url, "PUT", this).then(r => {
                 if(r.ok) {
-                    // dont lose the components (details), as they are not returned in this call
-                    r.payload.components = self.model.contract.components;
-                    self.model.contract = r.payload;
                     console.log("offered contract with id " + self.model.contract.id);
                 } else {
                     if(!_.isObject(r.payload)) { r.payload = JSON.parse(r.payload); }
@@ -309,6 +306,25 @@ const App = {
                 console.error("received error: " + error);
             });
         },
+        approveContract() {
+            let self = this;
+            let url = CONTRACTS_BASE_URL + "/contracts/approve/" + this.model.id;
+            let contract$ = fetchIt(url, "PUT", this).then(r => {
+                self.timeTaken = new Date().getTime() - self.start;
+                if(r.ok) {
+                    console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
+                } else {
+                    let msg = "Failed to approve contract: " + r.payload;
+                    console.error(msg);
+                    alert(msg);
+                }
+            }).catch(error => {
+                alert("received error: " + error);
+            });
+        },
+        partnerLoaded() {
+            this.timeTaken = new Date().getTime() - this.start;
+        },
         resync() {
             console.log("resyncing contract")
             let self = this;
@@ -328,12 +344,6 @@ const App = {
             }).catch(error => {
                 console.error("received error: " + error);
             });
-        },
-        acceptedOffer(contract) {
-            // dont lose the components (details), as they are not returned in this call
-            contract.components = this.model.contract.components;
-            this.model.contract = contract;
-            this.model.allContractIds = [contract.id];
         },
         getComponentName(componentId) {
             return _.find(this.model.contract.components, c => c.id == componentId).componentDefinitionId;

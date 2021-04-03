@@ -6,7 +6,7 @@ import io.smallrye.mutiny.subscription.MultiEmitter
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import org.jboss.logging.Logger
 import org.jboss.resteasy.annotations.SseElementType
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
 import javax.servlet.http.HttpServletResponse
@@ -28,32 +28,31 @@ class WebResource {
     lateinit var context: Context
 
     // TODO tidy the entries up when they are no longer in use! tip: see isCancelled below - altho theyre already removed with onterminate at the bottom?
-    val subscriptions = ConcurrentHashMap<String, EmitterState>()
+    val subscriptions = CopyOnWriteArrayList<EmitterState>()
 
-    fun sendToSubscribers(requestId: String, json: String) {
+    fun sendToSubscribers(requestId: String, json: String, key: String) {
 
         val toRemove = mutableSetOf<String>()
         subscriptions
-                .entries
-                .filter { it.value.isExpiredOrCancelled() }
+                .filter { it.isExpiredOrCancelled() }
                 .forEach {
-                    synchronized(it.value.emitter) { // TODO is this necessary? does it hurt??
-                        log.info("closing cancelled/expired emitter for request $requestId. cancelled: ${it.value.emitter.isCancelled}, expired: ${it.value.isExpired()}")
-                        it.value.emitter.complete()
-                        toRemove.add(it.key)
+                    synchronized(it.emitter) { // TODO is this necessary? does it hurt??
+                        log.info("closing cancelled/expired emitter for request ${it.requestId}. cancelled: "
+                                + "${it.emitter.isCancelled}, expired: ${it.isExpired()}")
+                        it.emitter.complete()
+                        toRemove.add(it.requestId)
                     }
                 }
-        toRemove.forEach { subscriptions.remove(it) }
+        toRemove.forEach { requestId -> subscriptions.removeIf { it.requestId == requestId } }
 
         subscriptions
-                .entries
-                .filter { it.key == requestId }
-                .filter { !it.value.isExpiredOrCancelled() }
+                .filter { it.requestId == requestId || it.matches(key) }
+                .filter { !it.isExpiredOrCancelled() }
                 .forEach {
-                    synchronized(it.value) { // TODO is this necessary? does it hurt??
-                        log.info("emitting request $requestId to subscriber ${it.key}: $json. context.requestId is ${context.getRequestIdSafely().requestId}")
-                        it.value.touch()
-                        it.value.emitter.emit(json)
+                    synchronized(it) { // TODO is this necessary? does it hurt??
+                        log.info("emitting request ${it.requestId} to subscriber: $json. context.requestId is ${context.getRequestIdSafely().requestId}")
+                        it.touch()
+                        it.emitter.emit(json)
                     }
                 }
     }
@@ -62,31 +61,38 @@ class WebResource {
     @Path("/stream/{requestId}")
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @SseElementType(MediaType.APPLICATION_JSON)
-    fun stream(@PathParam("requestId") requestId: String, @javax.ws.rs.core.Context response: HttpServletResponse): Multi<String> {
+    fun stream(@PathParam("requestId") requestId: String,
+               @QueryParam("regex") regexString: String?,
+               @javax.ws.rs.core.Context response: HttpServletResponse): Multi<String> {
         // https://serverfault.com/questions/801628/for-server-sent-events-sse-what-nginx-proxy-configuration-is-appropriate
         response.setHeader("Cache-Control", "no-cache")
         response.setHeader("X-Accel-Buffering", "no")
         return Multi.createFrom()
                 .emitter { e: MultiEmitter<in String?> ->
-                    subscriptions[requestId] = EmitterState(e, System.currentTimeMillis())
+                    subscriptions.add(EmitterState(e, requestId, regexString))
                     e.onTermination {
                         e.complete()
                         log.info("removing termindated subscription $requestId")
-                        subscriptions.remove(requestId)
+                        subscriptions.removeIf { it.requestId == requestId }
                     }
                 } // TODO if we get memory problems, add a different BackPressureStrategy as a second parameter to the emitter method
     }
 
     @GET
     @Path("/stats")
-    fun stats() = Response.ok("""
+    fun stats(): Response = Response.ok("""
         { "subscriptionsCount": ${this.subscriptions.size},
-          "subscriptions": ${this.subscriptions.keys} 
+          "subscriptions": ${this.subscriptions.map { it.requestId }} 
         }""".trimIndent().replace(" ", "").replace("\r", "").replace("\n", "")).build()
 }
 
-data class EmitterState(val emitter: MultiEmitter<in String?>, var lastUsed: Long = System.currentTimeMillis()) {
-    val FIVE_MINUTES = 5 * 60 * 1_000
+class EmitterState(val emitter: MultiEmitter<in String?>,
+                    val requestId: String,
+                    regexString: String? = null) {
+
+    private val regex: Regex? = if(regexString == null) null else Regex(regexString)
+
+    private var lastUsed: Long = System.currentTimeMillis()
 
     fun isExpired() = System.currentTimeMillis() - this.lastUsed > FIVE_MINUTES
 
@@ -94,5 +100,17 @@ data class EmitterState(val emitter: MultiEmitter<in String?>, var lastUsed: Lon
 
     fun touch() {
         lastUsed = System.currentTimeMillis()
+    }
+
+    fun matches(toMatch: String): Boolean {
+        return if(regex == null)
+                    false
+                else
+                    toMatch.matches(regex)
+
+    }
+
+    companion object {
+        private const val FIVE_MINUTES = 5 * 60 * 1_000
     }
 }

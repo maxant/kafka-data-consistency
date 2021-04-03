@@ -506,7 +506,7 @@ const App = {
             let self = this;
 
             // subscribe before sending request to server, to ensure we receive ALL of the events, and any errors
-            sse(window.requestId, this).then(() => {
+            _sse(window.requestId, this).then(() => {
                 self.requestId = window.requestId;
                 let url = CONTRACTS_BASE_URL + "/drafts?persist=" + self.persist;
 
@@ -806,82 +806,67 @@ function addPrice(component, id, price) {
     }
 }
 
-function sse(requestId, self) {
-    return new Promise((resolve, reject) => {
-        if(self.source && self.source.readyState != EventSource.CLOSED) self.source.close();
-        self.source = new EventSource("/web/stream/" + requestId);
-        self.source.onopen = function (event) {
-            resolve();
-        }
-        self.source.onmessage = function (event) {
-            console.log(event);
-            let msg = JSON.parse(event.data);
-            if(msg.event == "DRAFT" && self.creatingDraft) {
-                self.progressValue = 33;
-                self.progressText = "checking discounts, surcharges and conditions";
-                self.creatingDraft = false;
-                self.model.draft = msg.payload;
-                initialiseDraft(self.model.draft);
-                self.model.draft.contract.productId = self.model.draft.pack.children[0].productId;
-                // dont update any waiting or timing state, because this is just the first of many events to come
-            } else if(msg.event == "DRAFT" && !self.creatingDraft) {
-                self.progressValue = 33;
-                self.progressText = "checking discounts, surcharges and conditions";
-                removeVirtualComponents(self.model.draft.pack);
-                updateDraft(msg.payload.allComponents, self.model.draft.pack);
-                addVirtualComponents(msg.payload.allComponents, self.model.draft.pack);
-                // dont update any waiting or timing state, because this is just the first of many events to come
-            } else if(msg.event == "ADDED_DSC_FOR_DRAFT") {
-                self.progressValue = 66;
-                self.progressText = "updating price";
-                self.model.draft.discountsSurcharges = msg.payload.discountsSurcharges;
-                clearDscsRecursively(self.model.draft.pack);
-                _.forEach(self.model.draft.discountsSurcharges, dsc => {
-                    addDsc(self.model.draft.pack, dsc);
-                });
-                self.timeTaken = new Date().getTime() - self.start;
-            } else if(msg.event == "SET_DISCOUNT") {
-                // ignore - its a command from contract->dsc
-            } else if(msg.event == "UPDATED_PRICES_FOR_DRAFT") {
-                self.model.draft.prices = msg.payload.priceByComponentId;
-                _.forEach(self.model.draft.prices, (v,k) => {
-                    addPrice(self.model.draft.pack, k, v);
-                });
-                self.allowOffer = true;
-                self.timeTaken = new Date().getTime() - self.start;
-                self.progressValue = 100;
-                self.progressText = null;
-            } else if(msg.event == "OFFERED_DRAFT") {
-                console.log("offered draft for contract " + msg.payload.contract.id);
-                self.allowOffer = false;
-                self.timeTaken = new Date().getTime() - self.start;
-                window.location.href = '/contract?id=' + self.model.draft.contract.id;
-            } else if(msg.event == "CHANGED_PARTNER_RELATIONSHIP") {
-                if(msg.payload.role == "SALES_REP") {
-                    self.model.salesRep = msg.payload.partnerId;
-                }
-            } else if(msg.event == "CHANGED_CASE") {
-                if(msg.originalCommand == "CREATE_TASK" || msg.originalCommand == "UPDATE_TASK") {
-                    // TODO refresh area that show tasks related to this sales case
-                }
-            } else if(msg.event == "ERROR") {
-                if(_.get(msg, 'payload.errorClass')) {
-                    alert(msg.payload.errorMessage);
-                } else {
-                    msg = JSON.stringify(msg);
-                    console.error("received error: " + msg);
-                    alert(msg);
-                }
-                ameliorateCurrentAction(self)
-            } else {
-                console.error("received unexpected event: " + event.data);
+function _sse(requestId, self) {
+    return sse(requestId, self, msg => {
+        if(msg.event == "DRAFT" && self.creatingDraft) {
+            self.progressValue = 33;
+            self.progressText = "checking discounts, surcharges and conditions";
+            self.creatingDraft = false;
+            self.model.draft = msg.payload;
+            initialiseDraft(self.model.draft);
+            self.model.draft.contract.productId = self.model.draft.pack.children[0].productId;
+            // dont update any waiting or timing state, because this is just the first of many events to come
+        } else if(msg.event == "DRAFT" && !self.creatingDraft) {
+            self.progressValue = 33;
+            self.progressText = "checking discounts, surcharges and conditions";
+            removeVirtualComponents(self.model.draft.pack);
+            updateDraft(msg.payload.allComponents, self.model.draft.pack);
+            addVirtualComponents(msg.payload.allComponents, self.model.draft.pack);
+            // dont update any waiting or timing state, because this is just the first of many events to come
+        } else if(msg.event == "ADDED_DSC_FOR_DRAFT") {
+            self.progressValue = 66;
+            self.progressText = "updating price";
+            self.model.draft.discountsSurcharges = msg.payload.discountsSurcharges;
+            clearDscsRecursively(self.model.draft.pack);
+            _.forEach(self.model.draft.discountsSurcharges, dsc => {
+                addDsc(self.model.draft.pack, dsc);
+            });
+            self.timeTaken = new Date().getTime() - self.start;
+        } else if(msg.event == "SET_DISCOUNT") {
+            // ignore - its a command from contract->dsc
+        } else if(msg.event == "UPDATED_PRICES_FOR_DRAFT") {
+            self.model.draft.prices = msg.payload.priceByComponentId;
+            _.forEach(self.model.draft.prices, (v,k) => {
+                addPrice(self.model.draft.pack, k, v);
+            });
+            self.allowOffer = true;
+            self.timeTaken = new Date().getTime() - self.start;
+            self.progressValue = 100;
+            self.progressText = null;
+        } else if(msg.event == "OFFERED_DRAFT") {
+            console.log("offered draft for contract " + msg.payload.contract.id);
+            self.allowOffer = false;
+            self.timeTaken = new Date().getTime() - self.start;
+            window.location.href = '/contract?id=' + self.model.draft.contract.id;
+        } else if(msg.event == "CHANGED_PARTNER_RELATIONSHIP") {
+            if(msg.payload.role == "SALES_REP") {
+                self.model.salesRep = msg.payload.partnerId;
             }
-        };
-        self.source.onerror = function (event) {
-            console.log("sse error " + event);
-            if(self.source && self.source.readyState != EventSource.CLOSED) self.source.close();
-            self.source = null;
-            setTimeout(() => {sse(requestId, self);}, 1000);
+        } else if(msg.event == "CHANGED_CASE") {
+            if(msg.originalCommand == "CREATE_TASK" || msg.originalCommand == "UPDATE_TASK") {
+                // TODO refresh area that show tasks related to this sales case
+            }
+        } else if(msg.event == "ERROR") {
+            if(_.get(msg, 'payload.errorClass')) {
+                alert(msg.payload.errorMessage);
+            } else {
+                msg = JSON.stringify(msg);
+                console.error("received error: " + msg);
+                alert(msg);
+            }
+            ameliorateCurrentAction(self)
+        } else {
+            console.error("received unexpected event: " + event.data);
         }
     });
 }

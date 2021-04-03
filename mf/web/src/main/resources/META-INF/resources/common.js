@@ -52,4 +52,40 @@ window.fetchIt = function(url, method, self, body, responseIsText) {
 }
 
 window.eventHub = mitt();
+
+/** creates an sse connection and adds it to `self` as the field `source`, so that it can track it's own state.
+    restarts on error.
+ */
+window.sse = function(requestId, self, callback, regex) {
+    return new Promise((resolve, reject) => {
+        if(self.source && self.source.readyState != EventSource.CLOSED) {
+            console.log("closing existing sse connection just before restarting");
+            self.source.close();
+        }
+        console.log("(re)starting sse");
+        self.source = new EventSource("/web/stream/" + requestId + (regex ? "?regex=" + regex : ""));
+        self.source.onopen = function (event) {
+            console.log("sse open");
+            resolve();
+        }
+        self.source.onmessage = function (event) {
+            console.log("sse got event");
+            let msg = JSON.parse(event.data);
+            callback(msg);
+        };
+        self.source.onerror = function (event) {
+            console.log("sse error " + JSON.stringify(event));
+            if(self.source && (self.source.readyState != EventSource.CLOSED)) {
+                console.log("closing unclosed sse because of error");
+                self.source.close();
+            }
+            self.source = null;
+            console.log("restarting sse in 500ms");
+            setTimeout(() => {
+                sse(requestId, self, callback);
+            }, 500);
+        }
+    });
+}
+
 })();

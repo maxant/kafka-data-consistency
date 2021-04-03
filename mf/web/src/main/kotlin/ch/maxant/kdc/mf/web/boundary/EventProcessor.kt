@@ -38,6 +38,6 @@ class EventProcessor {
 
         val json = """{ $headers2 "payload": ${record.value()} }"""
 
-        webResource.sendToSubscribers(requestId, json)
+        webResource.sendToSubscribers(requestId, json, record.key())
     }
 }

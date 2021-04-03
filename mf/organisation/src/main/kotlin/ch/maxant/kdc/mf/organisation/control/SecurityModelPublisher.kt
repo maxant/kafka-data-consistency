@@ -31,11 +31,8 @@ class SecurityModelPublisher {
 
     fun init(@Observes e: ContextInitialised) {
         log.info("organisation starting up - publishing latest security model as event")
-        val ack = CompletableFuture<Unit>()
-        val msg = messageBuilder.build(UUID.randomUUID(), securityDefinitions.getDefinitions(), ack, event = "SECURITY_MODEL")
+        val msg = messageBuilder.build(UUID.randomUUID(), securityDefinitions.getDefinitions(), event = "SECURITY_MODEL")
         organisationOut.send(msg)
-        ack.thenAccept {
-            log.info("published latest security model as event")
-        }
+        log.info("published latest security model as event")
     }
 }
