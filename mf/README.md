@@ -248,7 +248,12 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- not only TTL in order to throw out ancient stuff, but also check if the sync timestamp is older than that which is 
+  in the DB, prolly best not to write it.
+  - that has an impact on performance, because we now ALWAYS need to read before we write, in order to check if we should
+    write.
 - refactor aweful persistence spread out in contracts
+  - prolly best to not write to redis immediately, but to a request scoped bean, which writes to redis during commit!
 - make contracts send command to pricing, rather than sending it from dsc, so contracts is the orchestrator
 - add condition if too much vanilla and show it on the screen
 - update contract view if bills or cases change -> need to react to changes on other keys than just requestId

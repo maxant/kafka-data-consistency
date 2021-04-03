@@ -23,6 +23,8 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import javax.enterprise.context.ApplicationScoped
+import javax.enterprise.event.Observes
+import javax.enterprise.event.TransactionPhase
 import javax.inject.Inject
 import javax.persistence.EntityManager
 import kotlin.collections.HashMap
@@ -39,6 +41,9 @@ class CasesService(
         @Inject
         var om: ObjectMapper
 ) {
+    @Inject
+    private lateinit var caseChangedEvent: javax.enterprise.event.Event<CaseChangedEvent>
+
     @Inject // this doesnt appear to work in the constructor
     @Channel("cases-out")
     lateinit var casesOut: Emitter<String>
@@ -112,11 +117,15 @@ class CasesService(
     }
 
     private fun sendCaseChangedEvent(case: CaseEntity, tasks: List<TaskEntity>): CompletionStage<*> {
-        val cce = CaseChangedEvent(case, tasks)
-        val ack = CompletableFuture<Unit>()
-        val msg = messageBuilder.build(case.referenceId, cce, ack, event = "CHANGED_CASE")
+        caseChangedEvent.fire(CaseChangedEvent(case, tasks))
+        return CompletableFuture.completedFuture(case)
+    }
+
+    // TODO use transactional outbox
+    @SuppressWarnings("unused")
+    private fun send(@Observes(during = TransactionPhase.AFTER_SUCCESS) cce: CaseChangedEvent) {
+        val msg = messageBuilder.build(cce.referenceId, cce, event = "CHANGED_CASE")
         casesOut.send(msg)
-        return ack
     }
 }
 
