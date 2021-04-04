@@ -172,6 +172,7 @@ const App = {
     methods: {
         fetchContract() {
             let self = this;
+            self.requestId = uuidv4();
             sse(self.requestId, self, msg => {
                 if(msg.event == "ACCEPTED_OFFER" || msg.event == "OFFERED_DRAFT" || msg.event == "APPROVED_CONTRACT") {
                     // dont lose the components (details), as they are not returned in these calls
