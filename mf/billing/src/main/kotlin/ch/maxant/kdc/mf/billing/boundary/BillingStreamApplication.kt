@@ -153,7 +153,7 @@ class BillingStreamApplication(
                 MfTransformer(REQUEST_ID)
             })
             .peek {k, v -> log.info("publishing successful billing event $k: $v")}
-            .to("billing-events")
+            .to(BILLING_EVENTS)
 
         // GROUPS - single source of truth of true state relating to the billing of a groups of contracts
         val groupsStore: Materialized<String, String, KeyValueStore<Bytes, ByteArray>> = Materialized.`as`(groupsStoreName)
@@ -218,11 +218,14 @@ class BillingStreamApplication(
             .flatMap<String, String>({ _, v ->
                 mapGroupEntityToContractKeyValue(v)
             }, Named.`as`("billing-internal-to-comms-mapper"))
-            .peek {k, v -> log.info("sending group $k with ${om.readTree(v).get("contracts").size()} contracts for internal billing")}
+            .peek {k, v -> log.info("sending contract $k to comms")}
             .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
                 MfTransformer(EVENT, "BILL_CREATED")
             })
-            .to("billing-internal-bill")
+            .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
+                MfTransformer(REQUEST_ID)
+            })
+            .to(BILLING_EVENTS)
 
         val topology = builder.build()
         println(topology.describe())
@@ -503,6 +506,7 @@ class BillingStreamApplication(
         const val BILL_GROUP = "BILL_GROUP"
         const val BILLING_INTERNAL_STATE_JOBS = "billing-internal-state-jobs"
         const val BILLING_INTERNAL_STATE_GROUPS = "billing-internal-state-groups"
+        const val BILLING_EVENTS = "billing-events"
     }
 
 }
