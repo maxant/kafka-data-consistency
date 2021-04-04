@@ -78,6 +78,7 @@
             <table v-if="model.bills.length > 0" border="1" cellpadding="3" cellspacing="0"
                    style="border-collapse: collapse;">
                 <tr>
+                    <th>Bill ID</th>
                     <th>Billing Definition</th>
                     <th>Start</th>
                     <th>End</th>
@@ -85,6 +86,7 @@
                     <th>Created At</th>
                 </tr>
                 <tr v-for="bill in model.bills">
+                    <td>{{bill.id}}</td>
                     <td>{{bill.definitionId}}</td>
                     <td>{{bill.start}}</td>
                     <td>{{bill.end}}</td>
@@ -183,7 +185,7 @@ const App = {
                     self.checkTasks();
                 } else if(msg.event == "BILL_CREATED") {
                     console.log("bill created");
-                    TODO
+                    self.getBills();
                 } else if(msg.event == "ERROR") {
                     alert(JSON.stringify(msg));
                 } else {
@@ -266,7 +268,13 @@ const App = {
                 alert("received error: " + error);
             });
 
-            url = BILLING_BASE_URL + "/billing/findByContractId?contractIds=" + this.model.id;
+            let bills$ = this.getBills();
+
+            return Promise.all([aggregate$, partnerRelationships$, bills$]);
+        },
+        getBills() {
+            let self = this;
+            let url = BILLING_BASE_URL + "/billing/findByContractId?contractIds=" + this.model.id;
             let bills$ = fetchIt(url, "GET", this).then(r => {
                 self.timeTaken = new Date().getTime() - self.start;
                 if(r.ok) {
@@ -280,8 +288,6 @@ const App = {
             }).catch(error => {
                 alert("received error: " + error);
             });
-
-            return Promise.all([aggregate$, partnerRelationships$, bills$]);
         },
         offerDraft() {
             console.log("offering contract...")
