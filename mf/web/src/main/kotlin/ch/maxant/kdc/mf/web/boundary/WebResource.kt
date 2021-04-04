@@ -32,7 +32,6 @@ class WebResource {
 
     fun sendToSubscribers(requestId: String, json: String, key: String) {
 
-        val toRemove = mutableSetOf<String>()
         subscriptions
                 .filter { it.isExpiredOrCancelled() }
                 .forEach {
@@ -40,13 +39,12 @@ class WebResource {
                         log.info("closing cancelled/expired emitter for request ${it.requestId}. cancelled: "
                                 + "${it.emitter.isCancelled}, expired: ${it.isExpired()}")
                         it.emitter.complete()
-                        toRemove.add(it.requestId)
+                        subscriptions.remove(it)
                     }
                 }
-        toRemove.forEach { requestId -> subscriptions.removeIf { it.requestId == requestId } }
 
         subscriptions
-                .filter { it.requestId == requestId || it.matches(key) }
+                .filter { it.requestId == requestId || it.matches(key) || it.matchesJson(context, json) }
                 .filter { !it.isExpiredOrCancelled() }
                 .forEach {
                     synchronized(it) { // TODO is this necessary? does it hurt??
@@ -108,6 +106,12 @@ class EmitterState(val emitter: MultiEmitter<in String?>,
                 else
                     toMatch.matches(regex)
 
+    }
+
+    // TODO find a better place for this
+    fun matchesJson(context: Context, json: String): Boolean {
+        if("BILL_CREATED" == context.event) return false
+        return false
     }
 
     companion object {

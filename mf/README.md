@@ -256,7 +256,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
   - prolly best to not write to redis immediately, but to a request scoped bean, which writes to redis during commit!
 - make contracts send command to pricing, rather than sending it from dsc, so contracts is the orchestrator
 - add condition if too much vanilla and show it on the screen
-- update contract view if bills or cases change -> need to react to changes on other keys than just requestId
+- update contract view if bills change and test it works in second window -> need to react to changes on other keys than just requestId
 - make portal a little prettier / responsive
 - persist user actions to a new table, so others can view the draft?
 - add a condition, if a user based discount has been set! => rule based!

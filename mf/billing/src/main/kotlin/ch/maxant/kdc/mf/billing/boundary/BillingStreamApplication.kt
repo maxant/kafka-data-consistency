@@ -5,7 +5,6 @@ import ch.maxant.kdc.mf.library.Context.Companion.EVENT
 import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import io.opentracing.Tracer
 import io.quarkus.arc.Arc
 import io.quarkus.runtime.StartupEvent
 import io.smallrye.mutiny.Multi
@@ -60,10 +59,7 @@ class BillingStreamApplication(
     val failRandomlyForTestingPurposes: Boolean,
 
     @ConfigProperty(name = "ch.maxant.kdc.mf.billing.numStreamThreads", defaultValue = "3")
-    val numStreamThreads: Int,
-
-    @Inject
-    val tracer: Tracer
+    val numStreamThreads: Int
 ) {
     // TODO tidy the entries up when they are no longer in use! tip: see isCancelled below - altho theyre already removed with onterminate at the bottom?
     val subscriptions = ConcurrentHashMap<String, EmitterState>()
@@ -151,7 +147,7 @@ class BillingStreamApplication(
                 Named.`as`("billing-internal-branch-job-successful")
             )
             .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
-                MfTransformer(EVENT, "BILL_CREATED")
+                MfTransformer(EVENT, "BILL_JOB_COMPLETED")
             })
             .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
                 MfTransformer(REQUEST_ID)
@@ -180,7 +176,8 @@ class BillingStreamApplication(
             .branch(Named.`as`("billing-internal-branch"),
                 Predicate{ _, v -> catching(v) { om.readValue<GroupEntity>(v).group.nextProcessStep == BillingProcessStep.READ_PRICE } },
                 Predicate{ _, v -> catching(v) { om.readValue<GroupEntity>(v).group.nextProcessStep == BillingProcessStep.RECALCULATE_PRICE } },
-                Predicate{ _, v -> catching(v) { om.readValue<GroupEntity>(v).group.nextProcessStep == BillingProcessStep.BILL } }
+                Predicate{ _, v -> catching(v) { om.readValue<GroupEntity>(v).group.nextProcessStep == BillingProcessStep.BILL } },
+                Predicate{ _, v -> catching(v) { om.readValue<GroupEntity>(v).group.nextProcessStep == BillingProcessStep.COMMS } }
             )
 
         // READ_PRICE
@@ -214,6 +211,17 @@ class BillingStreamApplication(
                 MfTransformer(COMMAND, BILL_GROUP)
             })
             .peek {k, v -> log.info("sending group $k with ${om.readTree(v).get("contracts").size()} contracts for internal billing")}
+            .to("billing-internal-bill")
+
+        // COMMS
+        branches[3]
+            .flatMap<String, String>({ _, v ->
+                mapGroupEntityToContractKeyValue(v)
+            }, Named.`as`("billing-internal-to-comms-mapper"))
+            .peek {k, v -> log.info("sending group $k with ${om.readTree(v).get("contracts").size()} contracts for internal billing")}
+            .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
+                MfTransformer(EVENT, "BILL_CREATED")
+            })
             .to("billing-internal-bill")
 
         val topology = builder.build()
@@ -263,6 +271,9 @@ class BillingStreamApplication(
         val state = om.readValue<GroupEntity>(v)
         return om.writeValueAsString(state.group)
     }
+
+    private fun mapGroupEntityToContractKeyValue(v: String) =
+        om.readValue<GroupEntity>(v).group.contracts.map { KeyValue(it.contractId.toString(), om.writeValueAsString(it)) }
 
     val jobsAggregator = Aggregator {_: String, v: String, j: String ->
         val jobEntity = om.readValue<JobEntity>(j)
@@ -405,8 +416,7 @@ class BillingStreamApplication(
             // https://stackoverflow.com/questions/10878243/sse-and-servlet-3-0
             if (subscriber.value.writer.checkError()) { //checkError calls flush, and flush() does not throw IOException
                 toRemove.add(subscriber.key)
-            }
-            Unit
+            } else Unit
         } catch (e: Exception) {
             toRemove.add(subscriber.key)
         }

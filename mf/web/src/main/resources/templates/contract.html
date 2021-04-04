@@ -181,6 +181,9 @@ const App = {
                 } else if(msg.event == "CHANGED_CASE") {
                     console.log("case changed");
                     self.checkTasks();
+                } else if(msg.event == "BILL_CREATED") {
+                    console.log("bill created");
+                    TODO
                 } else if(msg.event == "ERROR") {
                     alert(JSON.stringify(msg));
                 } else {
