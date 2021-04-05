@@ -415,7 +415,7 @@ const App = {
         this.maxStartDate = new Date();
         this.maxStartDate.setFullYear(this.maxStartDate.getFullYear() + 1);
 
-        window.requestId = uuidv4();
+        window.sessionId = uuidv4();
     },
     mounted() {
         window.model = this.model; // just for debugging purposes
@@ -487,7 +487,7 @@ const App = {
             return true;
         },
         createDraft(applyActions, productIdToUse) {
-            window.requestId = uuidv4();
+            window.sessionId = uuidv4();
             if(!this.validate()) {
                 return;
             }
@@ -506,8 +506,8 @@ const App = {
             let self = this;
 
             // subscribe before sending request to server, to ensure we receive ALL of the events, and any errors
-            _sse(window.requestId, this).then(() => {
-                self.requestId = window.requestId;
+            _sse(window.sessionId, this).then(() => {
+                self.sessionId = window.sessionId;
                 let url = CONTRACTS_BASE_URL + "/drafts?persist=" + self.persist;
 
                 if(applyActions) {
@@ -522,7 +522,7 @@ const App = {
                 }
                 fetchIt(url, "POST", this, body).then(r => {
                     if(r.ok) {
-                        console.log("got contract " + JSON.stringify(r.payload) + ", for requestId " + self.requestId);
+                        console.log("got contract " + JSON.stringify(r.payload) + ", for sessionId " + self.sessionId);
                         if(url.indexOf("/drafts2") > 0) {
                             r.payload.forEach(contractWithWarnings => {
                                 contractWithWarnings.warnings.forEach(warning => {
@@ -579,7 +579,7 @@ const App = {
                 }
 
                 fetchIt(url, verb, this, body).then(r => {
-                    if(r.ok) console.log("updated contract " + JSON.stringify(r.payload) + ", for requestId " + self.requestId);
+                    if(r.ok) console.log("updated contract " + JSON.stringify(r.payload) + ", for sessionId " + self.sessionId);
                     else {
                         let msg = "Failed: " + r.payload;
                         console.error(msg);
@@ -611,7 +611,7 @@ const App = {
             }
 
             return fetchIt(url, verb, this, body).then(r => {
-                if(r.ok) console.log("increased cardinality on contract " + JSON.stringify(r.payload) + ", for requestId " + self.requestId);
+                if(r.ok) console.log("increased cardinality on contract " + JSON.stringify(r.payload) + ", for sessionId " + self.sessionId);
                 else {
                     let msg = "Failed: " + r.payload;
                     console.error(msg);
@@ -642,7 +642,7 @@ const App = {
             }
 
             return fetchIt(url, verb, this, body).then(r => {
-                if(r.ok) console.log("decreased cardinality on contract " + JSON.stringify(r.payload) + ", for requestId " + self.requestId);
+                if(r.ok) console.log("decreased cardinality on contract " + JSON.stringify(r.payload) + ", for sessionId " + self.sessionId);
                 else {
                     let msg = "Failed: " + r.payload;
                     console.error(msg);
@@ -704,7 +704,7 @@ const App = {
             }
 
             return fetchIt(url, verb, this, body).then(r => {
-                if(r.ok) console.log("offered contract " + JSON.stringify(r.payload) + ", for requestId " + self.requestId);
+                if(r.ok) console.log("offered contract " + JSON.stringify(r.payload) + ", for sessionId " + self.sessionId);
                 else {
                     if(r.payload.class == "ch.maxant.kdc.mf.partners.boundary.NoRelationshipsFoundValidationException") {
                         alert("No partner relationships exist, please create a new offer");
@@ -806,8 +806,8 @@ function addPrice(component, id, price) {
     }
 }
 
-function _sse(requestId, self) {
-    return sse(requestId, self, msg => {
+function _sse(sessionId, self) {
+    return sse(sessionId, self, msg => {
         if(msg.event == "DRAFT" && self.creatingDraft) {
             self.progressValue = 33;
             self.progressText = "checking discounts, surcharges and conditions";

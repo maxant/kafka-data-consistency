@@ -2,7 +2,7 @@ package ch.maxant.kdc.mf.billing.boundary
 
 import ch.maxant.kdc.mf.library.Context.Companion.COMMAND
 import ch.maxant.kdc.mf.library.Context.Companion.EVENT
-import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
+import ch.maxant.kdc.mf.library.Context.Companion.SESSION_ID
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.quarkus.arc.Arc
@@ -150,7 +150,7 @@ class BillingStreamApplication(
                 MfTransformer(EVENT, "BILL_JOB_COMPLETED")
             })
             .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
-                MfTransformer(REQUEST_ID)
+                MfTransformer(SESSION_ID)
             })
             .peek {k, v -> log.info("publishing successful billing event $k: $v")}
             .to(BILLING_EVENTS)
@@ -223,7 +223,7 @@ class BillingStreamApplication(
                 MfTransformer(EVENT, "BILL_CREATED")
             })
             .transform(TransformerSupplier<String, String, KeyValue<String, String>>{
-                MfTransformer(REQUEST_ID)
+                MfTransformer(SESSION_ID)
             })
             .to(BILLING_EVENTS)
 
@@ -519,9 +519,9 @@ class MfTransformer(private val headerName: String, private var headerValue: Str
     }
 
     override fun transform(key: String, value: String): KeyValue<String, String> {
-        // use the key (jobId) as the requestId since the requestId was used as the jobId at the start of
+        // use the key (jobId) as the sessionId since the sessionId was used as the jobId at the start of
         // a single contract job, so that the waiting UI can react
-        if(headerName == REQUEST_ID) headerValue = key
+        if(headerName == SESSION_ID) headerValue = key
 
         context.headers().add(headerName, headerValue.toByteArray(StandardCharsets.UTF_8))
         return KeyValue(key, value)

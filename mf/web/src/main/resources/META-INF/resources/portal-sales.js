@@ -55,7 +55,7 @@ window.mfPortalSales = {
             model: {"draft": {"prices": {}}, "startDate": new Date(), salesRep: null},
             start: 0,
             timeTaken: 0,
-            requestId: uuidv4(),
+            sessionId
             users,
             user: security.getCurrentUser(),
             draftCreatedFor: null, // the user it was created for, rather than the currently selected user, just as info
@@ -73,6 +73,7 @@ window.mfPortalSales = {
     },
     methods: {
         initialise() {
+            this.sessionId = uuidv4();
             if(!this.model.draft.contract) {
                 this.createDraft();
             } // else the user needs to hit the button (after optionally changing the user)
@@ -89,12 +90,12 @@ window.mfPortalSales = {
             this.draftCreatedFor = JSON.parse(JSON.stringify(this.user))
 
             // subscribe before sending request to server, to ensure we receive ALL of the events, and any errors
-            sse(this.requestId, this);
+            sse(this.sessionId, this);
 
             let self = this;
             let url = CONTRACTS_BASE_URL + "/drafts"
             fetchIt(url, "POST", this, body).then(r => {
-                if(r.ok) console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
+                if(r.ok) console.log("got contract with id " + r.payload.id + ", for sessionId " + self.sessionId);
                 else {
                     let msg = "Failed to offer contract: " + r.payload;
                     console.error(msg);
@@ -113,7 +114,7 @@ window.mfPortalSales = {
             let url = CONTRACTS_BASE_URL + "/contracts/offerAndAccept/" + this.model.draft.contract.id;
             fetchIt(url, "PUT", this).then(r => {
                 if(r.ok) {
-                    console.log("offered and accepted contract with id " + r.payload.id + ", for requestId " + self.requestId);
+                    console.log("offered and accepted contract with id " + r.payload.id + ", for sessionId " + self.sessionId);
                     this.$router.push({ name: "home"});
                 } else {
                     if(r.payload.class == "ch.maxant.kdc.mf.partners.boundary.NoRelationshipsFoundValidationException") {
@@ -176,9 +177,9 @@ function addPrice(component, id, price) {
     }
 }
 
-function sse(requestId, self) {
+function sse(sessionId, self) {
     if(self.source && self.source.readyState != EventSource.CLOSED) self.source.close();
-    self.source = new EventSource("/web/stream/" + requestId);
+    self.source = new EventSource("/web/stream/" + sessionId);
     self.source.onmessage = function (event) {
         console.log(event);
         let msg = JSON.parse(event.data);

@@ -43,7 +43,7 @@ window.mfPortalHome = {
             model: { id: security.getCurrentUser().id, partner: {} },
             start: 0,
             timeTaken: 0,
-            requestId: uuidv4()
+            sessionId
         }
     },
     mounted() {
@@ -58,12 +58,13 @@ window.mfPortalHome = {
     },
     methods: {
         fetchPartner() {
+            this.sessionId = uuidv4();
             let self = this;
             let url = PARTNERS_BASE_URL + "/partners/" + this.model.id;
             let partner$ = fetchIt(url, "GET", this).then(r => {
                 self.timeTaken = new Date().getTime() - self.start;
                 if(r.ok) {
-                    console.log("got partner with id " + r.payload.id + ", for requestId " + self.requestId);
+                    console.log("got partner with id " + r.payload.id + ", for sessionId " + self.sessionId);
                     self.model.partner = r.payload;
                 } else {
                     let msg = "Failed to get partner: " + r.payload;
@@ -78,7 +79,7 @@ window.mfPortalHome = {
             let partnerRelationships$ = fetchIt(url, "GET", this).then(r => {
                 self.timeTaken = new Date().getTime() - self.start;
                 if(r.ok) {
-                    console.log("got partner-relationships, for requestId " + self.requestId);
+                    console.log("got partner-relationships, for sessionId " + self.sessionId);
                     self.model.partnerRelationships = _.groupBy(r.payload, "role");
                     self.model.allContractIds = _(self.model.partnerRelationships["CONTRACT_HOLDER"]).map("foreignId").uniq().value();
                     self.model.contractIds = _(self.model.allContractIds).reverse().value();

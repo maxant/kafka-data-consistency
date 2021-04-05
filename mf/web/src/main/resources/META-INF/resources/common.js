@@ -6,8 +6,8 @@ window.uuidv4 = function() {
   );
 }
 
-window.getHeaders = function(requestId, getDemoContext) {
-    let ctx = security.addJwt({"Content-Type": "application/json", "Accept": "application/json", "request-id": requestId })
+window.getHeaders = function(sessionId, getDemoContext) {
+    let ctx = security.addJwt({"Content-Type": "application/json", "Accept": "application/json", "request-id": uuidv4(), "session-id": sessionId })
     if(getDemoContext) {
         ctx["demo-context"] = getDemoContext()
     }
@@ -19,7 +19,7 @@ window.fetchIt = function(url, method, self, body, responseIsText) {
         self.start = new Date().getTime();
         let data = { "method": method,
                        body: JSON.stringify(body),
-                       "headers": getHeaders(self.requestId, self.getDemoContext)
+                       "headers": getHeaders(self.sessionId, self.getDemoContext)
                      };
         if(url.indexOf(ELASTICSEARCH_BASE_URL) >= 0) {
             // ES doesnt like all our custom headers. we could add them to dc-base.yml, but it doesnt use them, so lets not send them
@@ -56,14 +56,14 @@ window.eventHub = mitt();
 /** creates an sse connection and adds it to `self` as the field `source`, so that it can track it's own state.
     restarts on error.
  */
-window.sse = function(requestId, self, callback, regex) {
+window.sse = function(sessionId, self, callback, regex) {
     return new Promise((resolve, reject) => {
         if(self.source && self.source.readyState != EventSource.CLOSED) {
             console.log("closing existing sse connection just before restarting");
             self.source.close();
         }
         console.log("(re)starting sse");
-        self.source = new EventSource("/web/stream/" + requestId + (regex ? "?regex=" + regex : ""));
+        self.source = new EventSource("/web/stream/" + sessionId + (regex ? "?regex=" + regex : ""));
         self.source.onopen = function (event) {
             console.log("sse open");
             resolve();
@@ -82,7 +82,7 @@ window.sse = function(requestId, self, callback, regex) {
             self.source = null;
             console.log("restarting sse in 500ms");
             setTimeout(() => {
-                sse(requestId, self, callback);
+                sse(sessionId, self, callback);
             }, 500);
         }
     });

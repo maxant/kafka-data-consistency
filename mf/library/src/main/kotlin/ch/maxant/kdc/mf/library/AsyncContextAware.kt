@@ -1,6 +1,7 @@
 package ch.maxant.kdc.mf.library
 
 import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
+import ch.maxant.kdc.mf.library.Context.Companion.SESSION_ID
 import io.opentracing.Tracer
 import org.eclipse.microprofile.context.ManagedExecutor
 import org.eclipse.microprofile.context.ThreadContext
@@ -19,7 +20,7 @@ import javax.interceptor.InvocationContext
  * String, as it requires us to return a CompletionStage rather than Unit. its not compatible with
  * @Blocking either<br>
  * <br>
- * Propagates the requestId and MDC (logging) too.
+ * Propagates the requestId, sessionId and MDC (logging) too.
  */
 @InterceptorBinding
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.TYPE, AnnotationTarget.CLASS)
@@ -57,6 +58,7 @@ class AsyncContextAwareInterceptor(
                     .asChildOf(parent)
                     .startActive(true)
                 newScope.span().setTag(REQUEST_ID, copyOfContext.requestId.toString())
+                newScope.span().setTag(SESSION_ID, copyOfContext.sessionId.toString())
                 newScope.span().setTag("__origin", "AsyncContextAware")
                 try {
                     ctx.proceed() as CompletionStage<Any>

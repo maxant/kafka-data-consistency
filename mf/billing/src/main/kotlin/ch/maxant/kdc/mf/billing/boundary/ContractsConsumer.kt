@@ -69,7 +69,7 @@ class ContractsConsumer(
         log.info("calculated periods to bill $periodsToBill")
 
         // create a new job with one group and one contract in that group
-        val jobId = UUID.fromString(context.requestId.requestId) // so that it can be sent back to the client waiting for it
+        val jobId = UUID.fromString(context.sessionId.sessionId) // so that it can be sent back to the client waiting for it
         val groupId = UUID.randomUUID()
         val group = Group(jobId, groupId, listOf(
                     Contract(jobId, groupId, contract.id, defn.definitionId, listOf(basePeriodToPrice), periodsToBill)

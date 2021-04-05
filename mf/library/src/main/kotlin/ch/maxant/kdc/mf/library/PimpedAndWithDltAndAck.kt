@@ -4,13 +4,12 @@ import ch.maxant.kdc.mf.library.Context.Companion.COMMAND
 import ch.maxant.kdc.mf.library.Context.Companion.DEMO_CONTEXT
 import ch.maxant.kdc.mf.library.Context.Companion.EVENT
 import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
+import ch.maxant.kdc.mf.library.Context.Companion.SESSION_ID
 import ch.maxant.kdc.mf.library.Context.Companion.RETRY_COUNT
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import io.opentracing.SpanContext
 import io.opentracing.Tracer
 import io.opentracing.contrib.kafka.TracingKafkaUtils
-import io.opentracing.util.GlobalTracer
 import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecordMetadata
 import io.smallrye.reactive.messaging.kafka.OutgoingKafkaRecordMetadata
 import org.apache.commons.lang3.StringUtils
@@ -42,7 +41,7 @@ import javax.validation.ValidationException
  * <br>
  * can be added to incoming handlers which take a string, or a message. <br>
  * <br>
- * adds the requestId, command and event from the header/root to the MDC so it can be logged<br>
+ * adds the requestId, sessionId, command and event from the header/root to the MDC so it can be logged<br>
  * <br>
  * sets up opentracing too.
  */
@@ -103,6 +102,7 @@ class PimpedAndWithDltAndAckInterceptor(
 
                 try {
                     span.span().setTag(REQUEST_ID, context.requestId.toString())
+                    span.span().setTag(SESSION_ID, context.sessionId.toString())
                     proceed(copyOfContext, ctx, firstParam)
                 } finally {
                     span.close()
@@ -144,6 +144,7 @@ class PimpedAndWithDltAndAckInterceptor(
     private fun setContext(firstParam: Any) {
         context.originalMessage = firstParam
         context.requestId = getRequestId(om, firstParam)
+        context.sessionId = getSessionId(om, firstParam)
         context.retryCount = getRetryCount(om, firstParam)
         context.demoContext = getDemoContext(om, firstParam)
         context.command = getCommand(om, firstParam)
@@ -159,12 +160,12 @@ class PimpedAndWithDltAndAckInterceptor(
             val firstParam = ctx.parameters[0]
             try {
                 when {
-                    copyOfContext.requestId.isEmpty -> {
+                    copyOfContext.sessionId.isEmpty -> {
                         log.error("EH003 failed to process message ${asString(firstParam)} " +
-                                "- unknown requestId so not sending it to the DLT " +
+                                "- unknown sessionId so not sending it to the DLT " +
                                 "- this message is being dumped here " +
                                 "- this is an error in the program " +
-                                "- every message MUST have a requestId header or attribute at the root", t)
+                                "- every message MUST have a sessionId header or attribute at the root", t)
                     }
                     ctx.method.getAnnotation(PimpedAndWithDltAndAck::class.java).sendToDlt -> {
                         ret = sendToWaitingroomOrDlt(firstParam, copyOfContext, t)
@@ -188,18 +189,18 @@ class PimpedAndWithDltAndAckInterceptor(
             if(copyOfContext.retryCount < 3) {
                 log.info("EH004a failed to process message due to a retryable exception with a retry count of ${copyOfContext.retryCount}. " +
                         "message was ${asString(firstParam)}" +
-                        " - sending it to the waiting room as it can be retried, with requestId ${copyOfContext.requestId}", t)
+                        " - sending it to the waiting room as it can be retried, with sessionId ${copyOfContext.sessionId}", t)
                 errorHandler.waitingroom(firstParam, copyOfContext.retryCount)
             } else {
                 log.warn("EH004b failed to process message due to a retryable exception but with a retry count of ${copyOfContext.retryCount}. " +
                         "message was ${asString(firstParam)}" +
-                        " - sending it to the DLT with requestId ${copyOfContext.requestId}", t)
+                        " - sending it to the DLT with sessionId ${copyOfContext.sessionId}", t)
                 errorHandler.dlt(firstParam, t)
             }
         } else {
             log.warn("EH004c failed to process message due to a non-retryable exception. " +
                     "message was ${asString(firstParam)}" +
-                    " - sending it to the DLT with requestId ${copyOfContext.requestId}", t)
+                    " - sending it to the DLT with sessionId ${copyOfContext.sessionId}", t)
             errorHandler.dlt(firstParam, t)
         }
 
@@ -232,6 +233,8 @@ class PimpedAndWithDltAndAckInterceptor(
 }
 
 fun getRequestId(om: ObjectMapper, firstParam: Any) = RequestId(getHeader(om, firstParam, REQUEST_ID))
+
+fun getSessionId(om: ObjectMapper, firstParam: Any) = SessionId(getHeader(om, firstParam, SESSION_ID))
 
 fun getRetryCount(om: ObjectMapper, firstParam: Any) = getHeader(om, firstParam, RETRY_COUNT).toIntOrNull()?:0
 
@@ -284,7 +287,13 @@ data class RequestId(val requestId: String) {
     val isEmpty = requestId.isEmpty()
 }
 
+data class SessionId(val sessionId: String) {
+    override fun toString(): String = sessionId
+    val isEmpty = sessionId.isEmpty()
+}
+
 data class Headers(val requestId: RequestId,
+                   val sessionId: SessionId,
                    val demoContext: DemoContext? = null,
                    val command: String? = null,
                    val event: String? = null,
@@ -294,6 +303,7 @@ data class Headers(val requestId: RequestId,
                 command: String? = null,
                 event: String? = null
     ) : this(context.requestId,
+            context.sessionId,
             context.demoContext,
             command,
             event,
@@ -307,7 +317,8 @@ data class Headers(val requestId: RequestId,
 @Deprecated(message = "use the one without ack")
 fun messageWithMetadata(key: String?, value: String, headers: Headers,
                         ack: CompletableFuture<Unit>, tracer: Tracer): Message<String> {
-    val headersList = mutableListOf(RecordHeader(REQUEST_ID, headers.requestId.toString().toByteArray()))
+    val headersList = mutableListOf(RecordHeader(REQUEST_ID, headers.requestId.toString().toByteArray()),
+                                    RecordHeader(SESSION_ID, headers.sessionId.toString().toByteArray()))
     if(headers.demoContext != null) headersList.add(RecordHeader(DEMO_CONTEXT, (headers.demoContext.json?:"").toByteArray()))
     if(isNotEmpty(headers.command)) headersList.add(RecordHeader(COMMAND, headers.command!!.toByteArray()))
     if(isNotEmpty(headers.event)) headersList.add(RecordHeader(EVENT, headers.event!!.toByteArray()))
@@ -317,7 +328,10 @@ fun messageWithMetadata(key: String?, value: String, headers: Headers,
 }
 
 fun messageWithMetadata(key: String?, value: String, headers: Headers, tracer: Tracer): Message<String> {
-    val headersList = mutableListOf(RecordHeader(REQUEST_ID, headers.requestId.toString().toByteArray()))
+    val headersList = mutableListOf(
+        RecordHeader(REQUEST_ID, headers.requestId.toString().toByteArray()),
+        RecordHeader(SESSION_ID, headers.sessionId.toString().toByteArray())
+    )
     if(headers.demoContext != null) headersList.add(RecordHeader(DEMO_CONTEXT, (headers.demoContext.json?:"").toByteArray()))
     if(isNotEmpty(headers.command)) headersList.add(RecordHeader(COMMAND, headers.command!!.toByteArray()))
     if(isNotEmpty(headers.event)) headersList.add(RecordHeader(EVENT, headers.event!!.toByteArray()))
@@ -362,12 +376,14 @@ fun messageWithMetadata(key: String?, value: String, headers: List<RecordHeader>
 
 private fun setMdc(context: Context) {
     MDC.put(REQUEST_ID, context.requestId)
+    MDC.put(SESSION_ID, context.sessionId)
     MDC.put(COMMAND, context.command)
     MDC.put(EVENT, context.event)
 }
 
 private fun clearMdc() {
     MDC.remove(REQUEST_ID)
+    MDC.remove(SESSION_ID)
     MDC.remove(EVENT)
     MDC.remove(COMMAND)
 }

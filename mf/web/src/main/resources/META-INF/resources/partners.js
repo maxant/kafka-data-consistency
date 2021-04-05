@@ -102,7 +102,7 @@ window.mfPartnerSelect = {
                 $validationErrors: {},
                 $submitted: false
             },
-            requestId: uuidv4()
+            sessionId
         }
     },
     created() {
@@ -114,6 +114,7 @@ window.mfPartnerSelect = {
     },
     methods: {
 		search(event) {
+            this.sessionId = uuidv4();
             const self = this;
             return fetch(ELASTICSEARCH_BASE_URL + "/partners/_search?q=" + encodeURIComponent(event.query), {"method": "GET"})
             .then( r => {
@@ -149,7 +150,7 @@ window.mfPartnerSelect = {
                 let url = PARTNERS_BASE_URL + "/partners"
                 return fetchIt(url, "POST", this, this.newPartner).then(r => {
                     if(r.ok) {
-                        console.log("created new partner " + r.payload + " for requestId " + this.requestId);
+                        console.log("created new partner " + r.payload + " for sessionId " + this.sessionId);
                         // now select the new partner in the dropdown
                         self.newPartner.partnerId = r.payload.id;
                         self.newPartner.id = self.newPartner.partnerId;
@@ -258,43 +259,44 @@ template =
 ` // end template
 
 window.mfPartnerTile = {
-  props: ['partnerId', 'role', 'roles', 'clickable'], // roles is a string comma separated list of roles
-  template,
-  watch: {
-    partnerId(newPartnerId, oldPartnerId) {
-        this.loadPartner$();
-    }
-  },
-  data() {
-    return {
-        partner: null,
-        error: null,
-        requestId: uuidv4()
-    }
-  },
-  mounted() {
-    this.loadPartner$();
-  },
-  methods: {
-    loadPartner$() {
-      this.partner = null;
-      this.error = null;
-      let self = this;
-      let url = PARTNERS_BASE_URL + "/partners/" + this.partnerId;
-      return fetchIt(url, "GET", this).then(r => {
-        if(r.ok) {
-            console.log("got partner " + self.partnerId + " for requestId " + self.requestId);
-            self.partner = r.payload;
-            self.$emit('loaded', self.partner);
-        } else {
-            let msg = "Failed to get partner " + self.partnerId + ": " + r.payload;
-            self.error = msg;
-            console.error(msg);
+    props: ['partnerId', 'role', 'roles', 'clickable'], // roles is a string comma separated list of roles
+    template,
+    watch: {
+        partnerId(newPartnerId, oldPartnerId) {
+            this.loadPartner$();
         }
-      }).catch(error => {
-        self.error = error;
-        console.error("received error: " + error);
-      });
+    },
+    data() {
+        return {
+            partner: null,
+            error: null,
+            sessionId
+        }
+    },
+    mounted() {
+        this.loadPartner$();
+    },
+    methods: {
+    loadPartner$() {
+        this.sessionId = uuidv4();
+        this.partner = null;
+        this.error = null;
+        let self = this;
+        let url = PARTNERS_BASE_URL + "/partners/" + this.partnerId;
+        return fetchIt(url, "GET", this).then(r => {
+            if(r.ok) {
+                console.log("got partner " + self.partnerId + " for sessionId " + self.sessionId);
+                self.partner = r.payload;
+                self.$emit('loaded', self.partner);
+            } else {
+                let msg = "Failed to get partner " + self.partnerId + ": " + r.payload;
+                self.error = msg;
+                console.error(msg);
+            }
+        }).catch(error => {
+            self.error = error;
+            console.error("received error: " + error);
+        });
     },
     isSalesRep() {
         return this.role == 'SALES_REP' ||

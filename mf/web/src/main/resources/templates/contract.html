@@ -25,8 +25,7 @@
     <div style="font-size: small; font-style: italic;">Cache hit: {{ model.cacheHit }}, backend
         loaded in {{ model.loadedInMs }}ms
     </div>
-    <div v-if="model.contract.state == 'DRAFT'"> |}{! we can use "state" or "contractState" - see graphQl mapping in
-        request below !}{|
+    <div v-if="model.contract.state == 'DRAFT'"> |}{! we can use "state" or "contractState" - see graphQl mapping in request below !}{|
         <p-button id="offerDraftButton" @click="offerDraft()">Offer draft</p-button>
         <p-button v-if="showResync" @click="resync()">resync</p-button>
 
@@ -159,7 +158,7 @@ const App = {
             showResync: false,
             start: 0,
             timeTaken: 0,
-            requestId: uuidv4(),
+            sessionId,
             users
         }
     },
@@ -173,9 +172,9 @@ const App = {
     },
     methods: {
         fetchContract() {
+            this.sessionId = uuidv4();
             let self = this;
-            self.requestId = uuidv4();
-            sse(self.requestId, self, msg => {
+            sse(self.sessionId, self, msg => {
                 if(msg.event == "ACCEPTED_OFFER" || msg.event == "OFFERED_DRAFT" || msg.event == "APPROVED_CONTRACT") {
                     // dont lose the components (details), as they are not returned in these calls
                     msg.payload.contract.components = self.model.contract.components;
@@ -232,7 +231,7 @@ const App = {
                     self.model.conditions = r.payload.data.cached_aggregate.conditions;
                     self.model.cacheHit = r.payload.data.cached_aggregate.cacheHit;
                     self.model.loadedInMs = r.payload.data.cached_aggregate.loadedInMs;
-                    console.log("got aggregate for requestId " + self.requestId);
+                    console.log("got aggregate for sessionId " + self.sessionId);
 
                     self.model.prices.list.forEach(p => {
                         self.model.contract.components.forEach(c => {
@@ -257,7 +256,7 @@ const App = {
             let partnerRelationships$ = fetchIt(url, "GET", this).then(r => {
                 self.timeTaken = new Date().getTime() - self.start;
                 if(r.ok) {
-                    console.log("got partner-relationships, for requestId " + self.requestId);
+                    console.log("got partner-relationships, for sessionId " + self.sessionId);
                     self.model.partnerRelationships = _.sortBy(r.payload, 'role');
                 } else {
                     let msg = "Failed to get partner relationships: " + r.payload;
@@ -278,7 +277,7 @@ const App = {
             let bills$ = fetchIt(url, "GET", this).then(r => {
                 self.timeTaken = new Date().getTime() - self.start;
                 if(r.ok) {
-                    console.log("got bills, for requestId " + self.requestId);
+                    console.log("got bills, for sessionId " + self.sessionId);
                     self.model.bills = r.payload;
                 } else {
                     let msg = "Failed to get bills: " + r.payload;
@@ -322,7 +321,7 @@ const App = {
             let contract$ = fetchIt(url, "PUT", this).then(r => {
                 self.timeTaken = new Date().getTime() - self.start;
                 if(r.ok) {
-                    console.log("got contract with id " + r.payload.id + ", for requestId " + self.requestId);
+                    console.log("got contract with id " + r.payload.id + ", for sessionId " + self.sessionId);
                 } else {
                     let msg = "Failed to approve contract: " + r.payload;
                     console.error(msg);

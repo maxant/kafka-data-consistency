@@ -78,10 +78,11 @@ window.mfCases = {
             tasks: [], // flattened
             state: "OPEN", // ready for a toggle, should one want to view closed tasks at the push of a button
             error: null,
-            requestId: uuidv4()
+            sessionId
         }
     },
     mounted() {
+        this.sessionId = uuidv4();
         this.loadCases();
     },
     methods: {
@@ -94,7 +95,7 @@ window.mfCases = {
             let url = CASES_BASE_URL + "/cases/byReferenceIds/" + this.state + "?" + _.map(this.caseReferenceIds, crid => { return "referenceIds=" + crid; }).join("&");
             fetchIt(url, "GET", this).then(r => {
                 if(r.ok) {
-                    console.log("got cases for requestId " + self.requestId);
+                    console.log("got cases for sessionId " + self.sessionId);
                     self.cases = r.payload;
                     self.tasks = _(self.cases).map("tasks").flatten().value();
                 } else {

@@ -30,13 +30,13 @@ class WebResource {
     // TODO tidy the entries up when they are no longer in use! tip: see isCancelled below - altho theyre already removed with onterminate at the bottom?
     val subscriptions = CopyOnWriteArrayList<EmitterState>()
 
-    fun sendToSubscribers(requestId: String, json: String, key: String) {
+    fun sendToSubscribers(sessionId: String, json: String, key: String) {
 
         subscriptions
                 .filter { it.isExpiredOrCancelled() }
                 .forEach {
                     synchronized(it.emitter) { // TODO is this necessary? does it hurt??
-                        log.info("closing cancelled/expired emitter for request ${it.requestId}. cancelled: "
+                        log.info("closing cancelled/expired emitter for session ${it.sessionId}. cancelled: "
                                 + "${it.emitter.isCancelled}, expired: ${it.isExpired()}")
                         it.emitter.complete()
                         subscriptions.remove(it)
@@ -44,11 +44,11 @@ class WebResource {
                 }
 
         subscriptions
-                .filter { it.requestId == requestId || it.matches(key) }
+                .filter { it.sessionId == sessionId || it.matches(key) }
                 .filter { !it.isExpiredOrCancelled() }
                 .forEach {
                     synchronized(it) { // TODO is this necessary? does it hurt??
-                        log.info("emitting request ${it.requestId} to subscriber: $json. context.requestId is ${context.getRequestIdSafely().requestId}")
+                        log.info("emitting session ${it.sessionId} to subscriber: $json. context.sessionId is ${context.getSessionIdSafely().sessionId}")
                         it.touch()
                         it.emitter.emit(json)
                     }
@@ -56,10 +56,10 @@ class WebResource {
     }
 
     @GET
-    @Path("/stream/{requestId}")
+    @Path("/stream/{sessionId}")
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @SseElementType(MediaType.APPLICATION_JSON)
-    fun stream(@PathParam("requestId") requestId: String,
+    fun stream(@PathParam("sessionId") sessionId: String,
                @QueryParam("regex") regexString: String?,
                @javax.ws.rs.core.Context response: HttpServletResponse): Multi<String> {
         // https://serverfault.com/questions/801628/for-server-sent-events-sse-what-nginx-proxy-configuration-is-appropriate
@@ -67,11 +67,11 @@ class WebResource {
         response.setHeader("X-Accel-Buffering", "no")
         return Multi.createFrom()
                 .emitter { e: MultiEmitter<in String?> ->
-                    subscriptions.add(EmitterState(e, requestId, regexString))
+                    subscriptions.add(EmitterState(e, sessionId, regexString))
                     e.onTermination {
                         e.complete()
-                        log.info("removing termindated subscription $requestId")
-                        subscriptions.removeIf { it.requestId == requestId }
+                        log.info("removing termindated subscription $sessionId")
+                        subscriptions.removeIf { it.sessionId == sessionId }
                     }
                 } // TODO if we get memory problems, add a different BackPressureStrategy as a second parameter to the emitter method
     }
@@ -80,12 +80,12 @@ class WebResource {
     @Path("/stats")
     fun stats(): Response = Response.ok("""
         { "subscriptionsCount": ${this.subscriptions.size},
-          "subscriptions": ${this.subscriptions.map { it.requestId }} 
+          "subscriptions": ${this.subscriptions.map { it.sessionId }} 
         }""".trimIndent().replace(" ", "").replace("\r", "").replace("\n", "")).build()
 }
 
 class EmitterState(val emitter: MultiEmitter<in String?>,
-                    val requestId: String,
+                    val sessionId: String,
                     regexString: String? = null) {
 
     private val regex: Regex? = if(regexString == null) null else Regex(regexString)

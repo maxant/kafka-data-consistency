@@ -1,6 +1,7 @@
 package ch.maxant.kdc.mf.library
 
 import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
+import ch.maxant.kdc.mf.library.Context.Companion.SESSION_ID
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nhaarman.mockito_kotlin.*
@@ -117,7 +118,7 @@ class PimpedAndWithDltAndAckTest {
     @Test
     fun invoke_message_happy() {
         val metadata = mock<IncomingKafkaRecordMetadata<String, String>> {
-            on { headers } doReturn (RecordHeaders().add(REQUEST_ID, "123".toByteArray()))
+            on { headers } doReturn (RecordHeaders().add(REQUEST_ID, "123".toByteArray()).add(SESSION_ID, "234".toByteArray()))
         }
         val msg = Message.of("{}").addMetadata(metadata)
         ic = mock {
@@ -144,7 +145,7 @@ class PimpedAndWithDltAndAckTest {
     @Test
     fun invoke_message_exceptionInProceed() {
         val metadata = mock<IncomingKafkaRecordMetadata<String, String>> {
-            on { headers } doReturn (RecordHeaders().add(REQUEST_ID, "1".toByteArray()))
+            on { headers } doReturn (RecordHeaders().add(REQUEST_ID, "1".toByteArray()).add(SESSION_ID, "2".toByteArray()))
         }
         val msg = MockMessage(metadata)
         ic = mock {
@@ -168,7 +169,7 @@ class PimpedAndWithDltAndAckTest {
         verify(ic, times(3)).parameters
         verify(ic).method
         verify(ic).proceed()
-        verify(log).warn("""EH004 failed to process message {} - sending it to the DLT with requestId 1""", e)
+        verify(log).warn("""EH004 failed to process message {} - sending it to the DLT with sessionId 2""", e)
         verify(log).debug("processing incoming message")
         verify(log).debug("kafka acked message")
         verify(errorHandler).dlt(msg, e)
@@ -177,7 +178,7 @@ class PimpedAndWithDltAndAckTest {
     @Test
     fun invoke_message_exceptionInProceedResult() { // ie in the completion stage returned from downstream
         val metadata = mock<IncomingKafkaRecordMetadata<String, String>> {
-            on { headers } doReturn (RecordHeaders().add(REQUEST_ID, "1".toByteArray()))
+            on { headers } doReturn (RecordHeaders().add(REQUEST_ID, "1".toByteArray()).add(SESSION_ID, "2".toByteArray()))
         }
         val msg = MockMessage(metadata)
         ic = mock {
@@ -201,7 +202,7 @@ class PimpedAndWithDltAndAckTest {
         verify(ic, times(3)).parameters
         verify(ic).method
         verify(ic).proceed()
-        verify(log).warn("""EH004 failed to process message {} - sending it to the DLT with requestId 1""", e)
+        verify(log).warn("""EH004 failed to process message {} - sending it to the DLT with sessionId 2""", e)
         verify(log).debug("processing incoming message")
         verify(log).debug("kafka acked message")
         verify(errorHandler).dlt(msg, e)
@@ -222,7 +223,7 @@ class PimpedAndWithDltAndAckTest {
     @Test
     fun dealWithExceptionIfNecessary_dltFails() {
         val metadata = mock<IncomingKafkaRecordMetadata<String, String>> {
-            on { headers } doReturn (RecordHeaders().add(REQUEST_ID, "1".toByteArray()))
+            on { headers } doReturn (RecordHeaders().add(REQUEST_ID, "1".toByteArray()).add(SESSION_ID, "2".toByteArray()))
         }
         val msg = MockMessage(metadata)
         ic = mock {
@@ -237,7 +238,7 @@ class PimpedAndWithDltAndAckTest {
         sut.log = log
 
         // when
-        val ret = sut.dealWithExceptionIfNecessary(originalException, ic, Context.of(RequestId("1"), msg))
+        val ret = sut.dealWithExceptionIfNecessary(originalException, ic, Context.of(RequestId("1"), SessionId("2"), msg))
 
         // then
         assertNull((ret as CompletableFuture<*>).get())
@@ -245,7 +246,7 @@ class PimpedAndWithDltAndAckTest {
 
         verify(ic).parameters
         verify(ic).method
-        verify(log).warn("""EH004 failed to process message {} - sending it to the DLT with requestId 1""", originalException)
+        verify(log).warn("""EH004 failed to process message {} - sending it to the DLT with sessionId 2""", originalException)
         verify(log).error("EH006a failed to process message {} - this message is being dumped here", dltException)
         verify(log).error("EH006b original exception was", originalException)
         verify(errorHandler).dlt(msg, originalException)
@@ -254,7 +255,7 @@ class PimpedAndWithDltAndAckTest {
     @Test
     fun dealWithExceptionIfNecessary_notToDlt() {
         val metadata = mock<IncomingKafkaRecordMetadata<String, String>> {
-            on { headers } doReturn (RecordHeaders().add(REQUEST_ID, "1".toByteArray()))
+            on { headers } doReturn (RecordHeaders().add(REQUEST_ID, "1".toByteArray()).add(SESSION_ID, "2".toByteArray()))
         }
         val msg = MockMessage(metadata)
         ic = mock {
@@ -267,7 +268,7 @@ class PimpedAndWithDltAndAckTest {
         sut.log = log
 
         // when
-        val ret = sut.dealWithExceptionIfNecessary(originalException, ic, Context.of(RequestId("1"), msg))
+        val ret = sut.dealWithExceptionIfNecessary(originalException, ic, Context.of(RequestId("1"), SessionId("2"), msg))
 
         // then
         assertNull((ret as CompletableFuture<*>).get())
@@ -280,7 +281,7 @@ class PimpedAndWithDltAndAckTest {
     }
 
     @Test
-    fun dealWithExceptionIfNecessary_missingRequestId() {
+    fun dealWithExceptionIfNecessary_missingSessionId() {
         val metadata = mock<IncomingKafkaRecordMetadata<String, String>> {
             on { headers } doReturn (RecordHeaders()) // <--- STEERS TEST
         }
@@ -295,14 +296,14 @@ class PimpedAndWithDltAndAckTest {
         sut.log = log
 
         // when
-        val ret = sut.dealWithExceptionIfNecessary(originalException, ic, Context.of(RequestId(""), msg)) // <--- STEERS TEST
+        val ret = sut.dealWithExceptionIfNecessary(originalException, ic, Context.of(RequestId("1"), SessionId(""), msg)) // <--- STEERS TEST
 
         // then
         assertNull((ret as CompletableFuture<*>).get())
         assertEquals(0, msg.ackCount) // ack is called outside of method being tested
 
         verify(ic).parameters
-        verify(log).error("""EH003 failed to process message {} - unknown requestId so not sending it to the DLT - this message is being dumped here - this is an error in the program - every message MUST have a requestId header or attribute at the root""", originalException)
+        verify(log).error("""EH003 failed to process message {} - unknown sessionId so not sending it to the DLT - this message is being dumped here - this is an error in the program - every message MUST have a sessionId header or attribute at the root""", originalException)
         verify(errorHandler, never()).dlt(any(), any())
     }
 }

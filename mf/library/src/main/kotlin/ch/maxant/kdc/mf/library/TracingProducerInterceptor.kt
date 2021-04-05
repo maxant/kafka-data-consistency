@@ -1,6 +1,7 @@
 package ch.maxant.kdc.mf.library
 
 import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
+import ch.maxant.kdc.mf.library.Context.Companion.SESSION_ID
 import io.opentracing.contrib.kafka.ClientSpanNameProvider
 import io.opentracing.contrib.kafka.SpanDecorator
 import io.opentracing.contrib.kafka.TracingKafkaUtils
@@ -25,6 +26,15 @@ class TracingProducerInterceptor<K, V> : io.opentracing.contrib.kafka.TracingPro
             ?: byteArrayOf(),
             Charsets.UTF_8)
         span.setTag(REQUEST_ID, requestId)
+
+        val sessionId = String(producerRecord
+            .headers()
+            ?.find { it.key() == SESSION_ID }
+            ?.value()
+            ?: byteArrayOf(),
+            Charsets.UTF_8)
+        span.setTag(SESSION_ID, sessionId)
+
         span.finish()
 
         return producerRecord

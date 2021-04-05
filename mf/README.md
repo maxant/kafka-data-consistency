@@ -172,7 +172,8 @@ Also known as entry points, process components or UIs.
 ## Headers, Topcs, Command, Events
 
 - Headers
-  - `requestId` for tracking a request through the landscape
+  - `requestId` for tracking a request through the landscape (one per browser request, propagated downstream; set in common.js)
+  - `sessionId` for tracking a session through the landscape (one per spa, set by spa upon initialisation; used for propagating errors)
   - either `event` or `command` describing what kind of record it is. Events may 
     also contain the `originalCommand` attribute which led to their publication.
 - Topics
@@ -256,7 +257,6 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
   - prolly best to not write to redis immediately, but to a request scoped bean, which writes to redis during commit!
 - make contracts send command to pricing, rather than sending it from dsc, so contracts is the orchestrator
 - add condition if too much vanilla and show it on the screen
-- update contract view if bills change and test it works in second window -> need to react to changes on other keys than just requestId
 - make portal a little prettier / responsive
 - persist user actions to a new table, so others can view the draft?
 - add a condition, if a user based discount has been set! => rule based!
@@ -293,13 +293,9 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
   - actually, thats kinda cool, coz cypress just has to wait til it can click the buttons?
 - timestamp - if we attempt to insert but a new version has already been applied, we need to ignore it and log it for alerting. or fail with an error? why not just use optimistic locking. whats on my bit of paper?
   - SEE "must be processed by time X" below!
-- sessionId
-- web register for session, request, contract, etc. not just requestId
 - pep, pip?, pdp
 - put some stuff into internal package in lib - does kotlin have support for this so that you cannot access it outside of the module?
-- show fat content and other params in portal
 - use qute for other SPAs: bookmarks
-- move sse and other standard things into vue components
 - security: do a view of all methods, and the roles and therefore the users which can run them
 - finish security.html
 - add accepting and do validation of prices at that point. TRANSPORT still with kafka!
@@ -310,7 +306,6 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
   don't want to have to say, hey no idea whats still going to happen, rather we want to have a 
   determinate state which can be reloaded and allow the user to restart from there
 - add the analagous timeout in the UI
-- add sessionId to requestId - errors are propagated back to the session or request?
 - after sales
   - terminate
   - cancel
@@ -402,7 +397,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
   - realised with the waiting room with a suitable back off strategy
   - which allows for a self healing system
 - error propagation back to the initiator
-  - realised with the requestId and web component which filters data and returns it to the right browser
+  - realised with the sessionId and web component which filters data and returns it to the right browser
 - timeouts and "must be processed by"
   - and the ability to reload and fix problems, e.g. recalculating discounts and prices
 - sync timestamp in order to be able to determine when data is not globally consistent

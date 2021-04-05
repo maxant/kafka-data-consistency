@@ -3,6 +3,7 @@ package ch.maxant.kdc.mf.library
 import ch.maxant.kdc.mf.library.Context.Companion.COMMAND
 import ch.maxant.kdc.mf.library.Context.Companion.DEMO_CONTEXT
 import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
+import ch.maxant.kdc.mf.library.Context.Companion.SESSION_ID
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.opentracing.Scope
@@ -41,9 +42,11 @@ class ContextWebFilter: Filter {
         val response = res as HttpServletResponse
 
         context.requestId = getRequestId(request)
+        context.sessionId = getSessionId(request)
         context.demoContext = readDemoContext(request)
 
         MDC.put(REQUEST_ID, context.requestId)
+        MDC.put(SESSION_ID, context.sessionId)
         val cmd = "${request.method} ${request.requestURI}"
         MDC.put(COMMAND, cmd)
 
@@ -55,12 +58,14 @@ class ContextWebFilter: Filter {
             null
         }
         tracer.activeSpan().setTag(REQUEST_ID, context.requestId.toString())
+        tracer.activeSpan().setTag(SESSION_ID, context.sessionId.toString())
         tracer.activeSpan().setTag("__origin", "ContextWebFilter")
 
         try {
             filterChain.doFilter(request, response)
         } finally {
             response.setHeader(REQUEST_ID, context.requestId.toString())
+            response.setHeader(SESSION_ID, context.sessionId.toString())
             MDC.clear()
             scope?.close()
         }
@@ -97,6 +102,23 @@ class ContextWebFilter: Filter {
             }
         }
         return RequestId(rId)
+    }
+
+    private fun getSessionId(request: HttpServletRequest): SessionId {
+        val sessionId = request.getHeader(SESSION_ID)
+        val sId = if (sessionId != null && sessionId.isNotEmpty())
+            sessionId
+        else {
+            // it might already be in the request from another filter
+            if(context.isSessionIdAlreadySet()) {
+                context.sessionId.sessionId
+            } else {
+                val sId2 = context.getSessionIdSafely().sessionId
+                log.debug("creating new sessionId as it is missing in the request: $sId2 on path ${request.method} ${request.requestURI}")
+                sId2
+            }
+        }
+        return SessionId(sId)
     }
 
     private fun readDemoContext(request: HttpServletRequest): DemoContext {

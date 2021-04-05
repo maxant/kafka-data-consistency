@@ -1,6 +1,7 @@
 package ch.maxant.kdc.mf.library
 
 import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
+import ch.maxant.kdc.mf.library.Context.Companion.SESSION_ID
 import org.jboss.logging.Logger
 import org.jboss.logging.MDC
 import javax.inject.Inject
@@ -20,6 +21,7 @@ class ContextResponseFilter : ContainerResponseFilter {
     //?@kotlin.Throws(IOException::class)
     override fun filter(requestContext: ContainerRequestContext?, responseContext: ContainerResponseContext?) {
         responseContext?.headers?.add(REQUEST_ID, context.requestId)
+        responseContext?.headers?.add(SESSION_ID, context.sessionId)
         MDC.clear()
     }
 }

@@ -28,7 +28,7 @@ var numErrors = 0;
 var numWarns = 0;
 
 function createPartnerAndContract(){
-    var requestId = uuidv4();
+    var sessionId = uuidv4();
     var token;
     var partnerId;
     var contractId;
@@ -46,14 +46,14 @@ function createPartnerAndContract(){
         return new Date().getTime() - start;
     }
 
-    console.log("using requestId " + requestId);
+    console.log("using sessionId " + sessionId);
 
-    var source = new EventSource('http://web:8082/web/stream/' + requestId);
+    var source = new EventSource('http://web:8082/web/stream/' + sessionId);
     source.onmessage = function (event) {
         let msg = JSON.parse(event.data);
-        if(msg["request-id"] != requestId) {
-            console.error(">>>>>>>>>> ERROR!!! - got event " + msg.event + " for request-id " + msg["request-id"]
-                + " on source for requestId " + requestId + " so dumping it");
+        if(msg["session-id"] != sessionId) {
+            console.error(">>>>>>>>>> ERROR!!! - got event " + msg.event + " for session-id " + msg["session-id"]
+                + " on source for sessionId " + sessionId + " so dumping it");
             numErrors++;
             return;
         }
@@ -112,7 +112,7 @@ function createPartnerAndContract(){
         if(source && !source.$completed) {
             // restart after timeout
             source.close();
-            console.error(">>>>>>>>>> ERROR!!! - timeout on request, so restarting. rquestId: " + requestId + " - " + getMsSinceStart() + "msFromStart");
+            console.error(">>>>>>>>>> ERROR!!! - timeout on request, so restarting. sessionId: " + sessionId + " - " + getMsSinceStart() + "msFromStart");
             numErrors++;
             console.info("");
             console.info("restarting...");
@@ -135,7 +135,7 @@ function createPartnerAndContract(){
             "content-type": "application/json",
             "demo-context": "{\"forceError\":\"none\"}",
             "mfauthorization": "Bearer " + token,
-            "request-id": requestId
+            "session-id": sessionId
           },
           "body": null,
           "method": "PUT"
@@ -147,14 +147,14 @@ function createPartnerAndContract(){
 
     function offerDraft() {
         offeredDraft = true;
-        console.log("offering draft " + contractId + " on requestId " + requestId + " - " + getMsSinceStart() + "msFromStart");
+        console.log("offering draft " + contractId + " on sessionId " + sessionId + " - " + getMsSinceStart() + "msFromStart");
         var go = new Date().getTime();
         return fetch("http://contracts:8080/drafts/" + contractId + "/offer", {
           "headers": {
             "content-type": "application/json",
             "demo-context": "{\"forceError\":\"none\"}",
             "mfauthorization": "Bearer " + token,
-            "request-id": requestId
+            "session-id": sessionId
           },
           "body": null,
           "method": "PUT"
@@ -174,7 +174,7 @@ function createPartnerAndContract(){
           "headers": {
             "content-type": "application/json",
             "mfauthorization": "Bearer " + token,
-            "request-id": requestId
+            "session-id": sessionId
           },
           "body": null,
           "method": "PUT"
@@ -204,7 +204,7 @@ function createPartnerAndContract(){
               "headers": {
                 "content-type": "application/json",
                 "mfauthorization": "Bearer " + token,
-                "request-id": requestId
+                "session-id": sessionId
               },
               "body": null,
               "method": "PUT"
@@ -217,7 +217,7 @@ function createPartnerAndContract(){
               "headers": {
                 "content-type": "application/json",
                 "mfauthorization": "Bearer " + token,
-                "request-id": requestId
+                "session-id": sessionId
               },
               "body": null,
               "method": "GET"
@@ -244,7 +244,7 @@ function createPartnerAndContract(){
     fetch("http://organisation:8086/security/token/john.smith", {
       "headers": {
         "content-type": "application/json",
-        "request-id": requestId
+        "session-id": sessionId
       },
       "body": "QBsJ6rPAE9TKVJIruAK+yP1TGBkrCnXyAdizcnQpCA+zN1kavT5ERTuVRVW3oIEuEIHDm3QCk/dl6ucx9aZe0Q==",
       "method": "POST"
@@ -258,7 +258,7 @@ function createPartnerAndContract(){
           "headers": {
             "content-type": "application/json",
             "mfauthorization": "Bearer " + token,
-            "request-id": requestId
+            "session-id": sessionId
           },
           "body": "{\"firstName\":\"Anton" + new Date().toISOString().substr(0,19)
                     + "\",\"lastName\":\"Kutschera\",\"type\":\"PERSON\",\"dob\":\""
@@ -279,7 +279,7 @@ function createPartnerAndContract(){
             "content-type": "application/json",
             "demo-context": "{\"forceError\":\"none\"}",
             "mfauthorization": "Bearer " + token,
-            "request-id": requestId
+            "session-id": sessionId
           },
           "body": "{\"productId\":\"COOKIES_MILKSHAKE\",\"start\":\""
                     + randomDate(new Date(), new Date(new Date().getTime() + 365*24*3600000)).toISOString().substr(0,10)

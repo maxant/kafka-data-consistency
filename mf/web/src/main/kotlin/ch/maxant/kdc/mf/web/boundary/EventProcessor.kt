@@ -23,12 +23,12 @@ class EventProcessor {
                 .headers()
                 .toList()
 
-        val requestId = headers
-            .filter { it.key() == Context.REQUEST_ID }
+        val sessionId = headers
+            .filter { it.key() == Context.SESSION_ID }
             .map { String(it.value()) }
-            .firstOrNull()?:context.getRequestIdSafely().toString()
+            .firstOrNull()?:context.getSessionIdSafely().toString()
 
-        log.info("handling message for requestId $requestId")
+        log.info("handling message for sessionId $sessionId")
 
         var headers2 = headers
             .filter { it.key() != Context.DEMO_CONTEXT }
@@ -38,6 +38,6 @@ class EventProcessor {
 
         val json = """{ $headers2 "payload": ${record.value()} }"""
 
-        webResource.sendToSubscribers(requestId, json, record.key())
+        webResource.sendToSubscribers(sessionId, json, record.key())
     }
 }

@@ -1,6 +1,7 @@
 package ch.maxant.kdc.mf.library
 
 import ch.maxant.kdc.mf.library.Context.Companion.REQUEST_ID
+import ch.maxant.kdc.mf.library.Context.Companion.SESSION_ID
 import io.opentracing.Tracer
 import org.jboss.logging.Logger
 import java.util.*
@@ -22,7 +23,9 @@ class ContextClientRequestFilter : ClientRequestFilter {
 
     override fun filter(requestContext: ClientRequestContext) {
         val requestId = context.getRequestIdSafely()
-        log.debug("adding requestId $requestId to outbound rest request")
+        val sessionId = context.getSessionIdSafely()
+        log.debug("adding requestId $requestId and sessionId $sessionId to outbound rest request")
         requestContext.headers.add(REQUEST_ID, requestId.toString())
+        requestContext.headers.add(SESSION_ID, sessionId.toString())
     }
 }

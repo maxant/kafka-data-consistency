@@ -28,7 +28,7 @@ var overviewTable = {
   data: function(){
     return {
       model: { expandedKeys: {}, root: [] },
-      requestId: uuidv4()
+      sessionId: uuidv4()
     }
   },
   mounted() {
@@ -41,7 +41,7 @@ var overviewTable = {
         let url = ORGANISATION_BASE_URL + "/security/definitions?includeUsers=true";
         fetchIt(url, "GET", this).then(r => {
             if(r.ok) {
-                console.log("got security for requestId " + self.requestId);
+                console.log("got security for sessionId " + self.sessionId);
                 setupModel(self, r.payload.root);
                 self.model.root = r.payload.root;
             } else {

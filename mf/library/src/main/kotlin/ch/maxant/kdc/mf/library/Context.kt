@@ -11,7 +11,8 @@ import javax.validation.ValidationException
 
 @RequestScoped
 class Context {
-    lateinit var requestId: RequestId // TODO instead of lateinit, always give it a default value, and simply override it in (incoming) boundaries
+    lateinit var requestId: RequestId
+    lateinit var sessionId: SessionId
     var originalMessage: Any? = null
     var command: String? = null
     var event: String? = null
@@ -26,6 +27,14 @@ class Context {
         } catch(e: UninitializedPropertyAccessException) {
             requestId = RequestId(UUID.randomUUID().toString()) // can happen e.g. when receiving a message from kafka or doing background work e.g. timers
             requestId
+        }
+
+    fun getSessionIdSafely() =
+        try {
+            sessionId
+        } catch(e: UninitializedPropertyAccessException) {
+            sessionId = SessionId(UUID.randomUUID().toString()) // can happen e.g. when receiving a message from kafka or doing background work e.g. timers
+            sessionId
         }
 
     fun throwExceptionInContractsIfRequiredForDemo() {
@@ -52,6 +61,7 @@ class Context {
 
     fun setup(copy: Context) {
         this.requestId = copy.getRequestIdSafely()
+        this.sessionId = copy.getSessionIdSafely()
         this.originalMessage = copy.originalMessage
         this.command = copy.command
         this.event = copy.event
@@ -66,17 +76,26 @@ class Context {
             false
         }
 
+    fun isSessionIdAlreadySet() =
+        try {
+            sessionId != null
+        } catch(e: UninitializedPropertyAccessException) {
+            false
+        }
+
 
     companion object {
         const val REQUEST_ID = "request-id"
+        const val SESSION_ID = "session-id"
         const val DEMO_CONTEXT = "demo-context"
         const val COMMAND = "command"
         const val EVENT = "event"
         const val RETRY_COUNT = "RETRY_COUNT"
 
-        fun of(requestId: RequestId, originalMessage: Any?, command: String? = null, event: String? = null, demoContext: DemoContext? = null, retryCount: Int = 0): Context {
+        fun of(requestId: RequestId, sessionId: SessionId, originalMessage: Any?, command: String? = null, event: String? = null, demoContext: DemoContext? = null, retryCount: Int = 0): Context {
             val context = Context()
             context.requestId = requestId
+            context.sessionId = sessionId
             context.originalMessage = originalMessage
             context.command = command
             context.event = event
@@ -84,9 +103,11 @@ class Context {
             context.retryCount = retryCount
             return context
         }
+
         fun of(toCopy: Context): Context {
             val context = Context()
             context.requestId = toCopy.getRequestIdSafely()
+            context.sessionId = toCopy.getSessionIdSafely()
             context.originalMessage = toCopy.originalMessage
             context.command = toCopy.command
             context.event = toCopy.event
@@ -120,6 +141,7 @@ class InitContextForBackgroundProcessing {
     @SuppressWarnings("unused")
     fun setupForBackgroundProcessing(@Observes e: StartupEvent) {
         context.requestId = RequestId(UUID.randomUUID().toString())
+        context.sessionId = SessionId(UUID.randomUUID().toString())
         context.command = "BACKGROUND_STARTUP"
         contextInitialisedEvent.fire(object: ContextInitialised {})
     }

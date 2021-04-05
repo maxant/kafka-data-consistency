@@ -81,7 +81,7 @@ AND c.starttime > '2021-03-20'
     }
 
     fun startRecurringBilling(from: LocalDate, maxSizeOfGroup: Int): RecurringBillingJob {
-        val jobId = UUID.fromString(context.requestId.requestId) // so that it can be sent back to the client waiting for it
+        val jobId = UUID.fromString(context.sessionId.sessionId) // so that it can be sent back to the client waiting for it
         var numSelectedContracts = 0
         var numGroups = 0
         em.createNativeQuery(selectionSql)

@@ -78,7 +78,7 @@ window.mfContractTile = {
             fetchedContract: null,
             usingES: false,
             error: null,
-            requestId: uuidv4()
+            sessionId
         }
     },
     computed: {
@@ -111,6 +111,7 @@ window.mfContractTile = {
             }
         },
         loadContract$(forceUseMaster) {
+            this.sessionId = uuidv4();
             this.fetchedContract = null;
             this.error = null;
             let self = this;
@@ -124,7 +125,7 @@ window.mfContractTile = {
             }
             return fetchIt(url, "GET", this).then(r => {
                 if(r.ok) {
-                    console.log("got contract " + self.contractId + " for requestId " + self.requestId);
+                    console.log("got contract " + self.contractId + " for sessionId " + self.sessionId);
                     if(self.usingES) {
                         self.fetchedContract = r.payload._source;
                         self.patchElasticSearchContracts();
@@ -158,7 +159,7 @@ window.mfContractTile = {
             let url = CONTRACTS_BASE_URL + "/contracts/accept/" + this.fetchedContract.id;
             fetchIt(url, "PUT", this).then(r => {
                 if(r.ok) {
-                    console.log("accepted contract " + this.fetchedContract.id + ", for requestId " + self.requestId);
+                    console.log("accepted contract " + this.fetchedContract.id + ", for sessionId " + self.sessionId);
                     self.fetchedContract = r.payload;
                     self.$emit('accepted', self.fetchedContract);
                 } else {
