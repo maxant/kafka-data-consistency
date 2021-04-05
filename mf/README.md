@@ -249,6 +249,7 @@ https://docs.cypress.io/guides/getting-started/installing-cypress.html
     npx cypress run --spec "cypress/integration/partner_spec.js" --headless --browser chrome
 
 ## TODO
+- bug in portal-sales when creating second draft - never get other session related data
 - not only TTL in order to throw out ancient stuff, but also check if the sync timestamp is older than that which is 
   in the DB, prolly best not to write it.
   - that has an impact on performance, because we now ALWAYS need to read before we write, in order to check if we should
