@@ -101,8 +101,9 @@ class PimpedAndWithDltAndAckInterceptor(
                     .startActive(true)
 
                 try {
-                    span.span().setTag(REQUEST_ID, context.requestId.toString())
-                    span.span().setTag(SESSION_ID, context.sessionId.toString())
+                    span.span()
+                        .setTag(REQUEST_ID, context.requestId.toString())
+                        .setTag(SESSION_ID, context.sessionId.toString())
                     proceed(copyOfContext, ctx, firstParam)
                 } finally {
                     span.close()
@@ -371,7 +372,6 @@ fun messageWithMetadata(key: String?, value: String, headers: List<RecordHeader>
             .withHeaders(headersWithTrace)
             .build()
     return Message.of(value).addMetadata(metadata)
-
 }
 
 private fun setMdc(context: Context) {

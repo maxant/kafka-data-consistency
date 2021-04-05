@@ -25,7 +25,6 @@ class TracingProducerInterceptor<K, V> : io.opentracing.contrib.kafka.TracingPro
             ?.value()
             ?: byteArrayOf(),
             Charsets.UTF_8)
-        span.setTag(REQUEST_ID, requestId)
 
         val sessionId = String(producerRecord
             .headers()
@@ -33,7 +32,9 @@ class TracingProducerInterceptor<K, V> : io.opentracing.contrib.kafka.TracingPro
             ?.value()
             ?: byteArrayOf(),
             Charsets.UTF_8)
-        span.setTag(SESSION_ID, sessionId)
+
+        span.setTag(REQUEST_ID, requestId)
+            .setTag(SESSION_ID, sessionId)
 
         span.finish()
 

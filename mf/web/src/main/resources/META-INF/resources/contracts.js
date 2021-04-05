@@ -78,7 +78,7 @@ window.mfContractTile = {
             fetchedContract: null,
             usingES: false,
             error: null,
-            sessionId
+            sessionId: null
         }
     },
     computed: {

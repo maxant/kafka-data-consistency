@@ -78,7 +78,7 @@ window.mfCases = {
             tasks: [], // flattened
             state: "OPEN", // ready for a toggle, should one want to view closed tasks at the push of a button
             error: null,
-            sessionId
+            sessionId: null
         }
     },
     mounted() {

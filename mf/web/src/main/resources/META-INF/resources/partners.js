@@ -102,7 +102,7 @@ window.mfPartnerSelect = {
                 $validationErrors: {},
                 $submitted: false
             },
-            sessionId
+            sessionId: null
         }
     },
     created() {
@@ -270,7 +270,7 @@ window.mfPartnerTile = {
         return {
             partner: null,
             error: null,
-            sessionId
+            sessionId: null
         }
     },
     mounted() {

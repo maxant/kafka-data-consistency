@@ -55,7 +55,7 @@ window.mfPortalSales = {
             model: {"draft": {"prices": {}}, "startDate": new Date(), salesRep: null},
             start: 0,
             timeTaken: 0,
-            sessionId
+            sessionId: null,
             users,
             user: security.getCurrentUser(),
             draftCreatedFor: null, // the user it was created for, rather than the currently selected user, just as info
@@ -90,20 +90,20 @@ window.mfPortalSales = {
             this.draftCreatedFor = JSON.parse(JSON.stringify(this.user))
 
             // subscribe before sending request to server, to ensure we receive ALL of the events, and any errors
-            sse(this.sessionId, this);
-
             let self = this;
-            let url = CONTRACTS_BASE_URL + "/drafts"
-            fetchIt(url, "POST", this, body).then(r => {
-                if(r.ok) console.log("got contract with id " + r.payload.id + ", for sessionId " + self.sessionId);
-                else {
-                    let msg = "Failed to offer contract: " + r.payload;
-                    console.error(msg);
-                    alert(msg);
-                }
-            }).catch(error => {
-                console.error("received error: " + error);
-                ameliorateCurrentAction(self)
+            _sse(this.sessionId, this).then(() => {
+                let url = CONTRACTS_BASE_URL + "/drafts?persist=DB"
+                fetchIt(url, "POST", this, body).then(r => {
+                    if(r.ok) console.log("got contract with id " + r.payload.id + ", for sessionId " + self.sessionId);
+                    else {
+                        let msg = "Failed to offer contract: " + r.payload;
+                        console.error(msg);
+                        alert(msg);
+                    }
+                }).catch(error => {
+                    console.error("received error: " + error);
+                    ameliorateCurrentAction(self)
+                });
             });
         },
         offerDraftAndAcceptOffer() {
@@ -177,12 +177,8 @@ function addPrice(component, id, price) {
     }
 }
 
-function sse(sessionId, self) {
-    if(self.source && self.source.readyState != EventSource.CLOSED) self.source.close();
-    self.source = new EventSource("/web/stream/" + sessionId);
-    self.source.onmessage = function (event) {
-        console.log(event);
-        let msg = JSON.parse(event.data);
+function _sse(sessionId, self) {
+    return sse(sessionId, self, msg => {
         if(msg.event == "DRAFT") {
             self.model.draft = msg.payload;
             initialiseDraft(self.model.draft);
@@ -215,12 +211,7 @@ function sse(sessionId, self) {
                 ameliorateCurrentAction(self)
             }
         }
-    };
-    self.source.onerror = function (event) {
-        console.log("sse error " + event);
-        if(self.source && self.source.readyState != EventSource.CLOSED) self.source.close();
-        self.source = null;
-    }
+    });
 }
 
 function ameliorateCurrentAction(self) {

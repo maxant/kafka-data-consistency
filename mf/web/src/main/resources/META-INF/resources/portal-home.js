@@ -43,7 +43,7 @@ window.mfPortalHome = {
             model: { id: security.getCurrentUser().id, partner: {} },
             start: 0,
             timeTaken: 0,
-            sessionId
+            sessionId: null
         }
     },
     mounted() {
