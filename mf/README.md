@@ -212,6 +212,7 @@ Also known as entry points, process components or UIs.
   - SELECTED_FOR_BILLING (billing-internal)
   - BILL_CREATED (billing-events)
   - TODO all the other billing events/commands
+
 ## Links
 
 - http://blog.maxant.co.uk/pebble/2008/01/02/1199309880000.html
