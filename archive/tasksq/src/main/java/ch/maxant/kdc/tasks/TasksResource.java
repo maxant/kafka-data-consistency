@@ -6,6 +6,7 @@ import io.smallrye.reactive.messaging.kafka.KafkaMessage;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -17,6 +18,7 @@ import java.util.Vector;
 import static ch.maxant.kdc.tasks.TasksRecordHandler.TASK_CREATED_EVENT_TOPIC;
 import static java.util.stream.Collectors.toList;
 
+@ApplicationScoped
 @Path("/tasks")
 public class TasksResource {
 
