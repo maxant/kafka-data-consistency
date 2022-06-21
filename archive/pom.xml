@@ -33,7 +33,7 @@
         <version.commons-lang3>3.9</version.commons-lang3>
         <version.apm-agent-api>1.6.1</version.apm-agent-api>
         <version.elasticsearch>7.0.0</version.elasticsearch>
-        <version.mysql>8.0.16</version.mysql>
+        <version.mysql>8.0.28</version.mysql>
     </properties>
 
     <dependencyManagement>
